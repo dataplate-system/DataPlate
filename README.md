@@ -9,9 +9,6 @@
 
 ## Descrição
 
-O que faz o app?
-Com oq foi construído?
-Por que?
 
-## Licença
+
 
