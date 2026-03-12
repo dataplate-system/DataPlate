@@ -15,7 +15,7 @@ Responsáveis pelo Projeto:
 - Gabriel Silva Manzan
 - Marcelo Cauã Xavier Queiros
 - Márcio Antônio Rezende de Oliveira 
-- Marcus Vinícius 
+- Marcus Vinícius Jorge Dos Santos
 - Vitor Gabriel Tavares dos Santos
 
 Tipo de Projeto:
@@ -329,5 +329,5 @@ Responsáveis pelo projeto:
 - Gabriel Silva Manzan
 - Marcelo Cauã Xavier Queiros
 - Márcio Antônio Rezende de Oliveira
-- Marcus Vinícius
+- Marcus Vinícius Jorge Da Silveira
 - Vitor Gabriel Tavares dos Santos
