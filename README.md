@@ -114,7 +114,7 @@ O desenvolvimento do DataPlate segue as seguintes etapas:
 - Definição da arquitetura
 - Escolha de tecnologias
 
-- 3. 🎨 Prototipagem
+3. 🎨 Prototipagem
 - Wireframes
 - Interface do cliente
 - Painel da cozinha
