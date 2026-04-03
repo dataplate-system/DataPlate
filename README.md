@@ -10,6 +10,7 @@
 ## Descrição
 
 📦 DataPlate — Plataforma Inteligente de Gestão e Cardápio Digital
+
 📌 Sobre o Projeto
 
 O DataPlate é uma plataforma web responsiva desenvolvida para otimizar a gestão de restaurantes, integrando em um único sistema:
