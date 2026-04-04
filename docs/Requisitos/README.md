@@ -10,13 +10,17 @@
 ## Descrição
 
 📦 DataPlate — Plataforma Inteligente de Gestão e Cardápio Digital
+
 📌 Sobre o Projeto
 
 O DataPlate é uma plataforma web responsiva desenvolvida para otimizar a gestão de restaurantes, integrando em um único sistema:
 
 📱 Cardápio digital acessível via QR Code
+
 🧾 Sistema de pedidos em tempo real
+
 📦 Controle automatizado de estoque
+
 📊 Análise estratégica de vendas
 
 O sistema elimina a necessidade de aplicativos instaláveis, permitindo que clientes acessem o cardápio diretamente pelo navegador, enquanto a cozinha e a administração operam de forma integrada e sincronizada.
@@ -114,7 +118,7 @@ O desenvolvimento do DataPlate segue as seguintes etapas:
 - Definição da arquitetura
 - Escolha de tecnologias
 
-- 3. 🎨 Prototipagem
+3. 🎨 Prototipagem
 - Wireframes
 - Interface do cliente
 - Painel da cozinha
@@ -218,12 +222,14 @@ O sistema será considerado bem-sucedido se:
 - Admin visualizar relatórios e dashboards
 
 🚧 Escopo do Projeto
+
 ✔️ Incluído
 - Plataforma web responsiva
 - Sistema de pedidos
 - Controle de estoque
 - Dashboard administrativo
 - Comunicação em tempo real
+- 
 ❌ Não Incluído
 - Pagamentos online
 - Integração com delivery
@@ -231,9 +237,15 @@ O sistema será considerado bem-sucedido se:
 - Sistemas fiscais
 
 
-👨‍💻 Equipe do Projeto
+
+👨‍💻 Equipe do Projeto:
+
 Gabriel Silva Manzan
+
 Marcelo Cauã Xavier Queiros
+
 Márcio Antônio Rezende de Oliveira
+
 Marcus Vinícius Jorge dos Santos
+
 Vitor Gabriel Tavares dos Santos
