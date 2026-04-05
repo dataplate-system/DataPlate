@@ -4,6 +4,20 @@ const searchInput = document.getElementById("search");
 
 let categoriaAtual = "todos";
 
+// BOTÃO VOLTAR
+function voltarPagina() {
+  window.history.back(); // volta para a página anterior
+}
+
+// BOTÃO CARRINHO
+function abrirCarrinho() {
+  // você pode redirecionar para outra página
+  window.location.href = "carrinho.html";
+
+  // OU se quiser só testar:
+  // alert("Abrir carrinho de pedidos");
+}
+
 // FUNÇÃO PRINCIPAL (filtra tudo junto)
 function filtrar() {
   const textoBusca = searchInput.value.toLowerCase();
@@ -25,6 +39,30 @@ function filtrar() {
   });
 }
 
+function abrirProduto() {
+  document.getElementById("telaLista").style.display = "none";
+  document.getElementById("telaProduto").style.display = "block";
+}
+
+function voltarLista() {
+  document.getElementById("telaProduto").style.display = "none";
+  document.getElementById("telaLista").style.display = "block";
+}
+
+// QUANTIDADE
+let qtd = 1;
+
+function aumentar() {
+  qtd++;
+  document.getElementById("qtd").innerText = qtd;
+}
+
+function diminuir() {
+  if (qtd > 1) {
+    qtd--;
+    document.getElementById("qtd").innerText = qtd;
+  }
+}
 // CLIQUE NOS BOTÕES
 botoes.forEach(botao => {
   botao.addEventListener("click", () => {

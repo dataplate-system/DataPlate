@@ -17,15 +17,28 @@ body {
   padding: 14px 16px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+  position: relative;
 }
 
 .topo h1 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 18px;
   font-weight: 600;
-  color: #1f2937;
 }
 
-.voltar,
+
+.topo button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+
+
 .carrinho {
   font-size: 20px;
   color: #374151;
@@ -139,4 +152,90 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: #ff5a00;
+}
+
+body {
+  font-family: sans-serif;
+  margin: 50px;
+  background: #f5f5f5;
+  
+}
+
+/* IMAGEM TOPO */
+.topo-img img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+}
+
+/* CONTEÚDO */
+.container {
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 5px;
+}
+
+.descricao {
+  color: #666;
+}
+
+.preco {
+  color: #ff4d00;
+  font-size: 22px;
+  margin: 15px 0;
+  display: block;
+}
+
+/* INGREDIENTES */
+.ingredientes {
+  background: #eee;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.ingredientes div {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+}
+
+/* QUANTIDADE */
+.quantidade {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.quantidade button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+/* BOTÃO FINAL */
+.btn-carrinho {
+  width: 100%;
+  padding: 15px;
+  background: #ff4d00;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* VOLTAR */
+.voltar {
+  background: white;
+  border: none;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
 }
