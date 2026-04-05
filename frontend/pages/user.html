@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>DataPlate</title>
+  <link rel="stylesheet" href="../Css/user.css">
+</head>
+<body>
+
+<header class="topo">
+  <span class="voltar">←</span>
+  <h1>DataPlate</h1>
+  <span class="carrinho">🛒</span>
+</header>
+
+<div class="busca">
+  <input type="text" id="search" placeholder="Buscar pratos...">
+</div>
+
+<!-- CATEGORIAS COM DATA -->
+<div class="categorias">
+  <button class="ativo" data-categoria="todos">Todos</button>
+  <button data-categoria="entradas">Entradas</button>
+  <button data-categoria="principais">Pratos Principais</button>
+  <button data-categoria="hamburguer">Hambúrgueres</button>
+  <button data-categoria="massas">Massas</button>
+  <button data-categoria="sobremesas">Sobremesas</button>
+  <button data-categoria="bebidas">Bebidas</button>
+</div>
+
+<div class="lista" id="listaPratos">
+
+  <!-- HAMBURGUER -->
+  <div class="item" data-categoria="hamburguer">
+    <img src="../images/Hambúrguer.jfif">
+    <div class="info">
+      <h3>Burger Gourmet</h3>
+      <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
+      <span class="preco">R$ 32.90</span>
+    </div>
+  </div>
+
+  <!-- MASSAS -->
+  <div class="item" data-categoria="massas">
+    <img src="../images/Pasta Carbonara.jfif">
+    <div class="info">
+      <h3>Pasta Carbonara</h3>
+      <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
+      <span class="preco">R$ 38.50</span>
+    </div>
+  </div>
+
+  <!-- PRINCIPAIS -->
+  <div class="item" data-categoria="principais">
+    <img src="../images/Salmão Grelhado.jfif">
+    <div class="info">
+      <h3>Salmão Grelhado</h3>
+      <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
+      <span class="preco">R$ 52.90</span>
+    </div>
+  </div>
+
+  <!-- ENTRADAS -->
+  <div class="item" data-categoria="entradas">
+    <img src="../images/Salada Caesar.jfif">
+    <div class="info">
+      <h3>Salada Caesar</h3>
+      <p>Alface romana, croutons, parmesão e molho caesar</p>
+      <span class="preco">R$ 24.90</span>
+    </div>
+  </div>
+
+</div>
+
+<script src="../JavaScript/user.js"></script>
+</body>
+</html>

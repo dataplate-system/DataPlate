@@ -1,0 +1,142 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  background: #f3f4f6;
+}
+
+/* TOPO */
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.topo h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.voltar,
+.carrinho {
+  font-size: 20px;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* BUSCA */
+.busca {
+  padding: 12px 16px;
+}
+
+.busca input {
+  width: 100%;
+  height: 44px;
+  border-radius: 24px;
+  border: none;
+  padding-left: 40px;
+  font-size: 14px;
+  background: #e5e7eb;
+  outline: none;
+  color: #374151;
+}
+
+/* Ícone de busca fake */
+.busca {
+  position: relative;
+}
+
+.busca::before {
+  content: "🔍";
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #6b7280;
+}
+
+/* CATEGORIAS */
+.categorias {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+  overflow-x: auto;
+}
+
+.categorias::-webkit-scrollbar {
+  display: none;
+}
+
+.categorias button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: #e5e7eb;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* BOTÃO ATIVO */
+.categorias .ativo {
+  background: #ff5a00;
+  color: white;
+  font-weight: 500;
+}
+
+/* LISTA */
+.lista {
+  padding: 10px 12px;
+}
+
+/* CARD */
+.item {
+  display: flex;
+  gap: 14px;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* IMAGEM */
+.item img {
+  width: 90px;
+  height: 90px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+/* TEXTO */
+.info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.info p {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* PREÇO */
+.preco {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ff5a00;
+}
