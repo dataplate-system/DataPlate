@@ -7,10 +7,13 @@
 </head>
 <body>
 
+<div id="telaLista">
+  
+
 <header class="topo">
-  <span class="voltar">←</span>
+  <button class="voltar" onclick="voltarPagina()">←</button>
   <h1>DataPlate</h1>
-  <span class="carrinho">🛒</span>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header>
 
 <div class="busca">
@@ -31,7 +34,7 @@
 <div class="lista" id="listaPratos">
 
   <!-- HAMBURGUER -->
-  <div class="item" data-categoria="hamburguer">
+  <div class="item" data-categoria="hamburguer" onclick="abrirProduto()">
     <img src="../images/Hambúrguer.jfif">
     <div class="info">
       <h3>Burger Gourmet</h3>
@@ -70,7 +73,88 @@
     </div>
   </div>
 
+  <!-- SOBREMESAS -->
+  <div class="item" data-categoria="sobremesas">
+    <img src="../images/Bolo de Chocolate.jfif">
+    <div class="info">
+      <h3>Bolo de Chocolate</h3>
+      <p>Bolo de chocolate belga com cobertura cremosa de chocolate</p>
+      <span class="preco">R$ 18.90</span>
+    </div>
+  </div>
+
+  <!-- SOBREMESAS -->
+  <div class="item" data-categoria="sobremesas">
+    <img src="../images/Tiramisu.jfif">
+    <div class="info">
+      <h3>Tiramisu</h3>
+      <p>Sobremesa italiana clássica com café e mascarpone</p>
+      <span class="preco">R$ 22.90</span>
+    </div>
+  </div>
+
+  <!-- Bebidas -->
+  <div class="item" data-categoria="bebidas">
+    <img src="../images/Água.jfif">
+    <div class="info">
+      <h3>Água sem gás</h3>
+      <p>Água Mineral Natural Crystal Sem Gás 500ml</p>
+      <span class="preco">R$ 2.90</span>
+    </div>
+  </div>
+
+
+
 </div>
+ 
+</div>
+
+<div id="telaProduto" style="display: none;">
+
+  <!-- IMAGEM -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+  <div class="topo-img">
+    <img src="../images/Hambúrguer.jfif">
+  </div>
+
+  <div class="container">
+
+    <h2>Burger Gourmet</h2>
+    <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
+
+    <span class="preco">R$ 32.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Pão brioche</span><span>1 un</span></div>
+      <div><span>Carne bovina</span><span>200g</span></div>
+      <div><span>Queijo cheddar</span><span>50g</span></div>
+      <div><span>Bacon</span><span>30g</span></div>
+      <div><span>Alface</span><span>20g</span></div>
+      <div><span>Tomate</span><span>30g</span></div>
+    </div>
+
+    <h3>Quantidade</h3>
+
+    <div class="quantidade">
+      <button onclick="diminuir()">-</button>
+      <span id="qtd">1</span>
+      <button onclick="aumentar()">+</button>
+    </div>
+
+    <button class="btn-carrinho">
+      🛒 Adicionar ao carrinho - R$ 32.90
+    </button>
+
+  </div>
+   </div>
+
 
 <script src="../JavaScript/user.js"></script>
 </body>
