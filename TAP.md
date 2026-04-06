@@ -18,177 +18,177 @@ Responsáveis pelo Projeto:
 - Marcus Vinícius Jorge Dos Santos
 - Vitor Gabriel Tavares dos Santos
 
-Tipo de Projeto:
-Desenvolvimento de Sistema Web Responsivo com integração de gestão operacional e análise de dados.
+  Tipo de Projeto:
+  Desenvolvimento de Sistema Web Responsivo com integração de gestão operacional e análise de dados.
 
-2. Justificativa do Projeto
+  2. Justificativa do Projeto
 
-O setor de restaurantes enfrenta desafios constantes relacionados à gestão de estoque, controle de insumos, desperdício de alimentos, organização de pedidos e análise de desempenho dos produtos do cardápio. 
+  O setor de restaurantes enfrenta desafios constantes relacionados à gestão de estoque, controle de insumos, desperdício de alimentos, organização de pedidos e análise de desempenho dos produtos do cardápio. 
 
-Muitos estabelecimentos ainda utilizam métodos manuais ou sistemas fragmentados que não integram pedido, estoque e análise estratégica de vendas.
+  Muitos estabelecimentos ainda utilizam métodos manuais ou sistemas fragmentados que não integram pedido, estoque e análise estratégica de vendas.
 
-Além disso, soluções atuais de cardápio digital frequentemente exigem que o cliente baixe aplicativos, criando fricção no processo de compra.
+  Além disso, soluções atuais de cardápio digital frequentemente exigem que o cliente baixe aplicativos, criando fricção no processo de compra.
 
-O DataPlate surge como uma solução moderna baseada em plataforma web responsiva acessível por QR Code, eliminando a necessidade de instalação de aplicativos e oferecendo um sistema centralizado que integra:
+  O DataPlate surge como uma solução moderna baseada em plataforma web responsiva acessível por QR Code, eliminando a necessidade de instalação de aplicativos e oferecendo um sistema centralizado que integra:
 
-  - Cardápio digital interativo
-  
-  - Gestão automática de estoque por ficha técnica
-  
-  - Monitoramento de pedidos em tempo real
-  
-  - Painel administrativo com análise estratégica de produtos
+    - Cardápio digital interativo
+    
+    - Gestão automática de estoque por ficha técnica
+    
+    - Monitoramento de pedidos em tempo real
+    
+    - Painel administrativo com análise estratégica de produtos
 
-Dessa forma, o sistema contribui para redução de desperdícios, aumento da eficiência operacional e melhoria na experiência do cliente.
+  Dessa forma, o sistema contribui para redução de desperdícios, aumento da eficiência operacional e melhoria na experiência do cliente.
 
-3. Objetivo Geral
+  3. Objetivo Geral
 
-Desenvolver uma plataforma web responsiva para restaurantes, acessível via QR Code, capaz de integrar cardápio digital, gestão de pedidos, controle de estoque automatizado e análise estratégica de vendas, proporcionando eficiência operacional e melhor experiência para clientes e gestores.
+  Desenvolver uma plataforma web responsiva para restaurantes, acessível via QR Code, capaz de integrar cardápio digital, gestão de pedidos, controle de estoque automatizado e análise estratégica de vendas, proporcionando eficiência operacional e melhor experiência para clientes e gestores.
 
-4. Objetivos Específicos
+  4. Objetivos Específicos
 
-- Desenvolver um cardápio digital acessível via QR Code.
+  - Desenvolver um cardápio digital acessível via QR Code.
 
-- Criar um sistema de pedidos em tempo real para clientes e cozinha.
+  - Criar um sistema de pedidos em tempo real para clientes e cozinha.
 
-- Implementar controle de estoque baseado em ficha técnica dos pratos.
+  - Implementar controle de estoque baseado em ficha técnica dos pratos.
 
-- Automatizar o abatimento de ingredientes no estoque após cada pedido.
+  - Automatizar o abatimento de ingredientes no estoque após cada pedido.
 
-- Desenvolver um painel administrativo (backoffice) para gestão do restaurante.
+  - Desenvolver um painel administrativo (backoffice) para gestão do restaurante.
 
-- Criar dashboards de análise de desempenho dos pratos.
+  - Criar dashboards de análise de desempenho dos pratos.
 
-- Implementar classificação estratégica de produtos usando Matriz BCG.
+  - Implementar classificação estratégica de produtos usando Matriz BCG.
 
-- Exibir status do pedido em tempo real para clientes.
+  - Exibir status do pedido em tempo real para clientes.
 
-- Implementar comunicação em tempo real entre sistema e cozinha via WebSocket.
+  - Implementar comunicação em tempo real entre sistema e cozinha via WebSocket.
 
-5. Descrição do Produto (Escopo do Projeto) 
+  5. Descrição do Produto (Escopo do Projeto) 
 
-O DataPlate será uma plataforma web composta por três módulos principais:
+  O DataPlate será uma plataforma web composta por três módulos principais:
 
-1️⃣ Interface do Cliente (Front-End de Consumo)
+  1️⃣ Interface do Cliente (Front-End de Consumo)
 
-Acesso via QR Code sem necessidade de instalação.
+  Acesso via QR Code sem necessidade de instalação.
 
-Funcionalidades:
+  Funcionalidades:
 
-  - Visualização do cardápio digital
-  
-  - Imagens e descrições dos pratos
-  
-  - Adição de itens ao carrinho
-  
-  - Finalização de pedidos
-  
-  - Visualização do status do pedido
-  
-  - Interface otimizada para celular
+    - Visualização do cardápio digital
+    
+    - Imagens e descrições dos pratos
+    
+    - Adição de itens ao carrinho
+    
+    - Finalização de pedidos
+    
+    - Visualização do status do pedido
+    
+    - Interface otimizada para celular
 
-2️⃣ Painel da Cozinha / Operação
+  2️⃣ Painel da Cozinha / Operação
 
-Interface para acompanhamento de pedidos em tempo real.
+  Interface para acompanhamento de pedidos em tempo real.
 
-Funcionalidades:
+  Funcionalidades:
 
-  - Recebimento de novos pedidos
-  
-  - Organização por fila de preparo
-  
-  - Atualização de status do pedido
-  
-  - Alertas em tempo real
+    - Recebimento de novos pedidos
+    
+    - Organização por fila de preparo
+    
+    - Atualização de status do pedido
+    
+    - Alertas em tempo real
 
-3️⃣ Painel Administrativo (Backoffice)
+  3️⃣ Painel Administrativo (Backoffice)
 
-Interface para gestão estratégica do restaurante.
+  Interface para gestão estratégica do restaurante.
 
-Funcionalidades:
+  Funcionalidades:
 
-  - Cadastro e edição de pratos
-  
-  - Gestão de estoque
-  
-  - Ficha técnica de receitas
-  
-  - Controle de insumos
-  
-  - Monitoramento de vendas
-  
-  - Relatórios e dashboards
-  
-  - Classificação de produtos via Matriz BCG
+    - Cadastro e edição de pratos
+    
+    - Gestão de estoque
+    
+    - Ficha técnica de receitas
+    
+    - Controle de insumos
+    
+    - Monitoramento de vendas
+    
+    - Relatórios e dashboards
+    
+    - Classificação de produtos via Matriz BCG
 
-6. Metodologia
+  6. Metodologia
 
-O desenvolvimento do DataPlate seguirá um modelo iterativo e incremental, onde o sistema será construído e aprimorado de acordo com as necessidades identificadas.
+  O desenvolvimento do DataPlate seguirá um modelo iterativo e incremental, onde o sistema será construído e aprimorado de acordo com as necessidades identificadas.
 
-As principais etapas incluem:
+  As principais etapas incluem:
 
-- Planejamento e Levantamento de Requisitos
-- Desenvolvimento Iterativo (Scrum)
-- Prototipagem e Validação:
-- Implementação de testes automatizados e manuais para garantir a qualidade do sistema em cada etapa do desenvolvimento.
-- Implantação: Implementação do sistema em um ambiente de teste e posterior migração para o ambiente produtivo.
-- Otimização: Melhorias contínuas com base no feedback dos usuários e na análise de desempenho do sistema.
-- Realização de reuniões com stakeholders (síndicos, moradores e prestadores de serviços) para entender suas necessidades e expectativas.
+  - Planejamento e Levantamento de Requisitos
+  - Desenvolvimento Iterativo (Scrum)
+  - Prototipagem e Validação:
+  - Implementação de testes automatizados e manuais para garantir a qualidade do sistema em cada etapa do desenvolvimento.
+  - Implantação: Implementação do sistema em um ambiente de teste e posterior migração para o ambiente produtivo.
+  - Otimização: Melhorias contínuas com base no feedback dos usuários e na análise de desempenho do sistema.
+  - Realização de reuniões com stakeholders (síndicos, moradores e prestadores de serviços) para entender suas necessidades e expectativas.
 
-7. Escopo do Projeto
+  7. Escopo do Projeto
 
-Está incluído no projeto:
+  Está incluído no projeto:
 
-  - Desenvolvimento da plataforma web responsiva
-  
-  - Sistema de pedidos integrado
-  
-  - Sistema de controle de estoque automatizado
-  
-  - Dashboard administrativo
-  
-  - Comunicação em tempo real entre cliente e cozinha
-  
-  - Relatórios de vendas
-  
-  - Classificação estratégica de produtos
-  
-Não está incluído:
+    - Desenvolvimento da plataforma web responsiva
+    
+    - Sistema de pedidos integrado
+    
+    - Sistema de controle de estoque automatizado
+    
+    - Dashboard administrativo
+    
+    - Comunicação em tempo real entre cliente e cozinha
+    
+    - Relatórios de vendas
+    
+    - Classificação estratégica de produtos
+    
+  Não está incluído:
 
-  - Integração com sistemas de pagamento online
-  
-  - Integração com aplicativos de delivery
-  
-  - Aplicativo nativo para Android ou iOS
-  
-  - Integração com sistemas fiscais
+    - Integração com sistemas de pagamento online
+    
+    - Integração com aplicativos de delivery
+    
+    - Aplicativo nativo para Android ou iOS
+    
+    - Integração com sistemas fiscais
 
-8. Principais Funcionalidades do Sistema
+  8. Principais Funcionalidades do Sistema
 
-  - Cardápio Digital via QR Code
-  
-  - O cliente acessa o cardápio apenas escaneando o QR Code da mesa.
-  
-  - Gestão de Estoque Automatizada
-  
-  - Cada prato possui uma ficha técnica com ingredientes e quantidades, permitindo abatimento automático no estoque após a venda.
-  
-  - Status de Pedido em Tempo Real
+    - Cardápio Digital via QR Code
+    
+    - O cliente acessa o cardápio apenas escaneando o QR Code da mesa.
+    
+    - Gestão de Estoque Automatizada
+    
+    - Cada prato possui uma ficha técnica com ingredientes e quantidades, permitindo abatimento automático no estoque após a venda.
+    
+    - Status de Pedido em Tempo Real
 
-  - Cliente acompanha o progresso do pedido.
+    - Cliente acompanha o progresso do pedido.
 
-Exemplo:
+  Exemplo:
 
-  Pedido recebido
-  Pedido em preparo
-  Pedido pronto
-  Pedido entregue
+    Pedido recebido
+    Pedido em preparo
+    Pedido pronto
+    Pedido entregue
 
-Painel de Monitoramento da Cozinha:
-  Pedidos aparecem em tempo real através de WebSockets.
+  Painel de Monitoramento da Cozinha:
+    Pedidos aparecem em tempo real através de WebSockets.
 
-Inteligência de Negócio
-  O sistema analisa vendas e classifica os pratos na Matriz BCG
+  Inteligência de Negócio
+    O sistema analisa vendas e classifica os pratos na Matriz BCG
 
 9. Tecnologias Previstas: 
 
