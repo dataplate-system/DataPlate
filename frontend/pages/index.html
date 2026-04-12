@@ -9,56 +9,199 @@
 <body>
   <main class="hero">
     <div class="hero-content">
-      <div class="hero-heading">
-        <div class="logo">
-          <img src="../images/logodataplate.png" alt="Logo" />
+      <header class="site-header">
+        <a href="#" class="brand-link">
+          <img src="../images/logodataplate.png" alt="Logo DataPlate" />
+          <span>DataPlate</span>
+        </a>
+
+        <nav class="site-nav">
+          <a href="#recursos">Recursos</a>
+          <a href="#precos">Preços</a>
+          <a href="#depoimentos">Demonstração</a>
+          <a href="#blog">Blog</a>
+        </nav>
+
+        <a href="#contato" class="btn btn-primary">Começar grátis</a>
+      </header>
+
+      <section class="hero-panel">
+        <div class="hero-copy">
+          <span class="eyebrow">Transforme seu restaurante com tecnologia inteligente.</span>
+          <h1>DataPlate: a inteligência que seu restaurante precisa.</h1>
+          <p>Simplifique operações, aumente a eficiência e melhore a experiência do cliente com nosso sistema integrado de cardápio digital, cozinha e administrativo.</p>
+          <div class="hero-actions">
+            <a href="user.html" class="btn btn-primary">Acessar cardápio digital</a>
+            <a href="adm.html" class="btn btn-secondary">Ver painel administrativo</a>
+          </div>
+
+          <div class="hero-stats">
+            <div>
+              <strong>3 módulos completos</strong>
+              <span>Cardápio, cozinha e administração em um só lugar</span>
+            </div>
+            <div>
+              <strong>Pedidos em tempo real</strong>
+              <span>Atualização instantânea entre cliente, cozinha e gestão</span>
+            </div>
+          </div>
         </div>
-        <h1>DataPlate</h1>
-        <p>Plataforma completa de gestão para restaurantes</p>
-      </div>
 
-      <div class="card-grid">
-        <a href="user.html" class="card card-soft-orange">
-          <div class="card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M7 8H17M7 12H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h2>Cardápio Digital</h2>
-          <p>Interface do cliente para visualizar pratos e fazer pedidos</p>
-          <span class="card-action">Acessar módulo →</span>
-        </a>
+        <div class="hero-cards">
+          <article class="mini-card">
+            <h3>Cardápio Digital</h3>
+            <p>Clientes visualizam o cardápio no celular, pedem sem contato e acompanham o status até a entrega.</p>
+          </article>
 
-        <article class="card card-soft-blue">
-          <div class="card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 5.5C17.2 5.5 18.5 12 18.5 12C18.5 15.5 16.5 18.5 12 18.5C7.5 18.5 5.5 15.5 5.5 12C5.5 12 6.8 5.5 12 5.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M10 9H14M11 12H13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <h2>Painel da Cozinha</h2>
-          <p>Gestão de pedidos em tempo real e controle de produção</p>
-          <a href="#">Acessar módulo →</a>
-        </article>
+          <article class="mini-card">
+            <h3>Painel da Cozinha</h3>
+            <p>Pedidos chegam ordenados, com status claro e alertas para acelerar o preparo.</p>
+          </article>
 
-        <a href="adm.html" class="card card-soft-purple">
-          <div class="card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4.5" y="4.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-              <rect x="13.5" y="4.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-              <rect x="4.5" y="13.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-              <rect x="13.5" y="13.5" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.8"/>
-            </svg>
-          </div>
-          <h2>Painel Administrativo</h2>
-          <p>Dashboard, gestão de cardápio, estoque e análises</p>
-          <span class="card-action">Acessar módulo →</span>
-        </a>
-      </div>
-
-      <p class="hero-footer">Sistema completo de gestão para restaurantes<br />DataPlate 2026</p>
+          <article class="mini-card">
+            <h3>Painel Administrativo</h3>
+            <p>Cadastre pratos, controle estoque, veja vendas e use dashboards para tomar decisões rápidas.</p>
+          </article>
+        </div>
+      </section>
     </div>
   </main>
+
+  <section id="recursos" class="modules-section section-block">
+    <div class="section-header">
+      <span>Recursos principais</span>
+      <h2>O que cada módulo oferece</h2>
+    </div>
+
+    <div class="modules-grid">
+      <article class="module-card">
+        <h3>Cardápio Digital</h3>
+        <p>Permita que seus clientes visualizem, peçam e acompanhem seus pedidos diretamente pelo celular, sem fila ou contato físico.</p>
+        <ul>
+          <li>QR Code na mesa</li>
+          <li>Cardápio mobile com imagens</li>
+          <li>Adição ao carrinho</li>
+          <li>Finalização de pedidos</li>
+          <li>Status em tempo real</li>
+        </ul>
+      </article>
+
+      <article class="module-card">
+        <h3>Painel da Cozinha</h3>
+        <p>Organize o fluxo de produção e reduza erros com uma visão clara dos pedidos em preparo e dos tempos estimados.</p>
+        <ul>
+          <li>Pedidos em fila de preparo</li>
+          <li>Atualização de status</li>
+          <li>Alertas em tempo real</li>
+          <li>Visão rápida do histórico</li>
+          <li>Comunicação direta com o front</li>
+        </ul>
+      </article>
+
+      <article class="module-card">
+        <h3>Painel Administrativo</h3>
+        <p>Tenha controle total do restaurante com cadastro de pratos, controle de insumos, relatórios e análise de desempenho.</p>
+        <ul>
+          <li>Cadastro e edição de pratos</li>
+          <li>Gestão de estoque e insumos</li>
+          <li>Ficha técnica de receitas</li>
+          <li>Relatórios de vendas</li>
+          <li>Matriz BCG integrada</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section id="precos" class="pricing-section section-block">
+    <div class="section-header">
+      <span>Seção de preços</span>
+      <h2>Escolha o plano ideal para o seu restaurante</h2>
+    </div>
+
+    <div class="pricing-grid">
+      <article class="price-card">
+        <h3>Iniciante</h3>
+        <p>R$ 99/mês</p>
+        <ul>
+          <li>Cardápio Digital</li>
+          <li>Painel de Mesa</li>
+          <li>Cadastro de pratos</li>
+          <li>Suporte básico</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Começar grátis</a>
+      </article>
+
+      <article class="price-card popular">
+        <span class="badge-recommended">Recomendado</span>
+        <h3>Profissional</h3>
+        <p>R$ 189/mês</p>
+        <ul>
+          <li>Tudo do iniciante</li>
+          <li>Painel da Cozinha</li>
+          <li>Gestão de pedidos</li>
+          <li>Alertas automáticos</li>
+          <li>Relatórios básicos</li>
+        </ul>
+        <a href="#" class="btn btn-primary">Contratar agora</a>
+      </article>
+
+      <article class="price-card">
+        <h3>Empresarial</h3>
+        <p>R$ 479/mês</p>
+        <ul>
+          <li>Tudo do profissional</li>
+          <li>Painel Administrativo completo</li>
+          <li>Controle de estoque</li>
+          <li>Dashboard avançado</li>
+          <li>Suporte premium</li>
+        </ul>
+        <a href="#" class="btn btn-secondary">Solicitar demo</a>
+      </article>
+    </div>
+  </section>
+
+  <section id="depoimentos" class="testimonials-section section-block">
+    <div class="section-header">
+      <span>Prova social</span>
+      <h2>O que os clientes estão dizendo</h2>
+    </div>
+
+    <div class="testimonial-grid">
+      <article class="testimonial-card">
+        <p>"O DataPlate trouxe muito mais organização à nossa cozinha. Os pedidos chegam direto e o controle de estoque ficou muito mais fácil."</p>
+        <strong>A.C. — Restaurante em crescimento</strong>
+      </article>
+
+      <article class="testimonial-card">
+        <p>"A equipe de gestão conseguiu tomar decisões mais rápidas com os relatórios e a Matriz BCG. A experiência do cliente também melhorou bastante."</p>
+        <strong>Adlete Roger — Gerente de operação</strong>
+      </article>
+    </div>
+  </section>
+
+  <section id="blog" class="section-block">
+    <div class="section-header">
+      <span>Seção de Blog</span>
+      <h2>Atualizações e conteúdos para o seu restaurante</h2>
+    </div>
+    <div class="blog-grid">
+      <article class="blog-card">
+        <h3>Como digitalizar seu cardápio</h3>
+        <p>Use QR Code e aumente a velocidade do atendimento sem complicações.</p>
+      </article>
+      <article class="blog-card">
+        <h3>Reduza desperdício com estoque inteligente</h3>
+        <p>Controle de ingredientes e análise em tempo real para decisões mais precisas.</p>
+      </article>
+      <article class="blog-card">
+        <h3>Melhore a comunicação entre cozinha e atendimento</h3>
+        <p>Pedidos sincronizados sem papel e com atualizações automáticas.</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    © 2026 DataPlate — Tecnologia para restaurantes inteligentes
+  </footer>
 </body>
 </html>
