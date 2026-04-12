@@ -7,21 +7,40 @@
 </head>
 <body>
 
-<div id="telaLista">
-  
+<div id="telaCarrinho" style="display: none;">
 
-<header class="topo">
+
+
+  <header class="topo">
+   
+    <button onclick="voltarCarrinho()">←</button>
+    <h2>Carrinho</h2>
+  
+  </header>
+
+  <div id="listaCarrinho"></div>
+
+  <div id="total"></div>
+
+  <button class="btn">Confirmar pedido</button>
+
+</div>
+
+<div id="telaLista">
+
+
+ <header class="topo">
   <button class="voltar" onclick="voltarPagina()">←</button>
   <h1>DataPlate</h1>
   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
-</header>
+ </header>
 
-<div class="busca">
+ <div class="busca">
   <input type="text" id="search" placeholder="Buscar pratos...">
-</div>
+ </div>
 
 <!-- CATEGORIAS COM DATA -->
-<div class="categorias">
+ <div class="categorias">
   <button class="ativo" data-categoria="todos">Todos</button>
   <button data-categoria="entradas">Entradas</button>
   <button data-categoria="principais">Pratos Principais</button>
@@ -29,87 +48,92 @@
   <button data-categoria="massas">Massas</button>
   <button data-categoria="sobremesas">Sobremesas</button>
   <button data-categoria="bebidas">Bebidas</button>
-</div>
+ </div>
 
-<div class="lista" id="listaPratos">
+   <div class="lista" id="listaPratos">
+
+
 
   <!-- HAMBURGUER -->
-  <div class="item" data-categoria="hamburguer" onclick="abrirProduto()">
-    <img src="../images/Hambúrguer.jfif">
-    <div class="info">
-      <h3>Burger Gourmet</h3>
-      <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
-      <span class="preco">R$ 32.90</span>
-    </div>
+   <div class="item" data-categoria="hamburguer" onclick="abrirProduto()">
+     <img src="../images/Hambúrguer.jfif">
+     <div class="info">
+       <h3>Burger Gourmet</h3>
+       <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
+       <span class="preco">R$ 32.90</span>
+     </div>
+   </div>
+
+   <!-- MASSAS -->
+   <div class="item" data-categoria="massas" onclick="abrirProduto2()">
+     <img src="../images/Pasta Carbonara.jfif">
+     <div class="info">
+       <h3>Pasta Carbonara</h3>
+       <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
+       <span class="preco">R$ 38.50</span>
+     </div>
+   </div>
+
+   <!-- PRINCIPAIS -->
+   <div class="item" data-categoria="principais" onclick="abrirProduto3()">
+     <img src="../images/Salmão Grelhado.jfif">
+     <div class="info">
+       <h3>Salmão Grelhado</h3>
+       <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
+       <span class="preco">R$ 52.90</span>
+     </div>
+   </div>
+
+   <!-- ENTRADAS -->
+   <div class="item" data-categoria="entradas" onclick="abrirProduto4()">
+     <img src="../images/Salada Caesar.jfif">
+     <div class="info">
+       <h3>Salada Caesar</h3>
+       <p>Alface romana, croutons, parmesão e molho caesar</p>
+       <span class="preco">R$ 24.90</span>
+     </div>
+   </div>
+
+   <!-- SOBREMESAS -->
+   <div class="item" data-categoria="sobremesas" onclick="abrirProduto5()">
+     <img src="../images/Bolo de Chocolate.jfif">
+     <div class="info">
+       <h3>Bolo de Chocolate</h3>
+       <p>Bolo de chocolate belga com cobertura cremosa de chocolate</p>
+       <span class="preco">R$ 18.90</span>
+     </div>
+   </div>
+
+   <!-- SOBREMESAS -->
+   <div class="item" data-categoria="sobremesas" onclick="abrirProduto6()">
+     <img src="../images/Tiramisu.jfif">
+     <div class="info">
+       <h3>Tiramisu</h3>
+       <p>Sobremesa italiana clássica com café e mascarpone</p>
+       <span class="preco">R$ 22.90</span>
+     </div>
+   </div>
+
+   <!-- Bebidas -->
+   <div class="item" data-categoria="bebidas" onclick="abrirProduto7()">
+     <img src="../images/Água.jfif">
+     <div class="info">
+       <h3>Água sem gás</h3>
+       <p>Água Mineral Natural Crystal Sem Gás 500ml</p>
+       <span class="preco">R$ 2.90</span>
+     </div>
+   </div>
+
   </div>
-
-  <!-- MASSAS -->
-  <div class="item" data-categoria="massas">
-    <img src="../images/Pasta Carbonara.jfif">
-    <div class="info">
-      <h3>Pasta Carbonara</h3>
-      <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
-      <span class="preco">R$ 38.50</span>
-    </div>
-  </div>
-
-  <!-- PRINCIPAIS -->
-  <div class="item" data-categoria="principais">
-    <img src="../images/Salmão Grelhado.jfif">
-    <div class="info">
-      <h3>Salmão Grelhado</h3>
-      <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
-      <span class="preco">R$ 52.90</span>
-    </div>
-  </div>
-
-  <!-- ENTRADAS -->
-  <div class="item" data-categoria="entradas">
-    <img src="../images/Salada Caesar.jfif">
-    <div class="info">
-      <h3>Salada Caesar</h3>
-      <p>Alface romana, croutons, parmesão e molho caesar</p>
-      <span class="preco">R$ 24.90</span>
-    </div>
-  </div>
-
-  <!-- SOBREMESAS -->
-  <div class="item" data-categoria="sobremesas">
-    <img src="../images/Bolo de Chocolate.jfif">
-    <div class="info">
-      <h3>Bolo de Chocolate</h3>
-      <p>Bolo de chocolate belga com cobertura cremosa de chocolate</p>
-      <span class="preco">R$ 18.90</span>
-    </div>
-  </div>
-
-  <!-- SOBREMESAS -->
-  <div class="item" data-categoria="sobremesas">
-    <img src="../images/Tiramisu.jfif">
-    <div class="info">
-      <h3>Tiramisu</h3>
-      <p>Sobremesa italiana clássica com café e mascarpone</p>
-      <span class="preco">R$ 22.90</span>
-    </div>
-  </div>
-
-  <!-- Bebidas -->
-  <div class="item" data-categoria="bebidas">
-    <img src="../images/Água.jfif">
-    <div class="info">
-      <h3>Água sem gás</h3>
-      <p>Água Mineral Natural Crystal Sem Gás 500ml</p>
-      <span class="preco">R$ 2.90</span>
-    </div>
-  </div>
-
-
 
 </div>
- 
+
+</div>
 </div>
 
 <div id="telaProduto" style="display: none;">
+
+ 
 
   <!-- IMAGEM -->
 
@@ -118,6 +142,7 @@
   <h2>DataPlate</h2>
   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
+
   <div class="topo-img">
     <img src="../images/Hambúrguer.jfif">
   </div>
@@ -142,18 +167,335 @@
 
     <h3>Quantidade</h3>
 
-    <div class="quantidade">
-      <button onclick="diminuir()">-</button>
-      <span id="qtd">1</span>
-      <button onclick="aumentar()">+</button>
-    </div>
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
+   </div>
 
-    <button class="btn-carrinho">
-      🛒 Adicionar ao carrinho - R$ 32.90
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Burger Gourmet', 32.90, '../images/Hambúrguer.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 32.90
     </button>
 
   </div>
+  </div> 
+
+
+   <div id="telaProduto2" style="display: none;"> 
+  
+   
+
+  <!-- IMAGEM2 -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista2()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+     <div class="topo-img">
+       <img src="../images/Pasta Carbonara.jfif">
+     </div> 
+
+
+  <div class="container">
+
+    <h2>Pasta Carbonara</h2>
+    <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
+
+    <span class="preco">R$ 38.50</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Massa fresca</span><span>250g</span></div>
+      <div><span>Bacon</span><span>80g</span></div>
+      <div><span>Ovos</span><span>2 un</span></div>
+      <div><span>Queijo parmesão</span><span>50g</span></div>
+      <div><span>Pimenta do reino</span><span>2g</span></div>
+  
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
+  </div>
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Pasta Carbonara', 38.50, '../images/Pasta Carbonara.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 38.50
+    </button>
+
+    </div> 
+
+</div>     
+
+
+
+<div id="telaProduto3" style="display: none;">
+
+ 
+
+  <!-- IMAGEM -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista3()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+  <div class="topo-img">
+    <img src="../images/Salmão Grelhado.jfif">
+  </div>
+
+  <div class="container">
+
+    <h2>Salmão Grelhado</h2>
+    <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
+
+    <span class="preco">R$ 52.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Salmão</span><span>300g</span></div>
+      <div><span>Brócolis</span><span>100g</span></div>
+      <div><span>Cenoura</span><span>80g</span></div>
+      <div><span>Limão</span><span>1 un</span></div>
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
    </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Salmão Grelhado', 52.90, '../images/Salmão Grelhado.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 52.90
+    </button>
+
+  </div>
+  </div> 
+
+<div id="telaProduto4" style="display: none;">
+
+ 
+
+  <!-- IMAGEM -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista4()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+  <div class="topo-img">
+    <img src="../images/Salada Caesar.jfif">
+  </div>
+
+  <div class="container">
+
+    <h2>Salada Caesar</h2>
+    <p>Alface, croutons, parmesão e molho caesar</p>
+
+    <span class="preco">R$ 24.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Alface romana</span><span>150g</span></div>
+      <div><span>Croutons</span><span>40g</span></div>
+      <div><span>Parmesão</span><span>30g</span></div>
+      <div><span>Molho caesar</span><span>50ml</span></div>
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Salada Caesar', 24.90, '../images/Salada Caesar.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 24.90
+    </button>
+
+  </div>
+</div> 
+
+
+<div id="telaProduto5" style="display: none;">
+
+ 
+
+  <!-- IMAGEM BOLO DE CHOCOLATE -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista5()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+  <div class="topo-img">
+    <img src="../images/Bolo de Chocolate.jfif">
+  </div>
+
+  <div class="container">
+
+    <h2>Bolo de Chocolate</h2>
+    <p>Bolo de chocolate belga com cobertura de chocolate</p>
+
+    <span class="preco">R$ 18.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Chocolate belga</span><span>100g</span></div>
+      <div><span>Farinha de trigo</span><span>80g</span></div>
+      <div><span>Ovos</span><span>2 un</span></div>
+      <div><span>Açúcar</span><span>60g</span></div>
+      <div><span>Manteiga</span><span>50g</span></div>
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Bolo de Chocolate', 18.90, '../images/Bolo de Chocolate.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 18.90
+    </button>
+
+  </div>
+</div> 
+
+
+<div id="telaProduto6" style="display: none;">
+
+ 
+
+  <!-- IMAGEM TIRAMISU -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista6()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+  <div class="topo-img">
+    <img src="../images/Tiramisu.jfif">
+  </div>
+
+  <div class="container">
+
+    <h2>Tiramisu</h2>
+    <p>Sobremesa italiana clássica com café e mascarpone</p>
+
+    <span class="preco">R$ 22.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Queijo mascarpone</span><span>200g</span></div>
+      <div><span>Biscoito champagne</span><span>150g</span></div>
+      <div><span>Café expresso</span><span>100ml</span></div>
+      <div><span>Cacau em pó</span><span>50g</span></div>
+      <div><span>Açúcar</span><span>20g</span></div>
+      
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Tiramisu', 22.90, '../images/Tiramisu.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 22.90
+    </button>
+
+  </div>
+</div> 
+
+
+<div id="telaProduto7" style="display: none;">
+
+ 
+
+  <!-- IMAGEM TIRAMISU -->
+
+  <header class="topo">
+  <button class="voltar" onclick="voltarLista7()">←</button>
+  <h2>DataPlate</h2>
+  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+  <div class="topo-img">
+    <img src="../images/Água.jfif">
+  </div>
+
+  <div class="container">
+
+    <h2>Água</h2>
+    <p>Sobremesa italiana clássica com café e mascarpone</p>
+
+    <span class="preco">R$ 2.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+      <div><span>Água Mineral Cristal Sem Gás</span><span>500ml</span></div>
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+  <button onclick="diminuirQtd(this)">-</button>
+  <span class="qtd">1</span>
+  <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho('Água', 2.90, '../images/Água.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 2.90
+    </button>
+
+  </div>
+</div> 
+</div> 
+
+
+<!--fim html--->
+</div> 
+</div> 
+  
 
 
 <script src="../JavaScript/user.js"></script>
