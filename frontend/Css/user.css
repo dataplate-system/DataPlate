@@ -43,6 +43,7 @@ body {
   font-size: 20px;
   color: #374151;
   cursor: pointer;
+  
 }
 
 /* BUSCA */
@@ -175,6 +176,7 @@ body {
 
 h2 {
   margin-bottom: 5px;
+  
 }
 
 .descricao {
@@ -238,4 +240,65 @@ h2 {
   padding: 10px;
   border-radius: 50%;
   cursor: pointer;
+}
+
+/* TELA DO CARINHO */
+
+body {
+  font-family: Arial;
+  background: #f3f4f6;
+}
+
+.topo {
+  text-align: center;
+  padding: 15px;
+  font-size: 20px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.item img {
+  width: 70px;
+  border-radius: 10px;
+}
+
+.info {
+  flex: 1;
+  margin-left: 10px;
+}
+
+.quantidade {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.total {
+  padding: 20px;
+  font-size: 20px;
+}
+
+.btn {
+  background: orange;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  margin: 10px;
+  border-radius: 10px;
+}
+
+.topo h2 {
+ position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: 600;
+
 }
