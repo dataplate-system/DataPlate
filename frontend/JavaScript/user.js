@@ -2,6 +2,8 @@ const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
 
+let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
+
 let categoriaAtual = "todos";
 
 // BOTÃO VOLTAR
@@ -256,3 +258,220 @@ function voltarCarrinho() {
   document.getElementById("telaProduto7").style.display = "none";
 
 }
+
+// CONFIRMAR PEDIDO
+
+
+function iniciarStatusPedido() {
+
+  let etapa = 1;
+
+  const status = [
+    { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
+    { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
+    { titulo: "Pronto", msg: "Seu pedido está pronto" },
+    { titulo: "Entregue", msg: "Aproveite sua refeição!" }
+  ];
+
+  function atualizarTela() {
+    document.getElementById("statusAtual").innerText = status[etapa - 1].titulo;
+    document.getElementById("mensagemStatus").innerText = status[etapa - 1].msg;
+
+    document.querySelectorAll(".step").forEach((el, i) => {
+      el.classList.remove("ativo");
+      if (i < etapa) el.classList.add("ativo");
+    });
+  }
+
+  atualizarTela();
+
+  let intervalo = setInterval(() => {
+    etapa++;
+
+    if (etapa > 4) {
+      clearInterval(intervalo);
+      localStorage.removeItem("carrinho"); // limpa carrinho
+      return;
+    }
+
+    atualizarTela();
+
+  }, 3000); // muda a cada 3 segundos
+}
+
+function novoPedido() {
+  // esconder status
+  document.getElementById("telaStatus").style.display = "none";
+
+  // voltar para lista inicial
+  document.getElementById("telaLista").style.display = "block";
+
+  // resetar etapas visuais
+  document.querySelectorAll(".step").forEach(el => {
+    el.classList.remove("ativo");
+  });
+
+  // resetar textos
+  document.getElementById("statusAtual").innerText = "Pedido Recebido";
+  document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
+}
+
+// pagamento
+
+function confirmarPedido() {
+  document.getElementById("telaCarrinho").style.display = "none";
+  document.getElementById("telaPagamento").style.display = "block";
+}
+
+let pagamentoSelecionado = "";
+
+// selecionar opção
+function selecionarPagamento(elemento, tipo) {
+  document.querySelectorAll(".opcao").forEach(op => {
+    op.classList.remove("ativa");
+  });
+
+  elemento.classList.add("ativa");
+  pagamentoSelecionado = tipo;
+
+  document.getElementById("formaSelecionada").innerText =
+    "Selecionado: " + tipo;
+}
+
+// finalizar pagamento
+function finalizarPagamento() {
+  if (pagamentoSelecionado === "") {
+    alert("Escolha uma forma de pagamento!");
+    return;
+  }
+
+  // marcar pedido ativo
+  localStorage.setItem("pedidoAtivo", "true");
+  pedidoEmAndamento = true;
+
+  document.getElementById("telaPagamento").style.display = "none";
+  document.getElementById("telaStatus").style.display = "block";
+
+  iniciarStatusPedido();
+}
+
+function voltarPagamento() {
+  document.getElementById("telaPagamento").style.display = "none";
+  document.getElementById("telaCarrinho").style.display = "block";
+
+  // limpar seleção
+  pagamentoSelecionado = "";
+  document.getElementById("formaSelecionada").innerText = "";
+
+  document.querySelectorAll(".opcao").forEach(op => {
+    op.classList.remove("ativa");
+  });
+}
+
+// botão estatus
+
+function iniciarStatusPedido() {
+
+  let etapa = 1;
+
+  const status = [
+    { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
+    { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
+    { titulo: "Pronto", msg: "Seu pedido está pronto" },
+    { titulo: "Entregue", msg: "Aproveite sua refeição!" }
+  ];
+
+  function atualizarTela() {
+    document.getElementById("statusAtual").innerText = status[etapa - 1].titulo;
+    document.getElementById("mensagemStatus").innerText = status[etapa - 1].msg;
+
+    document.querySelectorAll(".step").forEach((el, i) => {
+      el.classList.remove("ativo");
+      if (i < etapa) el.classList.add("ativo");
+    });
+  }
+
+  atualizarTela();
+
+  let intervalo = setInterval(() => {
+    etapa++;
+
+    if (etapa > 4) {
+      clearInterval(intervalo);
+
+      localStorage.removeItem("carrinho");
+      localStorage.removeItem("pedidoAtivo");
+      pedidoEmAndamento = false;
+
+      return;
+    }
+
+    atualizarTela();
+
+  }, 3000);
+}
+
+function novoPedido() {
+  document.getElementById("telaStatus").style.display = "none";
+  document.getElementById("telaLista").style.display = "block";
+
+  localStorage.removeItem("pedidoAtivo");
+  pedidoEmAndamento = false;
+
+  document.querySelectorAll(".step").forEach(el => {
+    el.classList.remove("ativo");
+  });
+
+  document.getElementById("statusAtual").innerText = "Pedido Recebido";
+  document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
+}
+
+function abrirPedidoEmAndamento() {
+  if (pedidoEmAndamento) {
+    document.getElementById("telaLista").style.display = "none";
+    document.getElementById("telaStatus").style.display = "block";
+  } else {
+    alert("Nenhum pedido em andamento!");
+  }
+}
+
+function atualizarBotaoPedido() {
+  const btn = document.getElementById("btnPedido");
+
+  if (!btn) return;
+
+  if (pedidoEmAndamento) {
+    btn.style.display = "block";
+  } else {
+    btn.style.display = "none";
+  }
+}
+
+// roda ao abrir app
+atualizarBotaoPedido();
+
+
+function atualizarBadge() {
+  const badge = document.getElementById("badgePedido");
+
+  if (!badge) return;
+
+  if (pedidoEmAndamento) {
+    badge.style.display = "block";
+    badge.innerText = "1";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+localStorage.setItem("pedidoAtivo", "true");
+pedidoEmAndamento = true;
+
+atualizarBadge();
+
+pedidoEmAndamento = false;
+
+atualizarBadge();
+
+atualizarBadge();
+

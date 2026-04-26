@@ -302,3 +302,110 @@ body {
   font-weight: 600;
 
 }
+
+/* confirmar pedido */
+
+.card-status {
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.icone {
+  width: 80px;
+  height: 80px;
+  background: #ffe5d6;
+  color: #ff5a00;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  margin: 0 auto 10px;
+}
+
+.timeline {
+  margin-top: 20px;
+}
+
+.step {
+  padding: 12px;
+  border-left: 3px solid #ccc;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  color: #888;
+}
+
+.step.ativo {
+  border-left: 3px solid #ff5a00;
+  color: #000;
+  font-weight: bold;
+}
+
+.btn-novo-pedido {
+  width: 100%;
+  padding: 15px;
+  background: #ff5a00;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.btn-novo-pedido:hover {
+  background: #e14e00;
+}
+  
+
+/* pagamento*/
+
+.opcoes-pagamento {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.opcao {
+  background: #fff;
+  padding: 15px;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.opcao:hover {
+  border: 2px solid #ff5a00;
+}
+
+.opcao.ativa {
+  border: 2px solid #ff5a00;
+  background: #fff3eb;
+}
+
+/* botão status */
+
+.status-btn {
+  position: relative;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff5a00;
+  color: white;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 50%;
+}

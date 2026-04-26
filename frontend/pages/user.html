@@ -7,22 +7,105 @@
 </head>
 <body>
 
+<!-- TELA PRINCIPAL DE PAGAMENTO -->
+<div id="telaPagamento" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="voltarPagamento()">←</button>
+    <h2>Pagamento</h2>
+  </header>
+  
+
+  <h3 style="margin:15px 0;">Escolha a forma de pagamento</h3>
+
+  <div class="opcoes-pagamento">
+
+    <div class="opcao" onclick="selecionarPagamento(this, 'Pix')">
+      💳 Pix
+    </div>
+
+    <div class="opcao" onclick="selecionarPagamento(this, 'Crédito')">
+      💳 Cartão de Crédito
+    </div>
+
+    <div class="opcao" onclick="selecionarPagamento(this, 'Débito')">
+      💳 Cartão de Débito
+    </div>
+
+    <div class="opcao" onclick="selecionarPagamento(this, 'Dinheiro')">
+      💵 Dinheiro
+    </div>
+
+  </div>
+
+  <div id="formaSelecionada" style="margin:15px 0; font-weight:bold;"></div>
+
+  <button class="btn" onclick="finalizarPagamento()">
+    Finalizar Pagamento
+  </button>
+
+</div>
+
+<!-- TELA DE STATUS DO PEDIDO -->
+<div id="telaStatus" style="display:none; padding:20px;">
+
+  <h1 style="text-align:center;">Status do Pedido</h1>
+  <p style="text-align:center;">Pedido #12345</p>
+
+  <div class="card-status">
+    <div class="icone">✔</div>
+    <h2 id="statusAtual">Pedido Recebido</h2>
+    <p id="mensagemStatus">Seu pedido foi recebido</p>
+  </div>
+
+  <div class="timeline">
+
+    <div class="step ativo" id="step1">
+      ✔ Pedido Recebido
+    </div>
+
+    <div class="step" id="step2">
+      👨‍🍳 Em Preparo
+    </div>
+
+    <div class="step" id="step3">
+      🍽 Pronto
+    </div>
+
+    <div class="step" id="step4">
+      🚚 Entregue
+    </div>
+
+     <button class="btn-novo-pedido" onclick="novoPedido()">
+  🔄 Fazer novo pedido
+     </button>
+
+  </div>
+
+</div>  
+  
 <div id="telaCarrinho" style="display: none;">
 
 
 
   <header class="topo">
-   
-    <button onclick="voltarCarrinho()">←</button>
-    <h2>Carrinho</h2>
-  
+    <button class="voltar" onclick="voltarPagina()">←</button>
+     <h1>DataPlate</h1>
+
+      <div style="display:flex; gap:10px;">
+        <button class="status-btn" onclick="abrirPedidoEmAndamento()">📦
+           <span id="badgePedido" class="badge" style="display:none;"></span>
+        </button>
+
+       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+      </div>
   </header>
 
-  <div id="listaCarrinho"></div>
+   <div id="listaCarrinho"></div>
 
-  <div id="total"></div>
+   <div id="total"></div>
 
-  <button class="btn">Confirmar pedido</button>
+   <button class="btn" onclick="confirmarPedido()">Confirmar pedido</button>
 
 </div>
 
@@ -30,24 +113,24 @@
 
 
  <header class="topo">
-  <button class="voltar" onclick="voltarPagina()">←</button>
-  <h1>DataPlate</h1>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   <button class="voltar" onclick="voltarPagina()">←</button>
+   <h1>DataPlate</h1>
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
  </header>
 
  <div class="busca">
-  <input type="text" id="search" placeholder="Buscar pratos...">
+   <input type="text" id="search" placeholder="Buscar pratos...">
  </div>
 
 <!-- CATEGORIAS COM DATA -->
  <div class="categorias">
-  <button class="ativo" data-categoria="todos">Todos</button>
-  <button data-categoria="entradas">Entradas</button>
-  <button data-categoria="principais">Pratos Principais</button>
-  <button data-categoria="hamburguer">Hambúrgueres</button>
-  <button data-categoria="massas">Massas</button>
-  <button data-categoria="sobremesas">Sobremesas</button>
-  <button data-categoria="bebidas">Bebidas</button>
+   <button class="ativo" data-categoria="todos">Todos</button>
+   <button data-categoria="entradas">Entradas</button>
+   <button data-categoria="principais">Pratos Principais</button>
+   <button data-categoria="hamburguer">Hambúrgueres</button>
+   <button data-categoria="massas">Massas</button>
+   <button data-categoria="sobremesas">Sobremesas</button>
+   <button data-categoria="bebidas">Bebidas</button>
  </div>
 
    <div class="lista" id="listaPratos">
@@ -137,40 +220,40 @@
 
   <!-- IMAGEM -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
-</header> 
+   <header class="topo">
+   <button class="voltar" onclick="voltarLista()">←</button>
+   <h2>DataPlate</h2>
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   </header> 
 
   <div class="topo-img">
-    <img src="../images/Hambúrguer.jfif">
+     <img src="../images/Hambúrguer.jfif">
   </div>
 
   <div class="container">
 
-    <h2>Burger Gourmet</h2>
-    <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
+     <h2>Burger Gourmet</h2>
+     <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
 
-    <span class="preco">R$ 32.90</span>
+     <span class="preco">R$ 32.90</span>
 
-    <h3>Ingredientes</h3>
+     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Pão brioche</span><span>1 un</span></div>
-      <div><span>Carne bovina</span><span>200g</span></div>
-      <div><span>Queijo cheddar</span><span>50g</span></div>
-      <div><span>Bacon</span><span>30g</span></div>
-      <div><span>Alface</span><span>20g</span></div>
-      <div><span>Tomate</span><span>30g</span></div>
+       <div><span>Pão brioche</span><span>1 un</span></div>
+       <div><span>Carne bovina</span><span>200g</span></div>
+       <div><span>Queijo cheddar</span><span>50g</span></div>
+       <div><span>Bacon</span><span>30g</span></div>
+       <div><span>Alface</span><span>20g</span></div>
+       <div><span>Tomate</span><span>30g</span></div>
     </div>
 
-    <h3>Quantidade</h3>
+     <h3>Quantidade</h3>
 
-   <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
+  <div class="quantidade">
+   <button onclick="diminuirQtd(this)">-</button>
+   <span class="qtd">1</span>
+   <button onclick="aumentarQtd(this)">+</button>
    </div>
 
 
@@ -189,10 +272,10 @@
 
   <!-- IMAGEM2 -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista2()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   <header class="topo">
+   <button class="voltar" onclick="voltarLista2()">←</button>
+   <h2>DataPlate</h2>
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
      <div class="topo-img">
@@ -202,29 +285,29 @@
 
   <div class="container">
 
-    <h2>Pasta Carbonara</h2>
-    <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
+     <h2>Pasta Carbonara</h2>
+     <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
 
-    <span class="preco">R$ 38.50</span>
+     <span class="preco">R$ 38.50</span>
 
     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Massa fresca</span><span>250g</span></div>
-      <div><span>Bacon</span><span>80g</span></div>
-      <div><span>Ovos</span><span>2 un</span></div>
-      <div><span>Queijo parmesão</span><span>50g</span></div>
-      <div><span>Pimenta do reino</span><span>2g</span></div>
+       <div><span>Massa fresca</span><span>250g</span></div>
+       <div><span>Bacon</span><span>80g</span></div>
+       <div><span>Ovos</span><span>2 un</span></div>
+       <div><span>Queijo parmesão</span><span>50g</span></div>
+       <div><span>Pimenta do reino</span><span>2g</span></div>
   
     </div>
 
-    <h3>Quantidade</h3>
+     <h3>Quantidade</h3>
 
    <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
-  </div>
+       <button onclick="diminuirQtd(this)">-</button>
+       <span class="qtd">1</span>
+       <button onclick="aumentarQtd(this)">+</button>
+   </div>
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho('Pasta Carbonara', 38.50, '../images/Pasta Carbonara.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
@@ -243,39 +326,39 @@
 
   <!-- IMAGEM -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista3()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
-</header> 
+   <header class="topo">
+     <button class="voltar" onclick="voltarLista3()">←</button>
+     <h2>DataPlate</h2>
+     <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+  </header> 
 
   <div class="topo-img">
-    <img src="../images/Salmão Grelhado.jfif">
+     <img src="../images/Salmão Grelhado.jfif">
   </div>
 
   <div class="container">
 
-    <h2>Salmão Grelhado</h2>
-    <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
+     <h2>Salmão Grelhado</h2>
+     <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
 
-    <span class="preco">R$ 52.90</span>
+     <span class="preco">R$ 52.90</span>
 
-    <h3>Ingredientes</h3>
+     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Salmão</span><span>300g</span></div>
-      <div><span>Brócolis</span><span>100g</span></div>
-      <div><span>Cenoura</span><span>80g</span></div>
-      <div><span>Limão</span><span>1 un</span></div>
+       <div><span>Salmão</span><span>300g</span></div>
+       <div><span>Brócolis</span><span>100g</span></div>
+       <div><span>Cenoura</span><span>80g</span></div>
+       <div><span>Limão</span><span>1 un</span></div>
       
     </div>
 
-    <h3>Quantidade</h3>
+     <h3>Quantidade</h3>
 
    <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
+     <button onclick="diminuirQtd(this)">-</button>
+     <span class="qtd">1</span>
+     <button onclick="aumentarQtd(this)">+</button>
    </div>
 
 
@@ -293,39 +376,39 @@
 
   <!-- IMAGEM -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista4()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
-</header> 
+   <header class="topo">
+     <button class="voltar" onclick="voltarLista4()">←</button>
+     <h2>DataPlate</h2>
+     <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   </header> 
 
   <div class="topo-img">
-    <img src="../images/Salada Caesar.jfif">
+     <img src="../images/Salada Caesar.jfif">
   </div>
 
   <div class="container">
 
-    <h2>Salada Caesar</h2>
-    <p>Alface, croutons, parmesão e molho caesar</p>
+     <h2>Salada Caesar</h2>
+     <p>Alface, croutons, parmesão e molho caesar</p>
 
-    <span class="preco">R$ 24.90</span>
+     <span class="preco">R$ 24.90</span>
 
     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Alface romana</span><span>150g</span></div>
-      <div><span>Croutons</span><span>40g</span></div>
-      <div><span>Parmesão</span><span>30g</span></div>
-      <div><span>Molho caesar</span><span>50ml</span></div>
+       <div><span>Alface romana</span><span>150g</span></div>
+       <div><span>Croutons</span><span>40g</span></div>
+       <div><span>Parmesão</span><span>30g</span></div>
+       <div><span>Molho caesar</span><span>50ml</span></div>
       
     </div>
 
     <h3>Quantidade</h3>
 
    <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
+     <button onclick="diminuirQtd(this)">-</button>
+     <span class="qtd">1</span>
+     <button onclick="aumentarQtd(this)">+</button>
    </div>
 
 
@@ -344,40 +427,40 @@
 
   <!-- IMAGEM BOLO DE CHOCOLATE -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista5()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
-</header> 
+   <header class="topo">
+       <button class="voltar" onclick="voltarLista5()">←</button>
+       <h2>DataPlate</h2>
+       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   </header> 
 
   <div class="topo-img">
-    <img src="../images/Bolo de Chocolate.jfif">
+     <img src="../images/Bolo de Chocolate.jfif">
   </div>
 
   <div class="container">
 
-    <h2>Bolo de Chocolate</h2>
-    <p>Bolo de chocolate belga com cobertura de chocolate</p>
+     <h2>Bolo de Chocolate</h2>
+     <p>Bolo de chocolate belga com cobertura de chocolate</p>
 
-    <span class="preco">R$ 18.90</span>
+     <span class="preco">R$ 18.90</span>
 
-    <h3>Ingredientes</h3>
+     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Chocolate belga</span><span>100g</span></div>
-      <div><span>Farinha de trigo</span><span>80g</span></div>
-      <div><span>Ovos</span><span>2 un</span></div>
-      <div><span>Açúcar</span><span>60g</span></div>
-      <div><span>Manteiga</span><span>50g</span></div>
+       <div><span>Chocolate belga</span><span>100g</span></div>
+       <div><span>Farinha de trigo</span><span>80g</span></div>
+       <div><span>Ovos</span><span>2 un</span></div>
+       <div><span>Açúcar</span><span>60g</span></div>
+       <div><span>Manteiga</span><span>50g</span></div>
       
     </div>
 
-    <h3>Quantidade</h3>
+     <h3>Quantidade</h3>
 
    <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
+     <button onclick="diminuirQtd(this)">-</button>
+     <span class="qtd">1</span>
+     <button onclick="aumentarQtd(this)">+</button>
    </div>
 
 
@@ -396,11 +479,11 @@
 
   <!-- IMAGEM TIRAMISU -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista6()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
-</header> 
+   <header class="topo">
+     <button class="voltar" onclick="voltarLista6()">←</button>
+     <h2>DataPlate</h2>
+     <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+  </header> 
 
   <div class="topo-img">
     <img src="../images/Tiramisu.jfif">
@@ -408,30 +491,30 @@
 
   <div class="container">
 
-    <h2>Tiramisu</h2>
-    <p>Sobremesa italiana clássica com café e mascarpone</p>
+     <h2>Tiramisu</h2>
+     <p>Sobremesa italiana clássica com café e mascarpone</p>
 
-    <span class="preco">R$ 22.90</span>
+     <span class="preco">R$ 22.90</span>
 
-    <h3>Ingredientes</h3>
+     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Queijo mascarpone</span><span>200g</span></div>
-      <div><span>Biscoito champagne</span><span>150g</span></div>
-      <div><span>Café expresso</span><span>100ml</span></div>
-      <div><span>Cacau em pó</span><span>50g</span></div>
-      <div><span>Açúcar</span><span>20g</span></div>
+       <div><span>Queijo mascarpone</span><span>200g</span></div>
+       <div><span>Biscoito champagne</span><span>150g</span></div>
+       <div><span>Café expresso</span><span>100ml</span></div>
+       <div><span>Cacau em pó</span><span>50g</span></div>
+       <div><span>Açúcar</span><span>20g</span></div>
       
       
     </div>
 
-    <h3>Quantidade</h3>
+     <h3>Quantidade</h3>
 
-   <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
-   </div>
+    <div class="quantidade">
+       <button onclick="diminuirQtd(this)">-</button>
+       <span class="qtd">1</span>
+       <button onclick="aumentarQtd(this)">+</button>
+    </div>
 
 
     <button class="btn-carrinho"
@@ -449,36 +532,36 @@
 
   <!-- IMAGEM TIRAMISU -->
 
-  <header class="topo">
-  <button class="voltar" onclick="voltarLista7()">←</button>
-  <h2>DataPlate</h2>
-  <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   <header class="topo">
+   <button class="voltar" onclick="voltarLista7()">←</button>
+   <h2>DataPlate</h2>
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
   <div class="topo-img">
-    <img src="../images/Água.jfif">
+     <img src="../images/Água.jfif">
   </div>
 
   <div class="container">
 
-    <h2>Água</h2>
-    <p>Sobremesa italiana clássica com café e mascarpone</p>
+     <h2>Água</h2>
+     <p>Sobremesa italiana clássica com café e mascarpone</p>
 
-    <span class="preco">R$ 2.90</span>
+     <span class="preco">R$ 2.90</span>
 
-    <h3>Ingredientes</h3>
+     <h3>Ingredientes</h3>
 
     <div class="ingredientes">
-      <div><span>Água Mineral Cristal Sem Gás</span><span>500ml</span></div>
+       <div><span>Água Mineral Cristal Sem Gás</span><span>500ml</span></div>
       
     </div>
 
     <h3>Quantidade</h3>
 
    <div class="quantidade">
-  <button onclick="diminuirQtd(this)">-</button>
-  <span class="qtd">1</span>
-  <button onclick="aumentarQtd(this)">+</button>
+       <button onclick="diminuirQtd(this)">-</button>
+       <span class="qtd">1</span>
+       <button onclick="aumentarQtd(this)">+</button>
    </div>
 
 
