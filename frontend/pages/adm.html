@@ -51,16 +51,6 @@
           </a>
         </li>
         <li>
-          <a href="#estoque" class="nav-link" data-tab="estoque">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-              <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-            <span>Estoque</span>
-          </a>
-        </li>
-        <li>
           <a href="#analytics" class="nav-link" data-tab="analytics">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="12" y1="2" x2="12" y2="22"></line>
@@ -371,75 +361,6 @@
           </div>
         </div>
 
-        <!-- ESTOQUE TAB -->
-        <div class="tab-content" id="estoque" style="display: none;">
-          <div class="page-header">
-            <h1>Controle de Estoque</h1>
-            <p>Monitore seus insumos e alertas de reposição</p>
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <button class="btn-primary" onclick="openAddStockModal()">+ Novo Insumo</button>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Insumo</th>
-                  <th>Quantidade</th>
-                  <th>Unidade</th>
-                  <th>Mínimo</th>
-                  <th>Status</th>
-                  <th>Última Atualização</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Carne Moída</strong></td>
-                  <td>8.5</td>
-                  <td>kg</td>
-                  <td>5</td>
-                  <td><span class="status-badge status-completed">Normal</span></td>
-                  <td>Hoje 10:30</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Tomate</strong></td>
-                  <td>2.3</td>
-                  <td>kg</td>
-                  <td>3</td>
-                  <td><span class="status-badge status-pending">Baixo</span></td>
-                  <td>Hoje 09:15</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Repor</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Queijo Mozzarella</strong></td>
-                  <td>1.2</td>
-                  <td>kg</td>
-                  <td>2</td>
-                  <td><span class="status-badge status-low">Crítico</span></td>
-                  <td>Hoje 08:00</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Repor Agora</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         <!-- ANALYTICS TAB -->
         <div class="tab-content" id="analytics" style="display: none;">
           <div class="page-header">
@@ -512,12 +433,6 @@
               <div style="font-size: 32px; margin-bottom: 12px;">📊</div>
               <strong style="display: block; margin-bottom: 6px;">Relatório Financeiro</strong>
               <p style="color: #64748b; font-size: 13px;">Receitas e despesas</p>
-            </div>
-
-            <div class="card" style="cursor: pointer; text-align: center;">
-              <div style="font-size: 32px; margin-bottom: 12px;">📦</div>
-              <strong style="display: block; margin-bottom: 6px;">Estoque</strong>
-              <p style="color: #64748b; font-size: 13px;">Insumos e suprimentos</p>
             </div>
 
             <div class="card" style="cursor: pointer; text-align: center;">
