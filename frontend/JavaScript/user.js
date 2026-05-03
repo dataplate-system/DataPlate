@@ -193,7 +193,9 @@ function carregarCarrinho() {
             <button onclick="aumentar(${index})">+</button>
           </div>
         </div>
-        <button onclick="remover(${index})">🗑️</button>
+        <div class="acoes">
+          <span onclick="remover(${index})"><img src="../images/lixeira.png" alt="Remover"></span>
+        </div>
       </div>
     `;
   });

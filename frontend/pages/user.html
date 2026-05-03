@@ -86,35 +86,54 @@
   
 <div id="telaCarrinho" style="display: none;">
 
+  
+ 
+
 
 
   <header class="topo">
     <button class="voltar" onclick="voltarPagina()">←</button>
-     <h1>DataPlate</h1>
+    
+     <img src="../images/logo-emp.png" class="logo-topo">
 
       <div style="display:flex; gap:10px;">
         <button class="status-btn" onclick="abrirPedidoEmAndamento()">📦
            <span id="badgePedido" class="badge" style="display:none;"></span>
         </button>
 
-       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+       <button class="carrinho" onclick="abrirCarrinho()"></button>
       </div>
   </header>
+   
+
 
    <div id="listaCarrinho"></div>
 
+   
+
    <div id="total"></div>
+   
 
    <button class="btn" onclick="confirmarPedido()">Confirmar pedido</button>
 
+   <div class="acoes">
+    <img src="../images/lixeira.png">
+  </div>
+
+  
+
 </div>
+ 
 
 <div id="telaLista">
+
+<div class="linha linha1"></div>
+<div class="linha linha2"></div>  
 
 
  <header class="topo">
    <button class="voltar" onclick="voltarPagina()">←</button>
-   <h1>DataPlate</h1>
+   <img src="../images/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
  </header>
 
@@ -132,14 +151,14 @@
    <button data-categoria="sobremesas">Sobremesas</button>
    <button data-categoria="bebidas">Bebidas</button>
  </div>
-
+ 
    <div class="lista" id="listaPratos">
 
 
 
   <!-- HAMBURGUER -->
    <div class="item" data-categoria="hamburguer" onclick="abrirProduto()">
-     <img src="../images/Hambúrguer.jfif">
+     <img src="../images/Hambúrguer.jpg">
      <div class="info">
        <h3>Burger Gourmet</h3>
        <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
@@ -149,7 +168,7 @@
 
    <!-- MASSAS -->
    <div class="item" data-categoria="massas" onclick="abrirProduto2()">
-     <img src="../images/Pasta Carbonara.jfif">
+     <img src="../images/Pasta Carbonara.jpg">
      <div class="info">
        <h3>Pasta Carbonara</h3>
        <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
@@ -159,7 +178,7 @@
 
    <!-- PRINCIPAIS -->
    <div class="item" data-categoria="principais" onclick="abrirProduto3()">
-     <img src="../images/Salmão Grelhado.jfif">
+     <img src="../images/Salmão Grelhado.jpg">
      <div class="info">
        <h3>Salmão Grelhado</h3>
        <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
@@ -169,7 +188,7 @@
 
    <!-- ENTRADAS -->
    <div class="item" data-categoria="entradas" onclick="abrirProduto4()">
-     <img src="../images/Salada Caesar.jfif">
+     <img src="../images/Salada Caesar.jpg">
      <div class="info">
        <h3>Salada Caesar</h3>
        <p>Alface romana, croutons, parmesão e molho caesar</p>
@@ -179,7 +198,7 @@
 
    <!-- SOBREMESAS -->
    <div class="item" data-categoria="sobremesas" onclick="abrirProduto5()">
-     <img src="../images/Bolo de Chocolate.jfif">
+     <img src="../images/Bolo de Chocolate.jpg">
      <div class="info">
        <h3>Bolo de Chocolate</h3>
        <p>Bolo de chocolate belga com cobertura cremosa de chocolate</p>
@@ -189,7 +208,7 @@
 
    <!-- SOBREMESAS -->
    <div class="item" data-categoria="sobremesas" onclick="abrirProduto6()">
-     <img src="../images/Tiramisu.jfif">
+     <img src="../images/Tiramisu.jpg">
      <div class="info">
        <h3>Tiramisu</h3>
        <p>Sobremesa italiana clássica com café e mascarpone</p>
@@ -199,7 +218,7 @@
 
    <!-- Bebidas -->
    <div class="item" data-categoria="bebidas" onclick="abrirProduto7()">
-     <img src="../images/Água.jfif">
+     <img src="../images/Água.jpg">
      <div class="info">
        <h3>Água sem gás</h3>
        <p>Água Mineral Natural Crystal Sem Gás 500ml</p>
@@ -209,12 +228,16 @@
 
   </div>
 
-</div>
+  </div>
+  </div>
 
-</div>
-</div>
+
+
+
 
 <div id="telaProduto" style="display: none;">
+
+
 
  
 
@@ -222,15 +245,20 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista()">←</button>
-   <h2>DataPlate</h2>
+   <img src="../images/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
   <div class="topo-img">
-     <img src="../images/Hambúrguer.jfif">
+     <img src="../images/Hambúrguer.jpg">
   </div>
 
   <div class="container">
+
+
+
+
+  
 
      <h2>Burger Gourmet</h2>
      <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
@@ -258,7 +286,7 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Burger Gourmet', 32.90, '../images/Hambúrguer.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Burger Gourmet', 32.90, '../images/Hambúrguer.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 32.90
     </button>
 
@@ -274,12 +302,12 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista2()">←</button>
-   <h2>DataPlate</h2>
+   <img src="../images/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
      <div class="topo-img">
-       <img src="../images/Pasta Carbonara.jfif">
+       <img src="../images/Pasta Carbonara.jpg">
      </div> 
 
 
@@ -310,7 +338,7 @@
    </div>
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Pasta Carbonara', 38.50, '../images/Pasta Carbonara.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Pasta Carbonara', 38.50, '../images/Pasta Carbonara.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 38.50
     </button>
 
@@ -328,12 +356,12 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista3()">←</button>
-     <h2>DataPlate</h2>
+     <img src="../images/logo-emp.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
   </header> 
 
   <div class="topo-img">
-     <img src="../images/Salmão Grelhado.jfif">
+     <img src="../images/Salmão Grelhado.jpg">
   </div>
 
   <div class="container">
@@ -363,7 +391,7 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Salmão Grelhado', 52.90, '../images/Salmão Grelhado.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Salmão Grelhado', 52.90, '../images/Salmão Grelhado.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 52.90
     </button>
 
@@ -378,12 +406,12 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista4()">←</button>
-     <h2>DataPlate</h2>
+     <img src="../images/logo-emp.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
   <div class="topo-img">
-     <img src="../images/Salada Caesar.jfif">
+     <img src="../images/Salada Caesar.jpg">
   </div>
 
   <div class="container">
@@ -413,7 +441,7 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Salada Caesar', 24.90, '../images/Salada Caesar.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Salada Caesar', 24.90, '../images/Salada Caesar.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 24.90
     </button>
 
@@ -429,12 +457,12 @@
 
    <header class="topo">
        <button class="voltar" onclick="voltarLista5()">←</button>
-       <h2>DataPlate</h2>
+       <img src="../images/logo-emp.png" class="logo-topo">
        <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
   <div class="topo-img">
-     <img src="../images/Bolo de Chocolate.jfif">
+     <img src="../images/Bolo de Chocolate.jpg">
   </div>
 
   <div class="container">
@@ -465,7 +493,7 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Bolo de Chocolate', 18.90, '../images/Bolo de Chocolate.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Bolo de Chocolate', 18.90, '../images/Bolo de Chocolate.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 18.90
     </button>
 
@@ -481,12 +509,12 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista6()">←</button>
-     <h2>DataPlate</h2>
+     <img src="../images/logo-emp.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
   </header> 
 
   <div class="topo-img">
-    <img src="../images/Tiramisu.jfif">
+    <img src="../images/Tiramisu.jpg">
   </div>
 
   <div class="container">
@@ -518,7 +546,7 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Tiramisu', 22.90, '../images/Tiramisu.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Tiramisu', 22.90, '../images/Tiramisu.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 22.90
     </button>
 
@@ -534,12 +562,12 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista7()">←</button>
-   <h2>DataPlate</h2>
+   <img src="../images/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
   <div class="topo-img">
-     <img src="../images/Água.jfif">
+     <img src="../images/Água.jpg">
   </div>
 
   <div class="container">
@@ -566,18 +594,21 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho('Água', 2.90, '../images/Água.jfif', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     onclick="adicionarCarrinho('Água', 2.90, '../images/Água.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
      🛒 Adicionar ao carrinho - R$ 2.90
     </button>
 
-  </div>
-</div> 
-</div> 
+  
+</div>
+</div>
+
+
+
+
 
 
 <!--fim html--->
-</div> 
-</div> 
+
   
 
 
