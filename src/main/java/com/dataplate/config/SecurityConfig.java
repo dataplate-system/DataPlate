@@ -1,9 +1,7 @@
 package com.dataplate.config;
-
-import com.dataplate.security.JwtAuthenticationFilter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -19,6 +17,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.dataplate.security.JwtAuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -33,13 +34,11 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/ws/**").permitAll()
-                        .requestMatchers("GET", "/api/menu/**").permitAll()
-                        .requestMatchers("POST", "/api/pedidos").permitAll()
-                        .requestMatchers("POST", "/api/menu/**").hasRole("ADMIN")
-                        .requestMatchers("PUT", "/api/menu/**").hasRole("ADMIN")
-                        .requestMatchers("DELETE", "/api/menu/**").hasRole("ADMIN")
-                        .requestMatchers("/api/dashboard/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/menu/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/pedidos").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/menu/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/menu/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/menu/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
@@ -49,8 +48,7 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }
