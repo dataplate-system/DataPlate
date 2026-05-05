@@ -1,4 +1,4 @@
-const botoes = document.querySelectorAll(".categorias button");
+﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
 
@@ -165,7 +165,9 @@ botoes.forEach(botao => {
 });
 
 // DIGITAÇÃO NA BUSCA
-searchInput.addEventListener("input", filtrar);
+if (searchInput) {
+  searchInput.addEventListener("input", filtrar);
+}
 
 // CODIGO DO CARINHO
 
@@ -174,6 +176,8 @@ function carregarCarrinho() {
   let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   const lista = document.getElementById("listaCarrinho");
+  if (!lista) return;
+
   lista.innerHTML = "";
 
   let total = 0;
@@ -232,6 +236,11 @@ carregarCarrinho();
 //adição de produtos ao carrinho
 
 function adicionarCarrinho(nome, preco, imagem, qtd) {
+  if (!nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
+    alert("Selecione uma quantidade válida antes de adicionar ao carrinho.");
+    return;
+  }
+
   let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   carrinho.push({
@@ -321,6 +330,12 @@ function novoPedido() {
 // pagamento
 
 function confirmarPedido() {
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  if (!carrinho.length) {
+    alert("Adicione pelo menos um produto ao carrinho antes de confirmar o pedido.");
+    return;
+  }
+
   document.getElementById("telaCarrinho").style.display = "none";
   document.getElementById("telaPagamento").style.display = "block";
 }
@@ -466,14 +481,6 @@ function atualizarBadge() {
   }
 }
 
-localStorage.setItem("pedidoAtivo", "true");
-pedidoEmAndamento = true;
-
 atualizarBadge();
 
-pedidoEmAndamento = false;
-
-atualizarBadge();
-
-atualizarBadge();
 

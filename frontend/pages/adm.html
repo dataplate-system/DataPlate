@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -1013,576 +1013,6 @@
     </div>
   </div>
 
-        <!-- PEDIDOS TAB -->
-        <div class="tab-content" id="pedidos" style="display: none;">
-          <div class="page-header">
-            <h1>Gerenciamento de Pedidos</h1>
-            <p>Visualize e controle todos os pedidos</p>
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <div class="tabs">
-              <button class="tab-button active">Todos (28)</button>
-              <button class="tab-button">Em Preparo (3)</button>
-              <button class="tab-button">Entregues (24)</button>
-              <button class="tab-button">Cancelados (1)</button>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Itens</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Tempo de Preparo</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>#2024001</td>
-                  <td>João Silva</td>
-                  <td>2 Hambúrgueres, 1 Salada</td>
-                  <td>R$ 85,90</td>
-                  <td><span class="status-badge status-completed">Entregue</span></td>
-                  <td>18 min</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Detalhes</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#2024002</td>
-                  <td>Maria Santos</td>
-                  <td>1 Pasta Carbonara</td>
-                  <td>R$ 52,50</td>
-                  <td><span class="status-badge status-completed">Entregue</span></td>
-                  <td>15 min</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Detalhes</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#2024003</td>
-                  <td>Pedro Costa</td>
-                  <td>2 Salmão Grelhado, 1 Bolo</td>
-                  <td>R$ 120,00</td>
-                  <td><span class="status-badge status-active">Em Preparo</span></td>
-                  <td>12 min</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Detalhes</button>
-                      <button class="btn-small">Acelerar</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- CARDÁPIO TAB -->
-        <div class="tab-content" id="cardapio" style="display: none;">
-          <div class="page-header">
-            <h1>Gerenciamento do Cardápio</h1>
-            <p>Adicione, edite ou remova pratos do seu cardápio</p>
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <button class="btn-primary" onclick="openAddDishModal()">+ Novo Prato</button>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Prato</th>
-                  <th>Categoria</th>
-                  <th>Preço</th>
-                  <th>Disponível</th>
-                  <th>Vendido (7d)</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Hambúrguer</strong></td>
-                  <td>Sanduíches</td>
-                  <td>R$ 28,90</td>
-                  <td><span class="status-badge status-completed">Sim</span></td>
-                  <td>42</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Pasta Carbonara</strong></td>
-                  <td>Massas</td>
-                  <td>R$ 42,50</td>
-                  <td><span class="status-badge status-completed">Sim</span></td>
-                  <td>38</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Salada Caesar</strong></td>
-                  <td>Saladas</td>
-                  <td>R$ 32,00</td>
-                  <td><span class="status-badge status-completed">Sim</span></td>
-                  <td>28</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ANALYTICS TAB -->
-        <div class="tab-content" id="analytics" style="display: none;">
-          <div class="page-header">
-            <h1>Análise de Desempenho</h1>
-            <p>Dados estratégicos sobre seus produtos</p>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div class="chart-container">
-              <div class="chart-title">Pratos Mais Vendidos (Últimos 30 dias)</div>
-              <canvas id="topDishesChart"></canvas>
-            </div>
-
-            <div class="chart-container">
-              <div class="chart-title">Margem de Lucro</div>
-              <canvas id="profitChart"></canvas>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <div style="margin-bottom: 16px;">
-              <h3 style="font-size: 16px; font-weight: 600;">Matriz BCG - Posicionamento de Produtos</h3>
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Prato</th>
-                  <th>Crescimento</th>
-                  <th>Participação</th>
-                  <th>Categoria</th>
-                  <th>Recomendação</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Hambúrguer</strong></td>
-                  <td>15%</td>
-                  <td>Rápido</td>
-                  <td><span class="status-badge" style="background: rgba(248, 91, 21, 0.15); color: #f85b15;">Star (Estrela)</span></td>
-                  <td>Manter/Investir</td>
-                </tr>
-                <tr>
-                  <td><strong>Pasta Carbonara</strong></td>
-                  <td>8%</td>
-                  <td>Rápido</td>
-                  <td><span class="status-badge status-completed">Cash Cow (Vaca Leiteira)</span></td>
-                  <td>Manter</td>
-                </tr>
-                <tr>
-                  <td><strong>Bolo de Chocolate</strong></td>
-                  <td>-2%</td>
-                  <td>Lento</td>
-                  <td><span class="status-badge" style="background: rgba(37, 99, 235, 0.15); color: #2563eb;">Dog (Cachorro)</span></td>
-                  <td>Reposicionar/Remover</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- ESTOQUE TAB -->
-        <div class="tab-content" id="estoque" style="display: none;">
-          <div class="page-header">
-            <h1>Gerenciamento de Estoque</h1>
-            <p>Controle de insumos e ingredientes do restaurante</p>
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <button class="btn-primary" onclick="openAddStockModal()">+ Novo Insumo</button>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Insumo</th>
-                  <th>Quantidade Atual</th>
-                  <th>Unidade</th>
-                  <th>Quantidade Mínima</th>
-                  <th>Status</th>
-                  <th>Última Atualização</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Carne Moída</strong></td>
-                  <td>25</td>
-                  <td>kg</td>
-                  <td>10</td>
-                  <td><span class="status-badge status-completed">Em Estoque</span></td>
-                  <td>Hoje, 10:30</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Ajustar</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Queijo Mussarela</strong></td>
-                  <td>5</td>
-                  <td>kg</td>
-                  <td>8</td>
-                  <td><span class="status-badge status-low">Baixo Estoque</span></td>
-                  <td>Ontem, 16:45</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Repor</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Tomate</strong></td>
-                  <td>15</td>
-                  <td>kg</td>
-                  <td>12</td>
-                  <td><span class="status-badge status-completed">Em Estoque</span></td>
-                  <td>Hoje, 08:15</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Ajustar</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- USUÁRIOS TAB -->
-        <div class="tab-content" id="usuarios" style="display: none;">
-          <div class="page-header">
-            <h1>Gerenciamento de Usuários</h1>
-            <p>Controle de funcionários e permissões do sistema</p>
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <button class="btn-primary" onclick="openAddUserModal()">+ Novo Usuário</button>
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Cargo</th>
-                  <th>Status</th>
-                  <th>Último Acesso</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>João Silva</strong></td>
-                  <td>joao@restaurante.com</td>
-                  <td>Gerente</td>
-                  <td><span class="status-badge status-completed">Ativo</span></td>
-                  <td>Hoje, 14:30</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Permissões</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Maria Santos</strong></td>
-                  <td>maria@restaurante.com</td>
-                  <td>Cozinheira</td>
-                  <td><span class="status-badge status-completed">Ativo</span></td>
-                  <td>Hoje, 12:15</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Permissões</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Pedro Costa</strong></td>
-                  <td>pedro@restaurante.com</td>
-                  <td>Atendente</td>
-                  <td><span class="status-badge status-pending">Inativo</span></td>
-                  <td>3 dias atrás</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Reativar</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- CONFIGURAÇÕES TAB -->
-        <div class="tab-content" id="configuracoes" style="display: none;">
-          <div class="page-header">
-            <h1>Configurações do Sistema</h1>
-            <p>Personalize as configurações do seu restaurante</p>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-            <!-- Informações do Restaurante -->
-            <div class="card">
-              <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Informações do Restaurante</h3>
-              <form>
-                <div class="form-group">
-                  <label>Nome do Restaurante</label>
-                  <input type="text" value="Seu Restaurante" />
-                </div>
-                <div class="form-group">
-                  <label>Endereço</label>
-                  <input type="text" value="Rua das Flores, 123" />
-                </div>
-                <div class="form-group">
-                  <label>Telefone</label>
-                  <input type="tel" value="(11) 99999-9999" />
-                </div>
-                <div class="form-group">
-                  <label>Email</label>
-                  <input type="email" value="contato@restaurante.com" />
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top: 16px;">Salvar Alterações</button>
-              </form>
-            </div>
-
-            <!-- Configurações de Horário -->
-            <div class="card">
-              <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Horário de Funcionamento</h3>
-              <form>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                  <div class="form-group">
-                    <label>Abertura</label>
-                    <input type="time" value="11:00" />
-                  </div>
-                  <div class="form-group">
-                    <label>Fechamento</label>
-                    <input type="time" value="23:00" />
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Dias de Funcionamento</label>
-                  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" checked /> Seg
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" checked /> Ter
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" checked /> Qua
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" checked /> Qui
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" checked /> Sex
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" checked /> Sáb
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 4px;">
-                      <input type="checkbox" /> Dom
-                    </label>
-                  </div>
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top: 16px;">Salvar Horários</button>
-              </form>
-            </div>
-
-            <!-- Configurações de Notificações -->
-            <div class="card">
-              <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Notificações</h3>
-              <form>
-                <div class="form-group">
-                  <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" checked />
-                    <span>Notificar pedidos novos</span>
-                  </label>
-                </div>
-                <div class="form-group">
-                  <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" checked />
-                    <span>Alerta de estoque baixo</span>
-                  </label>
-                </div>
-                <div class="form-group">
-                  <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" />
-                    <span>Relatórios diários por email</span>
-                  </label>
-                </div>
-                <div class="form-group">
-                  <label style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" checked />
-                    <span>Notificações de manutenção</span>
-                  </label>
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top: 16px;">Salvar Preferências</button>
-              </form>
-            </div>
-
-            <!-- Configurações de Segurança -->
-            <div class="card">
-              <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Segurança</h3>
-              <form>
-                <div class="form-group">
-                  <label>Senha Atual</label>
-                  <input type="password" placeholder="Digite sua senha atual" />
-                </div>
-                <div class="form-group">
-                  <label>Nova Senha</label>
-                  <input type="password" placeholder="Digite a nova senha" />
-                </div>
-                <div class="form-group">
-                  <label>Confirmar Nova Senha</label>
-                  <input type="password" placeholder="Confirme a nova senha" />
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top: 16px;">Alterar Senha</button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <!-- RELATÓRIOS TAB -->
-        <div class="tab-content" id="relatorios" style="display: none;">
-          <div class="page-header">
-            <h1>Relatórios</h1>
-            <p>Gere relatórios personalizados do seu negócio</p>
-          </div>
-
-          <!-- Filtros de Relatório -->
-          <div class="card" style="margin-bottom: 24px;">
-            <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600;">Filtros</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-              <div class="form-group">
-                <label>Período</label>
-                <select>
-                  <option>Hoje</option>
-                  <option>Últimos 7 dias</option>
-                  <option>Últimos 30 dias</option>
-                  <option>Este mês</option>
-                  <option>Mês passado</option>
-                  <option>Personalizado</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Data Inicial</label>
-                <input type="date" />
-              </div>
-              <div class="form-group">
-                <label>Data Final</label>
-                <input type="date" />
-              </div>
-              <div style="display: flex; align-items: end;">
-                <button class="btn-primary">Aplicar Filtros</button>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 32px;">
-            <div class="card" style="cursor: pointer; text-align: center; transition: all 0.3s;">
-              <div style="font-size: 32px; margin-bottom: 12px;">📊</div>
-              <strong style="display: block; margin-bottom: 6px;">Relatório Financeiro</strong>
-              <p style="color: #64748b; font-size: 13px;">Receitas, despesas e lucros</p>
-              <div style="margin-top: 12px;">
-                <button class="btn-small">Gerar PDF</button>
-                <button class="btn-small">Exportar Excel</button>
-              </div>
-            </div>
-
-            <div class="card" style="cursor: pointer; text-align: center; transition: all 0.3s;">
-              <div style="font-size: 32px; margin-bottom: 12px;">🍽️</div>
-              <strong style="display: block; margin-bottom: 6px;">Performance do Cardápio</strong>
-              <p style="color: #64748b; font-size: 13px;">Vendas por prato e categoria</p>
-              <div style="margin-top: 12px;">
-                <button class="btn-small">Gerar PDF</button>
-                <button class="btn-small">Exportar Excel</button>
-              </div>
-            </div>
-
-            <div class="card" style="cursor: pointer; text-align: center; transition: all 0.3s;">
-              <div style="font-size: 32px; margin-bottom: 12px;">👥</div>
-              <strong style="display: block; margin-bottom: 6px;">Análise de Clientes</strong>
-              <p style="color: #64748b; font-size: 13px;">Comportamento e frequência</p>
-              <div style="margin-top: 12px;">
-                <button class="btn-small">Gerar PDF</button>
-                <button class="btn-small">Exportar Excel</button>
-              </div>
-            </div>
-
-            <div class="card" style="cursor: pointer; text-align: center; transition: all 0.3s;">
-              <div style="font-size: 32px; margin-bottom: 12px;">📈</div>
-              <strong style="display: block; margin-bottom: 6px;">Relatório de Vendas</strong>
-              <p style="color: #64748b; font-size: 13px;">Tendências e padrões de venda</p>
-              <div style="margin-top: 12px;">
-                <button class="btn-small">Gerar PDF</button>
-                <button class="btn-small">Exportar Excel</button>
-              </div>
-            </div>
-
-            <div class="card" style="cursor: pointer; text-align: center; transition: all 0.3s;">
-              <div style="font-size: 32px; margin-bottom: 12px;">📦</div>
-              <strong style="display: block; margin-bottom: 6px;">Controle de Estoque</strong>
-              <p style="color: #64748b; font-size: 13px;">Movimentação e reposições</p>
-              <div style="margin-top: 12px;">
-                <button class="btn-small">Gerar PDF</button>
-                <button class="btn-small">Exportar Excel</button>
-              </div>
-            </div>
-
-            <div class="card" style="cursor: pointer; text-align: center; transition: all 0.3s;">
-              <div style="font-size: 32px; margin-bottom: 12px;">⏱️</div>
-              <strong style="display: block; margin-bottom: 6px;">Tempo de Preparo</strong>
-              <p style="color: #64748b; font-size: 13px;">Eficiência da cozinha</p>
-              <div style="margin-top: 12px;">
-        </section>
-      </div>
-    </div>
-  </div>
-
   <!-- MODALS -->
   <div class="modal" id="addClientModal">
     <div class="modal-content">
@@ -1592,27 +1022,27 @@
         <div class="form-row">
           <div class="form-group">
             <label>Nome</label>
-            <input type="text" name="name" placeholder="Nome completo" />
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
           </div>
           <div class="form-group">
             <label>CPF</label>
-            <input type="text" name="cpf" placeholder="000.000.000-00" />
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Email</label>
-            <input type="email" name="email" placeholder="email@exemplo.com" />
+            <input type="email" name="email" placeholder="email@exemplo.com" autocomplete="email" required />
           </div>
           <div class="form-group">
             <label>Telefone</label>
-            <input type="tel" name="phone" placeholder="(11) 99999-9999" />
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Endereço</label>
-            <input type="text" name="address" placeholder="Rua, número" />
+            <input type="text" name="address" placeholder="Rua, número" autocomplete="street-address" required />
           </div>
         </div>
         <div class="form-actions">
@@ -1631,21 +1061,21 @@
         <div class="form-row">
           <div class="form-group">
             <label>Nome</label>
-            <input type="text" name="name" placeholder="Nome completo" />
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
           </div>
           <div class="form-group">
             <label>CPF</label>
-            <input type="text" name="cpf" placeholder="000.000.000-00" />
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Email</label>
-            <input type="email" name="email" placeholder="email@restaurante.com" />
+            <input type="email" name="email" placeholder="email@restaurante.com" autocomplete="email" required />
           </div>
           <div class="form-group">
             <label>Cargo</label>
-            <select name="role">
+            <select name="role" required>
               <option>Gerente</option>
               <option>Cozinheiro(a)</option>
               <option>Atendente</option>
@@ -1656,7 +1086,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>Salário</label>
-            <input type="number" name="salary" placeholder="0.00" step="0.01" />
+            <input type="number" name="salary" placeholder="0.00" min="0" step="0.01" required />
           </div>
         </div>
         <div class="form-actions">
@@ -1675,27 +1105,27 @@
         <div class="form-row">
           <div class="form-group">
             <label>Razão Social</label>
-            <input type="text" name="company" placeholder="Nome da empresa" />
+            <input type="text" name="company" placeholder="Nome da empresa" autocomplete="organization" required />
           </div>
           <div class="form-group">
             <label>CNPJ</label>
-            <input type="text" name="cnpj" placeholder="00.000.000/0000-00" />
+            <input type="text" name="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Especialidade</label>
-            <input type="text" name="specialty" placeholder="Carnes, Bebidas, etc" />
+            <input type="text" name="specialty" placeholder="Carnes, Bebidas, etc" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Telefone</label>
-            <input type="tel" name="phone" placeholder="(11) 99999-9999" />
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
           </div>
           <div class="form-group">
             <label>Email</label>
-            <input type="email" name="email" placeholder="contato@fornecedor.com" />
+            <input type="email" name="email" placeholder="contato@fornecedor.com" autocomplete="email" required />
           </div>
         </div>
         <div class="form-actions">
@@ -1714,11 +1144,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Nome do Prato</label>
-            <input type="text" name="name" placeholder="Ex: Hambúrguer Artesanal" />
+            <input type="text" name="name" placeholder="Ex: Hambúrguer Artesanal" required />
           </div>
           <div class="form-group">
             <label>Categoria</label>
-            <select name="category">
+            <select name="category" required>
               <option>Sanduíches</option>
               <option>Massas</option>
               <option>Saladas</option>
@@ -1729,17 +1159,17 @@
         <div class="form-row">
           <div class="form-group">
             <label>Preço (R$)</label>
-            <input type="number" name="price" placeholder="0.00" step="0.01" />
+            <input type="number" name="price" placeholder="0.00" min="0" step="0.01" required />
           </div>
           <div class="form-group">
             <label>Custo (R$)</label>
-            <input type="number" name="cost" placeholder="0.00" step="0.01" />
+            <input type="number" name="cost" placeholder="0.00" min="0" step="0.01" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Descrição</label>
-            <textarea name="description" placeholder="Descrição do prato" rows="3"></textarea>
+            <textarea name="description" placeholder="Descrição do prato" rows="3" required></textarea>
           </div>
         </div>
         <div class="form-actions">
@@ -1754,15 +1184,15 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('addStockModal')">✕</button>
       <div class="modal-header">Novo Insumo</div>
-      <form>
+      <form id="addStockForm">
         <div class="form-row">
           <div class="form-group">
             <label>Nome</label>
-            <input type="text" placeholder="Ex: Carne Moída" />
+            <input type="text" name="name" placeholder="Ex: Carne Moída" required />
           </div>
           <div class="form-group">
             <label>Fornecedor</label>
-            <select>
+            <select name="supplier" required>
               <option>Açougue Premium</option>
               <option>Verdurão</option>
               <option>Laticínios Brasil</option>
@@ -1772,11 +1202,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Quantidade</label>
-            <input type="number" placeholder="0" />
+            <input type="number" name="quantity" placeholder="0" min="0" step="0.001" required />
           </div>
           <div class="form-group">
             <label>Unidade</label>
-            <select>
+            <select name="unit" required>
               <option>kg</option>
               <option>g</option>
               <option>l</option>
@@ -1788,11 +1218,11 @@
         <div class="form-row">
           <div class="form-group">
             <label>Quantidade Mínima</label>
-            <input type="number" placeholder="0" />
+            <input type="number" name="minQuantity" placeholder="0" min="0" step="0.001" required />
           </div>
           <div class="form-group">
             <label>Preço Unitário</label>
-            <input type="number" placeholder="0.00" step="0.01" />
+            <input type="number" name="unitPrice" placeholder="0.00" min="0" step="0.01" required />
           </div>
         </div>
         <div class="form-actions">
@@ -1807,21 +1237,21 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
       <div class="modal-header">Novo Usuário</div>
-      <form>
+      <form id="addUserForm">
         <div class="form-row">
           <div class="form-group">
             <label>Nome</label>
-            <input type="text" placeholder="Nome completo" />
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
           </div>
           <div class="form-group">
             <label>Email</label>
-            <input type="email" placeholder="usuario@restaurante.com" />
+            <input type="email" name="email" placeholder="usuario@restaurante.com" autocomplete="email" required />
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Tipo de Acesso</label>
-            <select>
+            <select name="accessType" required>
               <option>Administrador</option>
               <option>Gerente</option>
               <option>Operacional</option>
@@ -1830,7 +1260,7 @@
           </div>
           <div class="form-group">
             <label>Senha Temporária</label>
-            <input type="password" placeholder="••••••••" />
+            <input type="password" name="temporaryPassword" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
           </div>
         </div>
         <div class="form-actions">
@@ -1841,7 +1271,94 @@
     </div>
   </div>
 
+  <script>
+    (function () {
+      function lockBodyScroll() {
+        document.body.style.overflow = document.querySelector('.modal.active') ? 'hidden' : '';
+      }
+
+      window.openModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+          console.warn('Modal nao encontrado:', modalId);
+          return;
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.setAttribute('aria-hidden', 'false');
+        lockBodyScroll();
+      };
+
+      window.closeModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        lockBodyScroll();
+      };
+
+      window.navigateTo = function (sectionId) {
+        document.querySelectorAll('.content-section').forEach(function (section) {
+          section.classList.remove('active');
+        });
+
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
+
+        const showWelcome = !selectedSection || sectionId === 'dashboard';
+        const logoCenter = document.querySelector('.logocenter');
+        const nomeCenter = document.querySelector('.nomecenter');
+        const textCenter = document.getElementById('textcenter');
+
+        if (logoCenter) logoCenter.style.display = showWelcome ? 'block' : 'none';
+        if (nomeCenter) nomeCenter.style.display = showWelcome ? 'block' : 'none';
+        if (textCenter) textCenter.style.display = showWelcome ? 'block' : 'none';
+      };
+
+      window.openAddDishModal = function () { window.openModal('addDishModal'); };
+      window.openAddStockModal = function () { window.openModal('addStockModal'); };
+      window.openAddUserModal = function () { window.openModal('addUserModal'); };
+      window.exportTable = function () { alert('Exportando dados...'); };
+      window.changeStatus = function () { alert('Status atualizado com sucesso!'); };
+
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-open-modal]');
+        if (trigger) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.openModal(trigger.getAttribute('data-open-modal'));
+          return;
+        }
+
+        if (event.target.classList && event.target.classList.contains('modal')) {
+          window.closeModal(event.target.id);
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          document.querySelectorAll('.modal.active').forEach(function (modal) {
+            window.closeModal(modal.id);
+          });
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.modal').forEach(function (modal) {
+          modal.style.display = modal.classList.contains('active') ? 'flex' : 'none';
+          modal.setAttribute('aria-hidden', modal.classList.contains('active') ? 'false' : 'true');
+        });
+      });
+    })();
+  </script>
   <script src="../JavaScript/adm.js" defer></script>
 </body>
 </html>
+
+
 

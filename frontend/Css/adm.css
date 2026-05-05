@@ -727,6 +727,24 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
+.form-group input:required,
+.form-group select:required,
+.form-group textarea:required {
+  border-left: 3px solid var(--color-secondary);
+}
+
+.form-group input:focus:invalid,
+.form-group select:focus:invalid,
+.form-group textarea:focus:invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.masked-input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .checkbox-group {
   display: flex;
   flex-direction: column;
@@ -774,7 +792,7 @@ body {
 }
 
 .modal.active {
-  display: flex;
+  display: flex !important;
   justify-content: center;
   align-items: center;
 }
