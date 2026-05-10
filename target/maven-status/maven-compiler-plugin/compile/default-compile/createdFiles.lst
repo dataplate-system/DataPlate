@@ -13,6 +13,7 @@ com\dataplate\entity\Pedido.class
 com\dataplate\entity\ProdutoInsumo$ProdutoInsumoBuilder.class
 com\dataplate\entity\Produto.class
 com\dataplate\repository\UserRepository.class
+com\dataplate\service\ProdutoService.class
 com\dataplate\repository\PedidoRepository.class
 com\dataplate\exception\BusinessException.class
 com\dataplate\dto\InsumoRequest.class
@@ -21,6 +22,7 @@ com\dataplate\config\SecurityConfig.class
 com\dataplate\dto\InsumoResponse.class
 com\dataplate\entity\Insumo$InsumoBuilder.class
 com\dataplate\repository\ProdutoInsumoRepository.class
+com\dataplate\controller\ProdutosController.class
 com\dataplate\dto\ProdutoInsumoResponse.class
 com\dataplate\dto\ApiError.class
 com\dataplate\entity\PedidoItem.class
@@ -30,6 +32,7 @@ com\dataplate\entity\PedidoItem$PedidoItemBuilder.class
 com\dataplate\dto\PedidoCreateRequest.class
 com\dataplate\dto\DashboardResumoResponse.class
 com\dataplate\entity\Produto$ProdutoBuilder.class
+com\dataplate\exception\ErrorResponse.class
 com\dataplate\repository\InsumoRepository.class
 com\dataplate\dto\PedidoItemResponse.class
 com\dataplate\entity\Insumo.class
@@ -44,4 +47,5 @@ com\dataplate\entity\Pedido$PedidoBuilder.class
 com\dataplate\security\CustomUserDetailsService.class
 com\dataplate\dto\PedidoItemRequest.class
 com\dataplate\entity\Role.class
+com\dataplate\config\StaticResourceConfig.class
 com\dataplate\dto\ProdutoInsumoRequest.class
