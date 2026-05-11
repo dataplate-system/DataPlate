@@ -23,11 +23,17 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  height: 100px; /* DIMINUI */
+  height: 70px;
+  max-width: 140px;
+  object-fit: contain;
 }
 
 body {
+  
+  padding: 0;
   background: #f3f4f6;
+  font-family: "Segoe UI", Arial, sans-serif;
+  overflow-x: hidden;
 }
 
 #telaLista::before {
@@ -72,17 +78,14 @@ body {
 
 .item {
   display: flex;
-  gap: 14px;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
   padding: 12px;
   border-radius: 16px;
   margin-bottom: 12px;
-  align-items: center;
-
-  background: rgba(229, 192, 192, 0.9);
-  backdrop-filter: blur(10px);
-
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  transition: 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  width: 100%;
 }
 
 .item:hover {
@@ -226,11 +229,12 @@ body {
 }
 
 /* IMAGEM */
-.item img {
-  width: 90px;
-  height: 90px;
-  border-radius: 14px;
+.item > img {
+  width: 85px;
+  height: 85px;
+  border-radius: 12px;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 /* TEXTO */
@@ -265,10 +269,10 @@ body {
 /* IMAGEM TOPO */
 .topo-img img {
   width: 100%;
-  height: 400px;
+  height: 45vh;
+  max-height: 400px;
   object-fit: cover;
 }
-
 /* CONTEÚDO */
 .container {
   padding: 20px;
@@ -332,6 +336,7 @@ h2 {
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+  margin-top: 14px;
 }
 
 /* VOLTAR */
@@ -365,9 +370,12 @@ body {
   border-radius: 10px;
 }
 
-.item img {
-  width: 70px;
-  border-radius: 10px;
+.item > img {
+  width: 85px;
+  height: 85px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .info {
@@ -511,30 +519,169 @@ body {
   border-radius: 50%;
 }
 
-/* lixeira*/
 
 
+/* LIXEIRA */
 
 .acoes {
-  position: absolute;
-  top: 50px;
-  right: 50px;
-  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  min-width: 24px;
 }
 
 .acoes img {
-  width: 30px;   /* controla tamanho */
-  height: 30px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: 0.2s;
+  width: 22px !important;
+  height: 22px !important;
+  object-fit: contain;
+  display: block;
 }
 
-.acoes img:hover {
-  transform: scale(1.2);
+
+.acoes  img:hover {
+  transform: scale(1.1);
   opacity: 1;
 }
 
 #telaCarrinho {
   position: relative;
+}
+
+/* ========================= */
+/* RESPONSIVIDADE CELULAR */
+/* ========================= */
+
+@media (max-width: 768px) {
+
+  .topo {
+    padding: 12px;
+  }
+
+  .logo-topo {
+    height: 55px;
+  }
+
+  .categorias {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .categorias button {
+    font-size: 13px;
+    padding: 8px 14px;
+    white-space: nowrap;
+  }
+
+ .item {
+  flex-direction: row;
+  align-items: center;
+}
+
+  .item > img {
+    width: 75px;
+    height: 75px;
+  }
+
+  .info h3 {
+    font-size: 15px;
+  }
+
+  .info p {
+    font-size: 12px;
+  }
+
+  .preco {
+    font-size: 18px;
+  }
+
+  .container {
+    padding: 16px;
+  }
+
+  .quantidade {
+    gap: 10px;
+  }
+
+  .quantidade button {
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+  }
+
+  .btn,
+  .btn-carrinho,
+  .btn-novo-pedido {
+    width: 100%;
+    font-size: 15px;
+    padding: 14px;
+  }
+
+ 
+}
+
+/* ========================= */
+/* TELAS MUITO PEQUENAS */
+/* ========================= */
+
+@media (max-width: 480px) {
+
+
+.acoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin-left: auto;
+  min-width: 24px;
+}
+
+  .logo-topo {
+    height: 48px;
+  }
+
+  .topo button {
+    font-size: 18px;
+  }
+
+.item {
+  flex-direction: row;
+  align-items: center;
+}
+
+  .item > img {
+    width: 65px;
+    height: 65px;
+  }
+
+  .info h3 {
+    font-size: 14px;
+  }
+
+  .info p {
+    font-size: 11px;
+  }
+
+  .preco {
+    font-size: 16px;
+  }
+
+  .topo-img img {
+    height: 35vh;
+  }
+
+}
+
+/* INPUTS PAGAMENTO */
+
+.input-pagamento{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  margin-top:12px;
+  background:#f3f4f6;
+  font-size:15px;
+  outline:none;
+  box-shadow:0 2px 5px rgba(0,0,0,0.05);
 }

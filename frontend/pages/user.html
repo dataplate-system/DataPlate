@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DataPlate</title>
   <link rel="stylesheet" href="../Css/user.css">
 </head>
@@ -45,6 +46,320 @@
   </button>
 
 </div>
+
+
+
+   
+
+
+<!-- TELA PIX -->
+<div id="telaPix" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Pagamento Pix</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">📱</div>
+
+    <h2>Escaneie o QR Code</h2>
+
+    <img src="../images/qrcode-pix.png"
+         style="width:220px; margin:20px auto; display:block;">
+
+    <p style="margin-top:10px;">
+      Chave Pix:
+    </p>
+
+    <div style="
+      background:#f3f4f6;
+      padding:12px;
+      border-radius:10px;
+      margin-top:10px;
+      font-weight:bold;
+    ">
+      restaurante@dataplate.com
+    </div>
+
+    <button class="btn-carrinho"
+      style="margin-top:20px;"
+      onclick="pagamentoAprovado()">
+
+      Já realizei o pagamento
+    </button>
+
+  </div>
+
+</div>
+
+<!-- TELA CRÉDITO -->
+<div id="telaCredito" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Cartão de Crédito</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">💳</div>
+
+    <input type="text"
+      placeholder="Número do cartão"
+      class="input-pagamento">
+
+    <input type="text"
+      placeholder="Nome impresso"
+      class="input-pagamento">
+
+    <div style="display:flex; gap:10px;">
+      <input type="text"
+        placeholder="MM/AA"
+        class="input-pagamento">
+
+      <input type="text"
+        placeholder="CVV"
+        class="input-pagamento">
+    </div>
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Pagar Agora
+    </button>
+
+  </div>
+
+</div>
+
+<!-- TELA DÉBITO -->
+<div id="telaDebito" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Cartão de Débito</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">💳</div>
+
+    <input type="text"
+      placeholder="Número do cartão"
+      class="input-pagamento">
+
+    <input type="text"
+      placeholder="Nome impresso"
+      class="input-pagamento">
+
+    <div style="display:flex; gap:10px;">
+      <input type="text"
+        placeholder="MM/AA"
+        class="input-pagamento">
+
+      <input type="text"
+        placeholder="CVV"
+        class="input-pagamento">
+    </div>
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Confirmar Débito
+    </button>
+
+  </div>
+
+</div>
+
+<!-- TELA DINHEIRO -->
+<div id="telaDinheiro" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Pagamento em Dinheiro</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">💵</div>
+
+    <h2>Pagamento na entrega</h2>
+
+    <p style="margin:15px 0;">
+      Precisa de troco?
+    </p>
+
+    <input type="number"
+      placeholder="Troco para quanto?"
+      class="input-pagamento">
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Confirmar Pedido
+    </button>
+
+  </div>
+
+</div>   
+
+<!-- TELA PIX -->
+<div id="telaPix" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Pagamento Pix</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">📱</div>
+
+    <h2>Escaneie o QR Code</h2>
+
+    <img src="../images/qrcode-pix.png"
+         style="width:220px; margin:20px auto; display:block;">
+
+    <p style="margin-top:10px;">
+      Chave Pix:
+    </p>
+
+    <div style="
+      background:#f3f4f6;
+      padding:12px;
+      border-radius:10px;
+      margin-top:10px;
+      font-weight:bold;
+    ">
+      restaurante@dataplate.com
+    </div>
+
+    <button class="btn-carrinho"
+      style="margin-top:20px;"
+      onclick="pagamentoAprovado()">
+
+      Já realizei o pagamento
+    </button>
+
+  </div>
+
+</div>
+
+<!-- TELA CRÉDITO -->
+<div id="telaCredito" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Cartão de Crédito</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">💳</div>
+
+    <input type="text"
+      placeholder="Número do cartão"
+      class="input-pagamento">
+
+    <input type="text"
+      placeholder="Nome impresso"
+      class="input-pagamento">
+
+    <div style="display:flex; gap:10px;">
+      <input type="text"
+        placeholder="MM/AA"
+        class="input-pagamento">
+
+      <input type="text"
+        placeholder="CVV"
+        class="input-pagamento">
+    </div>
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Pagar Agora
+    </button>
+
+  </div>
+
+</div>
+
+<!-- TELA DÉBITO -->
+<div id="telaDebito" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Cartão de Débito</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">💳</div>
+
+    <input type="text"
+      placeholder="Número do cartão"
+      class="input-pagamento">
+
+    <input type="text"
+      placeholder="Nome impresso"
+      class="input-pagamento">
+
+    <div style="display:flex; gap:10px;">
+      <input type="text"
+        placeholder="MM/AA"
+        class="input-pagamento">
+
+      <input type="text"
+        placeholder="CVV"
+        class="input-pagamento">
+    </div>
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Confirmar Débito
+    </button>
+
+  </div>
+
+</div>
+
+<!-- TELA DINHEIRO -->
+<div id="telaDinheiro" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Pagamento em Dinheiro</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div style="font-size:70px;">💵</div>
+
+    <h2>Pagamento na entrega</h2>
+
+    <p style="margin:15px 0;">
+      Precisa de troco para quanto?
+    </p>
+
+    <input type="number"
+      placeholder="Troco para quanto?"
+      class="input-pagamento">
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Confirmar Pedido
+    </button>
+
+  </div>
+
+</div>
+
 
 <!-- TELA DE STATUS DO PEDIDO -->
 <div id="telaStatus" style="display:none; padding:20px;">
@@ -92,7 +407,7 @@
 
 
   <header class="topo">
-    <button class="voltar" onclick="voltarPagina()">←</button>
+    <button class="voltar" onclick="voltarCarrinho()">←</button>
     
      <img src="../images/logo-emp.png" class="logo-topo">
 
@@ -116,10 +431,7 @@
 
    <button class="btn" onclick="confirmarPedido()">Confirmar pedido</button>
 
-   <div class="acoes">
-    <img src="../images/lixeira.png">
-  </div>
-
+ 
   
 
 </div>

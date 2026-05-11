@@ -357,16 +357,53 @@ function selecionarPagamento(elemento, tipo) {
 
 // finalizar pagamento
 function finalizarPagamento() {
+
   if (pagamentoSelecionado === "") {
     alert("Escolha uma forma de pagamento!");
     return;
   }
 
-  // marcar pedido ativo
+  document.getElementById("telaPagamento").style.display = "none";
+
+  if (pagamentoSelecionado === "Pix") {
+    document.getElementById("telaPix").style.display = "block";
+  }
+
+  else if (pagamentoSelecionado === "Crédito") {
+    document.getElementById("telaCredito").style.display = "block";
+  }
+
+  else if (pagamentoSelecionado === "Débito") {
+    document.getElementById("telaDebito").style.display = "block";
+  }
+
+  else if (pagamentoSelecionado === "Dinheiro") {
+    document.getElementById("telaDinheiro").style.display = "block";
+  }
+}
+
+function fecharTelaPagamento() {
+
+  document.getElementById("telaPix").style.display = "none";
+  document.getElementById("telaCredito").style.display = "none";
+  document.getElementById("telaDebito").style.display = "none";
+  document.getElementById("telaDinheiro").style.display = "none";
+
+  document.getElementById("telaPagamento").style.display = "block";
+}
+
+function pagamentoAprovado() {
+
   localStorage.setItem("pedidoAtivo", "true");
   pedidoEmAndamento = true;
 
-  document.getElementById("telaPagamento").style.display = "none";
+  atualizarBadge();
+
+  document.getElementById("telaPix").style.display = "none";
+  document.getElementById("telaCredito").style.display = "none";
+  document.getElementById("telaDebito").style.display = "none";
+  document.getElementById("telaDinheiro").style.display = "none";
+
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarStatusPedido();
