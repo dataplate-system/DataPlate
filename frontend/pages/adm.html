@@ -1,389 +1,470 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataPlate - Painel Administrativo</title>
   <link rel="stylesheet" href="../Css/adm.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 </head>
 <body>
   <div class="admin-container">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="../images/logodataplate.png" alt="Logo DataPlate" style="width: 32px; height: 32px;">
-        <span>DataPlate</span>
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="header-left">
+        <div class="logo-area">
+          <img src="../images/logodataplate.png" alt="Logo DataPlate" style="width: 32px; height: 32px;">
+          <span class="logo-text">DataPlate</span>
+        </div>
       </div>
-
-      <ul class="sidebar-menu">
-        <li>
-          <a href="#dashboard" class="nav-link active" data-tab="dashboard">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="12 3 20 7.5 20 16.5 12 21 4 16.5 4 7.5 12 3"></polyline>
-              <line x1="3.27" y1="6.96" x2="12.73" y2="12.01"></line>
-              <line x1="12.73" y1="12.01" x2="20.73" y2="7.02"></line>
-              <polyline points="12 12 12 21"></polyline>
-              <polyline points="20 7.5 12 12.55 4 7.5"></polyline>
-            </svg>
-            <span>Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a href="#pedidos" class="nav-link" data-tab="pedidos">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-            <span>Pedidos</span>
-          </a>
-        </li>
-        <li>
-          <a href="#cardapio" class="nav-link" data-tab="cardapio">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2z"></path>
-              <line x1="9" y1="5" x2="9" y2="19"></line>
-              <line x1="15" y1="5" x2="15" y2="19"></line>
-            </svg>
-            <span>Cardápio</span>
-          </a>
-        </li>
-        <li>
-          <a href="#estoque" class="nav-link" data-tab="estoque">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-              <line x1="12" y1="22.08" x2="12" y2="12"></line>
-            </svg>
-            <span>Estoque</span>
-          </a>
-        </li>
-        <li>
-          <a href="#analytics" class="nav-link" data-tab="analytics">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="2" x2="12" y2="22"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <span>Analytics</span>
-          </a>
-        </li>
-        <li>
-          <a href="#relatorios" class="nav-link" data-tab="relatorios">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2V17zm4 0h-2V7h2V17zm4 0h-2v-4h2V17z"></path>
-            </svg>
-            <span>Relatórios</span>
-          </a>
-        </li>
-      </ul>
-
-      <div class="sidebar-footer">
-        <div class="user-profile">
-          <div class="user-avatar">GP</div>
-          <div class="user-info">
-            <strong style="display: block; font-size: 13px;">Gerente</strong>
-            <small>Seu Restaurante</small>
+      <nav class="main-nav">
+        <!-- Cadastros -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Cadastros</button>
+          <div class="dropdown-menu">
+            <a href="#clientes" class="dropdown-link" onclick="navigateTo('clientes')">Clientes</a>
+            <a href="#fornecedores" class="dropdown-link" onclick="navigateTo('fornecedores')">Fornecedores</a>
+            <a href="#funcionarios" class="dropdown-link" onclick="navigateTo('funcionarios')">Funcionários</a>
+            <a href="#cardapio" class="dropdown-link" onclick="navigateTo('cardapio')">Cardápio</a>
           </div>
         </div>
-        <button class="logout-btn">Sair</button>
+
+        <!-- Operações -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Operações</button>
+          <div class="dropdown-menu">
+            <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
+            <a href="#cozinha" class="dropdown-link" onclick="navigateTo('cozinha')">Cozinha</a>
+            <a href="#estoque" class="dropdown-link" onclick="navigateTo('estoque')">Estoque</a>
+          </div>
+        </div>
+
+        <!-- Relatórios -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Relatórios</button>
+          <div class="dropdown-menu">
+            <a href="#rel-vendas" class="dropdown-link" onclick="navigateTo('rel-vendas')">Vendas</a>
+            <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
+            <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
+            <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
+          </div>
+        </div>
+
+        <!-- Configurações -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Configurações</button>
+          <div class="dropdown-menu">
+            <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
+            <a href="#config-usuarios" class="dropdown-link" onclick="navigateTo('config-usuarios')">Usuários e Permissões</a>
+            <a href="#config-integracao" class="dropdown-link" onclick="navigateTo('config-integracao')">Integração</a>
+            <a href="#config-notificacoes" class="dropdown-link" onclick="navigateTo('config-notificacoes')">Notificações</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="header-right">
+        <div class="search-box">
+          <input type="text" placeholder="Pesquisar..." />
+        </div>
+        <div class="user-menu dropdown">
+          <button type="button" class="user-button">
+            <div class="user-avatar-small">GP</div>
+            <span>Gerente</span>
+          </button>
+          <div class="dropdown-menu dropdown-right">
+            <a href="#perfil" class="dropdown-link">Meu Perfil</a>
+            <a href="#seguranca" class="dropdown-link">Segurança</a>
+            <a href="#trocar-usuario" class="dropdown-link">Trocar de Usuário</a>
+            <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <a href="#logout" class="dropdown-link logout-link">Sair</a>
+          </div>
+        </div>
       </div>
-    </aside>
+    </header>
 
     <!-- MAIN CONTENT -->
     <div class="main-content">
-      <!-- TOP BAR -->
-      <div class="top-bar">
-        <div class="search-box">
-          <input type="text" placeholder="Pesquisar pedidos, pratos..." />
-        </div>
-        <div class="top-actions">
-          <svg class="notification-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6m-1.78 7.78l-4.24-4.24m-5.08 0l-4.24 4.24"></path>
-          </svg>
-        </div>
-      </div>
 
       <!-- CONTENT -->
-      <div class="content">
-        <!-- DASHBOARD TAB -->
-        <div class="tab-content active" id="dashboard">
-          <div class="page-header">
-            <h1>Dashboard</h1>
-            <p>Resumo do desempenho do seu restaurante</p>
+      <div class="contentcenter">
+        <img src="../images/logodataplate.png" alt="Logo" class="logocenter">
+          <div class="nomecenter">DataPlate</div>
+          <p id="textcenter">Software de gestão inteligente para restaurantes</p>
+
+        <!-- CLIENTES -->
+        <section id="clientes" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Clientes</h1>
+            <p>Gerencie cadastros de clientes e histórico de pedidos</p>
           </div>
 
-          <!-- KPI CARDS -->
-          <div class="dashboard-grid">
-            <div class="card metric-card">
-              <div class="metric-label">Receita Hoje</div>
-              <div class="metric-value">R$ 1.240</div>
-              <div class="metric-change">
-                <span>↑ 12.5% vs ontem</span>
-              </div>
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addClientModal')" data-open-modal="addClientModal">+ Novo Cliente</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar por nome ou CPF..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todos os Status</option>
+                <option>Ativo</option>
+                <option>Inativo</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
             </div>
-
-            <div class="card metric-card">
-              <div class="metric-label">Pedidos Processados</div>
-              <div class="metric-value">28</div>
-              <div class="metric-change">
-                <span>↑ 5 novos hoje</span>
-              </div>
-            </div>
-
-            <div class="card metric-card">
-              <div class="metric-label">Ticket Médio</div>
-              <div class="metric-value">R$ 44,28</div>
-              <div class="metric-change negative">
-                <span>↓ 2.3% vs semana anterior</span>
-              </div>
-            </div>
-
-            <div class="card metric-card">
-              <div class="metric-label">Taxa de Preparo</div>
-              <div class="metric-value">92%</div>
-              <div class="metric-change">
-                <span>✓ No tempo esperado</span>
-              </div>
-            </div>
+            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
           </div>
 
-          <!-- CHARTS -->
-          <div class="charts-section">
-            <div class="chart-container">
-              <div class="chart-title">Vendas por Hora</div>
-              <canvas id="salesChart"></canvas>
-            </div>
-
-            <div class="chart-container">
-              <div class="chart-title">Distribuição de Pratos</div>
-              <canvas id="dishesChart"></canvas>
-            </div>
-          </div>
-
-          <!-- RECENT ORDERS -->
           <div class="table-container">
-            <div style="margin-bottom: 16px;">
-              <h3 style="font-size: 16px; font-weight: 600;">Pedidos Recentes</h3>
-            </div>
-            <table>
+            <table class="data-table">
               <thead>
                 <tr>
-                  <th>ID Pedido</th>
-                  <th>Cliente</th>
-                  <th>Total</th>
+                  <th><input type="checkbox" /></th>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>Pedidos</th>
+                  <th>Gasto Total</th>
                   <th>Status</th>
-                  <th>Hora</th>
+                  <th>Cadastrado em</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>#2024001</td>
-                  <td>João Silva</td>
-                  <td>R$ 85,90</td>
-                  <td><span class="status-badge status-completed">Entregue</span></td>
-                  <td>14:32</td>
+                  <td><input type="checkbox" /></td>
+                  <td><strong>João Silva</strong></td>
+                  <td>joao@email.com</td>
+                  <td>(11) 98765-4321</td>
+                  <td>12</td>
+                  <td>R$ 524,80</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>15/04/2026</td>
                   <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Ver</button>
-                      <button class="btn-small">Imprimir</button>
-                    </div>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ver Pedidos">📋</button>
+                    <button class="btn-icon" title="Excluir">🗑️</button>
                   </td>
                 </tr>
                 <tr>
-                  <td>#2024002</td>
-                  <td>Maria Santos</td>
-                  <td>R$ 52,50</td>
-                  <td><span class="status-badge status-completed">Entregue</span></td>
-                  <td>14:45</td>
+                  <td><input type="checkbox" /></td>
+                  <td><strong>Maria Santos</strong></td>
+                  <td>maria@email.com</td>
+                  <td>(11) 99876-5432</td>
+                  <td>8</td>
+                  <td>R$ 380,50</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>22/03/2026</td>
                   <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Ver</button>
-                      <button class="btn-small">Imprimir</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#2024003</td>
-                  <td>Pedro Costa</td>
-                  <td>R$ 120,00</td>
-                  <td><span class="status-badge status-active">Em Preparo</span></td>
-                  <td>14:58</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Ver</button>
-                      <button class="btn-small">Cancelar</button>
-                    </div>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ver Pedidos">📋</button>
+                    <button class="btn-icon" title="Excluir">🗑️</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <!-- PEDIDOS TAB -->
-        <div class="tab-content" id="pedidos" style="display: none;">
-          <div class="page-header">
-            <h1>Gerenciamento de Pedidos</h1>
-            <p>Visualize e controle todos os pedidos</p>
+        <!-- FUNCIONÁRIOS -->
+        <section id="funcionarios" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Funcionários</h1>
+            <p>Controle de pessoal, permissões e horários</p>
           </div>
 
-          <div style="margin-bottom: 20px;">
-            <div class="tabs">
-              <button class="tab-button active">Todos (28)</button>
-              <button class="tab-button">Em Preparo (3)</button>
-              <button class="tab-button">Entregues (24)</button>
-              <button class="tab-button">Cancelados (1)</button>
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addFunctModal')" data-open-modal="addFunctModal">+ Novo Funcionário</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar por nome..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todos os Cargos</option>
+                <option>Gerente</option>
+                <option>Cozinheiro</option>
+                <option>Atendente</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
             </div>
           </div>
 
           <div class="table-container">
-            <table>
+            <table class="data-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Itens</th>
-                  <th>Total</th>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>Salário</th>
                   <th>Status</th>
-                  <th>Tempo de Preparo</th>
+                  <th>Admissão</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>#2024001</td>
-                  <td>João Silva</td>
-                  <td>2 Hambúrgueres, 1 Salada</td>
-                  <td>R$ 85,90</td>
-                  <td><span class="status-badge status-completed">Entregue</span></td>
-                  <td>18 min</td>
+                  <td><strong>Carlos Mendes</strong></td>
+                  <td><span class="badge badge-info">Gerente</span></td>
+                  <td>carlos@restaurante.com</td>
+                  <td>(11) 99999-1111</td>
+                  <td>R$ 4.500,00</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>10/01/2025</td>
                   <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Detalhes</button>
-                    </div>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Permissões">🔑</button>
+                    <button class="btn-icon" title="Ver Expediente">📅</button>
                   </td>
                 </tr>
                 <tr>
-                  <td>#2024002</td>
-                  <td>Maria Santos</td>
-                  <td>1 Pasta Carbonara</td>
-                  <td>R$ 52,50</td>
-                  <td><span class="status-badge status-completed">Entregue</span></td>
-                  <td>15 min</td>
+                  <td><strong>Ana Silva</strong></td>
+                  <td><span class="badge badge-warning">Cozinheira</span></td>
+                  <td>ana@restaurante.com</td>
+                  <td>(11) 99999-2222</td>
+                  <td>R$ 3.200,00</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>15/02/2025</td>
                   <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Detalhes</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td>#2024003</td>
-                  <td>Pedro Costa</td>
-                  <td>2 Salmão Grelhado, 1 Bolo</td>
-                  <td>R$ 120,00</td>
-                  <td><span class="status-badge status-active">Em Preparo</span></td>
-                  <td>12 min</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Detalhes</button>
-                      <button class="btn-small">Acelerar</button>
-                    </div>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Permissões">🔑</button>
+                    <button class="btn-icon" title="Ver Expediente">📅</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <!-- CARDÁPIO TAB -->
-        <div class="tab-content" id="cardapio" style="display: none;">
-          <div class="page-header">
-            <h1>Gerenciamento do Cardápio</h1>
-            <p>Adicione, edite ou remova pratos do seu cardápio</p>
+        <!-- FORNECEDORES -->
+        <section id="fornecedores" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Fornecedores</h1>
+            <p>Cadastro e controle de fornecedores e insumos</p>
           </div>
 
-          <div style="margin-bottom: 20px;">
-            <button class="btn-primary" onclick="openAddDishModal()">+ Novo Prato</button>
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addSupplierModal')" data-open-modal="addSupplierModal">+ Novo Fornecedor</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar fornecedor..." class="filter-input" />
+              <button class="btn-secondary">Filtrar</button>
+            </div>
           </div>
 
           <div class="table-container">
-            <table>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fornecedor</th>
+                  <th>Especialidade</th>
+                  <th>Telefone</th>
+                  <th>Email</th>
+                  <th>Cidade</th>
+                  <th>Status</th>
+                  <th>Última Compra</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Açougue Premium</strong></td>
+                  <td>Carnes e Embutidos</td>
+                  <td>(11) 88888-1111</td>
+                  <td>contato@acougue.com</td>
+                  <td>São Paulo</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>28/04/2026</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Histórico">📊</button>
+                    <button class="btn-icon" title="Contato">📞</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CARDÁPIO -->
+        <section id="cardapio" class="content-section">
+          <div class="section-header">
+            <h1>Gestão do Cardápio</h1>
+            <p>Cadastro, preço e disponibilidade de pratos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addDishModal')" data-open-modal="addDishModal">+ Novo Prato</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar prato..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todas as Categorias</option>
+                <option>Sanduíches</option>
+                <option>Massas</option>
+                <option>Saladas</option>
+                <option>Sobremesas</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>Prato</th>
                   <th>Categoria</th>
                   <th>Preço</th>
+                  <th>Custo</th>
+                  <th>Margem</th>
                   <th>Disponível</th>
-                  <th>Vendido (7d)</th>
+                  <th>Vendas (7d)</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Hambúrguer</strong></td>
+                  <td><strong>Hambúrguer Artesanal</strong></td>
                   <td>Sanduíches</td>
                   <td>R$ 28,90</td>
-                  <td><span class="status-badge status-completed">Sim</span></td>
+                  <td>R$ 8,50</td>
+                  <td><span class="profit">70%</span></td>
+                  <td><span class="badge badge-active">Sim</span></td>
                   <td>42</td>
                   <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Pasta Carbonara</strong></td>
-                  <td>Massas</td>
-                  <td>R$ 42,50</td>
-                  <td><span class="status-badge status-completed">Sim</span></td>
-                  <td>38</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Salada Caesar</strong></td>
-                  <td>Saladas</td>
-                  <td>R$ 32,00</td>
-                  <td><span class="status-badge status-completed">Sim</span></td>
-                  <td>28</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                      <button class="btn-small">Excluir</button>
-                    </div>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ingredientes">🧪</button>
+                    <button class="btn-icon" title="Desativar">❌</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <!-- ESTOQUE TAB -->
-        <div class="tab-content" id="estoque" style="display: none;">
-          <div class="page-header">
-            <h1>Controle de Estoque</h1>
-            <p>Monitore seus insumos e alertas de reposição</p>
+        <!-- PEDIDOS -->
+        <section id="pedidos" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Pedidos</h1>
+            <p>Controle e acompanhamento de todos os pedidos</p>
           </div>
 
-          <div style="margin-bottom: 20px;">
-            <button class="btn-primary" onclick="openAddStockModal()">+ Novo Insumo</button>
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <select class="filter-select">
+                <option>Todos os Pedidos</option>
+                <option>Pendente</option>
+                <option>Preparando</option>
+                <option>Pronto</option>
+                <option>Entregue</option>
+                <option>Cancelado</option>
+              </select>
+              <input type="date" class="filter-input" />
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
           </div>
 
           <div class="table-container">
-            <table>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID Pedido</th>
+                  <th>Cliente</th>
+                  <th>Data/Hora</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Tempo Preparo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>#2026001</strong></td>
+                  <td>João Silva</td>
+                  <td>02/05/2026 14:30</td>
+                  <td>2x Hambúrguer, 1x Salada</td>
+                  <td>R$ 85,90</td>
+                  <td><span class="badge badge-success">Entregue</span></td>
+                  <td>18 min</td>
+                  <td>
+                    <button class="btn-icon" title="Detalhes">👁️</button>
+                    <button class="btn-icon" title="Imprimir">🖨️</button>
+                    <button class="btn-icon" title="Reemissão">♻️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- COZINHA -->
+        <section id="cozinha" class="content-section">
+          <div class="section-header">
+            <h1>Painel da Cozinha</h1>
+            <p>Controle de preparação de pedidos em tempo real</p>
+          </div>
+
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <select class="filter-select">
+                <option>Aguardando Preparo</option>
+                <option>Em Preparação</option>
+                <option>Pronto para Entrega</option>
+              </select>
+              <button class="btn-secondary">Atualizar</button>
+            </div>
+          </div>
+
+          <div class="kitchen-board">
+            <div class="kitchen-column">
+              <h3>Aguardando Preparo (3)</h3>
+              <div class="kitchen-card">
+                <div class="card-id">#2026005</div>
+                <div class="card-items">2x Pasta Carbonara</div>
+                <div class="card-time">Solicitado há 5 min</div>
+                <button class="btn-small" onclick="changeStatus('preparing')">Iniciar Preparo</button>
+              </div>
+            </div>
+            <div class="kitchen-column">
+              <h3>Em Preparação (2)</h3>
+              <div class="kitchen-card">
+                <div class="card-id">#2026003</div>
+                <div class="card-items">1x Salmão Grelhado, 1x Bolo</div>
+                <div class="card-time">Preparando há 8 min</div>
+                <button class="btn-small" onclick="changeStatus('ready')">Marcar Pronto</button>
+              </div>
+            </div>
+            <div class="kitchen-column">
+              <h3>Pronto para Entrega (1)</h3>
+              <div class="kitchen-card">
+                <div class="card-id">#2026001</div>
+                <div class="card-items">2x Hambúrguer, 1x Salada</div>
+                <div class="card-time">Pronto há 2 min</div>
+                <button class="btn-small" onclick="changeStatus('delivered')">Entregar</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ESTOQUE -->
+        <section id="estoque" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Estoque</h1>
+            <p>Controle de insumos e ingredientes</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addStockModal')" data-open-modal="addStockModal">+ Novo Insumo</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar insumo..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todos os Status</option>
+                <option>Em Estoque</option>
+                <option>Estoque Baixo</option>
+                <option>Crítico</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>Insumo</th>
@@ -392,187 +473,710 @@
                   <th>Mínimo</th>
                   <th>Status</th>
                   <th>Última Atualização</th>
+                  <th>Fornecedor</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td><strong>Carne Moída</strong></td>
-                  <td>8.5</td>
+                  <td>25</td>
                   <td>kg</td>
+                  <td>10</td>
+                  <td><span class="badge badge-active">Em Estoque</span></td>
+                  <td>02/05/2026 10:30</td>
+                  <td>Açougue Premium</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ajustar">🔄</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Queijo Mussarela</strong></td>
                   <td>5</td>
-                  <td><span class="status-badge status-completed">Normal</span></td>
-                  <td>Hoje 10:30</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Editar</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Tomate</strong></td>
-                  <td>2.3</td>
                   <td>kg</td>
-                  <td>3</td>
-                  <td><span class="status-badge status-pending">Baixo</span></td>
-                  <td>Hoje 09:15</td>
+                  <td>8</td>
+                  <td><span class="badge badge-danger">Estoque Baixo</span></td>
+                  <td>01/05/2026 16:45</td>
+                  <td>Laticínios Brasil</td>
                   <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Repor</button>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td><strong>Queijo Mozzarella</strong></td>
-                  <td>1.2</td>
-                  <td>kg</td>
-                  <td>2</td>
-                  <td><span class="status-badge status-low">Crítico</span></td>
-                  <td>Hoje 08:00</td>
-                  <td>
-                    <div class="action-buttons">
-                      <button class="btn-small">Repor Agora</button>
-                    </div>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Repor">⬆️</button>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <!-- ANALYTICS TAB -->
-        <div class="tab-content" id="analytics" style="display: none;">
-          <div class="page-header">
-            <h1>Análise de Desempenho</h1>
-            <p>Dados estratégicos sobre seus produtos</p>
+        <!-- RELATÓRIO DE VENDAS -->
+        <section id="rel-vendas" class="content-section">
+          <div class="section-header">
+            <h1>Relatório de Vendas</h1>
+            <p>Análise detalhada de vendas e performance</p>
           </div>
 
-          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div class="chart-container">
-              <div class="chart-title">Pratos Mais Vendidos (Últimos 30 dias)</div>
-              <canvas id="topDishesChart"></canvas>
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Hoje</option>
+                <option>Últimos 7 dias</option>
+                <option>Este mês</option>
+                <option>Personalizado</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Data Inicial</label>
+              <input type="date" />
+            </div>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" />
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-secondary">📊 Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total de Vendas</div>
+              <div class="stat-value">R$ 4.250,00</div>
+              <div class="stat-change positive">↑ 15% vs período anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Quantidade de Pedidos</div>
+              <div class="stat-value">156</div>
+              <div class="stat-change positive">↑ 8 pedidos a mais</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ticket Médio</div>
+              <div class="stat-value">R$ 27,24</div>
+              <div class="stat-change">→ Sem variação</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Produto Mais Vendido</div>
+              <div class="stat-value">Hambúrguer</div>
+              <div class="stat-change">42 unidades</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Vendas por Período</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Pedidos</th>
+                    <th>Valor Total</th>
+                    <th>Ticket Médio</th>
+                    <th>Prato Top</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>02/05/2026</td>
+                    <td>28</td>
+                    <td>R$ 850,00</td>
+                    <td>R$ 30,36</td>
+                    <td>Hambúrguer (12)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO FINANCEIRO -->
+        <section id="rel-financeiro" class="content-section">
+          <div class="section-header">
+            <h1>Relatório Financeiro</h1>
+            <p>Análise de receitas, despesas e lucros</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Este mês</option>
+                <option>Mês passado</option>
+                <option>Últimos 3 meses</option>
+                <option>Este ano</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-secondary">📊 Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Receita Bruta</div>
+              <div class="stat-value">R$ 28.500,00</div>
+              <div class="stat-change positive">↑ 12% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Despesas Totais</div>
+              <div class="stat-value">R$ 12.200,00</div>
+              <div class="stat-change negative">↑ 5% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lucro Líquido</div>
+              <div class="stat-value">R$ 16.300,00</div>
+              <div class="stat-change positive">↑ 18% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Margem de Lucro</div>
+              <div class="stat-value">57%</div>
+              <div class="stat-change">Saudável</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Composição de Despesas</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>% do Total</th>
+                    <th>Observações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Insumos/Alimentos</td>
+                    <td>R$ 8.500,00</td>
+                    <td>69%</td>
+                    <td>Aumento esperado</td>
+                  </tr>
+                  <tr>
+                    <td>Folha de Pagamento</td>
+                    <td>R$ 3.200,00</td>
+                    <td>26%</td>
+                    <td>Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Utilidades</td>
+                    <td>R$ 500,00</td>
+                    <td>5%</td>
+                    <td>Normal</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO DE CARDÁPIO -->
+        <section id="rel-cardapio" class="content-section">
+          <div class="section-header">
+            <h1>Desempenho do Cardápio</h1>
+            <p>Análise de quais pratos estão mais vendidos</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Últimos 30 dias</option>
+                <option>Este mês</option>
+                <option>Últimos 3 meses</option>
+                <option>Este ano</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+          </div>
+
+          <div class="report-section">
+            <h3>Pratos Mais Vendidos</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Prato</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Faturamento</th>
+                    <th>% do Total</th>
+                    <th>Custo Médio</th>
+                    <th>Lucro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Hambúrguer Artesanal</strong></td>
+                    <td>Sanduíches</td>
+                    <td>42</td>
+                    <td>R$ 1.214,00</td>
+                    <td>27%</td>
+                    <td>R$ 8,50</td>
+                    <td>R$ 855,00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pasta Carbonara</strong></td>
+                    <td>Massas</td>
+                    <td>38</td>
+                    <td>R$ 1.615,00</td>
+                    <td>26%</td>
+                    <td>R$ 15,00</td>
+                    <td>R$ 1.045,00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO OPERACIONAL -->
+        <section id="rel-operacional" class="content-section">
+          <div class="section-header">
+            <h1>Relatório Operacional</h1>
+            <p>Análise de eficiência, tempos e performance</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Últimos 30 dias</option>
+                <option>Este mês</option>
+                <option>Últimos 3 meses</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Tempo Médio de Preparo</div>
+              <div class="stat-value">16.5 min</div>
+              <div class="stat-change positive">↓ 1.5 min a menos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Taxa de Rejeição</div>
+              <div class="stat-value">1.2%</div>
+              <div class="stat-change positive">Excelente</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ocupação Cozinha</div>
+              <div class="stat-value">82%</div>
+              <div class="stat-change">Ótima capacidade</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Pedidos Entregues no Prazo</div>
+              <div class="stat-value">96%</div>
+              <div class="stat-change positive">Acima do esperado</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO RESTAURANTE -->
+        <section id="config-restaurante" class="content-section">
+          <div class="section-header">
+            <h1>Configurações do Restaurante</h1>
+            <p>Informações gerais e operacionais</p>
+          </div>
+
+          <div class="config-form">
+            <div class="form-section">
+              <h3>Informações Básicas</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome do Restaurante</label>
+                  <input type="text" value="Seu Restaurante" />
+                </div>
+                <div class="form-group">
+                  <label>CNPJ</label>
+                  <input type="text" value="12.345.678/0001-90" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Endereço</label>
+                  <input type="text" value="Rua das Flores, 123" />
+                </div>
+                <div class="form-group">
+                  <label>Complemento</label>
+                  <input type="text" value="Apto 456" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Cidade</label>
+                  <input type="text" value="São Paulo" />
+                </div>
+                <div class="form-group">
+                  <label>CEP</label>
+                  <input type="text" value="01234-567" />
+                </div>
+              </div>
             </div>
 
-            <div class="chart-container">
-              <div class="chart-title">Margem de Lucro</div>
-              <canvas id="profitChart"></canvas>
+            <div class="form-section">
+              <h3>Contato</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Telefone Principal</label>
+                  <input type="tel" value="(11) 3000-0000" />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" value="contato@restaurante.com" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Whatsapp para Pedidos</label>
+                  <input type="tel" value="(11) 99999-9999" />
+                </div>
+                <div class="form-group">
+                  <label>Redes Sociais</label>
+                  <input type="text" placeholder="@usuario" />
+                </div>
+              </div>
             </div>
+
+            <div class="form-section">
+              <h3>Horário de Funcionamento</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Abertura</label>
+                  <input type="time" value="11:00" />
+                </div>
+                <div class="form-group">
+                  <label>Fechamento</label>
+                  <input type="time" value="23:00" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Dias de Funcionamento</label>
+                  <div class="checkbox-group">
+                    <label><input type="checkbox" checked /> Seg-Sex</label>
+                    <label><input type="checkbox" checked /> Sábado</label>
+                    <label><input type="checkbox" /> Domingo</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary">Salvar Alterações</button>
+              <button class="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO USUÁRIOS -->
+        <section id="config-usuarios" class="content-section">
+          <div class="section-header">
+            <h1>Usuários e Permissões</h1>
+            <p>Gerenciar acesso e permissões do sistema</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addUserModal')" data-open-modal="addUserModal">+ Novo Usuário</button>
           </div>
 
           <div class="table-container">
-            <div style="margin-bottom: 16px;">
-              <h3 style="font-size: 16px; font-weight: 600;">Matriz BCG - Posicionamento de Produtos</h3>
-            </div>
-            <table>
+            <table class="data-table">
               <thead>
                 <tr>
-                  <th>Prato</th>
-                  <th>Crescimento</th>
-                  <th>Participação</th>
-                  <th>Categoria</th>
-                  <th>Recomendação</th>
+                  <th>Usuário</th>
+                  <th>Email</th>
+                  <th>Tipo de Acesso</th>
+                  <th>Módulos</th>
+                  <th>Status</th>
+                  <th>Último Acesso</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Hambúrguer</strong></td>
-                  <td>15%</td>
-                  <td>Rápido</td>
-                  <td><span class="status-badge" style="background: rgba(248, 91, 21, 0.15); color: #f85b15;">Star (Estrela)</span></td>
-                  <td>Manter/Investir</td>
-                </tr>
-                <tr>
-                  <td><strong>Pasta Carbonara</strong></td>
-                  <td>8%</td>
-                  <td>Rápido</td>
-                  <td><span class="status-badge status-completed">Cash Cow (Vaca Leiteira)</span></td>
-                  <td>Manter</td>
-                </tr>
-                <tr>
-                  <td><strong>Bolo de Chocolate</strong></td>
-                  <td>-2%</td>
-                  <td>Lento</td>
-                  <td><span class="status-badge" style="background: rgba(37, 99, 235, 0.15); color: #2563eb;">Dog (Cachorro)</span></td>
-                  <td>Reposicionar/Remover</td>
+                  <td><strong>Carlos Mendes</strong></td>
+                  <td>carlos@restaurante.com</td>
+                  <td><span class="badge badge-info">Administrador</span></td>
+                  <td>Todos</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>02/05/2026 10:45</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Permissões">🔑</button>
+                    <button class="btn-icon" title="Resetar Senha">🔑</button>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        <!-- RELATÓRIOS TAB -->
-        <div class="tab-content" id="relatorios" style="display: none;">
-          <div class="page-header">
-            <h1>Relatórios</h1>
-            <p>Gere relatórios personalizados do seu negócio</p>
+        <!-- CONFIGURAÇÃO INTEGRAÇÃO -->
+        <section id="config-integracao" class="content-section">
+          <div class="section-header">
+            <h1>Integrações</h1>
+            <p>Conecte seu restaurante com plataformas externas</p>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px;">
-            <div class="card" style="cursor: pointer; text-align: center;">
-              <div style="font-size: 32px; margin-bottom: 12px;">📊</div>
-              <strong style="display: block; margin-bottom: 6px;">Relatório Financeiro</strong>
-              <p style="color: #64748b; font-size: 13px;">Receitas e despesas</p>
+          <div class="integrations-grid">
+            <div class="integration-card">
+              <div class="integration-icon">🛵</div>
+              <h4>Ifood</h4>
+              <p>Integração com plataforma de delivery</p>
+              <button class="btn-small">Configurar</button>
             </div>
-
-            <div class="card" style="cursor: pointer; text-align: center;">
-              <div style="font-size: 32px; margin-bottom: 12px;">📦</div>
-              <strong style="display: block; margin-bottom: 6px;">Estoque</strong>
-              <p style="color: #64748b; font-size: 13px;">Insumos e suprimentos</p>
+            <div class="integration-card">
+              <div class="integration-icon">💳</div>
+              <h4>PagSeguro</h4>
+              <p>Processamento de pagamentos online</p>
+              <button class="btn-small">Configurar</button>
             </div>
-
-            <div class="card" style="cursor: pointer; text-align: center;">
-              <div style="font-size: 32px; margin-bottom: 12px;">🍽️</div>
-              <strong style="display: block; margin-bottom: 6px;">Cardápio</strong>
-              <p style="color: #64748b; font-size: 13px;">Performance de pratos</p>
+            <div class="integration-card">
+              <div class="integration-icon">📍</div>
+              <h4>Google Maps</h4>
+              <p>Mapa de localização</p>
+              <button class="btn-small">Configurar</button>
             </div>
-
-            <div class="card" style="cursor: pointer; text-align: center;">
-              <div style="font-size: 32px; margin-bottom: 12px;">👥</div>
-              <strong style="display: block; margin-bottom: 6px;">Clientes</strong>
-              <p style="color: #64748b; font-size: 13px;">Análise de comportamento</p>
+            <div class="integration-card">
+              <div class="integration-icon">📧</div>
+              <h4>Email Marketing</h4>
+              <p>Disparos de promoções e notícias</p>
+              <button class="btn-small">Configurar</button>
             </div>
           </div>
-        </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO NOTIFICAÇÕES -->
+        <section id="config-notificacoes" class="content-section">
+          <div class="section-header">
+            <h1>Notificações</h1>
+            <p>Personalize seus alertas e notificações</p>
+          </div>
+
+          <div class="config-form">
+            <div class="form-section">
+              <h3>Notificações por Email</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Pedidos novos</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Estoque baixo</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Relatório diário</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" />
+                    <span>Manutenção do sistema</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Notificações por SMS</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Alerta crítico de estoque</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary">Salvar Preferências</button>
+              <button class="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
 
   <!-- MODALS -->
+  <div class="modal" id="addClientModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>
+      <div class="modal-header">Novo Cliente</div>
+      <form id="addClientForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="email@exemplo.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" name="address" placeholder="Rua, número" autocomplete="street-address" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addClientModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addFunctModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addFunctModal')">✕</button>
+      <div class="modal-header">Novo Funcionário</div>
+      <form id="addFunctForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="email@restaurante.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label>Cargo</label>
+            <select name="role" required>
+              <option>Gerente</option>
+              <option>Cozinheiro(a)</option>
+              <option>Atendente</option>
+              <option>Entregador(a)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Salário</label>
+            <input type="number" name="salary" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addFunctModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addSupplierModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addSupplierModal')">✕</button>
+      <div class="modal-header">Novo Fornecedor</div>
+      <form id="addSupplierForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Razão Social</label>
+            <input type="text" name="company" placeholder="Nome da empresa" autocomplete="organization" required />
+          </div>
+          <div class="form-group">
+            <label>CNPJ</label>
+            <input type="text" name="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Especialidade</label>
+            <input type="text" name="specialty" placeholder="Carnes, Bebidas, etc" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="contato@fornecedor.com" autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addSupplierModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="modal" id="addDishModal">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('addDishModal')">✕</button>
-      <div class="modal-header">Adicionar Novo Prato</div>
-      
-      <form>
-        <div class="form-group">
-          <label>Nome do Prato</label>
-          <input type="text" placeholder="Ex: Hambúrguer Artesanal" />
+      <div class="modal-header">Novo Prato</div>
+      <form id="addDishForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome do Prato</label>
+            <input type="text" name="name" placeholder="Ex: Hambúrguer Artesanal" required />
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <select name="category" required>
+              <option value="1">Sanduíches</option>
+              <option value="2">Massas</option>
+              <option value="3">Pratos Principais</option>
+              <option value="4">Saladas</option>
+              <option value="5">Sobremesas</option>
+              <option value="6">Bebidas</option>
+            </select>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Categoria</label>
-          <select>
-            <option>Sanduíches</option>
-            <option>Massas</option>
-            <option>Saladas</option>
-            <option>Sobremesas</option>
-            <option>Bebidas</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Preço (R$)</label>
+            <input type="number" name="price" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Custo (R$)</label>
+            <input type="number" name="cost" placeholder="0.00" min="0" step="0.01" required />
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Descrição</label>
-          <textarea placeholder="Descrição do prato" rows="3"></textarea>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Descrição</label>
+            <textarea name="description" placeholder="Descrição do prato" rows="3" required></textarea>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Preço (R$)</label>
-          <input type="number" placeholder="0.00" step="0.01" />
-        </div>
-
         <div class="form-actions">
           <button type="button" class="btn-secondary" onclick="closeModal('addDishModal')">Cancelar</button>
-          <button type="submit" class="btn-primary">Adicionar Prato</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
         </div>
       </form>
     </div>
@@ -581,43 +1185,179 @@
   <div class="modal" id="addStockModal">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('addStockModal')">✕</button>
-      <div class="modal-header">Adicionar Insumo</div>
-      
-      <form>
-        <div class="form-group">
-          <label>Nome do Insumo</label>
-          <input type="text" placeholder="Ex: Carne Moída" />
+      <div class="modal-header">Novo Insumo</div>
+      <form id="addStockForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Ex: Carne Moída" required />
+          </div>
+          <div class="form-group">
+            <label>Fornecedor</label>
+            <select name="supplier" required>
+              <option>Açougue Premium</option>
+              <option>Verdurão</option>
+              <option>Laticínios Brasil</option>
+            </select>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Quantidade</label>
-          <input type="number" placeholder="0" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" name="quantity" placeholder="0" min="0" step="0.001" required />
+          </div>
+          <div class="form-group">
+            <label>Unidade</label>
+            <select name="unit" required>
+              <option>kg</option>
+              <option>g</option>
+              <option>l</option>
+              <option>ml</option>
+              <option>un</option>
+            </select>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Unidade</label>
-          <select>
-            <option>kg</option>
-            <option>g</option>
-            <option>l</option>
-            <option>ml</option>
-            <option>un</option>
-          </select>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade Mínima</label>
+            <input type="number" name="minQuantity" placeholder="0" min="0" step="0.001" required />
+          </div>
+          <div class="form-group">
+            <label>Preço Unitário</label>
+            <input type="number" name="unitPrice" placeholder="0.00" min="0" step="0.01" required />
+          </div>
         </div>
-
-        <div class="form-group">
-          <label>Quantidade Mínima</label>
-          <input type="number" placeholder="0" />
-        </div>
-
         <div class="form-actions">
           <button type="button" class="btn-secondary" onclick="closeModal('addStockModal')">Cancelar</button>
-          <button type="submit" class="btn-primary">Adicionar Insumo</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script src="../JavaScript/adm.js"></script>
+  <div class="modal" id="addUserModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+      <div class="modal-header">Novo Usuário</div>
+      <form id="addUserForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="usuario@restaurante.com" autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Acesso</label>
+            <select name="accessType" required>
+              <option>Administrador</option>
+              <option>Gerente</option>
+              <option>Operacional</option>
+              <option>Visualização</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Senha Temporária</label>
+            <input type="password" name="temporaryPassword" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addUserModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Criar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function lockBodyScroll() {
+        document.body.style.overflow = document.querySelector('.modal.active') ? 'hidden' : '';
+      }
+
+      window.openModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+          console.warn('Modal nao encontrado:', modalId);
+          return;
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.setAttribute('aria-hidden', 'false');
+        lockBodyScroll();
+      };
+
+      window.closeModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        lockBodyScroll();
+      };
+
+      window.navigateTo = function (sectionId) {
+        document.querySelectorAll('.content-section').forEach(function (section) {
+          section.classList.remove('active');
+        });
+
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
+
+        const showWelcome = !selectedSection || sectionId === 'dashboard';
+        const logoCenter = document.querySelector('.logocenter');
+        const nomeCenter = document.querySelector('.nomecenter');
+        const textCenter = document.getElementById('textcenter');
+
+        if (logoCenter) logoCenter.style.display = showWelcome ? 'block' : 'none';
+        if (nomeCenter) nomeCenter.style.display = showWelcome ? 'block' : 'none';
+        if (textCenter) textCenter.style.display = showWelcome ? 'block' : 'none';
+      };
+
+      window.openAddDishModal = function () { window.openModal('addDishModal'); };
+      window.openAddStockModal = function () { window.openModal('addStockModal'); };
+      window.openAddUserModal = function () { window.openModal('addUserModal'); };
+      window.exportTable = function () { alert('Exportando dados...'); };
+      window.changeStatus = function () { alert('Status atualizado com sucesso!'); };
+
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-open-modal]');
+        if (trigger) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.openModal(trigger.getAttribute('data-open-modal'));
+          return;
+        }
+
+        if (event.target.classList && event.target.classList.contains('modal')) {
+          window.closeModal(event.target.id);
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          document.querySelectorAll('.modal.active').forEach(function (modal) {
+            window.closeModal(modal.id);
+          });
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.modal').forEach(function (modal) {
+          modal.style.display = modal.classList.contains('active') ? 'flex' : 'none';
+          modal.setAttribute('aria-hidden', modal.classList.contains('active') ? 'false' : 'true');
+        });
+      });
+    })();
+  </script>
+  <script src="../JavaScript/adm.js" defer></script>
 </body>
 </html>

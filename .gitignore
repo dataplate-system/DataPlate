@@ -16,9 +16,25 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+# Frontend build/dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Java build output
+target/
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Local browser test profiles
+.edge-*-profile/

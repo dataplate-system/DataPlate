@@ -1,6 +1,7 @@
-const botoes = document.querySelectorAll(".categorias button");
+﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
+const API_BASE_URL = "http://localhost:8080/api";
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 
@@ -165,7 +166,9 @@ botoes.forEach(botao => {
 });
 
 // DIGITAÇÃO NA BUSCA
-searchInput.addEventListener("input", filtrar);
+if (searchInput) {
+  searchInput.addEventListener("input", filtrar);
+}
 
 // CODIGO DO CARINHO
 
@@ -174,6 +177,8 @@ function carregarCarrinho() {
   let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   const lista = document.getElementById("listaCarrinho");
+  if (!lista) return;
+
   lista.innerHTML = "";
 
   let total = 0;
@@ -193,7 +198,9 @@ function carregarCarrinho() {
             <button onclick="aumentar(${index})">+</button>
           </div>
         </div>
-        <button onclick="remover(${index})">🗑️</button>
+        <div class="acoes">
+          <span onclick="remover(${index})"><img src="../images/lixeira.png" alt="Remover"></span>
+        </div>
       </div>
     `;
   });
@@ -229,10 +236,16 @@ carregarCarrinho();
 
 //adição de produtos ao carrinho
 
-function adicionarCarrinho(nome, preco, imagem, qtd) {
+function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
+  if (!produtoId || !nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
+    alert("Selecione uma quantidade válida antes de adicionar ao carrinho.");
+    return;
+  }
+
   let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   carrinho.push({
+    produtoId: produtoId,
     nome: nome,
     preco: preco,
     imagem: imagem,
@@ -259,66 +272,15 @@ function voltarCarrinho() {
 
 }
 
-// CONFIRMAR PEDIDO
-
-
-function iniciarStatusPedido() {
-
-  let etapa = 1;
-
-  const status = [
-    { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
-    { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
-    { titulo: "Pronto", msg: "Seu pedido está pronto" },
-    { titulo: "Entregue", msg: "Aproveite sua refeição!" }
-  ];
-
-  function atualizarTela() {
-    document.getElementById("statusAtual").innerText = status[etapa - 1].titulo;
-    document.getElementById("mensagemStatus").innerText = status[etapa - 1].msg;
-
-    document.querySelectorAll(".step").forEach((el, i) => {
-      el.classList.remove("ativo");
-      if (i < etapa) el.classList.add("ativo");
-    });
-  }
-
-  atualizarTela();
-
-  let intervalo = setInterval(() => {
-    etapa++;
-
-    if (etapa > 4) {
-      clearInterval(intervalo);
-      localStorage.removeItem("carrinho"); // limpa carrinho
-      return;
-    }
-
-    atualizarTela();
-
-  }, 3000); // muda a cada 3 segundos
-}
-
-function novoPedido() {
-  // esconder status
-  document.getElementById("telaStatus").style.display = "none";
-
-  // voltar para lista inicial
-  document.getElementById("telaLista").style.display = "block";
-
-  // resetar etapas visuais
-  document.querySelectorAll(".step").forEach(el => {
-    el.classList.remove("ativo");
-  });
-
-  // resetar textos
-  document.getElementById("statusAtual").innerText = "Pedido Recebido";
-  document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
-}
-
 // pagamento
 
 function confirmarPedido() {
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  if (!carrinho.length) {
+    alert("Adicione pelo menos um produto ao carrinho antes de confirmar o pedido.");
+    return;
+  }
+
   document.getElementById("telaCarrinho").style.display = "none";
   document.getElementById("telaPagamento").style.display = "block";
 }
@@ -345,11 +307,78 @@ function finalizarPagamento() {
     return;
   }
 
-  // marcar pedido ativo
+  document.getElementById("telaPagamento").style.display = "none";
+
+  if (pagamentoSelecionado === "Pix") {
+    document.getElementById("telaPix").style.display = "block";
+  } else if (pagamentoSelecionado === "Crédito") {
+    document.getElementById("telaCredito").style.display = "block";
+  } else if (pagamentoSelecionado === "Débito") {
+    document.getElementById("telaDebito").style.display = "block";
+  } else if (pagamentoSelecionado === "Dinheiro") {
+    document.getElementById("telaDinheiro").style.display = "block";
+  }
+}
+
+function fecharTelaPagamento() {
+  document.getElementById("telaPix").style.display = "none";
+  document.getElementById("telaCredito").style.display = "none";
+  document.getElementById("telaDebito").style.display = "none";
+  document.getElementById("telaDinheiro").style.display = "none";
+
+  document.getElementById("telaPagamento").style.display = "block";
+}
+
+async function pagamentoAprovado() {
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  if (!carrinho.length) {
+    alert("Adicione pelo menos um produto ao carrinho antes de finalizar o pagamento.");
+    return;
+  }
+
+  const pedido = {
+    numeroMesa: 1,
+    itens: carrinho.map(item => ({
+      produtoId: item.produtoId,
+      quantidade: item.quantidade
+    }))
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/pedidos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(pedido)
+    });
+
+    if (!response.ok) {
+      let message = "Nao foi possivel salvar o pedido.";
+      try {
+        const error = await response.json();
+        message = error.message || error.mensagem || error.erro || message;
+      } catch (_) {
+        message = await response.text() || message;
+      }
+
+      throw new Error(message);
+    }
+  } catch (error) {
+    console.error("Erro ao salvar pedido:", error);
+    alert(error.message);
+    return;
+  }
+
   localStorage.setItem("pedidoAtivo", "true");
   pedidoEmAndamento = true;
+  localStorage.removeItem("carrinho");
+  atualizarBadge();
 
-  document.getElementById("telaPagamento").style.display = "none";
+  document.getElementById("telaPix").style.display = "none";
+  document.getElementById("telaCredito").style.display = "none";
+  document.getElementById("telaDebito").style.display = "none";
+  document.getElementById("telaDinheiro").style.display = "none";
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarStatusPedido();
@@ -464,14 +493,4 @@ function atualizarBadge() {
   }
 }
 
-localStorage.setItem("pedidoAtivo", "true");
-pedidoEmAndamento = true;
-
 atualizarBadge();
-
-pedidoEmAndamento = false;
-
-atualizarBadge();
-
-atualizarBadge();
-
