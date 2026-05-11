@@ -23,37 +23,14 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-<<<<<<< HEAD
-@Table(name = "pedido_itens")
-public class PedidoItem {
-    @Id
-=======
 @Table(name = "item_pedido")
 public class PedidoItem {
     @Id
     @Column(name = "id_item_pedido")
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-<<<<<<< HEAD
-    @JoinColumn(name = "pedido_id", nullable = false)
-    private Pedido pedido;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "produto_id", nullable = false)
-    private Produto produto;
-
-    @Column(nullable = false)
-    private Integer quantidade;
-
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal precoUnitario;
-
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal subtotal;
-=======
     @JoinColumn(name = "id_pedido", nullable = false)
     private Pedido pedido;
 
@@ -73,6 +50,7 @@ public class PedidoItem {
     @Column(name = "observacao")
     private String observacao;
 
+    @Builder.Default
     @Column(name = "cancelado", nullable = false)
     private Boolean cancelado = false;
 
@@ -82,5 +60,4 @@ public class PedidoItem {
             cancelado = false;
         }
     }
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }

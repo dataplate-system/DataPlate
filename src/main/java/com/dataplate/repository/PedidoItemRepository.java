@@ -16,11 +16,7 @@ public interface PedidoItemRepository extends JpaRepository<PedidoItem, Long> {
                 sum(i.subtotal)
             )
             from PedidoItem i
-<<<<<<< HEAD
-            where i.pedido.status <> com.dataplate.entity.PedidoStatus.CANCELADO
-=======
             where i.pedido.idStatus <> 5
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
             group by i.produto.id, i.produto.nome
             order by sum(i.quantidade) desc
             """)

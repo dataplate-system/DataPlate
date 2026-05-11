@@ -2,8 +2,6 @@
  * ADMIN PANEL - Navigation and Modal Management
  */
 
-<<<<<<< HEAD
-=======
 const API_BASE_URL = 'http://localhost:8080/api';
 
 async function postJson(endpoint, payload) {
@@ -30,7 +28,6 @@ async function postJson(endpoint, payload) {
   return response.json();
 }
 
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 // =============================================
 // NAVIGATION: Section Switching
 // =============================================
@@ -389,14 +386,6 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const formData = new FormData(e.target);
-<<<<<<< HEAD
-  console.log('New dish:', Object.fromEntries(formData));
-  
-  // TODO: Send to server
-  alert('Prato adicionado com sucesso!');
-  closeModal('addDishModal');
-  e.target.reset();
-=======
 
   const produto = {
     nome: formData.get('name'),
@@ -417,7 +406,6 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
       console.error('Erro ao salvar prato:', error);
       alert(error.message);
     });
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 });
 
 // Add Stock Modal
@@ -892,7 +880,3 @@ document.addEventListener('DOMContentLoaded', () => {
       initDishesChart();
       initOrdersChart();
     });
-<<<<<<< HEAD
-
-=======
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)

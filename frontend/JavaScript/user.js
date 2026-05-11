@@ -1,10 +1,7 @@
 ﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
-<<<<<<< HEAD
-=======
 const API_BASE_URL = "http://localhost:8080/api";
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 
@@ -239,13 +236,8 @@ carregarCarrinho();
 
 //adição de produtos ao carrinho
 
-<<<<<<< HEAD
-function adicionarCarrinho(nome, preco, imagem, qtd) {
-  if (!nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
-=======
 function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
   if (!produtoId || !nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
     alert("Selecione uma quantidade válida antes de adicionar ao carrinho.");
     return;
   }
@@ -253,10 +245,7 @@ function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
   let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   carrinho.push({
-<<<<<<< HEAD
-=======
     produtoId: produtoId,
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
     nome: nome,
     preco: preco,
     imagem: imagem,
@@ -283,66 +272,6 @@ function voltarCarrinho() {
 
 }
 
-<<<<<<< HEAD
-// CONFIRMAR PEDIDO
-
-
-function iniciarStatusPedido() {
-
-  let etapa = 1;
-
-  const status = [
-    { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
-    { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
-    { titulo: "Pronto", msg: "Seu pedido está pronto" },
-    { titulo: "Entregue", msg: "Aproveite sua refeição!" }
-  ];
-
-  function atualizarTela() {
-    document.getElementById("statusAtual").innerText = status[etapa - 1].titulo;
-    document.getElementById("mensagemStatus").innerText = status[etapa - 1].msg;
-
-    document.querySelectorAll(".step").forEach((el, i) => {
-      el.classList.remove("ativo");
-      if (i < etapa) el.classList.add("ativo");
-    });
-  }
-
-  atualizarTela();
-
-  let intervalo = setInterval(() => {
-    etapa++;
-
-    if (etapa > 4) {
-      clearInterval(intervalo);
-      localStorage.removeItem("carrinho"); // limpa carrinho
-      return;
-    }
-
-    atualizarTela();
-
-  }, 3000); // muda a cada 3 segundos
-}
-
-function novoPedido() {
-  // esconder status
-  document.getElementById("telaStatus").style.display = "none";
-
-  // voltar para lista inicial
-  document.getElementById("telaLista").style.display = "block";
-
-  // resetar etapas visuais
-  document.querySelectorAll(".step").forEach(el => {
-    el.classList.remove("ativo");
-  });
-
-  // resetar textos
-  document.getElementById("statusAtual").innerText = "Pedido Recebido";
-  document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
-}
-
-=======
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 // pagamento
 
 function confirmarPedido() {
@@ -372,39 +301,26 @@ function selecionarPagamento(elemento, tipo) {
 }
 
 // finalizar pagamento
-<<<<<<< HEAD
 function finalizarPagamento() {
-
-=======
-async function finalizarPagamento() {
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
   if (pagamentoSelecionado === "") {
     alert("Escolha uma forma de pagamento!");
     return;
   }
 
-<<<<<<< HEAD
   document.getElementById("telaPagamento").style.display = "none";
 
   if (pagamentoSelecionado === "Pix") {
     document.getElementById("telaPix").style.display = "block";
-  }
-
-  else if (pagamentoSelecionado === "Crédito") {
+  } else if (pagamentoSelecionado === "Crédito") {
     document.getElementById("telaCredito").style.display = "block";
-  }
-
-  else if (pagamentoSelecionado === "Débito") {
+  } else if (pagamentoSelecionado === "Débito") {
     document.getElementById("telaDebito").style.display = "block";
-  }
-
-  else if (pagamentoSelecionado === "Dinheiro") {
+  } else if (pagamentoSelecionado === "Dinheiro") {
     document.getElementById("telaDinheiro").style.display = "block";
   }
 }
 
 function fecharTelaPagamento() {
-
   document.getElementById("telaPix").style.display = "none";
   document.getElementById("telaCredito").style.display = "none";
   document.getElementById("telaDebito").style.display = "none";
@@ -413,19 +329,7 @@ function fecharTelaPagamento() {
   document.getElementById("telaPagamento").style.display = "block";
 }
 
-function pagamentoAprovado() {
-
-  localStorage.setItem("pedidoAtivo", "true");
-  pedidoEmAndamento = true;
-
-  atualizarBadge();
-
-  document.getElementById("telaPix").style.display = "none";
-  document.getElementById("telaCredito").style.display = "none";
-  document.getElementById("telaDebito").style.display = "none";
-  document.getElementById("telaDinheiro").style.display = "none";
-
-=======
+async function pagamentoAprovado() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
   if (!carrinho.length) {
     alert("Adicione pelo menos um produto ao carrinho antes de finalizar o pagamento.");
@@ -466,13 +370,15 @@ function pagamentoAprovado() {
     return;
   }
 
-  // marcar pedido ativo
   localStorage.setItem("pedidoAtivo", "true");
   pedidoEmAndamento = true;
   localStorage.removeItem("carrinho");
+  atualizarBadge();
 
-  document.getElementById("telaPagamento").style.display = "none";
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
+  document.getElementById("telaPix").style.display = "none";
+  document.getElementById("telaCredito").style.display = "none";
+  document.getElementById("telaDebito").style.display = "none";
+  document.getElementById("telaDinheiro").style.display = "none";
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarStatusPedido();
@@ -588,8 +494,3 @@ function atualizarBadge() {
 }
 
 atualizarBadge();
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
