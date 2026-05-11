@@ -23,6 +23,7 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+<<<<<<< HEAD
   height: 70px;
   max-width: 140px;
   object-fit: contain;
@@ -34,6 +35,13 @@ body {
   background: #f3f4f6;
   font-family: "Segoe UI", Arial, sans-serif;
   overflow-x: hidden;
+=======
+  height: 100px; /* DIMINUI */
+}
+
+body {
+  background: #f3f4f6;
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }
 
 #telaLista::before {
@@ -78,6 +86,7 @@ body {
 
 .item {
   display: flex;
+<<<<<<< HEAD
   align-items: center;
   gap: 12px;
   background: #fff;
@@ -86,6 +95,19 @@ body {
   margin-bottom: 12px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   width: 100%;
+=======
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  align-items: center;
+
+  background: rgba(229, 192, 192, 0.9);
+  backdrop-filter: blur(10px);
+
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: 0.2s;
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }
 
 .item:hover {
@@ -229,12 +251,20 @@ body {
 }
 
 /* IMAGEM */
+<<<<<<< HEAD
 .item > img {
   width: 85px;
   height: 85px;
   border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
+=======
+.item img {
+  width: 90px;
+  height: 90px;
+  border-radius: 14px;
+  object-fit: cover;
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }
 
 /* TEXTO */
@@ -269,10 +299,17 @@ body {
 /* IMAGEM TOPO */
 .topo-img img {
   width: 100%;
+<<<<<<< HEAD
   height: 45vh;
   max-height: 400px;
   object-fit: cover;
 }
+=======
+  height: 400px;
+  object-fit: cover;
+}
+
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 /* CONTEÚDO */
 .container {
   padding: 20px;
@@ -336,7 +373,10 @@ h2 {
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+<<<<<<< HEAD
   margin-top: 14px;
+=======
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }
 
 /* VOLTAR */
@@ -370,12 +410,18 @@ body {
   border-radius: 10px;
 }
 
+<<<<<<< HEAD
 .item > img {
   width: 85px;
   height: 85px;
   border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
+=======
+.item img {
+  width: 70px;
+  border-radius: 10px;
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }
 
 .info {
@@ -519,6 +565,7 @@ body {
   border-radius: 50%;
 }
 
+<<<<<<< HEAD
 
 
 /* LIXEIRA */
@@ -541,11 +588,35 @@ body {
 
 .acoes  img:hover {
   transform: scale(1.1);
+=======
+/* lixeira*/
+
+
+
+.acoes {
+  position: absolute;
+  top: 50px;
+  right: 50px;
+  z-index: 6;
+}
+
+.acoes img {
+  width: 30px;   /* controla tamanho */
+  height: 30px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: 0.2s;
+}
+
+.acoes img:hover {
+  transform: scale(1.2);
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
   opacity: 1;
 }
 
 #telaCarrinho {
   position: relative;
+<<<<<<< HEAD
 }
 
 /* ========================= */
@@ -684,4 +755,6 @@ body {
   font-size:15px;
   outline:none;
   box-shadow:0 2px 5px rgba(0,0,0,0.05);
+=======
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }

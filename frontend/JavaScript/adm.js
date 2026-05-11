@@ -2,6 +2,35 @@
  * ADMIN PANEL - Navigation and Modal Management
  */
 
+<<<<<<< HEAD
+=======
+const API_BASE_URL = 'http://localhost:8080/api';
+
+async function postJson(endpoint, payload) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    let message = 'Nao foi possivel salvar os dados.';
+    try {
+      const error = await response.json();
+      message = error.message || error.mensagem || error.erro || message;
+    } catch (_) {
+      message = await response.text() || message;
+    }
+
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 // =============================================
 // NAVIGATION: Section Switching
 // =============================================
@@ -360,12 +389,35 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const formData = new FormData(e.target);
+<<<<<<< HEAD
   console.log('New dish:', Object.fromEntries(formData));
   
   // TODO: Send to server
   alert('Prato adicionado com sucesso!');
   closeModal('addDishModal');
   e.target.reset();
+=======
+
+  const produto = {
+    nome: formData.get('name'),
+    idCategoria: Number(formData.get('category')),
+    preco: Number(formData.get('price')),
+    descricao: formData.get('description'),
+    ativo: true,
+    destaque: false
+  };
+
+  postJson('/produtos', produto)
+    .then(() => {
+      alert('Prato adicionado com sucesso!');
+      closeModal('addDishModal');
+      e.target.reset();
+    })
+    .catch((error) => {
+      console.error('Erro ao salvar prato:', error);
+      alert(error.message);
+    });
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 });
 
 // Add Stock Modal
@@ -840,4 +892,7 @@ document.addEventListener('DOMContentLoaded', () => {
       initDishesChart();
       initOrdersChart();
     });
+<<<<<<< HEAD
 
+=======
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)

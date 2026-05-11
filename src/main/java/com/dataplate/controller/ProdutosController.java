@@ -7,6 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+<<<<<<< HEAD
+=======
+import org.springframework.web.bind.annotation.CrossOrigin;
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +25,10 @@ import com.dataplate.service.ProdutoService;
 
 @RestController
 @RequestMapping("/api/produtos")
+<<<<<<< HEAD
+=======
+@CrossOrigin(origins = "*")
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 public class ProdutosController {
     
     private static final Logger logger = LoggerFactory.getLogger(ProdutosController.class);
@@ -70,7 +78,11 @@ public class ProdutosController {
     @PostMapping
     public ResponseEntity<?> criar(@RequestBody Produto produto) {
         try {
+<<<<<<< HEAD
             logger.info("Criando novo produto: {}", produto.getNome());
+=======
+            logger.info("Criando novo produto: {}", produto != null ? produto.getNome() : null);
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
             
             String erro = validarProduto(produto);
             if (erro != null) {
@@ -177,6 +189,13 @@ public class ProdutosController {
             return "Nome do produto não pode ter mais de 255 caracteres";
         }
         
+<<<<<<< HEAD
+=======
+        if (produto.getIdCategoria() == null || produto.getIdCategoria() <= 0) {
+            return "Categoria do produto e obrigatoria";
+        }
+
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
         if (produto.getPreco() == null || produto.getPreco() <= 0) {
             return "Preço deve ser maior que zero";
         }
@@ -187,4 +206,8 @@ public class ProdutosController {
         
         return null;
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)

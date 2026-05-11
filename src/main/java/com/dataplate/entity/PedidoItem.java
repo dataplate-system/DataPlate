@@ -23,13 +23,21 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+<<<<<<< HEAD
 @Table(name = "pedido_itens")
 public class PedidoItem {
     @Id
+=======
+@Table(name = "item_pedido")
+public class PedidoItem {
+    @Id
+    @Column(name = "id_item_pedido")
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
+<<<<<<< HEAD
     @JoinColumn(name = "pedido_id", nullable = false)
     private Pedido pedido;
 
@@ -45,4 +53,34 @@ public class PedidoItem {
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal subtotal;
+=======
+    @JoinColumn(name = "id_pedido", nullable = false)
+    private Pedido pedido;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_produto", nullable = false)
+    private Produto produto;
+
+    @Column(name = "quantidade", nullable = false, precision = 8, scale = 3)
+    private BigDecimal quantidade;
+
+    @Column(name = "preco_unitario", nullable = false, precision = 10, scale = 2)
+    private BigDecimal precoUnitario;
+
+    @Column(name = "subtotal", insertable = false, updatable = false, precision = 10, scale = 2)
+    private BigDecimal subtotal;
+
+    @Column(name = "observacao")
+    private String observacao;
+
+    @Column(name = "cancelado", nullable = false)
+    private Boolean cancelado = false;
+
+    @jakarta.persistence.PrePersist
+    protected void onCreate() {
+        if (cancelado == null) {
+            cancelado = false;
+        }
+    }
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 }

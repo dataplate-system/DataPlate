@@ -1,6 +1,10 @@
 ﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
+<<<<<<< HEAD
+=======
+const API_BASE_URL = "http://localhost:8080/api";
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 
@@ -235,8 +239,13 @@ carregarCarrinho();
 
 //adição de produtos ao carrinho
 
+<<<<<<< HEAD
 function adicionarCarrinho(nome, preco, imagem, qtd) {
   if (!nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
+=======
+function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
+  if (!produtoId || !nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
     alert("Selecione uma quantidade válida antes de adicionar ao carrinho.");
     return;
   }
@@ -244,6 +253,10 @@ function adicionarCarrinho(nome, preco, imagem, qtd) {
   let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   carrinho.push({
+<<<<<<< HEAD
+=======
+    produtoId: produtoId,
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
     nome: nome,
     preco: preco,
     imagem: imagem,
@@ -270,6 +283,7 @@ function voltarCarrinho() {
 
 }
 
+<<<<<<< HEAD
 // CONFIRMAR PEDIDO
 
 
@@ -327,6 +341,8 @@ function novoPedido() {
   document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
 }
 
+=======
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
 // pagamento
 
 function confirmarPedido() {
@@ -356,13 +372,18 @@ function selecionarPagamento(elemento, tipo) {
 }
 
 // finalizar pagamento
+<<<<<<< HEAD
 function finalizarPagamento() {
 
+=======
+async function finalizarPagamento() {
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
   if (pagamentoSelecionado === "") {
     alert("Escolha uma forma de pagamento!");
     return;
   }
 
+<<<<<<< HEAD
   document.getElementById("telaPagamento").style.display = "none";
 
   if (pagamentoSelecionado === "Pix") {
@@ -404,6 +425,54 @@ function pagamentoAprovado() {
   document.getElementById("telaDebito").style.display = "none";
   document.getElementById("telaDinheiro").style.display = "none";
 
+=======
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  if (!carrinho.length) {
+    alert("Adicione pelo menos um produto ao carrinho antes de finalizar o pagamento.");
+    return;
+  }
+
+  const pedido = {
+    numeroMesa: 1,
+    itens: carrinho.map(item => ({
+      produtoId: item.produtoId,
+      quantidade: item.quantidade
+    }))
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/pedidos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(pedido)
+    });
+
+    if (!response.ok) {
+      let message = "Nao foi possivel salvar o pedido.";
+      try {
+        const error = await response.json();
+        message = error.message || error.mensagem || error.erro || message;
+      } catch (_) {
+        message = await response.text() || message;
+      }
+
+      throw new Error(message);
+    }
+  } catch (error) {
+    console.error("Erro ao salvar pedido:", error);
+    alert(error.message);
+    return;
+  }
+
+  // marcar pedido ativo
+  localStorage.setItem("pedidoAtivo", "true");
+  pedidoEmAndamento = true;
+  localStorage.removeItem("carrinho");
+
+  document.getElementById("telaPagamento").style.display = "none";
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarStatusPedido();
@@ -519,5 +588,8 @@ function atualizarBadge() {
 }
 
 atualizarBadge();
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 37a57ca (Armazenar os dados do front e back no banco de dados)
