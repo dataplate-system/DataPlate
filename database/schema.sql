@@ -76,6 +76,30 @@ CREATE TABLE IF NOT EXISTS item_pedido (
     cancelado BOOLEAN NOT NULL DEFAULT FALSE
 );
 
+CREATE TABLE IF NOT EXISTS usuarios (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS insumos (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL UNIQUE,
+    unidade VARCHAR(255) NOT NULL,
+    quantidade_atual NUMERIC(12, 3) NOT NULL,
+    quantidade_minima NUMERIC(12, 3) NOT NULL,
+    custo_unitario NUMERIC(12, 2) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS produto_insumos (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    produto_id BIGINT NOT NULL REFERENCES produto(id_produto) ON DELETE CASCADE,
+    insumo_id BIGINT NOT NULL REFERENCES insumos(id) ON DELETE CASCADE,
+    quantidade NUMERIC(12, 3) NOT NULL
+);
+
 INSERT INTO status_pedido (nome, descricao, cor, ordem)
 SELECT * FROM (VALUES
     ('RECEBIDO', 'Pedido recebido', '#2563EB', 1),
