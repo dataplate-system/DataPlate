@@ -1,7 +1,7 @@
 ﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
-const API_BASE_URL = "http://localhost:8080/api";
+const API_BASE_URL = "/api";
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 
