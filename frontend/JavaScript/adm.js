@@ -202,6 +202,11 @@ function configureField(field) {
   const placeholder = (field.getAttribute('placeholder') || '').toLowerCase();
   const key = `${label} ${placeholder} ${field.name || ''}`;
 
+  if (field.dataset.optional === 'true') {
+    field.required = false;
+    return;
+  }
+
   if (!['button', 'submit', 'reset', 'checkbox', 'radio', 'hidden'].includes(type)) {
     field.required = true;
   }
@@ -382,6 +387,106 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
 });
 
 // Add Dish Modal
+document.querySelector('.category-create-button')?.addEventListener('click', () => {
+  const form = document.getElementById('addDishForm');
+  const categoryInput = form?.querySelector('[name="newCategory"]');
+  const categorySelect = form?.querySelector('[name="category"]');
+  const categoryName = categoryInput?.value.trim();
+
+  if (!categoryName || !categorySelect) return;
+
+  const alreadyExists = Array.from(categorySelect.options).some(
+    option => option.textContent.trim().toLowerCase() === categoryName.toLowerCase()
+  );
+
+  if (alreadyExists) {
+    alert('Essa categoria ja existe.');
+    return;
+  }
+
+  const categoryIds = Array.from(categorySelect.options)
+    .map(option => Number(option.value))
+    .filter(Number.isFinite);
+  const nextCategoryId = Math.max(...categoryIds, 0) + 1;
+  const option = new Option(categoryName, String(nextCategoryId), true, true);
+
+  categorySelect.add(option);
+  categoryInput.value = '';
+});
+
+document.querySelector('.category-remove-button')?.addEventListener('click', () => {
+  const form = document.getElementById('addDishForm');
+  const categorySelect = form?.querySelector('[name="category"]');
+  const selectedOption = categorySelect?.selectedOptions[0];
+
+  if (!categorySelect || !selectedOption) return;
+
+  const categoryName = selectedOption.textContent.trim();
+  const shouldRemove = confirm(`Remover a categoria "${categoryName}"?`);
+
+  if (!shouldRemove) return;
+
+  selectedOption.remove();
+
+  if (categorySelect.options.length > 0) {
+    categorySelect.selectedIndex = 0;
+  }
+});
+
+const dishIngredients = [];
+
+function renderDishIngredients() {
+  const form = document.getElementById('addDishForm');
+  const list = form?.querySelector('.ingredients-list');
+  const ingredientsField = form?.querySelector('[name="ingredients"]');
+
+  if (!list || !ingredientsField) return;
+
+  list.innerHTML = '';
+  ingredientsField.value = dishIngredients
+    .map(ingredient => `${ingredient.name} (${ingredient.weight}${ingredient.unit})`)
+    .join(', ');
+
+  dishIngredients.forEach((ingredient, index) => {
+    const item = document.createElement('span');
+    item.className = 'ingredient-chip';
+    item.textContent = `${ingredient.name} - ${ingredient.weight}${ingredient.unit}`;
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.textContent = 'x';
+    removeButton.setAttribute('aria-label', `Remover ${ingredient.name}`);
+    removeButton.addEventListener('click', () => {
+      dishIngredients.splice(index, 1);
+      renderDishIngredients();
+    });
+
+    item.appendChild(removeButton);
+    list.appendChild(item);
+  });
+}
+
+document.querySelector('.ingredient-add-button')?.addEventListener('click', () => {
+  const form = document.getElementById('addDishForm');
+  const nameInput = form?.querySelector('[name="ingredientName"]');
+  const weightInput = form?.querySelector('[name="ingredientWeight"]');
+  const unitSelect = form?.querySelector('[name="ingredientWeightUnit"]');
+  const name = nameInput?.value.trim();
+  const weight = weightInput?.value.trim();
+  const unit = unitSelect?.value;
+
+  if (!name || !weight || !unit) {
+    alert('Informe o ingrediente, o peso e a unidade antes de adicionar.');
+    return;
+  }
+
+  dishIngredients.push({ name, weight, unit });
+  nameInput.value = '';
+  weightInput.value = '';
+  unitSelect.value = 'g';
+  renderDishIngredients();
+});
+
 document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
@@ -401,6 +506,8 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
       alert('Prato adicionado com sucesso!');
       closeModal('addDishModal');
       e.target.reset();
+      dishIngredients.length = 0;
+      renderDishIngredients();
     })
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);

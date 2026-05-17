@@ -61,7 +61,7 @@
 
     <h2>Escaneie o QR Code</h2>
 
-    <img src="../images/qrcode-pix.png"
+    <img src="../images/payments/qrcode-pix.svg"
          style="width:220px; margin:20px auto; display:block;">
 
     <p style="margin-top:10px;">
@@ -248,7 +248,7 @@
   <header class="topo">
     <button class="voltar" onclick="voltarCarrinho()">←</button>
     
-     <img src="../images/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
 
       <div style="display:flex; gap:10px;">
         <button class="status-btn" onclick="abrirPedidoEmAndamento()">📦
@@ -270,8 +270,6 @@
 
    <button class="btn" onclick="confirmarPedido()">Confirmar pedido</button>
 
-   
-
 </div>
  
 
@@ -282,7 +280,7 @@
   <!-- MENU LATERAL -->
   <aside class="sidebar">
 
-    <img src="../images/logo-emp.png" class="logo-sidebar">
+    <img src="../images/brand/logo-emp.png" class="logo-sidebar">
 
     <h2>MENU</h2>
 
@@ -330,7 +328,7 @@
 
       <!-- HAMBURGUER -->
       <div class="item" data-categoria="hamburguer" onclick="abrirProduto()">
-        <img src="../images/Hambúrguer.jpg">
+        <img src="../images/menu/hamburguer.jpg">
         <div class="info">
           <h3>Burger Gourmet</h3>
           <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
@@ -340,7 +338,7 @@
 
       <!-- MASSAS -->
       <div class="item" data-categoria="massas" onclick="abrirProduto2()">
-        <img src="../images/Pasta Carbonara.jpg">
+        <img src="../images/menu/pasta-carbonara.jpg">
         <div class="info">
           <h3>Pasta Carbonara</h3>
           <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
@@ -350,7 +348,7 @@
 
       <!-- PRINCIPAIS -->
       <div class="item" data-categoria="principais" onclick="abrirProduto3()">
-        <img src="../images/Salmão Grelhado.jpg">
+        <img src="../images/menu/salmao-grelhado.jpg">
         <div class="info">
           <h3>Salmão Grelhado</h3>
           <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
@@ -360,7 +358,7 @@
 
       <!-- ENTRADAS -->
       <div class="item" data-categoria="entradas" onclick="abrirProduto4()">
-        <img src="../images/Salada Caesar.jpg">
+        <img src="../images/menu/salada-caesar.jpg">
         <div class="info">
           <h3>Salada Caesar</h3>
           <p>Alface romana, croutons, parmesão e molho caesar</p>
@@ -370,7 +368,7 @@
 
       <!-- SOBREMESAS -->
       <div class="item" data-categoria="sobremesas" onclick="abrirProduto5()">
-        <img src="../images/Bolo de Chocolate.jpg">
+        <img src="../images/menu/bolo-chocolate.jpg">
         <div class="info">
           <h3>Bolo de Chocolate</h3>
           <p>Bolo de chocolate belga com cobertura cremosa de chocolate</p>
@@ -380,7 +378,7 @@
 
       <!-- SOBREMESAS -->
       <div class="item" data-categoria="sobremesas" onclick="abrirProduto6()">
-        <img src="../images/Tiramisu.jpg">
+        <img src="../images/menu/tiramisu.jpg">
         <div class="info">
           <h3>Tiramisu</h3>
           <p>Sobremesa italiana clássica com café e mascarpone</p>
@@ -390,7 +388,7 @@
 
       <!-- BEBIDAS -->
       <div class="item" data-categoria="bebidas" onclick="abrirProduto7()">
-        <img src="../images/Água.jpg">
+        <img src="../images/menu/agua.jpg">
         <div class="info">
           <h3>Água sem gás</h3>
           <p>Água Mineral Natural Crystal Sem Gás 500ml</p>
@@ -419,12 +417,12 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista()">←</button>
-   <img src="../images/logo-emp.png" class="logo-topo">
+   <img src="../images/brand/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
   <div class="topo-img">
-     <img src="../images/Hambúrguer.jpg">
+     <img src="../images/menu/hamburguer.jpg">
   </div>
 
   <div class="container">
@@ -460,8 +458,8 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(1, 'Burger Gourmet', 32.90, '../images/Hambúrguer.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-      Adicionar ao carrinho 
+     onclick="adicionarCarrinho(1, 'Burger Gourmet', 32.90, '../images/menu/hamburguer.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 32.90
     </button>
 
   </div>
@@ -476,12 +474,12 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista2()">←</button>
-   <img src="../images/logo-emp.png" class="logo-topo">
+   <img src="../images/brand/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
      <div class="topo-img">
-       <img src="../images/Pasta Carbonara.jpg">
+       <img src="../images/menu/pasta-carbonara.jpg">
      </div> 
 
 
@@ -512,8 +510,8 @@
    </div>
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(2, 'Pasta Carbonara', 38.50, '../images/Pasta Carbonara.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-      Adicionar ao carrinho 
+     onclick="adicionarCarrinho(2, 'Pasta Carbonara', 38.50, '../images/menu/pasta-carbonara.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 38.50
     </button>
 
     </div> 
@@ -530,12 +528,12 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista3()">←</button>
-     <img src="../images/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
   </header> 
 
   <div class="topo-img">
-     <img src="../images/Salmão Grelhado.jpg">
+     <img src="../images/menu/salmao-grelhado.jpg">
   </div>
 
   <div class="container">
@@ -565,8 +563,8 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(3, 'Salmão Grelhado', 52.90, '../images/Salmão Grelhado.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-      Adicionar ao carrinho 
+     onclick="adicionarCarrinho(3, 'Salmão Grelhado', 52.90, '../images/menu/salmao-grelhado.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 52.90
     </button>
 
   </div>
@@ -580,12 +578,12 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista4()">←</button>
-     <img src="../images/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
   <div class="topo-img">
-     <img src="../images/Salada Caesar.jpg">
+     <img src="../images/menu/salada-caesar.jpg">
   </div>
 
   <div class="container">
@@ -615,8 +613,8 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(4, 'Salada Caesar', 24.90, '../images/Salada Caesar.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     Adicionar ao carrinho
+     onclick="adicionarCarrinho(4, 'Salada Caesar', 24.90, '../images/menu/salada-caesar.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 24.90
     </button>
 
   </div>
@@ -631,12 +629,12 @@
 
    <header class="topo">
        <button class="voltar" onclick="voltarLista5()">←</button>
-       <img src="../images/logo-emp.png" class="logo-topo">
+       <img src="../images/brand/logo-emp.png" class="logo-topo">
        <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
   <div class="topo-img">
-     <img src="../images/Bolo de Chocolate.jpg">
+     <img src="../images/menu/bolo-chocolate.jpg">
   </div>
 
   <div class="container">
@@ -667,8 +665,8 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(6, 'Bolo de Chocolate', 18.90, '../images/Bolo de Chocolate.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-      Adicionar ao carrinho 
+     onclick="adicionarCarrinho(6, 'Bolo de Chocolate', 18.90, '../images/menu/bolo-chocolate.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 18.90
     </button>
 
   </div>
@@ -683,12 +681,12 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista6()">←</button>
-     <img src="../images/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
   </header> 
 
   <div class="topo-img">
-    <img src="../images/Tiramisu.jpg">
+    <img src="../images/menu/tiramisu.jpg">
   </div>
 
   <div class="container">
@@ -720,8 +718,8 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(5, 'Tiramisu', 22.90, '../images/Tiramisu.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     Adicionar ao carrinho 
+     onclick="adicionarCarrinho(5, 'Tiramisu', 22.90, '../images/menu/tiramisu.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 22.90
     </button>
 
   </div>
@@ -736,12 +734,12 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista7()">←</button>
-   <img src="../images/logo-emp.png" class="logo-topo">
+   <img src="../images/brand/logo-emp.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
   <div class="topo-img">
-     <img src="../images/Água.jpg">
+     <img src="../images/menu/agua.jpg">
   </div>
 
   <div class="container">
@@ -768,8 +766,8 @@
 
 
     <button class="btn-carrinho"
-     onclick="adicionarCarrinho(7, 'Água', 2.90, '../images/Água.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     Adicionar ao carrinho
+     onclick="adicionarCarrinho(7, 'Água', 2.90, '../images/menu/agua.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+     🛒 Adicionar ao carrinho - R$ 2.90
     </button>
 
   

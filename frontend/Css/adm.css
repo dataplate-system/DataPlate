@@ -708,6 +708,98 @@ body {
   color: var(--color-text);
 }
 
+.form-layout{
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.left-column{
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.right-column{
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.description-group{
+    width: 100%;
+}
+
+.category-create-row{
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+}
+
+.category-create-row input{
+    min-width: 0;
+}
+
+.category-create-row button{
+    height: 42px;
+}
+
+.ingredient-builder-row{
+    display: grid;
+    grid-template-columns: 1fr 96px 78px auto;
+    gap: 8px;
+}
+
+.ingredient-builder-row button{
+    height: 42px;
+}
+
+.ingredients-list{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 34px;
+}
+
+.ingredient-chip{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: #f8fafc;
+    color: var(--color-text);
+    font-size: 13px;
+}
+
+.ingredient-chip button{
+    border: none;
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.category-remove-button{
+    color: #ef4444;
+    border-color: #fecaca;
+}
+
+.category-remove-button:hover{
+    color: #b91c1c;
+    border-color: #ef4444;
+    background: #fee2e2;
+}
+
+.description-group textarea{
+    width: 100%;
+    min-height: 160px;
+    resize: none;
+}
+
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -717,6 +809,7 @@ body {
   font-size: 14px;
   font-family: inherit;
   transition: all 0.3s;
+  max-height: 200px;
 }
 
 .form-group input:focus,
@@ -802,10 +895,11 @@ body {
   border-radius: 8px;
   padding: 24px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  max-width: 500px;
-  width: 90%;
+  max-width: 1100px;
+  width: calc(100% - 48px);
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
 }
 

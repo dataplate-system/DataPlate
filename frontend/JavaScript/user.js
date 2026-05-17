@@ -199,7 +199,7 @@ function carregarCarrinho() {
           </div>
         </div>
         <div class="acoes">
-          <span onclick="remover(${index})"><img src="../images/lixeira.png" alt="Remover"></span>
+          <span onclick="remover(${index})"><img src="../images/ui/lixeira.png" alt="Remover"></span>
         </div>
       </div>
     `;
