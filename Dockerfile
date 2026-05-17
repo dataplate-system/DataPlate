@@ -2,6 +2,7 @@ FROM maven:3.9.6-eclipse-temurin-21-jammy AS build
 WORKDIR /workspace
 COPY pom.xml ./
 COPY src ./src
+COPY database/schema.sql ./src/main/resources/schema.sql
 RUN mvn -B -Dmaven.repo.local=/root/.m2/repository package -DskipTests
 
 FROM eclipse-temurin:21-jre-jammy
