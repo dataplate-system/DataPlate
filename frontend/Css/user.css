@@ -5,20 +5,115 @@
   font-family: "Segoe UI", Arial, sans-serif;
 }
 
-body {
-  background: #f3f4f6;
-}
-
-/* TOPO */
 .topo {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  position: relative;
+  background: rgba(191, 189, 165, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
+
+/* LOGO CENTRAL */
+.logo-topo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 70px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+body {
+  
+  padding: 0;
+  background: #f3f4f6;
+  font-family: "Segoe UI", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+#telaLista::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 300px;
+  height: 300px;
+
+  background: url('../images/brand/logo-emp.png') no-repeat center;
+  background-size: contain;
+
+  transform: translate(-50%, -50%);
+  opacity: 0.08;
+
+  
+}
+
+/* Forma suave no canto superior */
+#telaLista::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 300px; /* tamanho da logo */
+  height: 300px;
+
+  background: url('../images/brand/logo-emp.png') no-repeat center;
+  background-size: contain;
+
+  transform: translate(-50%, -50%); /* centraliza */
+
+  opacity: 0.08; /* deixa bem suave (IMPORTANTE) */
+
+  z-index: -1; /* fica atrás */
+}
+
+
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  width: 100%;
+  transition: 0.2s;
+}
+
+.item:hover {
+  transform: scale(1.02);
+}
+
+#telaLista .linha {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border: 2px solid rgba(180,150,120,0.2);
+  border-radius: 50%;
+  z-index: -1; /* ADICIONA */
+}
+
+.linha1 {
+  top: 50px;
+  left: -100px;
+}
+
+.linha2 {
+  bottom: 50px;
+  right: -100px;
+}
+
+/* TOPO */
+
 
 .topo h1 {
   position: absolute;
@@ -54,15 +149,15 @@ body {
 .busca input {
   width: 100%;
   height: 44px;
-  border-radius: 24px;
+  border-radius: 30px;
   border: none;
   padding-left: 40px;
-  font-size: 14px;
-  background: #e5e7eb;
-  outline: none;
-  color: #374151;
-}
 
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(10px);
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
 /* Ícone de busca fake */
 .busca {
   position: relative;
@@ -94,11 +189,20 @@ body {
   padding: 8px 16px;
   border-radius: 20px;
   border: none;
-  background: #e5e7eb;
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-  white-space: nowrap;
+
+  background: #eee;
+  color: #444;
+
+  transition: 0.2s;
+}
+
+.categorias button:hover {
+  background: #ddd;
+}
+
+.categorias .ativo {
+  background: #ff5a00;
+  color: white;
 }
 
 /* BOTÃO ATIVO */
@@ -126,11 +230,12 @@ body {
 }
 
 /* IMAGEM */
-.item img {
-  width: 90px;
-  height: 90px;
+.item > img {
+  width: 85px;
+  height: 85px;
   border-radius: 12px;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 /* TEXTO */
@@ -152,7 +257,7 @@ body {
 .preco {
   font-size: 15px;
   font-weight: 600;
-  color: #ff5a00;
+  color: #000000;
 }
 
 body {
@@ -165,10 +270,10 @@ body {
 /* IMAGEM TOPO */
 .topo-img img {
   width: 100%;
-  height: 400px;
+  height: 45vh;
+  max-height: 400px;
   object-fit: cover;
 }
-
 /* CONTEÚDO */
 .container {
   padding: 20px;
@@ -184,10 +289,11 @@ h2 {
 }
 
 .preco {
-  color: #ff4d00;
+  color: #000000;
   font-size: 22px;
   margin: 15px 0;
   display: block;
+  font-family: sans-serif;
 }
 
 /* INGREDIENTES */
@@ -225,12 +331,13 @@ h2 {
 .btn-carrinho {
   width: 100%;
   padding: 15px;
-  background: #ff4d00;
+  background: #4aad19;
   color: white;
   border: none;
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+  margin-top: 14px;
 }
 
 /* VOLTAR */
@@ -264,9 +371,12 @@ body {
   border-radius: 10px;
 }
 
-.item img {
-  width: 70px;
-  border-radius: 10px;
+.item > img {
+  width: 85px;
+  height: 85px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .info {
@@ -301,4 +411,276 @@ body {
   font-size: 18px;
   font-weight: 600;
 
+}
+
+/* confirmar pedido */
+
+.card-status {
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.icone {
+  width: 80px;
+  height: 80px;
+  background: #d9ffd9;
+  color: #55ff00;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  margin: 0 auto 10px;
+}
+
+.timeline {
+  margin-top: 20px;
+}
+
+.step {
+  padding: 12px;
+  border-left: 3px solid #ccc;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  color: #888;
+}
+
+.step.ativo {
+  border-left: 3px solid #4aad19;
+  color: #000;
+  font-weight: bold;
+}
+
+.btn-novo-pedido {
+  width: 100%;
+  padding: 15px;
+  background: #4aad19;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+.btn-novo-pedido:hover {
+  background: #4aad19;
+}
+  
+
+/* pagamento*/
+
+.opcoes-pagamento {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.opcao {
+  background: #fff;
+  padding: 15px;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.opcao:hover {
+  border: 2px solid #ff5a00;
+}
+
+.opcao.ativa {
+  border: 2px solid #ff5a00;
+  background: #fff3eb;
+}
+
+/* botão status */
+
+.status-btn {
+  position: relative;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff5a00;
+  color: white;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 50%;
+}
+
+/* LIXEIRA */
+
+.acoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  min-width: 24px;
+}
+
+.acoes img {
+  width: 22px !important;
+  height: 22px !important;
+  object-fit: contain;
+  display: block;
+}
+
+
+.acoes  img:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+#telaCarrinho {
+  position: relative;
+}
+
+/* ========================= */
+/* RESPONSIVIDADE CELULAR */
+/* ========================= */
+
+@media (max-width: 768px) {
+
+  .topo {
+    padding: 12px;
+  }
+
+  .logo-topo {
+    height: 55px;
+  }
+
+  .categorias {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .categorias button {
+    font-size: 13px;
+    padding: 8px 14px;
+    white-space: nowrap;
+  }
+
+ .item {
+  flex-direction: row;
+  align-items: center;
+}
+
+  .item > img {
+    width: 75px;
+    height: 75px;
+  }
+
+  .info h3 {
+    font-size: 15px;
+  }
+
+  .info p {
+    font-size: 12px;
+  }
+
+  .preco {
+    font-size: 18px;
+  }
+
+  .container {
+    padding: 16px;
+  }
+
+  .quantidade {
+    gap: 10px;
+  }
+
+  .quantidade button {
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+  }
+
+  .btn,
+  .btn-carrinho,
+  .btn-novo-pedido {
+    width: 100%;
+    font-size: 15px;
+    padding: 14px;
+  }
+
+ 
+}
+
+/* ========================= */
+/* TELAS MUITO PEQUENAS */
+/* ========================= */
+
+@media (max-width: 480px) {
+
+
+.acoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  margin-left: auto;
+  min-width: 24px;
+}
+
+  .logo-topo {
+    height: 48px;
+  }
+
+  .topo button {
+    font-size: 18px;
+  }
+
+.item {
+  flex-direction: row;
+  align-items: center;
+}
+
+  .item > img {
+    width: 65px;
+    height: 65px;
+  }
+
+  .info h3 {
+    font-size: 14px;
+  }
+
+  .info p {
+    font-size: 11px;
+  }
+
+  .preco {
+    font-size: 16px;
+  }
+
+  .topo-img img {
+    height: 35vh;
+  }
+
+}
+
+/* INPUTS PAGAMENTO */
+
+.input-pagamento{
+  width:100%;
+  padding:14px;
+  border:none;
+  border-radius:12px;
+  margin-top:12px;
+  background:#f3f4f6;
+  font-size:15px;
+  outline:none;
+  box-shadow:0 2px 5px rgba(0,0,0,0.05);
 }

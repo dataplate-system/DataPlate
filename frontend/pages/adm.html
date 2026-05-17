@@ -1,0 +1,1363 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Painel Administrativo</title>
+  <link rel="stylesheet" href="../Css/adm.css" />
+</head>
+<body>
+  <div class="admin-container">
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="header-left">
+        <div class="logo-area">
+          <img src="../images/brand/logo-dataplate.png" alt="Logo DataPlate" style="width: 32px; height: 32px;">
+          <span class="logo-text">DataPlate</span>
+        </div>
+      </div>
+      <nav class="main-nav">
+        <!-- Cadastros -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Cadastros</button>
+          <div class="dropdown-menu">
+            <a href="#clientes" class="dropdown-link" onclick="navigateTo('clientes')">Clientes</a>
+            <a href="#fornecedores" class="dropdown-link" onclick="navigateTo('fornecedores')">Fornecedores</a>
+            <a href="#funcionarios" class="dropdown-link" onclick="navigateTo('funcionarios')">Funcionários</a>
+            <a href="#cardapio" class="dropdown-link" onclick="navigateTo('cardapio')">Cardápio</a>
+          </div>
+        </div>
+
+        <!-- Operações -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Operações</button>
+          <div class="dropdown-menu">
+            <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
+            <a href="#cozinha" class="dropdown-link" onclick="navigateTo('cozinha')">Cozinha</a>
+            <a href="#estoque" class="dropdown-link" onclick="navigateTo('estoque')">Estoque</a>
+          </div>
+        </div>
+
+        <!-- Relatórios -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Relatórios</button>
+          <div class="dropdown-menu">
+            <a href="#rel-vendas" class="dropdown-link" onclick="navigateTo('rel-vendas')">Vendas</a>
+            <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
+            <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
+            <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
+          </div>
+        </div>
+
+        <!-- Configurações -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Configurações</button>
+          <div class="dropdown-menu">
+            <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
+            <a href="#config-usuarios" class="dropdown-link" onclick="navigateTo('config-usuarios')">Usuários e Permissões</a>
+            <a href="#config-integracao" class="dropdown-link" onclick="navigateTo('config-integracao')">Integração</a>
+            <a href="#config-notificacoes" class="dropdown-link" onclick="navigateTo('config-notificacoes')">Notificações</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="header-right">
+        <div class="search-box">
+          <input type="text" placeholder="Pesquisar..." />
+        </div>
+        <div class="user-menu dropdown">
+          <button type="button" class="user-button">
+            <div class="user-avatar-small">GP</div>
+            <span>Gerente</span>
+          </button>
+          <div class="dropdown-menu dropdown-right">
+            <a href="#perfil" class="dropdown-link">Meu Perfil</a>
+            <a href="#seguranca" class="dropdown-link">Segurança</a>
+            <a href="#trocar-usuario" class="dropdown-link">Trocar de Usuário</a>
+            <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <a href="#logout" class="dropdown-link logout-link">Sair</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+      <!-- CONTENT -->
+      <div class="contentcenter">
+        <img src="../images/brand/logo-dataplate.png" alt="Logo" class="logocenter">
+          <div class="nomecenter">DataPlate</div>
+          <p id="textcenter">Software de gestão inteligente para restaurantes</p>
+
+        <!-- CLIENTES -->
+        <section id="clientes" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Clientes</h1>
+            <p>Gerencie cadastros de clientes e histórico de pedidos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addClientModal')" data-open-modal="addClientModal">+ Novo Cliente</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar por nome ou CPF..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todos os Status</option>
+                <option>Ativo</option>
+                <option>Inativo</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" /></th>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>Pedidos</th>
+                  <th>Gasto Total</th>
+                  <th>Status</th>
+                  <th>Cadastrado em</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox" /></td>
+                  <td><strong>João Silva</strong></td>
+                  <td>joao@email.com</td>
+                  <td>(11) 98765-4321</td>
+                  <td>12</td>
+                  <td>R$ 524,80</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>15/04/2026</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ver Pedidos">📋</button>
+                    <button class="btn-icon" title="Excluir">🗑️</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox" /></td>
+                  <td><strong>Maria Santos</strong></td>
+                  <td>maria@email.com</td>
+                  <td>(11) 99876-5432</td>
+                  <td>8</td>
+                  <td>R$ 380,50</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>22/03/2026</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ver Pedidos">📋</button>
+                    <button class="btn-icon" title="Excluir">🗑️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- FUNCIONÁRIOS -->
+        <section id="funcionarios" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Funcionários</h1>
+            <p>Controle de pessoal, permissões e horários</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addFunctModal')" data-open-modal="addFunctModal">+ Novo Funcionário</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar por nome..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todos os Cargos</option>
+                <option>Gerente</option>
+                <option>Cozinheiro</option>
+                <option>Atendente</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>Salário</th>
+                  <th>Status</th>
+                  <th>Admissão</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Carlos Mendes</strong></td>
+                  <td><span class="badge badge-info">Gerente</span></td>
+                  <td>carlos@restaurante.com</td>
+                  <td>(11) 99999-1111</td>
+                  <td>R$ 4.500,00</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>10/01/2025</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Permissões">🔑</button>
+                    <button class="btn-icon" title="Ver Expediente">📅</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Ana Silva</strong></td>
+                  <td><span class="badge badge-warning">Cozinheira</span></td>
+                  <td>ana@restaurante.com</td>
+                  <td>(11) 99999-2222</td>
+                  <td>R$ 3.200,00</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>15/02/2025</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Permissões">🔑</button>
+                    <button class="btn-icon" title="Ver Expediente">📅</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- FORNECEDORES -->
+        <section id="fornecedores" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Fornecedores</h1>
+            <p>Cadastro e controle de fornecedores e insumos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addSupplierModal')" data-open-modal="addSupplierModal">+ Novo Fornecedor</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar fornecedor..." class="filter-input" />
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fornecedor</th>
+                  <th>Especialidade</th>
+                  <th>Telefone</th>
+                  <th>Email</th>
+                  <th>Cidade</th>
+                  <th>Status</th>
+                  <th>Última Compra</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Açougue Premium</strong></td>
+                  <td>Carnes e Embutidos</td>
+                  <td>(11) 88888-1111</td>
+                  <td>contato@acougue.com</td>
+                  <td>São Paulo</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>28/04/2026</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Histórico">📊</button>
+                    <button class="btn-icon" title="Contato">📞</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CARDÁPIO -->
+        <section id="cardapio" class="content-section">
+          <div class="section-header">
+            <h1>Gestão do Cardápio</h1>
+            <p>Cadastro, preço e disponibilidade de pratos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addDishModal')" data-open-modal="addDishModal">+ Novo Prato</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar prato..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todas as Categorias</option>
+                <option>Sanduíches</option>
+                <option>Massas</option>
+                <option>Saladas</option>
+                <option>Sobremesas</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Prato</th>
+                  <th>Categoria</th>
+                  <th>Preço</th>
+                  <th>Custo</th>
+                  <th>Margem</th>
+                  <th>Disponível</th>
+                  <th>Vendas (7d)</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Hambúrguer Artesanal</strong></td>
+                  <td>Sanduíches</td>
+                  <td>R$ 28,90</td>
+                  <td>R$ 8,50</td>
+                  <td><span class="profit">70%</span></td>
+                  <td><span class="badge badge-active">Sim</span></td>
+                  <td>42</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ingredientes">🧪</button>
+                    <button class="btn-icon" title="Desativar">❌</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PEDIDOS -->
+        <section id="pedidos" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Pedidos</h1>
+            <p>Controle e acompanhamento de todos os pedidos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <select class="filter-select">
+                <option>Todos os Pedidos</option>
+                <option>Pendente</option>
+                <option>Preparando</option>
+                <option>Pronto</option>
+                <option>Entregue</option>
+                <option>Cancelado</option>
+              </select>
+              <input type="date" class="filter-input" />
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID Pedido</th>
+                  <th>Cliente</th>
+                  <th>Data/Hora</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Tempo Preparo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>#2026001</strong></td>
+                  <td>João Silva</td>
+                  <td>02/05/2026 14:30</td>
+                  <td>2x Hambúrguer, 1x Salada</td>
+                  <td>R$ 85,90</td>
+                  <td><span class="badge badge-success">Entregue</span></td>
+                  <td>18 min</td>
+                  <td>
+                    <button class="btn-icon" title="Detalhes">👁️</button>
+                    <button class="btn-icon" title="Imprimir">🖨️</button>
+                    <button class="btn-icon" title="Reemissão">♻️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- COZINHA -->
+        <section id="cozinha" class="content-section">
+          <div class="section-header">
+            <h1>Painel da Cozinha</h1>
+            <p>Controle de preparação de pedidos em tempo real</p>
+          </div>
+
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <select class="filter-select">
+                <option>Aguardando Preparo</option>
+                <option>Em Preparação</option>
+                <option>Pronto para Entrega</option>
+              </select>
+              <button class="btn-secondary">Atualizar</button>
+            </div>
+          </div>
+
+          <div class="kitchen-board">
+            <div class="kitchen-column">
+              <h3>Aguardando Preparo (3)</h3>
+              <div class="kitchen-card">
+                <div class="card-id">#2026005</div>
+                <div class="card-items">2x Pasta Carbonara</div>
+                <div class="card-time">Solicitado há 5 min</div>
+                <button class="btn-small" onclick="changeStatus('preparing')">Iniciar Preparo</button>
+              </div>
+            </div>
+            <div class="kitchen-column">
+              <h3>Em Preparação (2)</h3>
+              <div class="kitchen-card">
+                <div class="card-id">#2026003</div>
+                <div class="card-items">1x Salmão Grelhado, 1x Bolo</div>
+                <div class="card-time">Preparando há 8 min</div>
+                <button class="btn-small" onclick="changeStatus('ready')">Marcar Pronto</button>
+              </div>
+            </div>
+            <div class="kitchen-column">
+              <h3>Pronto para Entrega (1)</h3>
+              <div class="kitchen-card">
+                <div class="card-id">#2026001</div>
+                <div class="card-items">2x Hambúrguer, 1x Salada</div>
+                <div class="card-time">Pronto há 2 min</div>
+                <button class="btn-small" onclick="changeStatus('delivered')">Entregar</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ESTOQUE -->
+        <section id="estoque" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Estoque</h1>
+            <p>Controle de insumos e ingredientes</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addStockModal')" data-open-modal="addStockModal">+ Novo Insumo</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar insumo..." class="filter-input" />
+              <select class="filter-select">
+                <option>Todos os Status</option>
+                <option>Em Estoque</option>
+                <option>Estoque Baixo</option>
+                <option>Crítico</option>
+              </select>
+              <button class="btn-secondary">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Insumo</th>
+                  <th>Quantidade</th>
+                  <th>Unidade</th>
+                  <th>Mínimo</th>
+                  <th>Status</th>
+                  <th>Última Atualização</th>
+                  <th>Fornecedor</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Carne Moída</strong></td>
+                  <td>25</td>
+                  <td>kg</td>
+                  <td>10</td>
+                  <td><span class="badge badge-active">Em Estoque</span></td>
+                  <td>02/05/2026 10:30</td>
+                  <td>Açougue Premium</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Ajustar">🔄</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td><strong>Queijo Mussarela</strong></td>
+                  <td>5</td>
+                  <td>kg</td>
+                  <td>8</td>
+                  <td><span class="badge badge-danger">Estoque Baixo</span></td>
+                  <td>01/05/2026 16:45</td>
+                  <td>Laticínios Brasil</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Repor">⬆️</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO DE VENDAS -->
+        <section id="rel-vendas" class="content-section">
+          <div class="section-header">
+            <h1>Relatório de Vendas</h1>
+            <p>Análise detalhada de vendas e performance</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Hoje</option>
+                <option>Últimos 7 dias</option>
+                <option>Este mês</option>
+                <option>Personalizado</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Data Inicial</label>
+              <input type="date" />
+            </div>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" />
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-secondary">📊 Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total de Vendas</div>
+              <div class="stat-value">R$ 4.250,00</div>
+              <div class="stat-change positive">↑ 15% vs período anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Quantidade de Pedidos</div>
+              <div class="stat-value">156</div>
+              <div class="stat-change positive">↑ 8 pedidos a mais</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ticket Médio</div>
+              <div class="stat-value">R$ 27,24</div>
+              <div class="stat-change">→ Sem variação</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Produto Mais Vendido</div>
+              <div class="stat-value">Hambúrguer</div>
+              <div class="stat-change">42 unidades</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Vendas por Período</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Pedidos</th>
+                    <th>Valor Total</th>
+                    <th>Ticket Médio</th>
+                    <th>Prato Top</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>02/05/2026</td>
+                    <td>28</td>
+                    <td>R$ 850,00</td>
+                    <td>R$ 30,36</td>
+                    <td>Hambúrguer (12)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO FINANCEIRO -->
+        <section id="rel-financeiro" class="content-section">
+          <div class="section-header">
+            <h1>Relatório Financeiro</h1>
+            <p>Análise de receitas, despesas e lucros</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Este mês</option>
+                <option>Mês passado</option>
+                <option>Últimos 3 meses</option>
+                <option>Este ano</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-secondary">📊 Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Receita Bruta</div>
+              <div class="stat-value">R$ 28.500,00</div>
+              <div class="stat-change positive">↑ 12% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Despesas Totais</div>
+              <div class="stat-value">R$ 12.200,00</div>
+              <div class="stat-change negative">↑ 5% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lucro Líquido</div>
+              <div class="stat-value">R$ 16.300,00</div>
+              <div class="stat-change positive">↑ 18% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Margem de Lucro</div>
+              <div class="stat-value">57%</div>
+              <div class="stat-change">Saudável</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Composição de Despesas</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>% do Total</th>
+                    <th>Observações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Insumos/Alimentos</td>
+                    <td>R$ 8.500,00</td>
+                    <td>69%</td>
+                    <td>Aumento esperado</td>
+                  </tr>
+                  <tr>
+                    <td>Folha de Pagamento</td>
+                    <td>R$ 3.200,00</td>
+                    <td>26%</td>
+                    <td>Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Utilidades</td>
+                    <td>R$ 500,00</td>
+                    <td>5%</td>
+                    <td>Normal</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO DE CARDÁPIO -->
+        <section id="rel-cardapio" class="content-section">
+          <div class="section-header">
+            <h1>Desempenho do Cardápio</h1>
+            <p>Análise de quais pratos estão mais vendidos</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Últimos 30 dias</option>
+                <option>Este mês</option>
+                <option>Últimos 3 meses</option>
+                <option>Este ano</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+          </div>
+
+          <div class="report-section">
+            <h3>Pratos Mais Vendidos</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Prato</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Faturamento</th>
+                    <th>% do Total</th>
+                    <th>Custo Médio</th>
+                    <th>Lucro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Hambúrguer Artesanal</strong></td>
+                    <td>Sanduíches</td>
+                    <td>42</td>
+                    <td>R$ 1.214,00</td>
+                    <td>27%</td>
+                    <td>R$ 8,50</td>
+                    <td>R$ 855,00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pasta Carbonara</strong></td>
+                    <td>Massas</td>
+                    <td>38</td>
+                    <td>R$ 1.615,00</td>
+                    <td>26%</td>
+                    <td>R$ 15,00</td>
+                    <td>R$ 1.045,00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO OPERACIONAL -->
+        <section id="rel-operacional" class="content-section">
+          <div class="section-header">
+            <h1>Relatório Operacional</h1>
+            <p>Análise de eficiência, tempos e performance</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Últimos 30 dias</option>
+                <option>Este mês</option>
+                <option>Últimos 3 meses</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Tempo Médio de Preparo</div>
+              <div class="stat-value">16.5 min</div>
+              <div class="stat-change positive">↓ 1.5 min a menos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Taxa de Rejeição</div>
+              <div class="stat-value">1.2%</div>
+              <div class="stat-change positive">Excelente</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ocupação Cozinha</div>
+              <div class="stat-value">82%</div>
+              <div class="stat-change">Ótima capacidade</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Pedidos Entregues no Prazo</div>
+              <div class="stat-value">96%</div>
+              <div class="stat-change positive">Acima do esperado</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO RESTAURANTE -->
+        <section id="config-restaurante" class="content-section">
+          <div class="section-header">
+            <h1>Configurações do Restaurante</h1>
+            <p>Informações gerais e operacionais</p>
+          </div>
+
+          <div class="config-form">
+            <div class="form-section">
+              <h3>Informações Básicas</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome do Restaurante</label>
+                  <input type="text" value="Seu Restaurante" />
+                </div>
+                <div class="form-group">
+                  <label>CNPJ</label>
+                  <input type="text" value="12.345.678/0001-90" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Endereço</label>
+                  <input type="text" value="Rua das Flores, 123" />
+                </div>
+                <div class="form-group">
+                  <label>Complemento</label>
+                  <input type="text" value="Apto 456" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Cidade</label>
+                  <input type="text" value="São Paulo" />
+                </div>
+                <div class="form-group">
+                  <label>CEP</label>
+                  <input type="text" value="01234-567" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Contato</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Telefone Principal</label>
+                  <input type="tel" value="(11) 3000-0000" />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" value="contato@restaurante.com" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Whatsapp para Pedidos</label>
+                  <input type="tel" value="(11) 99999-9999" />
+                </div>
+                <div class="form-group">
+                  <label>Redes Sociais</label>
+                  <input type="text" placeholder="@usuario" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Horário de Funcionamento</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Abertura</label>
+                  <input type="time" value="11:00" />
+                </div>
+                <div class="form-group">
+                  <label>Fechamento</label>
+                  <input type="time" value="23:00" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Dias de Funcionamento</label>
+                  <div class="checkbox-group">
+                    <label><input type="checkbox" checked /> Seg-Sex</label>
+                    <label><input type="checkbox" checked /> Sábado</label>
+                    <label><input type="checkbox" /> Domingo</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary">Salvar Alterações</button>
+              <button class="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO USUÁRIOS -->
+        <section id="config-usuarios" class="content-section">
+          <div class="section-header">
+            <h1>Usuários e Permissões</h1>
+            <p>Gerenciar acesso e permissões do sistema</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addUserModal')" data-open-modal="addUserModal">+ Novo Usuário</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Email</th>
+                  <th>Tipo de Acesso</th>
+                  <th>Módulos</th>
+                  <th>Status</th>
+                  <th>Último Acesso</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Carlos Mendes</strong></td>
+                  <td>carlos@restaurante.com</td>
+                  <td><span class="badge badge-info">Administrador</span></td>
+                  <td>Todos</td>
+                  <td><span class="badge badge-active">Ativo</span></td>
+                  <td>02/05/2026 10:45</td>
+                  <td>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Permissões">🔑</button>
+                    <button class="btn-icon" title="Resetar Senha">🔑</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO INTEGRAÇÃO -->
+        <section id="config-integracao" class="content-section">
+          <div class="section-header">
+            <h1>Integrações</h1>
+            <p>Conecte seu restaurante com plataformas externas</p>
+          </div>
+
+          <div class="integrations-grid">
+            <div class="integration-card">
+              <div class="integration-icon">🛵</div>
+              <h4>Ifood</h4>
+              <p>Integração com plataforma de delivery</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+            <div class="integration-card">
+              <div class="integration-icon">💳</div>
+              <h4>PagSeguro</h4>
+              <p>Processamento de pagamentos online</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+            <div class="integration-card">
+              <div class="integration-icon">📍</div>
+              <h4>Google Maps</h4>
+              <p>Mapa de localização</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+            <div class="integration-card">
+              <div class="integration-icon">📧</div>
+              <h4>Email Marketing</h4>
+              <p>Disparos de promoções e notícias</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO NOTIFICAÇÕES -->
+        <section id="config-notificacoes" class="content-section">
+          <div class="section-header">
+            <h1>Notificações</h1>
+            <p>Personalize seus alertas e notificações</p>
+          </div>
+
+          <div class="config-form">
+            <div class="form-section">
+              <h3>Notificações por Email</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Pedidos novos</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Estoque baixo</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Relatório diário</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" />
+                    <span>Manutenção do sistema</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Notificações por SMS</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Alerta crítico de estoque</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary">Salvar Preferências</button>
+              <button class="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal" id="addClientModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>
+      <div class="modal-header">Novo Cliente</div>
+      <form id="addClientForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="email@exemplo.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" name="address" placeholder="Rua, número" autocomplete="street-address" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addClientModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addFunctModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addFunctModal')">✕</button>
+      <div class="modal-header">Novo Funcionário</div>
+      <form id="addFunctForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="email@restaurante.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label>Cargo</label>
+            <select name="role" required>
+              <option>Gerente</option>
+              <option>Cozinheiro(a)</option>
+              <option>Atendente</option>
+              <option>Entregador(a)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Salário</label>
+            <input type="number" name="salary" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addFunctModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addSupplierModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addSupplierModal')">✕</button>
+      <div class="modal-header">Novo Fornecedor</div>
+      <form id="addSupplierForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Razão Social</label>
+            <input type="text" name="company" placeholder="Nome da empresa" autocomplete="organization" required />
+          </div>
+          <div class="form-group">
+            <label>CNPJ</label>
+            <input type="text" name="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Especialidade</label>
+            <input type="text" name="specialty" placeholder="Carnes, Bebidas, etc" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="contato@fornecedor.com" autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addSupplierModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addDishModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addDishModal')">✕</button>
+      <div class="modal-header">Novo Prato</div>
+      <form id="addDishForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome do Prato</label>
+            <input type="text" name="name" placeholder="Ex: Hambúrguer Artesanal" required />
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <select name="category" required>
+              <option value="1">Sanduíches</option>
+              <option value="2">Massas</option>
+              <option value="3">Pratos Principais</option>
+              <option value="4">Saladas</option>
+              <option value="5">Sobremesas</option>
+              <option value="6">Bebidas</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Preço (R$)</label>
+            <input type="number" name="price" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label>Custo (R$)</label>
+            <input type="number" name="cost" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Descrição</label>
+            <textarea name="description" placeholder="Descrição do prato" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addDishModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addStockModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addStockModal')">✕</button>
+      <div class="modal-header">Novo Insumo</div>
+      <form id="addStockForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Ex: Carne Moída" required />
+          </div>
+          <div class="form-group">
+            <label>Fornecedor</label>
+            <select name="supplier" required>
+              <option>Açougue Premium</option>
+              <option>Verdurão</option>
+              <option>Laticínios Brasil</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade</label>
+            <input type="number" name="quantity" placeholder="0" min="0" step="0.001" required />
+          </div>
+          <div class="form-group">
+            <label>Unidade</label>
+            <select name="unit" required>
+              <option>kg</option>
+              <option>g</option>
+              <option>l</option>
+              <option>ml</option>
+              <option>un</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade Mínima</label>
+            <input type="number" name="minQuantity" placeholder="0" min="0" step="0.001" required />
+          </div>
+          <div class="form-group">
+            <label>Preço Unitário</label>
+            <input type="number" name="unitPrice" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addStockModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addUserModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+      <div class="modal-header">Novo Usuário</div>
+      <form id="addUserForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="usuario@restaurante.com" autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Acesso</label>
+            <select name="accessType" required>
+              <option>Administrador</option>
+              <option>Gerente</option>
+              <option>Operacional</option>
+              <option>Visualização</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Senha Temporária</label>
+            <input type="password" name="temporaryPassword" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addUserModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Criar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function lockBodyScroll() {
+        document.body.style.overflow = document.querySelector('.modal.active') ? 'hidden' : '';
+      }
+
+      window.openModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+          console.warn('Modal nao encontrado:', modalId);
+          return;
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.setAttribute('aria-hidden', 'false');
+        lockBodyScroll();
+      };
+
+      window.closeModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        lockBodyScroll();
+      };
+
+      window.navigateTo = function (sectionId) {
+        document.querySelectorAll('.content-section').forEach(function (section) {
+          section.classList.remove('active');
+        });
+
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
+
+        const showWelcome = !selectedSection || sectionId === 'dashboard';
+        const logoCenter = document.querySelector('.logocenter');
+        const nomeCenter = document.querySelector('.nomecenter');
+        const textCenter = document.getElementById('textcenter');
+
+        if (logoCenter) logoCenter.style.display = showWelcome ? 'block' : 'none';
+        if (nomeCenter) nomeCenter.style.display = showWelcome ? 'block' : 'none';
+        if (textCenter) textCenter.style.display = showWelcome ? 'block' : 'none';
+      };
+
+      window.openAddDishModal = function () { window.openModal('addDishModal'); };
+      window.openAddStockModal = function () { window.openModal('addStockModal'); };
+      window.openAddUserModal = function () { window.openModal('addUserModal'); };
+      window.exportTable = function () { alert('Exportando dados...'); };
+      window.changeStatus = function () { alert('Status atualizado com sucesso!'); };
+
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-open-modal]');
+        if (trigger) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.openModal(trigger.getAttribute('data-open-modal'));
+          return;
+        }
+
+        if (event.target.classList && event.target.classList.contains('modal')) {
+          window.closeModal(event.target.id);
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          document.querySelectorAll('.modal.active').forEach(function (modal) {
+            window.closeModal(modal.id);
+          });
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.modal').forEach(function (modal) {
+          modal.style.display = modal.classList.contains('active') ? 'flex' : 'none';
+          modal.setAttribute('aria-hidden', modal.classList.contains('active') ? 'false' : 'true');
+        });
+      });
+    })();
+  </script>
+  <script src="../JavaScript/adm.js" defer></script>
+</body>
+</html>
