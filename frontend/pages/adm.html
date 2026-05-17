@@ -307,32 +307,14 @@
           </div>
 
           <div class="kitchen-board">
-            <div class="kitchen-column">
-              <h3>Aguardando Preparo (3)</h3>
-              <div class="kitchen-card">
-                <div class="card-id">#2026005</div>
-                <div class="card-items">2x Pasta Carbonara</div>
-                <div class="card-time">Solicitado há 5 min</div>
-                <button class="btn-small" onclick="changeStatus('preparing')">Iniciar Preparo</button>
-              </div>
+            <div class="kitchen-column" id="col-recebido">
+              <h3>Aguardando Preparo (<span class="col-count">0</span>)</h3>
             </div>
-            <div class="kitchen-column">
-              <h3>Em Preparação (2)</h3>
-              <div class="kitchen-card">
-                <div class="card-id">#2026003</div>
-                <div class="card-items">1x Salmão Grelhado, 1x Bolo</div>
-                <div class="card-time">Preparando há 8 min</div>
-                <button class="btn-small" onclick="changeStatus('ready')">Marcar Pronto</button>
-              </div>
+            <div class="kitchen-column" id="col-em_preparo">
+              <h3>Em Preparação (<span class="col-count">0</span>)</h3>
             </div>
-            <div class="kitchen-column">
-              <h3>Pronto para Entrega (1)</h3>
-              <div class="kitchen-card">
-                <div class="card-id">#2026001</div>
-                <div class="card-items">2x Hambúrguer, 1x Salada</div>
-                <div class="card-time">Pronto há 2 min</div>
-                <button class="btn-small" onclick="changeStatus('delivered')">Entregar</button>
-              </div>
+            <div class="kitchen-column" id="col-pronto">
+              <h3>Pronto para Entrega (<span class="col-count">0</span>)</h3>
             </div>
           </div>
         </section>
@@ -1299,6 +1281,6 @@
       });
     })();
   </script>
-  <script src="../JavaScript/adm.js?v=2" defer></script>
+  <script src="../JavaScript/adm.js?v=3" defer></script>
 </body>
 </html>

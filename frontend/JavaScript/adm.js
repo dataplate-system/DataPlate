@@ -592,30 +592,11 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
 // KITCHEN BOARD STATUS UPDATES
 // =============================================
 
-const statusMap = { 'preparing': 'EM_PREPARO', 'ready': 'PRONTO', 'delivered': 'ENTREGUE' };
-
-window.changeStatus = function(newStatus, btn) {
-  const card = btn ? btn.closest('.kitchen-card') : null;
-  const idEl = card ? card.querySelector('[data-pedido-id]') : null;
-  const pedidoId = idEl ? idEl.dataset.pedidoId : null;
-  if (!pedidoId) { alert('ID do pedido não encontrado no card.'); return; }
-  putJson(`/pedidos/${pedidoId}/status`, { status: statusMap[newStatus] || newStatus })
-    .then(() => alert('Status atualizado com sucesso!'))
-    .catch((err) => alert('Erro: ' + err.message));
+window.alterarStatusPedido = function(pedidoId, novoStatus) {
+  putJson(`/pedidos/${pedidoId}/status`, { status: novoStatus })
+    .then(() => carregarCozinha())
+    .catch((err) => alert('Erro ao atualizar status: ' + err.message));
 };
-
-document.querySelectorAll('.btn-status-change').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const card = e.target.closest('.kitchen-card');
-    const idEl = card ? card.querySelector('[data-pedido-id]') : null;
-    const pedidoId = idEl ? idEl.dataset.pedidoId : null;
-    if (!pedidoId) return;
-    const newStatus = btn.dataset.status || 'EM_PREPARO';
-    putJson(`/pedidos/${pedidoId}/status`, { status: newStatus })
-      .then(() => alert('Status atualizado!'))
-      .catch((err) => alert('Erro: ' + err.message));
-  });
-});
 
 // =============================================
 // SEARCH & FILTER FUNCTIONALITY
@@ -848,6 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarProdutos();
   carregarPedidos();
   carregarInsumos();
+  carregarCozinha();
   carregarUsuarios();
 
   console.log('Admin panel loaded successfully');
@@ -1028,6 +1010,54 @@ function carregarInsumos() {
 
 function carregarUsuarios() {
   // placeholder — endpoint de listagem de usuários será adicionado futuramente
+}
+
+function carregarCozinha() {
+  getJson('/pedidos').then(pedidos => {
+    const cols = {
+      RECEBIDO:   document.getElementById('col-recebido'),
+      EM_PREPARO: document.getElementById('col-em_preparo'),
+      PRONTO:     document.getElementById('col-pronto')
+    };
+
+    Object.values(cols).forEach(col => {
+      if (!col) return;
+      Array.from(col.querySelectorAll('.kitchen-card')).forEach(c => c.remove());
+      col.querySelector('.col-count').textContent = '0';
+    });
+
+    const ativos = pedidos.filter(p => ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status));
+
+    ativos.forEach(p => {
+      const col = cols[p.status];
+      if (!col) return;
+
+      const itensTexto = p.itens && p.itens.length
+        ? p.itens.map(i => `${i.quantidade}x ${i.nomeProduto}`).join(', ')
+        : 'Sem itens';
+
+      const proximoStatus = { RECEBIDO: 'EM_PREPARO', EM_PREPARO: 'PRONTO', PRONTO: 'ENTREGUE' }[p.status];
+      const labelBotao   = { RECEBIDO: 'Iniciar Preparo', EM_PREPARO: 'Marcar Pronto', PRONTO: 'Entregar' }[p.status];
+
+      const card = document.createElement('div');
+      card.className = 'kitchen-card';
+      card.innerHTML = `
+        <div class="card-id">Pedido #${p.id} — Mesa ${p.numeroMesa || '-'}</div>
+        <div class="card-items">${itensTexto}</div>
+        <div class="card-time">${p.dataHora ? new Date(p.dataHora).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : ''}</div>
+        <button class="btn-small" onclick="alterarStatusPedido(${p.id}, '${proximoStatus}')">${labelBotao}</button>
+      `;
+      col.appendChild(card);
+      col.querySelector('.col-count').textContent =
+        String(col.querySelectorAll('.kitchen-card').length);
+    });
+
+    if (ativos.length === 0) {
+      Object.values(cols).forEach(col => {
+        if (col) col.insertAdjacentHTML('beforeend', '<p style="color:#94a3b8;font-size:14px">Nenhum pedido</p>');
+      });
+    }
+  }).catch(() => {});
 }
 
     // Charts Configuration
