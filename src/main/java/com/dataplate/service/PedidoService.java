@@ -53,6 +53,14 @@ public class PedidoService {
         return toResponse(pedidoRepository.save(pedido));
     }
 
+    @Transactional
+    public PedidoResponse atualizarStatus(Long id, PedidoStatus novoStatus) {
+        Pedido pedido = pedidoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido nao encontrado: " + id));
+        pedido.setIdStatus(toStatusId(novoStatus));
+        return toResponse(pedidoRepository.save(pedido));
+    }
+
     @Transactional(readOnly = true)
     public List<PedidoResponse> listar() {
         return pedidoRepository.findTop10ByOrderByDataHoraDesc()
@@ -102,6 +110,16 @@ public class PedidoService {
                 pedido.getValorTotal(),
                 itens
         );
+    }
+
+    private int toStatusId(PedidoStatus status) {
+        return switch (status) {
+            case RECEBIDO -> STATUS_RECEBIDO_ID;
+            case EM_PREPARO -> 2;
+            case PRONTO -> 3;
+            case ENTREGUE -> 4;
+            case CANCELADO -> STATUS_CANCELADO_ID;
+        };
     }
 
     private PedidoStatus toStatus(Integer idStatus) {

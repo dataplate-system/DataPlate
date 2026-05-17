@@ -7,12 +7,9 @@ const API_BASE_URL = '/api';
 async function postJson(endpoint, payload) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-
   if (!response.ok) {
     let message = 'Nao foi possivel salvar os dados.';
     try {
@@ -21,10 +18,33 @@ async function postJson(endpoint, payload) {
     } catch (_) {
       message = await response.text() || message;
     }
-
     throw new Error(message);
   }
+  return response.json();
+}
 
+async function putJson(endpoint, payload) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    let message = 'Nao foi possivel atualizar.';
+    try {
+      const error = await response.json();
+      message = error.message || error.mensagem || error.erro || message;
+    } catch (_) {
+      message = await response.text() || message;
+    }
+    throw new Error(message);
+  }
+  return response.json();
+}
+
+async function getJson(endpoint) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`);
+  if (!response.ok) throw new Error('Erro ao carregar dados.');
   return response.json();
 }
 
@@ -351,39 +371,48 @@ document.addEventListener('click', (e) => {
 document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
-  const formData = new FormData(e.target);
-  console.log('New client:', Object.fromEntries(formData));
-  
-  // TODO: Send to server
-  alert('Cliente adicionado com sucesso!');
-  closeModal('addClientModal');
-  e.target.reset();
+  const fd = new FormData(e.target);
+  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), telefone: fd.get('phone'), endereco: fd.get('address') };
+  postJson('/clientes', payload)
+    .then((cliente) => {
+      alert('Cliente adicionado com sucesso!');
+      closeModal('addClientModal');
+      e.target.reset();
+      adicionarLinhaCliente(cliente);
+    })
+    .catch((err) => alert('Erro: ' + err.message));
 });
 
 // Add Employee Modal
 document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
-  const formData = new FormData(e.target);
-  console.log('New employee:', Object.fromEntries(formData));
-  
-  // TODO: Send to server
-  alert('Funcionário adicionado com sucesso!');
-  closeModal('addFunctModal');
-  e.target.reset();
+  const fd = new FormData(e.target);
+  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
+  postJson('/funcionarios', payload)
+    .then((func) => {
+      alert('Funcionário adicionado com sucesso!');
+      closeModal('addFunctModal');
+      e.target.reset();
+      adicionarLinhaFuncionario(func);
+    })
+    .catch((err) => alert('Erro: ' + err.message));
 });
 
 // Add Supplier Modal
 document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
-  const formData = new FormData(e.target);
-  console.log('New supplier:', Object.fromEntries(formData));
-  
-  // TODO: Send to server
-  alert('Fornecedor adicionado com sucesso!');
-  closeModal('addSupplierModal');
-  e.target.reset();
+  const fd = new FormData(e.target);
+  const payload = { razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: fd.get('phone'), email: fd.get('email') };
+  postJson('/fornecedores', payload)
+    .then((forn) => {
+      alert('Fornecedor adicionado com sucesso!');
+      closeModal('addSupplierModal');
+      e.target.reset();
+      adicionarLinhaFornecedor(forn);
+    })
+    .catch((err) => alert('Erro: ' + err.message));
 });
 
 // Add Dish Modal
@@ -519,45 +548,72 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
 document.getElementById('addStockForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
-  const formData = new FormData(e.target);
-  console.log('New stock item:', Object.fromEntries(formData));
-  
-  // TODO: Send to server
-  alert('Item de estoque adicionado com sucesso!');
-  closeModal('addStockModal');
-  e.target.reset();
+  const fd = new FormData(e.target);
+  const payload = {
+    nome: fd.get('name'),
+    unidade: fd.get('unit'),
+    quantidadeAtual: Number(fd.get('quantity')),
+    quantidadeMinima: Number(fd.get('minQuantity')),
+    custoUnitario: Number(fd.get('unitPrice'))
+  };
+  postJson('/insumos', payload)
+    .then((insumo) => {
+      alert('Insumo adicionado com sucesso!');
+      closeModal('addStockModal');
+      e.target.reset();
+      adicionarLinhaInsumo(insumo);
+    })
+    .catch((err) => alert('Erro: ' + err.message));
 });
 
 // Add User Modal
 document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
-  const formData = new FormData(e.target);
-  console.log('New user:', Object.fromEntries(formData));
-  
-  // TODO: Send to server
-  alert('Usuário adicionado com sucesso!');
-  closeModal('addUserModal');
-  e.target.reset();
+  const fd = new FormData(e.target);
+  const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Visualização': 'FUNCIONARIO' };
+  const payload = {
+    nome: fd.get('name'),
+    email: fd.get('email'),
+    senha: fd.get('temporaryPassword'),
+    role: accessTypeMap[fd.get('accessType')] || 'FUNCIONARIO'
+  };
+  postJson('/auth/register', payload)
+    .then(() => {
+      alert('Usuário criado com sucesso!');
+      closeModal('addUserModal');
+      e.target.reset();
+      carregarUsuarios();
+    })
+    .catch((err) => alert('Erro: ' + err.message));
 });
 
 // =============================================
 // KITCHEN BOARD STATUS UPDATES
 // =============================================
 
-window.changeStatus = function(status) {
-  console.log('Kitchen status changed:', status);
-  alert('Status atualizado com sucesso!');
+const statusMap = { 'preparing': 'EM_PREPARO', 'ready': 'PRONTO', 'delivered': 'ENTREGUE' };
+
+window.changeStatus = function(newStatus, btn) {
+  const card = btn ? btn.closest('.kitchen-card') : null;
+  const idEl = card ? card.querySelector('[data-pedido-id]') : null;
+  const pedidoId = idEl ? idEl.dataset.pedidoId : null;
+  if (!pedidoId) { alert('ID do pedido não encontrado no card.'); return; }
+  putJson(`/pedidos/${pedidoId}/status`, { status: statusMap[newStatus] || newStatus })
+    .then(() => alert('Status atualizado com sucesso!'))
+    .catch((err) => alert('Erro: ' + err.message));
 };
 
 document.querySelectorAll('.btn-status-change').forEach(btn => {
   btn.addEventListener('click', (e) => {
     const card = e.target.closest('.kitchen-card');
-    const orderId = card.querySelector('.card-id').textContent;
-    
-    // TODO: Send status update to server
-    console.log('Update order status:', orderId);
-    alert(`Status do pedido ${orderId} atualizado!`);
+    const idEl = card ? card.querySelector('[data-pedido-id]') : null;
+    const pedidoId = idEl ? idEl.dataset.pedidoId : null;
+    if (!pedidoId) return;
+    const newStatus = btn.dataset.status || 'EM_PREPARO';
+    putJson(`/pedidos/${pedidoId}/status`, { status: newStatus })
+      .then(() => alert('Status atualizado!'))
+      .catch((err) => alert('Erro: ' + err.message));
   });
 });
 
@@ -786,9 +842,193 @@ document.addEventListener('DOMContentLoaded', () => {
     .querySelectorAll('form input, form select, form textarea, .config-form input, .config-form select, .config-form textarea')
     .forEach(configureField);
 
-  // TODO: Load data from server
+  carregarClientes();
+  carregarFuncionarios();
+  carregarFornecedores();
+  carregarProdutos();
+  carregarPedidos();
+  carregarInsumos();
+  carregarUsuarios();
+
   console.log('Admin panel loaded successfully');
 });
+
+// =============================================
+// DATA LOADING FUNCTIONS
+// =============================================
+
+function formatDate(iso) {
+  if (!iso) return '-';
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+
+function formatCurrency(v) {
+  if (v == null) return '-';
+  return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+}
+
+function setTableBody(sectionId, rows) {
+  const tbody = document.querySelector(`#${sectionId} .data-table tbody`);
+  if (!tbody) return;
+  if (!rows || rows.length === 0) {
+    const cols = tbody.closest('table').querySelectorAll('th').length;
+    tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:#94a3b8">Nenhum registro encontrado</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+function adicionarLinhaCliente(c) {
+  const tbody = document.querySelector('#clientes .data-table tbody');
+  if (!tbody) return;
+  const placeholder = tbody.querySelector('td[colspan]');
+  if (placeholder) tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('beforeend', buildLinhaCliente(c));
+}
+
+function buildLinhaCliente(c) {
+  return `<tr>
+    <td><input type="checkbox" /></td>
+    <td><strong>${c.nome}</strong></td>
+    <td>${c.email || '-'}</td>
+    <td>${c.telefone || '-'}</td>
+    <td>-</td><td>-</td>
+    <td><span class="badge badge-active">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
+    <td>${formatDate(c.criadoEm)}</td>
+    <td><button class="btn-icon" title="Editar">✏️</button></td>
+  </tr>`;
+}
+
+function carregarClientes() {
+  getJson('/clientes')
+    .then(list => setTableBody('clientes', list.map(buildLinhaCliente)))
+    .catch(() => {});
+}
+
+function adicionarLinhaFuncionario(f) {
+  const tbody = document.querySelector('#funcionarios .data-table tbody');
+  if (!tbody) return;
+  const placeholder = tbody.querySelector('td[colspan]');
+  if (placeholder) tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('beforeend', buildLinhaFuncionario(f));
+}
+
+function buildLinhaFuncionario(f) {
+  return `<tr>
+    <td><strong>${f.nome}</strong></td>
+    <td><span class="badge badge-info">${f.cargo}</span></td>
+    <td>${f.email || '-'}</td>
+    <td>-</td>
+    <td>${f.salario ? formatCurrency(f.salario) : '-'}</td>
+    <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
+    <td>${formatDate(f.criadoEm)}</td>
+    <td><button class="btn-icon" title="Editar">✏️</button></td>
+  </tr>`;
+}
+
+function carregarFuncionarios() {
+  getJson('/funcionarios')
+    .then(list => setTableBody('funcionarios', list.map(buildLinhaFuncionario)))
+    .catch(() => {});
+}
+
+function adicionarLinhaFornecedor(f) {
+  const tbody = document.querySelector('#fornecedores .data-table tbody');
+  if (!tbody) return;
+  const placeholder = tbody.querySelector('td[colspan]');
+  if (placeholder) tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('beforeend', buildLinhaFornecedor(f));
+}
+
+function buildLinhaFornecedor(f) {
+  return `<tr>
+    <td><strong>${f.razaoSocial}</strong></td>
+    <td>${f.especialidade || '-'}</td>
+    <td>${f.telefone || '-'}</td>
+    <td>${f.email || '-'}</td>
+    <td>-</td>
+    <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
+    <td>${formatDate(f.criadoEm)}</td>
+    <td><button class="btn-icon" title="Editar">✏️</button></td>
+  </tr>`;
+}
+
+function carregarFornecedores() {
+  getJson('/fornecedores')
+    .then(list => setTableBody('fornecedores', list.map(buildLinhaFornecedor)))
+    .catch(() => {});
+}
+
+function buildLinhaProduto(p) {
+  return `<tr>
+    <td><strong>${p.nome}</strong></td>
+    <td>${p.idCategoria || '-'}</td>
+    <td>${formatCurrency(p.preco)}</td>
+    <td>-</td><td>-</td>
+    <td><span class="badge badge-active">${p.ativo !== false ? 'Sim' : 'Não'}</span></td>
+    <td>-</td>
+    <td><button class="btn-icon" title="Editar">✏️</button></td>
+  </tr>`;
+}
+
+function carregarProdutos() {
+  getJson('/produtos')
+    .then(list => setTableBody('cardapio', list.map(buildLinhaProduto)))
+    .catch(() => {});
+}
+
+function buildLinhaPedido(p) {
+  const statusLabel = { RECEBIDO: 'Recebido', EM_PREPARO: 'Preparando', PRONTO: 'Pronto', ENTREGUE: 'Entregue', CANCELADO: 'Cancelado' };
+  const badgeClass = { RECEBIDO: 'badge-info', EM_PREPARO: 'badge-warning', PRONTO: 'badge-success', ENTREGUE: 'badge-active', CANCELADO: 'badge-danger' };
+  const qtd = p.itens ? p.itens.reduce((s, i) => s + (i.quantidade || 0), 0) : '-';
+  return `<tr>
+    <td><strong>#${p.id}</strong></td>
+    <td>Mesa ${p.numeroMesa || '-'}</td>
+    <td>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</td>
+    <td>${qtd} item(s)</td>
+    <td>${formatCurrency(p.valorTotal)}</td>
+    <td><span class="badge ${badgeClass[p.status] || ''}">${statusLabel[p.status] || p.status}</span></td>
+    <td>-</td>
+    <td><button class="btn-icon" title="Detalhes">👁️</button></td>
+  </tr>`;
+}
+
+function carregarPedidos() {
+  getJson('/pedidos')
+    .then(list => setTableBody('pedidos', list.map(buildLinhaPedido)))
+    .catch(() => {});
+}
+
+function adicionarLinhaInsumo(i) {
+  const tbody = document.querySelector('#estoque .data-table tbody');
+  if (!tbody) return;
+  const placeholder = tbody.querySelector('td[colspan]');
+  if (placeholder) tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('beforeend', buildLinhaInsumo(i));
+}
+
+function buildLinhaInsumo(i) {
+  const baixo = Number(i.quantidadeAtual) <= Number(i.quantidadeMinima);
+  return `<tr>
+    <td><strong>${i.nome}</strong></td>
+    <td>${i.quantidadeAtual}</td>
+    <td>${i.unidade}</td>
+    <td>${i.quantidadeMinima}</td>
+    <td><span class="badge ${baixo ? 'badge-danger' : 'badge-active'}">${baixo ? 'Estoque Baixo' : 'Em Estoque'}</span></td>
+    <td>-</td><td>-</td>
+    <td><button class="btn-icon" title="Editar">✏️</button></td>
+  </tr>`;
+}
+
+function carregarInsumos() {
+  getJson('/insumos')
+    .then(list => setTableBody('estoque', list.map(buildLinhaInsumo)))
+    .catch(() => {});
+}
+
+function carregarUsuarios() {
+  // placeholder — endpoint de listagem de usuários será adicionado futuramente
+}
 
     // Charts Configuration
     const chartOptions = {
