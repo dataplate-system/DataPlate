@@ -262,7 +262,7 @@ body {
 
 body {
   font-family: sans-serif;
-  margin: 50px;
+  margin: 0px;
   background: #f5f5f5;
   
 }
@@ -547,129 +547,7 @@ body {
   position: relative;
 }
 
-/* ========================= */
-/* RESPONSIVIDADE CELULAR */
-/* ========================= */
 
-@media (max-width: 768px) {
-
-  .topo {
-    padding: 12px;
-  }
-
-  .logo-topo {
-    height: 55px;
-  }
-
-  .categorias {
-    gap: 8px;
-    padding: 10px;
-  }
-
-  .categorias button {
-    font-size: 13px;
-    padding: 8px 14px;
-    white-space: nowrap;
-  }
-
- .item {
-  flex-direction: row;
-  align-items: center;
-}
-
-  .item > img {
-    width: 75px;
-    height: 75px;
-  }
-
-  .info h3 {
-    font-size: 15px;
-  }
-
-  .info p {
-    font-size: 12px;
-  }
-
-  .preco {
-    font-size: 18px;
-  }
-
-  .container {
-    padding: 16px;
-  }
-
-  .quantidade {
-    gap: 10px;
-  }
-
-  .quantidade button {
-    width: 35px;
-    height: 35px;
-    font-size: 18px;
-  }
-
-  .btn,
-  .btn-carrinho,
-  .btn-novo-pedido {
-    width: 100%;
-    font-size: 15px;
-    padding: 14px;
-  }
-
- 
-}
-
-/* ========================= */
-/* TELAS MUITO PEQUENAS */
-/* ========================= */
-
-@media (max-width: 480px) {
-
-
-.acoes {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  margin-left: auto;
-  min-width: 24px;
-}
-
-  .logo-topo {
-    height: 48px;
-  }
-
-  .topo button {
-    font-size: 18px;
-  }
-
-.item {
-  flex-direction: row;
-  align-items: center;
-}
-
-  .item > img {
-    width: 65px;
-    height: 65px;
-  }
-
-  .info h3 {
-    font-size: 14px;
-  }
-
-  .info p {
-    font-size: 11px;
-  }
-
-  .preco {
-    font-size: 16px;
-  }
-
-  .topo-img img {
-    height: 35vh;
-  }
-
-}
 
 /* INPUTS PAGAMENTO */
 
@@ -683,4 +561,554 @@ body {
   font-size:15px;
   outline:none;
   box-shadow:0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* ========================= */
+/* NOVO LAYOUT MODERNO */
+/* ========================= */
+
+.layout-menu{
+  display:flex;
+  min-height:100vh;
+  background:#f3f4f6;
+}
+
+/* MENU LATERAL */
+
+/* SIDEBAR ESQUERDA */
+/* SIDEBAR FIXA */
+.sidebar{
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width:170px;
+  min-width:170px;
+
+  height:100vh;
+
+  background:#ffffff;
+
+  border-right:1px solid #e5e7eb;
+
+  padding:16px 8px 16px 6px;
+
+  display:flex;
+  flex-direction:column;
+
+  align-items:flex-start;
+
+  overflow-y:auto;
+
+  z-index:999;
+}
+
+.logo-sidebar{
+  width:110px;
+  display:block;
+  margin:0 auto 25px;
+}
+
+/* TÍTULO MENU - DESKTOP */
+.sidebar h2{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  width:100%;
+
+  text-align:center;
+
+  margin-bottom:25px;
+
+  font-size:26px;
+
+  color:#111827;
+}
+
+/* MENU VERTICAL */
+.menu-categorias{
+  display:flex !important;
+  flex-direction:column !important;
+
+  width:100%;
+
+  gap:12px;
+
+  align-items:flex-start;
+}
+
+/* BOTÕES */
+.menu-categorias button{
+  width:100%;
+
+  display:flex;
+  justify-content:flex-start;
+
+  padding:14px 14px;
+
+  font-size:14px;
+  font-weight:600;
+
+  text-align:left;
+
+  border:none;
+  border-radius:16px;
+
+  background:#f3f4f6;
+  color:#374151;
+
+  white-space:normal;
+  word-break:break-word;
+
+  transition:0.2s;
+
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* HOVER */
+.menu-categorias button:hover{
+  background:#ff5a00;
+  color:#ffffff;
+}
+
+/* ITEM ATIVO */
+.menu-categorias .ativo{
+  background:#ff5a00;
+  color:#ffffff;
+
+  width:100%;
+
+  border-radius:16px;
+
+  box-shadow:0 4px 12px rgba(255,90,0,0.35);
+}
+/* CONTEÚDO */
+
+.conteudo{
+  margin-left:170px;
+
+  width:calc(100% - 170px);
+
+  flex:1;
+
+  background:#ffffff;
+}
+
+/* BANNER */
+
+.banner-topo{
+  height:220px;
+  background:url('../images/Hambúrguer.jpg') center/cover;
+  position:relative;
+  border-bottom-left-radius:20px;
+  border-bottom-right-radius:20px;
+  overflow:hidden;
+}
+
+.overlay-banner{
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.25);
+}
+
+.novo-topo{
+  position:relative;
+  z-index:2;
+  background:transparent;
+  border:none;
+}
+
+.acoes-topo{
+  display:flex;
+  gap:10px;
+}
+
+/* BUSCA */
+
+.busca{
+  padding:18px;
+}
+
+.busca input{
+  background:#fff;
+  color:#111827;
+  border:none;
+}
+
+.busca input::placeholder{
+  color:#6b7280;
+}
+
+/* GRID DOS PRODUTOS */
+
+.lista-grid{
+  display:grid;
+
+  grid-template-columns:repeat(3, 1fr);
+
+  gap:18px;
+
+  padding:18px;
+}
+
+
+
+/* CARD */
+
+.lista-grid .item{
+  background:#ffffff;
+  border-radius:18px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  padding:0;
+  transition:0.3s;
+  cursor:pointer;
+  box-shadow:0 3px 10px rgba(0,0,0,0.08);
+}
+
+.lista-grid .item:hover{
+  transform:translateY(-4px);
+}
+
+.lista-grid .item img{
+  width:100%;
+  height:170px;
+  object-fit:cover;
+  border-radius:0;
+}
+
+.lista-grid .info{
+  padding:14px;
+}
+
+.lista-grid .info h3{
+  color:#111827;
+  margin-bottom:8px;
+  font-size:17px;
+}
+
+.lista-grid .info p{
+  color:#6b7280;
+  font-size:13px;
+  margin-bottom:10px;
+  line-height:1.4;
+}
+
+.lista-grid .preco{
+  color:#000000;
+  font-size:20px;
+  font-weight:bold;
+}
+
+/* BOTÕES */
+
+.carrinho,
+.status-btn,
+.voltar{
+  background:#ffffff;
+  border:none;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+
+
+
+/* ================================================= */
+/* MOBILE ESTILO IFOOD / ALABAMA */
+/* ================================================= */
+
+@media screen and (max-width: 768px){
+
+  html,
+  body{
+    width:100%;
+    overflow-x:hidden;
+    margin:0;
+    padding:0;
+    background:#ffffff;
+  }
+
+  /* LAYOUT PRINCIPAL */
+  .layout-menu{
+    display:flex;
+    flex-direction:row;
+    width:100%;
+    min-height:100vh;
+  }
+
+  /* SIDEBAR ESQUERDA */
+  .sidebar{
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width:155px !important;
+  min-width:155px !important;
+
+  height:100vh;
+
+  background:#ffffff;
+
+  border-right:1px solid #e5e7eb;
+
+  padding:16px 8px;
+
+  display:flex;
+  flex-direction:column;
+
+  align-items:flex-start;
+
+  overflow-y:auto;
+
+  z-index:999;
+}
+
+  /* LOGO */
+  .logo-sidebar{
+
+    width:85px;
+    height:85px;
+
+    object-fit:contain;
+
+    margin-bottom:20px;
+
+    border:2px solid #ffffff;
+    padding:6px;
+
+  }
+
+  
+
+  /* MENU VERTICAL */
+.menu-categorias{
+  display:flex !important;
+  flex-direction:column !important;
+
+  width:100%;
+
+  gap:12px;
+
+  align-items:flex-start; /* joga tudo para esquerda */
+}
+
+/* BOTÕES */
+.menu-categorias button{
+  width:100%;
+
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+
+  padding:16px 14px;
+
+  font-size:13px;
+  font-weight:600;
+
+  text-align:left;
+
+  line-height:1.25;
+
+  border:none;
+  border-radius:18px;
+
+  background:#f3f4f6;
+  color:#374151;
+
+  white-space:normal;
+
+  word-break:normal;
+  overflow-wrap:break-word;
+
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+
+  transition:0.2s;
+}
+
+/* HOVER */
+.menu-categorias button:hover{
+  background:#ff5a00;
+  color:#ffffff;
+}
+
+/* ITEM ATIVO */
+.menu-categorias .ativo{
+  background:#ff5a00;
+
+  color:#ffffff;
+
+  width:100%;
+
+  border:none;
+
+  border-radius:16px;
+
+  box-shadow:0 4px 12px rgba(255,90,0,0.35);
+}
+
+
+  /* CONTEUDO */
+ .conteudo{
+  margin-left:155px;
+
+  width:calc(100% - 155px);
+
+  flex:1;
+
+  overflow:hidden;
+}
+
+  /* BANNER */
+  .banner-topo{
+    height:150px;
+    border-radius:0;
+  }
+
+  /* TOPO */
+  .novo-topo{
+    padding:12px;
+  }
+
+  
+  .carrinho{
+    width:36px;
+    height:36px;
+    font-size:15px;
+  }
+
+  /* BUSCA */
+  .busca{
+    padding:12px;
+  }
+
+  .busca input{
+    height:40px;
+    font-size:13px;
+  }
+
+  .lista-grid{
+  display:grid !important;
+
+  grid-template-columns:repeat(2, 1fr);
+
+  gap:10px;
+
+  padding:10px;
+
+  width:100%;
+}
+
+  /* CARD */
+  .lista-grid .item{
+    display:flex;
+    flex-direction:column;
+
+    width:100%;
+
+    padding:0;
+
+    overflow:hidden;
+
+    border-radius:12px;
+
+    background:#ffffff;
+  }
+
+  /* IMAGEM */
+  .lista-grid .item img{
+    width:100%;
+    height:80px;
+
+    border-radius:0;
+
+    object-fit:cover;
+  }
+
+  /* INFO */
+  .lista-grid .info{
+    padding:8px;
+  }
+
+  .lista-grid .info h3{
+    font-size:11px;
+    line-height:1.3;
+
+    margin-bottom:4px;
+
+    color:#000000;
+  }
+
+  .lista-grid .info p{
+    display:none;
+  }
+
+  .lista-grid .preco{
+    font-size:13px;
+    color:#000000;
+    font-weight:bold;
+  }
+
+  .lista-grid .item{
+  border:1px solid #ffffff;
+}
+
+.busca input{
+  background:#ffffff;
+  border:1px solid #e5e7eb;
+}
+
+.banner-topo{
+  border-bottom:1px solid #ffffff;
+}
+
+.lista-grid .item{
+  min-width:0;
+}
+
+
+}
+
+/* ================================= */
+/* INTERAÇÃO BOTÕES MENU */
+/* ================================= */
+
+.menu-categorias button{
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    transform 0.20s ease,
+    box-shadow 0.25s ease;
+
+  cursor:pointer;
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* EFEITO AO PASSAR O MOUSE */
+.menu-categorias button:hover{
+  background:#ff5a00;
+  color:#ffffff;
+
+  transform:translateY(-2px);
+
+  box-shadow:
+    0 6px 14px rgba(255,90,0,0.28);
+}
+
+/* EFEITO AO CLICAR */
+.menu-categorias button:active{
+  transform:scale(0.96);
+}
+
+/* ITEM ATIVO */
+.menu-categorias .ativo{
+  background:#ff5a00;
+  color:#ffffff;
+
+  box-shadow:
+    0 6px 14px rgba(255,90,0,0.35);
 }
