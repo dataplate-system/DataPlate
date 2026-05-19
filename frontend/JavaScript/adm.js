@@ -2,7 +2,24 @@
  * ADMIN PANEL - Navigation and Modal Management
  */
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
+
+async function readResponseBody(response) {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    return text;
+  }
+}
+
+function extractErrorMessage(body, fallback) {
+  if (!body) return fallback;
+  if (typeof body === 'string') return body || fallback;
+  return body.message || body.mensagem || body.erro || fallback;
+}
 
 async function postJson(endpoint, payload) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -11,16 +28,10 @@ async function postJson(endpoint, payload) {
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    let message = 'Nao foi possivel salvar os dados.';
-    try {
-      const error = await response.json();
-      message = error.message || error.mensagem || error.erro || message;
-    } catch (_) {
-      message = await response.text() || message;
-    }
-    throw new Error(message);
+    const body = await readResponseBody(response);
+    throw new Error(extractErrorMessage(body, 'Nao foi possivel salvar os dados.'));
   }
-  return response.json();
+  return readResponseBody(response);
 }
 
 async function putJson(endpoint, payload) {
@@ -30,22 +41,19 @@ async function putJson(endpoint, payload) {
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    let message = 'Nao foi possivel atualizar.';
-    try {
-      const error = await response.json();
-      message = error.message || error.mensagem || error.erro || message;
-    } catch (_) {
-      message = await response.text() || message;
-    }
-    throw new Error(message);
+    const body = await readResponseBody(response);
+    throw new Error(extractErrorMessage(body, 'Nao foi possivel atualizar.'));
   }
-  return response.json();
+  return readResponseBody(response);
 }
 
 async function getJson(endpoint) {
   const response = await fetch(`${API_BASE_URL}${endpoint}`);
-  if (!response.ok) throw new Error('Erro ao carregar dados.');
-  return response.json();
+  if (!response.ok) {
+    const body = await readResponseBody(response);
+    throw new Error(extractErrorMessage(body, 'Erro ao carregar dados.'));
+  }
+  return readResponseBody(response);
 }
 
 // =============================================
@@ -108,7 +116,6 @@ function createModalIfMissing(modalId) {
     addFunctModal: 'Novo Funcionário',
     addSupplierModal: 'Novo Fornecedor',
     addDishModal: 'Novo Prato',
-    addStockModal: 'Novo Insumo',
     addUserModal: 'Novo Usuário'
   };
 
@@ -163,7 +170,6 @@ window.closeModal = function(modalId) {
 };
 
 window.openAddDishModal = () => window.openModal('addDishModal');
-window.openAddStockModal = () => window.openModal('addStockModal');
 window.openAddUserModal = () => window.openModal('addUserModal');
 
 // =============================================
@@ -372,7 +378,10 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const fd = new FormData(e.target);
-  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), telefone: fd.get('phone'), endereco: fd.get('address') };
+  const endereco = [fd.get('address'), fd.get('num') && `Nº ${fd.get('num')}`, fd.get('cep') && `CEP ${fd.get('cep')}`]
+    .filter(Boolean)
+    .join(', ');
+  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), telefone: fd.get('phone'), endereco };
   postJson('/clientes', payload)
     .then((cliente) => {
       alert('Cliente adicionado com sucesso!');
@@ -544,28 +553,6 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
     });
 });
 
-// Add Stock Modal
-document.getElementById('addStockForm')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (!validateForm(e.target)) return;
-  const fd = new FormData(e.target);
-  const payload = {
-    nome: fd.get('name'),
-    unidade: fd.get('unit'),
-    quantidadeAtual: Number(fd.get('quantity')),
-    quantidadeMinima: Number(fd.get('minQuantity')),
-    custoUnitario: Number(fd.get('unitPrice'))
-  };
-  postJson('/insumos', payload)
-    .then((insumo) => {
-      alert('Insumo adicionado com sucesso!');
-      closeModal('addStockModal');
-      e.target.reset();
-      adicionarLinhaInsumo(insumo);
-    })
-    .catch((err) => alert('Erro: ' + err.message));
-});
-
 // Add User Modal
 document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -625,7 +612,6 @@ searchTable('#searchFornecedores', '#fornecedoresTable');
 searchTable('#searchCardapio', '#cardapioTable');
 searchTable('#searchPedidos', '#pedidosTable');
 searchTable('#searchEntregas', '#entregasTable');
-searchTable('#searchEstoque', '#estoqueTable');
 
 // =============================================
 // FILTER FUNCTIONALITY
@@ -657,7 +643,6 @@ function filterByStatus(selectSelector, tableSelector, columnIndex) {
 filterByStatus('#statusFilterClientes', '#clientesTable', 7);
 filterByStatus('#statusFilterPedidos', '#pedidosTable', 5);
 filterByStatus('#statusFilterEntregas', '#entregasTable', 4);
-filterByStatus('#statusFilterEstoque', '#estoqueTable', 4);
 
 // =============================================
 // EXPORT FUNCTIONALITY
@@ -772,7 +757,6 @@ function exportTableToCSV(buttonSelector, fileName) {
 // Initialize exports
 exportTableToCSV('#exportClientes', 'clientes.csv');
 exportTableToCSV('#exportPedidos', 'pedidos.csv');
-exportTableToCSV('#exportEstoque', 'estoque.csv');
 
 // =============================================
 // INITIALIZATION
@@ -828,7 +812,6 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarFornecedores();
   carregarProdutos();
   carregarPedidos();
-  carregarInsumos();
   carregarCozinha();
   carregarUsuarios();
 
@@ -978,33 +961,6 @@ function buildLinhaPedido(p) {
 function carregarPedidos() {
   getJson('/pedidos')
     .then(list => setTableBody('pedidos', list.map(buildLinhaPedido)))
-    .catch(() => {});
-}
-
-function adicionarLinhaInsumo(i) {
-  const tbody = document.querySelector('#estoque .data-table tbody');
-  if (!tbody) return;
-  const placeholder = tbody.querySelector('td[colspan]');
-  if (placeholder) tbody.innerHTML = '';
-  tbody.insertAdjacentHTML('beforeend', buildLinhaInsumo(i));
-}
-
-function buildLinhaInsumo(i) {
-  const baixo = Number(i.quantidadeAtual) <= Number(i.quantidadeMinima);
-  return `<tr>
-    <td><strong>${i.nome}</strong></td>
-    <td>${i.quantidadeAtual}</td>
-    <td>${i.unidade}</td>
-    <td>${i.quantidadeMinima}</td>
-    <td><span class="badge ${baixo ? 'badge-danger' : 'badge-active'}">${baixo ? 'Estoque Baixo' : 'Em Estoque'}</span></td>
-    <td>-</td><td>-</td>
-    <td><button class="btn-icon" title="Editar">✏️</button></td>
-  </tr>`;
-}
-
-function carregarInsumos() {
-  getJson('/insumos')
-    .then(list => setTableBody('estoque', list.map(buildLinhaInsumo)))
     .catch(() => {});
 }
 
