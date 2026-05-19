@@ -964,8 +964,28 @@ function carregarPedidos() {
     .catch(() => {});
 }
 
+function buildLinhaUsuario(u) {
+  const roleLabel = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional' };
+  const roleClass = u.role === 'ADMIN' ? 'badge-info' : 'badge-active';
+  return `<tr>
+    <td><strong>${u.nome}</strong></td>
+    <td>${u.email || '-'}</td>
+    <td><span class="badge ${roleClass}">${roleLabel[u.role] || u.role || '-'}</span></td>
+    <td>${u.role === 'ADMIN' ? 'Todos' : 'Operações'}</td>
+    <td><span class="badge badge-active">Ativo</span></td>
+    <td>-</td>
+    <td>
+      <button class="btn-icon" title="Editar">✏️</button>
+      <button class="btn-icon" title="Permissões">🔑</button>
+      <button class="btn-icon" title="Resetar Senha">🔑</button>
+    </td>
+  </tr>`;
+}
+
 function carregarUsuarios() {
-  // placeholder — endpoint de listagem de usuários será adicionado futuramente
+  getJson('/usuarios')
+    .then(list => setTableBody('config-usuarios', list.map(buildLinhaUsuario)))
+    .catch(() => {});
 }
 
 function carregarCozinha() {
