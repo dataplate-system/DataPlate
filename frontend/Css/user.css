@@ -679,9 +679,13 @@ body {
 
   width:100%;
 
-  border-radius:16px;
+  padding:20px 18px; /* AUMENTA O BALÃO */
 
-  box-shadow:0 4px 12px rgba(255,90,0,0.35);
+  border-radius:22px; /* DEIXA MAIS ARREDONDADO */
+
+  transform:scale(1.05); /* DEIXA MAIOR */
+
+  box-shadow:0 6px 16px rgba(255,90,0,0.40);
 }
 /* CONTEÚDO */
 
@@ -699,7 +703,7 @@ body {
 
 .banner-topo{
   height:220px;
-  background:url('../images/menu/hamburguer.jpg') center/cover;
+  background:url('../images/menu/fundo\ da\ logo\ restaurante.png') center/cover;
   position:relative;
   border-bottom-left-radius:20px;
   border-bottom-right-radius:20px;
@@ -804,8 +808,7 @@ body {
 
 /* BOTÕES */
 
-.carrinho,
-.status-btn,
+
 .voltar{
   background:#ffffff;
   border:none;
@@ -818,7 +821,7 @@ body {
 
 
 /* ================================================= */
-/* MOBILE ESTILO IFOOD / ALABAMA */
+/* MOBILE ESTILO IFOOD */
 /* ================================================= */
 
 @media screen and (max-width: 768px){
@@ -846,8 +849,8 @@ body {
   top: 0;
   left: 0;
 
-  width:155px !important;
-  min-width:155px !important;
+  width:115px !important;
+  min-width:125px !important;
 
   height:100vh;
 
@@ -870,8 +873,8 @@ body {
   /* LOGO */
   .logo-sidebar{
 
-    width:85px;
-    height:85px;
+    width:95px;
+    height:95px;
 
     object-fit:contain;
 
@@ -888,6 +891,7 @@ body {
 .menu-categorias{
   display:flex !important;
   flex-direction:column !important;
+  
 
   width:100%;
 
@@ -906,15 +910,15 @@ body {
 
   padding:16px 14px;
 
-  font-size:13px;
-  font-weight:600;
+  font-size:9px;
+  font-weight:700;
 
   text-align:left;
 
   line-height:1.25;
 
   border:none;
-  border-radius:18px;
+  border-radius:16px;
 
   background:#f3f4f6;
   color:#374151;
@@ -943,19 +947,23 @@ body {
 
   width:100%;
 
+  padding:18px 16px; /* AUMENTA O TAMANHO */
+
   border:none;
 
-  border-radius:16px;
+  border-radius:20px;
 
-  box-shadow:0 4px 12px rgba(255,90,0,0.35);
+  transform:scale(1.04);
+
+  box-shadow:0 6px 16px rgba(255,90,0,0.40);
 }
 
 
   /* CONTEUDO */
  .conteudo{
-  margin-left:155px;
+  margin-left:125px;
 
-  width:calc(100% - 155px);
+  width:calc(100% - 125px);
 
   flex:1;
 
@@ -964,7 +972,7 @@ body {
 
   /* BANNER */
   .banner-topo{
-    height:150px;
+    height:160px;
     border-radius:0;
   }
 
