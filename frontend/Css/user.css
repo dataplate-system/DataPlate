@@ -805,7 +805,209 @@ body {
   box-shadow:0 2px 6px rgba(0,0,0,0.15);
 }
 
+/* ================================================= */
+/* TABLET RESPONSIVO */
+/* ================================================= */
 
+@media screen and (min-width:769px) and (max-width:1024px){
+
+  html,
+  body{
+    width:100%;
+    overflow-x:hidden;
+  }
+
+  /* LAYOUT */
+  .layout-menu{
+    display:flex;
+    flex-direction:row;
+    width:100%;
+    min-height:100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar{
+    width:140px;
+    min-width:140px;
+
+    padding:18px 10px;
+
+    overflow-y:auto;
+  }
+
+  /* LOGO */
+  .logo-sidebar{
+    width:95px;
+    margin:0 auto 20px;
+  }
+
+  /* TITULO MENU */
+  .sidebar h2{
+    font-size:22px;
+    margin-bottom:20px;
+  }
+
+  /* MENU */
+  .menu-categorias{
+    gap:12px;
+    width:100%;
+  }
+
+  /* BOTÕES */
+  .menu-categorias button{
+    width:100%;
+
+    padding:16px 12px;
+
+    font-size:12px;
+
+    border-radius:18px;
+
+    text-align:center;
+
+    line-height:1.2;
+  }
+
+  /* BOTÃO ATIVO */
+  .menu-categorias .ativo{
+    padding:18px 14px;
+
+    border-radius:20px;
+
+    transform:none;
+  }
+
+  /* CONTEUDO */
+  .conteudo{
+    margin-left:140px;
+
+    width:calc(100% - 140px);
+
+    overflow:hidden;
+  }
+
+  /* BANNER */
+  .banner-topo{
+    height:200px;
+  }
+
+  /* TOPO */
+  .novo-topo{
+    padding:16px;
+  }
+
+  /* BUSCA */
+  .busca{
+    padding:16px;
+  }
+
+  .busca input{
+    height:46px;
+    font-size:15px;
+  }
+
+  /* GRID PRODUTOS */
+  .lista-grid{
+    display:grid;
+
+    grid-template-columns:repeat(2, 1fr);
+
+    gap:16px;
+
+    padding:16px;
+  }
+
+  /* CARD */
+  .lista-grid .item{
+    width:100%;
+
+    border-radius:18px;
+
+    overflow:hidden;
+  }
+
+  /* IMAGEM */
+  .lista-grid .item img{
+    width:100%;
+
+    height:180px;
+
+    object-fit:cover;
+  }
+
+  /* INFO */
+  .lista-grid .info{
+    padding:14px;
+  }
+
+  .lista-grid .info h3{
+    font-size:16px;
+    margin-bottom:8px;
+  }
+
+  .lista-grid .info p{
+    display:block;
+
+    font-size:13px;
+
+    line-height:1.4;
+  }
+
+  .lista-grid .preco{
+    font-size:18px;
+  }
+
+  /* TELAS PRODUTO */
+  .container{
+    padding:24px;
+  }
+
+  .topo-img img{
+    height:320px;
+  }
+
+  /* BOTÕES */
+  .btn,
+  .btn-carrinho,
+  .btn-novo-pedido{
+    padding:16px;
+    font-size:17px;
+  }
+
+  /* INPUTS */
+  .input-pagamento{
+    font-size:16px;
+    padding:16px;
+  }
+
+  /* PAGAMENTO */
+  .card-status{
+    max-width:700px;
+    margin:20px auto;
+  }
+
+  /* CARRINHO */
+  #listaCarrinho{
+    padding:10px 20px;
+  }
+
+  .item{
+    gap:16px;
+  }
+
+  .item > img{
+    width:100px;
+    height:100px;
+  }
+
+  /* QUANTIDADE */
+  .quantidade button{
+    width:42px;
+    height:42px;
+    font-size:20px;
+  }
+
+}
 
 /* ================================================= */
 /* MOBILE ESTILO IFOOD */
@@ -879,6 +1081,14 @@ body {
 .menu-categorias{
   width:100%;
   padding:0 0.8px;
+
+  display:flex !important;
+  flex-direction:column !important;
+  gap:10px;
+
+  align-items:flex-start;
+
+
 }
 
 /* BOTÕES */
