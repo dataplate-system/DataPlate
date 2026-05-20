@@ -1,7 +1,24 @@
 ﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
-const API_BASE_URL = "/api";
+const API_BASE_URL = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
+
+async function readResponseBody(response) {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    return text;
+  }
+}
+
+function extractErrorMessage(body, fallback) {
+  if (!body) return fallback;
+  if (typeof body === "string") return body || fallback;
+  return body.message || body.mensagem || body.erro || fallback;
+}
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 
@@ -354,15 +371,8 @@ async function pagamentoAprovado() {
     });
 
     if (!response.ok) {
-      let message = "Nao foi possivel salvar o pedido.";
-      try {
-        const error = await response.json();
-        message = error.message || error.mensagem || error.erro || message;
-      } catch (_) {
-        message = await response.text() || message;
-      }
-
-      throw new Error(message);
+      const body = await readResponseBody(response);
+      throw new Error(extractErrorMessage(body, "Nao foi possivel salvar o pedido."));
     }
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
