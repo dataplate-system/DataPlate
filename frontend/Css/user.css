@@ -1152,20 +1152,26 @@ body {
 
   /* BANNER */
   .banner-topo{
-    height:160px;
+    height:175px;
     border-radius:0;
   }
 
   /* TOPO */
   .novo-topo{
-    padding:12px;
+    padding:1px;
   }
 
   
   .carrinho{
+    background-color:#ffffff;
+    color:#ffffff;
     width:36px;
     height:36px;
     font-size:15px;
+    border-radius:50%;
+    
+    
+    
   }
 
   /* BUSCA */
