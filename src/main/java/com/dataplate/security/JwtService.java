@@ -1,5 +1,8 @@
 package com.dataplate.security;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -55,11 +58,25 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
+        byte[] keyBytes;
         try {
-            byte[] keyBytes = Decoders.BASE64.decode(secret);
-            return Keys.hmacShaKeyFor(keyBytes);
+            keyBytes = Decoders.BASE64.decode(secret);
         } catch (IllegalArgumentException ex) {
-            return Keys.hmacShaKeyFor(secret.getBytes());
+            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        }
+
+        if (keyBytes.length < 32) {
+            keyBytes = sha256(secret);
+        }
+
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    private byte[] sha256(String value) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 indisponivel", ex);
         }
     }
 }

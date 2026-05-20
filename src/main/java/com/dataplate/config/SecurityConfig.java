@@ -68,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/funcionarios/**").permitAll()
                         .requestMatchers("/api/fornecedores/**").permitAll()
                         .requestMatchers("/api/insumos/**").permitAll()
+                        .requestMatchers("/api/usuarios/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
