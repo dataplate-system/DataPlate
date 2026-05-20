@@ -24,7 +24,7 @@ public class Funcionario {
     @Column(nullable = false, unique = true, length = 14)
     private String cpf;
 
-    private String email;
+    private String telefone;
 
     @Column(nullable = false)
     private String cargo;

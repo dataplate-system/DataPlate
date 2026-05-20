@@ -104,7 +104,7 @@ body {
 .dropdown-menu {
   display: none;
   position: absolute;
-  top: 70px;
+  top: 100%;
   left: 0;
   background: var(--color-white);
   border: 1px solid var(--color-border);
@@ -113,11 +113,6 @@ body {
   min-width: 220px;
   z-index: 1000;
   overflow: hidden;
-}
-
-.dropdown:hover .dropdown-menu {
-  display: block;
-  animation: slideDown 0.2s ease-out;
 }
 
 .dropdown.active .dropdown-menu {
@@ -176,7 +171,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: none;
+  background: transparent;
   border: none;
   cursor: pointer;
   font-size: 14px;
@@ -184,10 +179,21 @@ body {
   padding: 8px;
   border-radius: 6px;
   transition: all 0.3s;
+  min-height: 42px;
 }
 
-.user-button:hover {
+.user-button:hover,
+.user-button:focus-visible {
   background: var(--color-bg);
+}
+
+.user-button:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.user-menu .dropdown-menu {
+  top: calc(100% + 8px);
 }
 
 .user-avatar-small {
@@ -696,6 +702,14 @@ body {
   margin-bottom: 0;
 }
 
+#addClientForm .client-form-row-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#addSupplierForm .supplier-form-row-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -818,6 +832,16 @@ body {
   outline: none;
   border-color: var(--color-secondary);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group input[readonly] {
+  background: #f8fafc;
+  color: var(--color-gray-light);
+  cursor: default;
+}
+
+.client-type-select {
+  cursor: pointer;
 }
 
 .form-group input:required,
@@ -1012,6 +1036,14 @@ body {
   }
 
   .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  #addClientForm .client-form-row-3 {
+    grid-template-columns: 1fr;
+  }
+
+  #addSupplierForm .supplier-form-row-3 {
     grid-template-columns: 1fr;
   }
 

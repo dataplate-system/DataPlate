@@ -687,7 +687,7 @@ body {
 
 .banner-topo{
   height:220px;
-  background:url('../images/menu/fundo\ da\ logo\ restaurante.png') center/cover;
+  background:url('../images/menu/fundo%20da%20logo%20restaurante.png') center/cover;
   position:relative;
   border-bottom-left-radius:20px;
   border-bottom-right-radius:20px;

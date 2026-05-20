@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public record FuncionarioRequest(
         @NotBlank String nome,
         @NotBlank String cpf,
-        String email,
+        String telefone,
         @NotBlank String cargo,
         BigDecimal salario
 ) {}

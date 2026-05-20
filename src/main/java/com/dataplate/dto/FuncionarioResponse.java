@@ -7,7 +7,7 @@ public record FuncionarioResponse(
         Long id,
         String nome,
         String cpf,
-        String email,
+        String telefone,
         String cargo,
         BigDecimal salario,
         Boolean ativo,

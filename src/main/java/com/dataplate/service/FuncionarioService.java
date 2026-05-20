@@ -25,14 +25,14 @@ public class FuncionarioService {
         Funcionario f = new Funcionario();
         f.setNome(req.nome());
         f.setCpf(req.cpf());
-        f.setEmail(req.email());
+        f.setTelefone(req.telefone());
         f.setCargo(req.cargo());
         f.setSalario(req.salario());
         return toResponse(repo.save(f));
     }
 
     private FuncionarioResponse toResponse(Funcionario f) {
-        return new FuncionarioResponse(f.getId(), f.getNome(), f.getCpf(), f.getEmail(),
+        return new FuncionarioResponse(f.getId(), f.getNome(), f.getCpf(), f.getTelefone(),
                 f.getCargo(), f.getSalario(), f.getAtivo(), f.getCriadoEm());
     }
 }

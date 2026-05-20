@@ -227,13 +227,13 @@ function configureField(field) {
   const label = fieldLabel(field).toLowerCase();
   const placeholder = (field.getAttribute('placeholder') || '').toLowerCase();
   const key = `${label} ${placeholder} ${field.name || ''}`;
+  const isOptional = field.dataset.optional === 'true';
 
-  if (field.dataset.optional === 'true') {
+  if (isOptional) {
     field.required = false;
-    return;
   }
 
-  if (!['button', 'submit', 'reset', 'checkbox', 'radio', 'hidden'].includes(type)) {
+  if (!isOptional && !['button', 'submit', 'reset', 'checkbox', 'radio', 'hidden'].includes(type)) {
     field.required = true;
   }
 
@@ -308,6 +308,72 @@ function validateContainer(container) {
   return true;
 }
 
+function generateClientCode() {
+  const storageKey = 'dataplate:lastClientCode';
+  const storedCode = Number(localStorage.getItem(storageKey)) || 0;
+  const tableCount = document.querySelectorAll('#clientes .data-table tbody tr').length;
+  const nextCode = Math.max(storedCode, tableCount) + 1;
+  localStorage.setItem(storageKey, String(nextCode));
+  return String(nextCode).padStart(3, '0');
+}
+
+function generateSupplierCode() {
+  const storageKey = 'dataplate:lastSupplierCode';
+  const storedCode = Number(localStorage.getItem(storageKey)) || 0;
+  const tableCount = document.querySelectorAll('#fornecedores .data-table tbody tr').length;
+  const nextCode = Math.max(storedCode, tableCount) + 1;
+  localStorage.setItem(storageKey, String(nextCode));
+  return String(nextCode).padStart(3, '0');
+}
+
+function generateEmployeeCode() {
+  const storageKey = 'dataplate:lastEmployeeCode';
+  const storedCode = Number(localStorage.getItem(storageKey)) || 0;
+  const tableCount = document.querySelectorAll('#funcionarios .data-table tbody tr').length;
+  const nextCode = Math.max(storedCode, tableCount) + 1;
+  localStorage.setItem(storageKey, String(nextCode));
+  return String(nextCode).padStart(3, '0');
+}
+
+function resetConfiguredField(field) {
+  field.dataset.validationConfigured = 'false';
+  field.classList.remove('masked-input');
+  field.removeAttribute('pattern');
+  field.removeAttribute('title');
+  field.value = '';
+  configureField(field);
+}
+
+function configureClientPersonType(form) {
+  if (!form) return;
+
+  const typeSelect = form.querySelector('[name="tipoPessoa"]');
+  const nameLabel = form.querySelector('[data-client-name-label]');
+  const documentLabel = form.querySelector('[data-client-document-label]');
+  const nameInput = form.querySelector('[name="name"]');
+  const documentInput = form.querySelector('[name="cpf"], [name="cnpj"]');
+  if (!typeSelect || !nameLabel || !documentLabel || !nameInput || !documentInput) return;
+
+  const isJuridica = typeSelect.value === 'juridica';
+  nameLabel.textContent = isJuridica ? 'Razão Social' : 'Nome';
+  nameInput.placeholder = isJuridica ? 'Razão Social' : 'Nome completo';
+  nameInput.autocomplete = isJuridica ? 'organization' : 'name';
+  documentLabel.textContent = isJuridica ? 'CNPJ' : 'CPF';
+  documentInput.name = isJuridica ? 'cnpj' : 'cpf';
+  documentInput.placeholder = isJuridica ? '00.000.000/0000-00' : '000.000.000-00';
+  documentInput.maxLength = isJuridica ? 18 : 14;
+  resetConfiguredField(documentInput);
+}
+
+function initClientForm() {
+  const form = document.getElementById('addClientForm');
+  if (!form) return;
+
+  const typeSelect = form.querySelector('[name="tipoPessoa"]');
+  configureClientPersonType(form);
+  typeSelect?.addEventListener('change', () => configureClientPersonType(form));
+}
+
 // Close modal when clicking outside
 document.addEventListener('click', (e) => {
   const modalTrigger = e.target.closest('[data-open-modal]');
@@ -334,42 +400,6 @@ document.addEventListener('keydown', (e) => {
 });
 
 // =============================================
-// DROPDOWN MENU
-// =============================================
-
-document.querySelectorAll('.dropdown').forEach(dropdown => {
-  const button = dropdown.querySelector('.nav-button');
-  
-  if (button) {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      
-      // Close other dropdowns
-      document.querySelectorAll('.dropdown-menu').forEach(menu => {
-        if (menu !== dropdown.querySelector('.dropdown-menu')) {
-          menu.style.display = 'none';
-        }
-      });
-
-      // Toggle current dropdown
-      const menu = dropdown.querySelector('.dropdown-menu');
-      if (menu) {
-        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-      }
-    });
-  }
-});
-
-// Close dropdowns when clicking outside
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.dropdown')) {
-    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-      menu.style.display = 'none';
-    });
-  }
-});
-
-// =============================================
 // MODAL FORM SUBMISSIONS
 // =============================================
 
@@ -377,16 +407,28 @@ document.addEventListener('click', (e) => {
 document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
+  const codeInput = e.target.querySelector('[name="codigo"]');
+  if (codeInput && !codeInput.value) codeInput.value = generateClientCode();
   const fd = new FormData(e.target);
-  const endereco = [fd.get('address'), fd.get('num') && `Nº ${fd.get('num')}`, fd.get('cep') && `CEP ${fd.get('cep')}`]
+  const telefones = [fd.get('phone'), fd.get('phone2')].filter(Boolean).join(' / ');
+  const documento = fd.get('cpf') || fd.get('cnpj');
+  const endereco = [
+    fd.get('address'),
+    fd.get('num') && `Nº ${fd.get('num')}`,
+    fd.get('complemento'),
+    fd.get('bairro') && `Bairro ${fd.get('bairro')}`,
+    [fd.get('cidade'), fd.get('uf')].filter(Boolean).join(' - '),
+    fd.get('cep') && `CEP ${fd.get('cep')}`
+  ]
     .filter(Boolean)
     .join(', ');
-  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), telefone: fd.get('phone'), endereco };
+  const payload = { nome: fd.get('name'), cpf: documento, email: fd.get('email'), telefone: telefones, endereco };
   postJson('/clientes', payload)
     .then((cliente) => {
-      alert('Cliente adicionado com sucesso!');
+      alert(`Cliente adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`);
       closeModal('addClientModal');
       e.target.reset();
+      configureClientPersonType(e.target);
       adicionarLinhaCliente(cliente);
     })
     .catch((err) => alert('Erro: ' + err.message));
@@ -396,11 +438,13 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
 document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
+  const codeInput = e.target.querySelector('[name="codigo"]');
+  if (codeInput && !codeInput.value) codeInput.value = generateEmployeeCode();
   const fd = new FormData(e.target);
-  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
+  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
   postJson('/funcionarios', payload)
     .then((func) => {
-      alert('Funcionário adicionado com sucesso!');
+      alert(`Funcionário adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`);
       closeModal('addFunctModal');
       e.target.reset();
       adicionarLinhaFuncionario(func);
@@ -412,11 +456,14 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
 document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
+  const codeInput = e.target.querySelector('[name="codigo"]');
+  if (codeInput && !codeInput.value) codeInput.value = generateSupplierCode();
   const fd = new FormData(e.target);
-  const payload = { razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: fd.get('phone'), email: fd.get('email') };
+  const telefones = [fd.get('phone'), fd.get('phone2')].filter(Boolean).join(' / ');
+  const payload = { razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: telefones, email: fd.get('email') };
   postJson('/fornecedores', payload)
     .then((forn) => {
-      alert('Fornecedor adicionado com sucesso!');
+      alert(`Fornecedor adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`);
       closeModal('addSupplierModal');
       e.target.reset();
       adicionarLinhaFornecedor(forn);
@@ -765,22 +812,28 @@ exportTableToCSV('#exportPedidos', 'pedidos.csv');
 document.addEventListener('DOMContentLoaded', () => {
   // Set default section to dashboard
   navigateTo('dashboard');
+  initClientForm();
 
   // Initialize dropdown toggles
   const dropdowns = document.querySelectorAll('.dropdown');
   dropdowns.forEach(dropdown => {
     const button = dropdown.querySelector('button');
     if (button) {
+      button.setAttribute('aria-expanded', 'false');
       button.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        // Close other dropdowns
+        const isOpening = !dropdown.classList.contains('active');
+
         dropdowns.forEach(d => {
-          if (d !== dropdown) {
-            d.classList.remove('active');
-          }
+          d.classList.remove('active');
+          d.querySelector('button')?.setAttribute('aria-expanded', 'false');
         });
-        // Toggle current dropdown
-        dropdown.classList.toggle('active');
+
+        if (isOpening) {
+          dropdown.classList.add('active');
+          button.setAttribute('aria-expanded', 'true');
+        }
       });
     }
   });
@@ -789,13 +842,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', () => {
     dropdowns.forEach(dropdown => {
       dropdown.classList.remove('active');
+      dropdown.querySelector('button')?.setAttribute('aria-expanded', 'false');
     });
   });
 
   // Close dropdown when clicking a link
   document.querySelectorAll('.dropdown-link').forEach(link => {
     link.addEventListener('click', () => {
-      link.closest('.dropdown').classList.remove('active');
+      const dropdown = link.closest('.dropdown');
+      dropdown?.classList.remove('active');
+      dropdown?.querySelector('button')?.setAttribute('aria-expanded', 'false');
     });
   });
 
@@ -882,8 +938,7 @@ function buildLinhaFuncionario(f) {
   return `<tr>
     <td><strong>${f.nome}</strong></td>
     <td><span class="badge badge-info">${f.cargo}</span></td>
-    <td>${f.email || '-'}</td>
-    <td>-</td>
+    <td>${f.telefone || '-'}</td>
     <td>${f.salario ? formatCurrency(f.salario) : '-'}</td>
     <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(f.criadoEm)}</td>
