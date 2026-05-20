@@ -44,6 +44,18 @@ window.addEventListener('DOMContentLoaded', function () {
       showSlide(index);
     });
   });
+
+  const agendarButton = document.querySelector('.Q-Agendar');
+  const demonstracaoCard = document.querySelector('#demonstracao');
+
+  if (agendarButton && demonstracaoCard) {
+    agendarButton.addEventListener('click', function () {
+      demonstracaoCard.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    });
+  }
 });
 
 const questions = document.querySelectorAll(".faq-question");
