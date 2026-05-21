@@ -119,9 +119,29 @@ body {
 
 
 .carrinho {
-  font-size: 20px;
-  color: #374151;
-  cursor: pointer;
+  background:#ffffff !important;
+
+  width:35px;
+  height:35px;
+
+  border:none;
+
+  border-radius:50%;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:0 2px 8px rgba(0,0,0,0.20);
+
+  position:relative;
+  z-index:100;
+
+  color:#111827;
+
+  font-size:10px;
+
+  cursor:pointer;
   
 }
 
@@ -316,7 +336,7 @@ h2 {
   width: 100%;
   padding: 15px;
   background: #4aad19;
-  color: white;
+  color: rgba(255, 255, 255, 0.995);
   border: none;
   border-radius: 10px;
   font-size: 16px;
@@ -326,11 +346,30 @@ h2 {
 
 /* VOLTAR */
 .voltar {
-  background: white;
-  border: none;
-  padding: 10px;
-  border-radius: 50%;
-  cursor: pointer;
+ background:#ffffff !important;
+
+  width:35px;
+  height:35px;
+
+  border:none;
+
+  border-radius:50%;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:0 2px 8px rgba(0,0,0,0.20);
+
+  position:relative;
+  z-index:100;
+
+  color:#111827;
+
+  font-size:10px;
+
+  cursor:pointer;
+
 }
 
 /* TELA DO CARINHO */
@@ -398,6 +437,7 @@ body {
 }
 
 /* confirmar pedido */
+
 
 .card-status {
   background: #fff;
@@ -529,6 +569,12 @@ body {
 
 #telaCarrinho {
   position: relative;
+  margin-left:10px;
+
+  width:calc(100% - 10px);
+  
+
+
 }
 
 
@@ -559,8 +605,6 @@ body {
 
 /* MENU LATERAL */
 
-/* SIDEBAR ESQUERDA */
-/* SIDEBAR FIXA */
 .sidebar{
   position: fixed;
   top: 0;
@@ -706,7 +750,7 @@ body {
   z-index:2;
   background:transparent;
   border:none;
-  opacity: 75%;
+  opacity: 65%;
  
 }
 
@@ -797,14 +841,31 @@ body {
 
 
 .voltar{
-  background:#ffffff;
-  border:none;
-  width:42px;
-  height:42px;
-  border-radius:50%;
-  box-shadow:0 2px 6px rgba(0,0,0,0.15);
-}
+  background:#ffffff !important;
 
+  width:35px;
+  height:35px;
+
+  border:none;
+
+  border-radius:50%;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:0 2px 8px rgba(0,0,0,0.20);
+
+  position:relative;
+  z-index:100;
+
+  color:#111827;
+
+  font-size:10px;
+
+  cursor:pointer;
+
+}
 /* ================================================= */
 /* TABLET RESPONSIVO */
 /* ================================================= */
