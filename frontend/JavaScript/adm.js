@@ -214,6 +214,65 @@ function formatCep(value) {
   return onlyDigits(value).slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
 }
 
+function setFieldValue(form, name, value) {
+  const field = form.querySelector(`[name="${name}"]`);
+  if (!field || value == null || value === '') return;
+
+  field.value = value;
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function fillAddressFromCep(form, endereco) {
+  setFieldValue(form, 'address', endereco.logradouro);
+  setFieldValue(form, 'complemento', endereco.complemento);
+  setFieldValue(form, 'bairro', endereco.bairro);
+  setFieldValue(form, 'cidade', endereco.localidade);
+  setFieldValue(form, 'uf', endereco.uf);
+}
+
+function configureCepAutocomplete(form) {
+  if (!form) return;
+
+  form.querySelectorAll('[name="cep"]').forEach((field) => {
+    if (field.dataset.cepAutocompleteConfigured === 'true') return;
+    field.dataset.cepAutocompleteConfigured = 'true';
+
+    let lastCep = '';
+
+    async function buscarCep() {
+      const cep = onlyDigits(field.value);
+
+      field.setCustomValidity('');
+      if (cep.length === 0) return;
+      if (cep.length !== 8) {
+        field.setCustomValidity('Digite um CEP com 8 digitos.');
+        return;
+      }
+      if (cep === lastCep) return;
+
+      lastCep = cep;
+      field.disabled = true;
+
+      try {
+        const endereco = await getJson(`/cep/buscar/${cep}`);
+        fillAddressFromCep(form, endereco);
+      } catch (error) {
+        lastCep = '';
+        field.setCustomValidity(error.message || 'CEP nao encontrado.');
+        field.reportValidity();
+      } finally {
+        field.disabled = false;
+      }
+    }
+
+    field.addEventListener('blur', buscarCep);
+    field.addEventListener('input', () => {
+      field.setCustomValidity('');
+      if (onlyDigits(field.value).length === 8) buscarCep();
+    });
+  });
+}
+
 function fieldLabel(field) {
   const label = field.closest('.form-group')?.querySelector('label');
   return (label?.textContent || field.name || field.placeholder || '').trim();
@@ -371,7 +430,12 @@ function initClientForm() {
 
   const typeSelect = form.querySelector('[name="tipoPessoa"]');
   configureClientPersonType(form);
+  configureCepAutocomplete(form);
   typeSelect?.addEventListener('change', () => configureClientPersonType(form));
+}
+
+function initCepAutocomplete() {
+  document.querySelectorAll('form').forEach(configureCepAutocomplete);
 }
 
 // Close modal when clicking outside
@@ -813,6 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set default section to dashboard
   navigateTo('dashboard');
   initClientForm();
+  initCepAutocomplete();
 
   // Initialize dropdown toggles
   const dropdowns = document.querySelectorAll('.dropdown');
