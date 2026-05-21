@@ -1,6 +1,7 @@
 package com.dataplate.service;
 
 import com.dataplate.dto.AuthLoginRequest;
+import com.dataplate.dto.AuthRefreshRequest;
 import com.dataplate.dto.AuthRegisterRequest;
 import com.dataplate.dto.AuthResponse;
 import com.dataplate.entity.User;
@@ -31,8 +32,7 @@ public class AuthService {
                 .role(req.role())
                 .build();
         user = userRepository.save(user);
-        String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getId(), user.getNome(), user.getEmail(), user.getRole());
+        return toAuthResponse(user);
     }
 
     public AuthResponse login(AuthLoginRequest req) {
@@ -41,7 +41,30 @@ public class AuthService {
         if (!passwordEncoder.matches(req.senha(), user.getSenha())) {
             throw new BadCredentialsException("Email ou senha inválidos");
         }
+        return toAuthResponse(user);
+    }
+
+    public AuthResponse refresh(AuthRefreshRequest req) {
+        String email;
+        try {
+            email = jwtService.extractRefreshUsername(req.refreshToken());
+        } catch (RuntimeException ex) {
+            throw new BadCredentialsException("Refresh token invalido");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Refresh token invalido"));
+
+        if (!jwtService.isRefreshTokenValid(req.refreshToken(), user)) {
+            throw new BadCredentialsException("Refresh token invalido");
+        }
+
+        return toAuthResponse(user);
+    }
+
+    private AuthResponse toAuthResponse(User user) {
         String token = jwtService.generateToken(user);
-        return new AuthResponse(token, user.getId(), user.getNome(), user.getEmail(), user.getRole());
+        String refreshToken = jwtService.generateRefreshToken(user);
+        return new AuthResponse(token, refreshToken, user.getId(), user.getNome(), user.getEmail(), user.getRole());
     }
 }
