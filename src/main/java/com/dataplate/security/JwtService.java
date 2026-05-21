@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -25,13 +26,27 @@ public class JwtService {
     @Value("${dataplate.jwt.expiration-ms}")
     private long expirationMs;
 
+    @Value("${dataplate.jwt.refresh-secret:${dataplate.jwt.secret}}")
+    private String refreshSecret;
+
+    @Value("${dataplate.jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
+
     public String generateToken(UserDetails userDetails) {
+        return generateToken(userDetails, expirationMs, secret);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        return generateToken(userDetails, refreshExpirationMs, refreshSecret);
+    }
+
+    private String generateToken(UserDetails userDetails, long ttlMs, String signingSecret) {
         Date now = new Date();
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + expirationMs))
-                .signWith(getSigningKey())
+                .setExpiration(new Date(now.getTime() + ttlMs))
+                .signWith(getSigningKey(signingSecret))
                 .compact();
     }
 
@@ -40,17 +55,41 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isExpired(token);
+        return isTokenValid(token, userDetails, false);
+    }
+
+    public boolean isRefreshTokenValid(String token, UserDetails userDetails) {
+        return isTokenValid(token, userDetails, true);
+    }
+
+    public String extractRefreshUsername(String token) {
+        return extractClaim(token, Claims::getSubject, true);
+    }
+
+    private boolean isTokenValid(String token, UserDetails userDetails, boolean refresh) {
+        try {
+            String username = refresh ? extractRefreshUsername(token) : extractUsername(token);
+            return username.equals(userDetails.getUsername()) && !isExpired(token, refresh);
+        } catch (JwtException | IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     private boolean isExpired(String token) {
-        return extractClaim(token, Claims::getExpiration).before(new Date());
+        return isExpired(token, false);
+    }
+
+    private boolean isExpired(String token, boolean refresh) {
+        return extractClaim(token, Claims::getExpiration, refresh).before(new Date());
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> resolver) {
+        return extractClaim(token, resolver, false);
+    }
+
+    private <T> T extractClaim(String token, Function<Claims, T> resolver, boolean refresh) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(getSigningKey(refresh ? refreshSecret : secret))
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -58,15 +97,19 @@ public class JwtService {
     }
 
     private SecretKey getSigningKey() {
+        return getSigningKey(secret);
+    }
+
+    private SecretKey getSigningKey(String value) {
         byte[] keyBytes;
         try {
-            keyBytes = Decoders.BASE64.decode(secret);
+            keyBytes = Decoders.BASE64.decode(value);
         } catch (IllegalArgumentException ex) {
-            keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+            keyBytes = value.getBytes(StandardCharsets.UTF_8);
         }
 
         if (keyBytes.length < 32) {
-            keyBytes = sha256(secret);
+            keyBytes = sha256(value);
         }
 
         return Keys.hmacShaKeyFor(keyBytes);
