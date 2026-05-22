@@ -2,71 +2,22 @@
  * ADMIN PANEL - Navigation and Modal Management
  */
 
-const API_BASE_URL = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
+const API_BASE_URL = window.DATAPLATE_API_BASE_URL
+  || localStorage.getItem('DATAPLATE_API_BASE_URL')
+  || (window.location.port === '5500'
+    ? 'http://localhost:8080/api'
+    : 'https://dataplate.onrender.com/api');
+
 const WS_BASE_URL = (() => {
   const apiUrl = API_BASE_URL.startsWith('http')
     ? API_BASE_URL
     : `${window.location.origin}${API_BASE_URL}`;
+
   return apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
 })();
+
 const ACCESS_TOKEN_KEY = 'dataplate:accessToken';
 const REFRESH_TOKEN_KEY = 'dataplate:refreshToken';
-
-function getAccessToken() {
-  return localStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem('token');
-}
-
-function getRefreshToken() {
-  return localStorage.getItem(REFRESH_TOKEN_KEY) || localStorage.getItem('refreshToken');
-}
-
-function persistAuthTokens(auth) {
-  if (!auth) return;
-  if (auth.token) localStorage.setItem(ACCESS_TOKEN_KEY, auth.token);
-  if (auth.refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken);
-}
-
-async function refreshAccessToken() {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return null;
-
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken })
-  });
-
-  if (!response.ok) {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    return null;
-  }
-
-  const auth = await readResponseBody(response);
-  persistAuthTokens(auth);
-  return auth?.token || null;
-}
-
-async function apiFetch(endpoint, options = {}, retry = true) {
-  const headers = new Headers(options.headers || {});
-  const token = getAccessToken();
-
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-
-  if ((response.status === 401 || response.status === 403) && retry) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      headers.set('Authorization', `Bearer ${newToken}`);
-      return fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-    }
-  }
-
-  return response;
-}
 
 async function readResponseBody(response) {
   const text = await response.text();
@@ -138,16 +89,7 @@ async function getJson(endpoint) {
   return readResponseBody(response);
 }
 
-window.addEventListener('error', (event) => {
-  console.error('Erro global capturado:', event.error || event.message);
-  showToast('Ocorreu um erro inesperado. Tente novamente.');
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Promessa rejeitada sem tratamento:', event.reason);
-  showToast(event.reason?.message || 'Nao foi possivel concluir a operacao.');
-});
-
+v
 // =============================================
 // NAVIGATION: Section Switching
 // =============================================
@@ -346,7 +288,7 @@ function configureCepAutocomplete(form) {
       field.disabled = true;
 
       try {
-        const endereco = await getJson(`/cep/buscar/${cep}`);
+        const endereco = await buscarEnderecoPorCep(cep);
         fillAddressFromCep(form, endereco);
       } catch (error) {
         lastCep = '';
