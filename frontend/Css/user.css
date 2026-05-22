@@ -1908,3 +1908,253 @@ h2 {
     0 6px 14px rgba(255,90,0,0.35);
 }
 
+/* ========================================= */
+/* PAGAMENTOS PREMIUM */
+/* ========================================= */
+
+.opcoes-pagamento{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.opcao{
+  display:flex;
+  align-items:center;
+  gap:18px;
+
+  padding:20px;
+
+  background:rgba(255,255,255,0.95);
+
+  border-radius:22px;
+
+  border:1px solid rgba(255,255,255,0.4);
+
+  backdrop-filter:blur(12px);
+
+  cursor:pointer;
+
+  transition:0.25s ease;
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.08);
+}
+
+.opcao:hover{
+  transform:translateY(-4px);
+
+  box-shadow:
+    0 16px 30px rgba(0,0,0,0.12);
+}
+
+/* CORES */
+
+.opcao.pix{
+  border-left:6px solid #32BCAD;
+}
+
+.opcao.credito{
+  border-left:6px solid #ff7a00;
+}
+
+.opcao.debito{
+  border-left:6px solid #2563eb;
+}
+
+.opcao.dinheiro{
+  border-left:6px solid #16a34a;
+}
+
+/* ÍCONES */
+
+.icone-pagamento{
+  min-width:70px;
+  width:70px;
+  height:70px;
+
+  border-radius:20px;
+
+  background:#f9fafb;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:
+    inset 0 2px 8px rgba(255,255,255,0.8),
+    0 4px 10px rgba(0,0,0,0.05);
+}
+
+.icone-pagamento img{
+  width:42px;
+  height:42px;
+  object-fit:contain;
+}
+
+/* TEXOS */
+
+.texto-pagamento{
+  flex:1;
+}
+
+.texto-pagamento h3{
+  font-size:18px;
+  font-weight:700;
+  color:#111827;
+  margin-bottom:5px;
+}
+
+.texto-pagamento p{
+  font-size:14px;
+  color:#6b7280;
+}
+
+/* SETA */
+
+.seta{
+  font-size:30px;
+  color:#d1d5db;
+  font-weight:300;
+}
+
+/* CARD PAGAMENTO */
+
+.card-status{
+  background:rgba(255,255,255,0.96);
+
+  backdrop-filter:blur(14px);
+
+  border-radius:28px;
+
+  padding:30px;
+
+  box-shadow:
+    0 15px 40px rgba(0,0,0,0.10);
+
+  border:1px solid rgba(255,255,255,0.5);
+}
+
+/* TOPO DA TELA */
+
+.banner-pagamento{
+  width:110px;
+  height:110px;
+
+  margin:0 auto 20px;
+
+  border-radius:28px;
+
+  background:linear-gradient(
+    135deg,
+    #ffffff,
+    #f3f4f6
+  );
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.08);
+}
+
+.banner-pagamento img{
+  width:60px;
+  height:60px;
+  object-fit:contain;
+}
+
+/* INPUTS MODERNOS */
+
+.input-pagamento{
+  height:58px;
+
+  border-radius:18px;
+
+  border:1px solid #e5e7eb;
+
+  background:#f9fafb;
+
+  padding:0 18px;
+
+  font-size:15px;
+
+  transition:0.2s;
+}
+
+.input-pagamento:focus{
+  border-color:#4aad19;
+
+  background:#ffffff;
+
+  box-shadow:
+    0 0 0 4px rgba(74,173,25,0.10);
+}
+
+/* BOTÕES */
+
+.btn-carrinho{
+  height:58px;
+
+  border-radius:18px;
+
+  font-size:16px;
+  font-weight:700;
+
+  background:linear-gradient(
+    135deg,
+    #4aad19,
+    #66c62f
+  );
+
+  box-shadow:
+    0 12px 24px rgba(74,173,25,0.25);
+
+  transition:0.25s;
+}
+
+.btn-carrinho:hover{
+  transform:translateY(-2px);
+}
+
+/* RESPONSIVO */
+
+@media(max-width:768px){
+
+  .opcao{
+    padding:16px;
+    gap:14px;
+  }
+
+  .icone-pagamento{
+    width:58px;
+    height:58px;
+    min-width:58px;
+  }
+
+  .icone-pagamento img{
+    width:34px;
+    height:34px;
+  }
+
+  .texto-pagamento h3{
+    font-size:16px;
+  }
+
+  .texto-pagamento p{
+    font-size:12px;
+  }
+
+  .banner-pagamento{
+    width:90px;
+    height:90px;
+  }
+
+  .banner-pagamento img{
+    width:48px;
+    height:48px;
+  }
+
+}
+

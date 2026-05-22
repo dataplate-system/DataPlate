@@ -30,88 +30,73 @@
       Escolha a forma de pagamento
     </p>
 
-  <div class="opcoes-pagamento">  
+  <div class="opcoes-pagamento">
 
-    <!-- PIX -->
-   <div class="opcao" onclick="selecionarPagamento(this, 'Pix')">
+  <!-- PIX -->
+  <div class="opcao pix" onclick="selecionarPagamento(this, 'Pix')">
 
-     <div class="opcao-info">
-
-       <div class="icone-pagamento">💳</div>
-
-      <div>
-      <h3>PIX</h3>
-      <p>Pagamento instantâneo</p>
+    <div class="icone-pagamento">
+      <img src="../images/menu/pix.png">
     </div>
+
+    <div class="texto-pagamento">
+      <h3>PIX</h3>
+      <p>Pagamento instantâneo aprovado em segundos</p>
+    </div>
+
+    <div class="seta">›</div>
+
+  </div>
+
+  <!-- CRÉDITO -->
+  <div class="opcao credito" onclick="selecionarPagamento(this, 'Credito')">
+
+    <div class="icone-pagamento">
+      <img src="../images/menu/Credito.png">
+    </div>
+
+    <div class="texto-pagamento">
+      <h3>Cartão de Crédito</h3>
+      <p>Pague parcelado com segurança</p>
+    </div>
+
+    <div class="seta">›</div>
+
+  </div>
+
+  <!-- DÉBITO -->
+  <div class="opcao debito" onclick="selecionarPagamento(this, 'Debito')">
+
+    <div class="icone-pagamento">
+      <img src="../images/menu/Debito.png">
+    </div>
+
+    <div class="texto-pagamento">
+      <h3>Cartão de Débito</h3>
+      <p>Pagamento imediato na conta</p>
+    </div>
+
+    <div class="seta">›</div>
+
+  </div>
+
+  <!-- DINHEIRO -->
+  <div class="opcao dinheiro" onclick="selecionarPagamento(this, 'Dinheiro')">
+
+    <div class="icone-pagamento">
+      <img src="../images/menu/Dinheiro.png">
+    </div>
+
+    <div class="texto-pagamento">
+      <h3>Dinheiro</h3>
+      <p>Pagamento na entrega</p>
+    </div>
+
+    <div class="seta">›</div>
 
   </div>
 
 </div>
-
-
-
-
-      
-
-    
-
-
-    <!-- CRÉDITO -->
-    <div class="opcao" onclick="selecionarPagamento(this, 'Credito')">
-
-      <div class="opcao-info">
-
-        <div class="icone-pagamento">💳</div>
-
-        <div>
-          <h3>Cartão de Crédito</h3>
-          <p>Aproxime ou insira o cartão</p>
-        </div>
-
-        
-
-      </div>
-
-    </div>
-
-    <!-- DÉBITO -->
-    <div class="opcao" onclick="selecionarPagamento(this, 'Debito')">
-
-      <div class="opcao-info">
-
-        <div class="icone-pagamento">🏦</div>
-
-        <div>
-          <h3>Cartão de Débito</h3>
-          <p>Pagamento imediato</p>
-        </div>
-
-        
-
-      </div>
-      
-
-    </div>
-
-    <!-- DINHEIRO -->
-    <div class="opcao" onclick="selecionarPagamento(this, 'Dinheiro')">
-
-      <div class="opcao-info">
-
-        <div class="icone-pagamento">💵</div>
-
-        <div>
-          <h3>Dinheiro</h3>
-          <p>Troco disponível</p>
-        </div>
-
-        
-
-      </div>
-         
-    </div>
-
-  </div>
 
   
 
@@ -143,7 +128,9 @@
 
   <div class="card-status">
 
-    <div style="font-size:70px;">📱</div>
+    <div class="banner-pagamento">
+     <img src="../images/menu/pix.png">
+    </div>
 
     <h2>Escaneie o QR Code</h2>
 
@@ -187,7 +174,9 @@
 
   <div class="card-status">
 
-    <div style="font-size:70px;">💳</div>
+    <div class="banner-pagamento">
+  <img src="../images/menu/Credito.png">
+</div>
 
     <input type="text"
       placeholder="Número do cartão"
@@ -227,7 +216,9 @@
 
   <div class="card-status">
 
-    <div style="font-size:70px;">💳</div>
+    <div class="banner-pagamento">
+  <img src="../images/menu/Debito.png">
+</div>
 
     <input type="text"
       placeholder="Número do cartão"
@@ -267,7 +258,9 @@
 
   <div class="card-status">
 
-    <div style="font-size:70px;">💵</div>
+    <div class="banner-pagamento">
+  <img src="../images/menu/Dinheiro.png">
+</div>
 
     <h2>Pagamento na entrega</h2>
 
@@ -534,7 +527,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(1, 'Burger Gourmet', 32.90, '../images/menu/hamburguer.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 32.90
+      Adicionar ao carrinho 
     </button>
 
   </div>
@@ -586,7 +579,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(2, 'Pasta Carbonara', 38.50, '../images/menu/pasta-carbonara.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 38.50
+      Adicionar ao carrinho 
     </button>
 
     </div> 
@@ -639,7 +632,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(3, 'Salmão Grelhado', 52.90, '../images/menu/salmao-grelhado.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 52.90
+      Adicionar ao carrinho 
     </button>
 
   </div>
@@ -689,7 +682,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(4, 'Salada Caesar', 24.90, '../images/menu/salada-caesar.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 24.90
+      Adicionar ao carrinho 
     </button>
 
   </div>
@@ -741,7 +734,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(6, 'Bolo de Chocolate', 18.90, '../images/menu/bolo-chocolate.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 18.90
+      Adicionar ao carrinho 
     </button>
 
   </div>
@@ -794,7 +787,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(5, 'Tiramisu', 22.90, '../images/menu/tiramisu.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 22.90
+      Adicionar ao carrinho 
     </button>
 
   </div>
@@ -805,7 +798,7 @@
 
  
 
-  <!-- IMAGEM TIRAMISU -->
+  <!-- IMAGEM ÁGUA -->
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista7()">←</button>
@@ -820,7 +813,7 @@
   <div class="container">
 
      <h2>Água</h2>
-     <p>Sobremesa italiana clássica com café e mascarpone</p>
+     <p>Água mineral cristal sem gás</p>
 
      <span class="preco">R$ 2.90</span>
 
@@ -842,7 +835,7 @@
 
     <button class="btn-carrinho"
      onclick="adicionarCarrinho(7, 'Água', 2.90, '../images/menu/agua.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-     🛒 Adicionar ao carrinho - R$ 2.90
+      Adicionar ao carrinho 
     </button>
 
   
