@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record FornecedorResponse(
         Long id,
+        String codigo,
         String razaoSocial,
         String cnpj,
         String especialidade,

@@ -36,6 +36,25 @@ function extractErrorMessage(body, fallback) {
   return body.message || body.mensagem || body.erro || fallback;
 }
 
+function persistAuthTokens(body) {
+  if (!body || typeof body !== 'object') return;
+  if (body.accessToken) localStorage.setItem(ACCESS_TOKEN_KEY, body.accessToken);
+  if (body.refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, body.refreshToken);
+}
+
+async function apiFetch(endpoint, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers
+  });
+}
+
 function showToast(message, type = 'error') {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -89,7 +108,6 @@ async function getJson(endpoint) {
   return readResponseBody(response);
 }
 
-v
 // =============================================
 // NAVIGATION: Section Switching
 // =============================================
@@ -110,15 +128,18 @@ function navigateTo(sectionId) {
   const logoCenter = document.querySelector('.logocenter');
   const nomeCenter = document.querySelector('.nomecenter');
   const textCenter = document.getElementById('textcenter');
+  const searchInput = document.querySelector('.pesquisa');
   
   if (selectedSection && sectionId !== 'dashboard') {
     if (logoCenter) logoCenter.style.display = 'none';
     if (nomeCenter) nomeCenter.style.display = 'none';
     if (textCenter) textCenter.style.display = 'none';
+    if (searchInput) searchInput.style.display = 'none';
   } else {
     if (logoCenter) logoCenter.style.display = 'block';
     if (nomeCenter) nomeCenter.style.display = 'block';
     if (textCenter) textCenter.style.display = 'block';
+    if (searchInput) searchInput.style.display = 'block';
   }
 
   // Update active nav buttons
@@ -132,7 +153,6 @@ function navigateTo(sectionId) {
     activeBtn.classList.add('active');
   }
 }
-
 window.navigateTo = navigateTo;
 
 // =============================================
@@ -428,6 +448,12 @@ function generateEmployeeCode() {
   return String(nextCode).padStart(3, '0');
 }
 
+function displayCode(record, prefix) {
+  if (record.codigo) return record.codigo;
+  if (!record.id) return '-';
+  return `${prefix}-${String(record.id).padStart(3, '0')}`;
+}
+
 function resetConfiguredField(field) {
   field.dataset.validationConfigured = 'false';
   field.classList.remove('masked-input');
@@ -506,7 +532,6 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const codeInput = e.target.querySelector('[name="codigo"]');
-  if (codeInput && !codeInput.value) codeInput.value = generateClientCode();
   const fd = new FormData(e.target);
   const telefones = [fd.get('phone'), fd.get('phone2')].filter(Boolean).join(' / ');
   const documento = fd.get('cpf') || fd.get('cnpj');
@@ -520,7 +545,7 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   ]
     .filter(Boolean)
     .join(', ');
-  const payload = { nome: fd.get('name'), cpf: documento, email: fd.get('email'), telefone: telefones, endereco };
+  const payload = { codigo: codeInput?.value || null, nome: fd.get('name'), cpf: documento, email: fd.get('email'), telefone: telefones, endereco };
   postJson('/clientes', payload)
     .then((cliente) => {
       showToast(`Cliente adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
@@ -537,9 +562,8 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const codeInput = e.target.querySelector('[name="codigo"]');
-  if (codeInput && !codeInput.value) codeInput.value = generateEmployeeCode();
   const fd = new FormData(e.target);
-  const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
+  const payload = { codigo: codeInput?.value || null, nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
   postJson('/funcionarios', payload)
     .then((func) => {
       showToast(`Funcionario adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
@@ -555,10 +579,9 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const codeInput = e.target.querySelector('[name="codigo"]');
-  if (codeInput && !codeInput.value) codeInput.value = generateSupplierCode();
   const fd = new FormData(e.target);
   const telefones = [fd.get('phone'), fd.get('phone2')].filter(Boolean).join(' / ');
-  const payload = { razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: telefones, email: fd.get('email') };
+  const payload = { codigo: codeInput?.value || null, razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: telefones, email: fd.get('email') };
   postJson('/fornecedores', payload)
     .then((forn) => {
       showToast(`Fornecedor adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
@@ -676,6 +699,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
   const formData = new FormData(e.target);
 
   const produto = {
+    codigo: formData.get('codigo') || null,
     nome: formData.get('name'),
     idCategoria: Number(formData.get('category')),
     preco: Number(formData.get('price')),
@@ -691,6 +715,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
       e.target.reset();
       dishIngredients.length = 0;
       renderDishIngredients();
+      adicionarLinhaProduto(produtoSalvo);
     })
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);
@@ -718,6 +743,66 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
       carregarUsuarios();
     })
     .catch((err) => showToast(err.message || 'Erro ao criar usuario.'));
+});
+
+document.getElementById('profileForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!validateForm(e.target)) return;
+
+  const fd = new FormData(e.target);
+  const fullName = String(fd.get('name') || '').trim();
+  const headerName = document.querySelector('.user-button span');
+  const headerAvatar = document.querySelector('.user-button .user-avatar-small');
+  const profileAvatar = document.querySelector('#profileModal .user-avatar-large');
+  const initials = fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase() || 'GP';
+
+  if (headerName) headerName.textContent = fullName || 'Gerente';
+  if (headerAvatar) headerAvatar.textContent = initials;
+  if (profileAvatar) profileAvatar.textContent = initials;
+
+  alert('Perfil atualizado com sucesso!');
+  closeModal('profileModal');
+});
+
+document.getElementById('securityForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const newPassword = e.target.querySelector('[name="newPassword"]');
+  const confirmPassword = e.target.querySelector('[name="confirmPassword"]');
+
+  confirmPassword.setCustomValidity('');
+  if (!validateForm(e.target)) return;
+
+  if (newPassword.value !== confirmPassword.value) {
+    confirmPassword.setCustomValidity('As senhas nao conferem.');
+    confirmPassword.reportValidity();
+    return;
+  }
+
+  confirmPassword.setCustomValidity('');
+  alert('Configurações de segurança atualizadas!');
+  closeModal('securityModal');
+  e.target.reset();
+});
+
+document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const selectedUser = e.target.querySelector('input[name="user"]:checked');
+  const selectedOption = selectedUser?.closest('.switch-user-option');
+  const name = selectedOption?.querySelector('strong')?.textContent || 'Gerente';
+  const initials = selectedOption?.querySelector('.user-avatar-small')?.textContent || 'GP';
+  const headerName = document.querySelector('.user-button span');
+  const headerAvatar = document.querySelector('.user-button .user-avatar-small');
+
+  if (headerName) headerName.textContent = name;
+  if (headerAvatar) headerAvatar.textContent = initials;
+
+  closeModal('switchUserModal');
 });
 
 // =============================================
@@ -1066,6 +1151,7 @@ function adicionarLinhaCliente(c) {
 function buildLinhaCliente(c) {
   return `<tr>
     <td><input type="checkbox" /></td>
+    <td><strong>${displayCode(c, 'CLI')}</strong></td>
     <td><strong>${c.nome}</strong></td>
     <td>${c.email || '-'}</td>
     <td>${c.telefone || '-'}</td>
@@ -1092,6 +1178,7 @@ function adicionarLinhaFuncionario(f) {
 
 function buildLinhaFuncionario(f) {
   return `<tr>
+    <td><strong>${displayCode(f, 'FUN')}</strong></td>
     <td><strong>${f.nome}</strong></td>
     <td><span class="badge badge-info">${f.cargo}</span></td>
     <td>${f.telefone || '-'}</td>
@@ -1118,8 +1205,8 @@ function adicionarLinhaFornecedor(f) {
 
 function buildLinhaFornecedor(f) {
   return `<tr>
+    <td><strong>${displayCode(f, 'FOR')}</strong></td>
     <td><strong>${f.razaoSocial}</strong></td>
-    <td>${f.especialidade || '-'}</td>
     <td>${f.telefone || '-'}</td>
     <td>${f.email || '-'}</td>
     <td>-</td>
@@ -1135,8 +1222,17 @@ function carregarFornecedores() {
     .catch((err) => showToast(err.message || 'Erro ao carregar fornecedores.'));
 }
 
+function adicionarLinhaProduto(p) {
+  const tbody = document.querySelector('#cardapio .data-table tbody');
+  if (!tbody) return;
+  const placeholder = tbody.querySelector('td[colspan]');
+  if (placeholder) tbody.innerHTML = '';
+  tbody.insertAdjacentHTML('beforeend', buildLinhaProduto(p));
+}
+
 function buildLinhaProduto(p) {
   return `<tr>
+    <td><strong>${displayCode(p, 'PRO')}</strong></td>
     <td><strong>${p.nome}</strong></td>
     <td>${p.idCategoria || '-'}</td>
     <td>${formatCurrency(p.preco)}</td>

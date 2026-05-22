@@ -17,6 +17,9 @@ public class Fornecedor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, length = 20)
+    private String codigo;
+
     @Column(name = "razao_social", nullable = false)
     private String razaoSocial;
 

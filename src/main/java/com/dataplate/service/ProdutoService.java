@@ -21,7 +21,18 @@ public class ProdutoService {
     }
     
     public Produto salvar(Produto produto) {
-        return produtoRepository.save(produto);
+        if (produto.getCodigo() != null && produto.getCodigo().isBlank()) {
+            produto.setCodigo(null);
+        } else if (produto.getCodigo() != null) {
+            produto.setCodigo(produto.getCodigo().trim().toUpperCase());
+        }
+
+        Produto salvo = produtoRepository.save(produto);
+        if (salvo.getCodigo() == null) {
+            salvo.setCodigo("PRO-" + String.format("%03d", salvo.getId()));
+            salvo = produtoRepository.save(salvo);
+        }
+        return salvo;
     }
     
     public void deletar(Long id) {

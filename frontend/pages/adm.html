@@ -13,8 +13,9 @@
     <header class="admin-header">
       <div class="header-left">
         <div class="logo-area">
-          <img src="../images/brand/logo-dataplate.png" alt="Logo DataPlate" style="width: 32px; height: 32px;">
-          <span class="logo-text">DataPlate</span>
+          <button class="logo-text" onclick="navigateTo('contentcenter')">
+              DataPlate
+          </button>
         </div>
       </div>
       <nav class="main-nav">
@@ -62,20 +63,17 @@
       </nav>
 
       <div class="header-right">
-        <div class="search-box">
-          <input type="text" placeholder="Pesquisar..." />
-        </div>
         <div class="user-menu dropdown">
           <button type="button" class="user-button">
             <div class="user-avatar-small">GP</div>
             <span>Gerente</span>
           </button>
           <div class="dropdown-menu dropdown-right">
-            <a href="#perfil" class="dropdown-link">Meu Perfil</a>
-            <a href="#seguranca" class="dropdown-link">Segurança</a>
-            <a href="#trocar-usuario" class="dropdown-link">Trocar de Usuário</a>
+            <a href="#perfil" class="dropdown-link" data-open-modal="profileModal">Meu Perfil</a>
+            <a href="#seguranca" class="dropdown-link" data-open-modal="securityModal">Segurança</a>
+            <a href="#trocar-usuario" class="dropdown-link" data-open-modal="switchUserModal">Trocar de Usuário</a>
             <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">
-            <a href="#logout" class="dropdown-link logout-link">Sair</a>
+            <a href="#logout" class="dropdown-link logout-link" data-open-modal="logoutModal">Sair</a>
           </div>
         </div>
       </div>
@@ -86,6 +84,9 @@
 
       <!-- CONTENT -->
       <div class="contentcenter">
+        <div class="search-box">
+          <input class="pesquisa" type="text" placeholder="Pesquisar..." />
+        </div>
         <img src="../images/brand/logo-dataplate.png" alt="Logo" class="logocenter">
           <div class="nomecenter">DataPlate</div>
           <p id="textcenter">Software de gestão inteligente para restaurantes</p>
@@ -106,7 +107,12 @@
                 <option>Ativo</option>
                 <option>Inativo</option>
               </select>
-              <button class="btn-secondary">Filtrar</button>
+              <button class="btn-secondary">
+                <span> 
+                  <img src="../images/ui/filtro.png" width="22px" height="22px">
+                </span>
+                Filtrar
+              </button>
             </div>
             <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
           </div>
@@ -116,6 +122,7 @@
               <thead>
                 <tr>
                   <th><input type="checkbox" /></th>
+                  <th>Cód</th>
                   <th>Nome</th>
                   <th>Email</th>
                   <th>Telefone</th>
@@ -148,7 +155,12 @@
                 <option>Cozinheiro</option>
                 <option>Atendente</option>
               </select>
-              <button class="btn-secondary">Filtrar</button>
+              <button class="btn-secondary">
+                <span> 
+                  <img src="../images/ui/filtro.png" width="22px" height="22px">
+                </span>
+                Filtrar
+              </button>
             </div>
           </div>
 
@@ -156,6 +168,7 @@
             <table class="data-table">
               <thead>
                 <tr>
+                  <th>Cód</th>
                   <th>Nome</th>
                   <th>Cargo</th>
                   <th>Telefone</th>
@@ -181,7 +194,12 @@
             <button type="button" class="btn-primary" onclick="openModal('addSupplierModal')" data-open-modal="addSupplierModal">+ Novo Fornecedor</button>
             <div class="toolbar-filters">
               <input type="text" placeholder="Pesquisar fornecedor..." class="filter-input" />
-              <button class="btn-secondary">Filtrar</button>
+              <button class="btn-secondary">
+                <span> 
+                  <img src="../images/ui/filtro.png" width="22px" height="22px">
+                </span>
+                Filtrar
+              </button>
             </div>
           </div>
 
@@ -189,8 +207,8 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Fornecedor</th>
-                  <th>Especialidade</th>
+                  <th>Cód</th>
+                  <th>Razão Social</th>
                   <th>Telefone</th>
                   <th>Email</th>
                   <th>Cidade</th>
@@ -222,7 +240,12 @@
                 <option>Saladas</option>
                 <option>Sobremesas</option>
               </select>
-              <button class="btn-secondary">Filtrar</button>
+              <button class="btn-secondary">
+                <span> 
+                  <img src="../images/ui/filtro.png" width="22px" height="22px">
+                </span>
+                Filtrar
+              </button>
             </div>
           </div>
 
@@ -230,6 +253,7 @@
             <table class="data-table">
               <thead>
                 <tr>
+                  <th>Cód</th>
                   <th>Item</th>
                   <th>Categoria</th>
                   <th>Preço</th>
@@ -263,7 +287,12 @@
                 <option>Cancelado</option>
               </select>
               <input type="date" class="filter-input" />
-              <button class="btn-secondary">Filtrar</button>
+              <button class="btn-secondary">
+                <span> 
+                  <img src="../images/ui/filtro.png" width="22px" height="22px">
+                </span>
+                Filtrar
+              </button>
             </div>
             <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
           </div>
@@ -1021,6 +1050,10 @@
          <!-- LADO ESQUERDO -->
          <div class="left-column">
             <div class="form-group">
+             <label>Código</label>
+             <input type="text" name="codigo" placeholder="Gerado ao cadastrar" autocomplete="off" readonly data-optional="true" />
+            </div>
+            <div class="form-group">
              <label>Nome do Item</label>
              <input
                 type="text"
@@ -1165,6 +1198,133 @@
           <button type="submit" class="btn-primary">Criar Usuário</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="modal" id="profileModal">
+    <div class="modal-content modal-content-small">
+      <button type="button" class="modal-close" onclick="closeModal('profileModal')">✕</button>
+      <div class="modal-header">Meu Perfil</div>
+      <form id="profileForm">
+        <div class="profile-summary">
+          <div class="user-avatar-large">GP</div>
+          <div>
+            <strong>Gerente Principal</strong>
+            <span>gerente@dataplate.com</span>
+          </div>
+        </div>
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" value="Gerente Principal" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" value="gerente@dataplate.com" autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" />
+          </div>
+          <div class="form-group">
+            <label>Cargo</label>
+            <input type="text" name="role" value="Gerente" readonly />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('profileModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar Perfil</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="securityModal">
+    <div class="modal-content modal-content-small">
+      <button type="button" class="modal-close" onclick="closeModal('securityModal')">✕</button>
+      <div class="modal-header">Segurança</div>
+      <form id="securityForm">
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Senha Atual</label>
+            <input type="password" name="currentPassword" placeholder="Digite sua senha atual" autocomplete="current-password" required />
+          </div>
+          <div class="form-group">
+            <label>Nova Senha</label>
+            <input type="password" name="newPassword" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" minlength="8" required />
+          </div>
+        </div>
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Confirmar Nova Senha</label>
+            <input type="password" name="confirmPassword" placeholder="Repita a nova senha" autocomplete="new-password" minlength="8" required />
+          </div>
+          <div class="form-group">
+            <label>Verificação</label>
+            <label class="checkbox-label security-check">
+              <input type="checkbox" name="twoFactor" data-optional="true" />
+              <span>Ativar autenticação em duas etapas</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('securityModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Atualizar Segurança</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="switchUserModal">
+    <div class="modal-content modal-content-small">
+      <button type="button" class="modal-close" onclick="closeModal('switchUserModal')">✕</button>
+      <div class="modal-header">Trocar de Usuário</div>
+      <form id="switchUserForm">
+        <div class="switch-user-list">
+          <label class="switch-user-option">
+            <input type="radio" name="user" value="gerente" checked />
+            <span class="user-avatar-small">GP</span>
+            <span>
+              <strong>Gerente Principal</strong>
+              <small>Administrador</small>
+            </span>
+          </label>
+          <label class="switch-user-option">
+            <input type="radio" name="user" value="atendente" />
+            <span class="user-avatar-small">AT</span>
+            <span>
+              <strong>Atendente</strong>
+              <small>Operacional</small>
+            </span>
+          </label>
+          <label class="switch-user-option">
+            <input type="radio" name="user" value="cozinha" />
+            <span class="user-avatar-small">CZ</span>
+            <span>
+              <strong>Cozinha</strong>
+              <small>Pedidos e preparo</small>
+            </span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('switchUserModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Trocar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="logoutModal">
+    <div class="modal-content modal-content-confirm">
+      <button type="button" class="modal-close" onclick="closeModal('logoutModal')">✕</button>
+      <div class="modal-header">Sair</div>
+      <p class="modal-description">Deseja encerrar sua sessão no painel administrativo?</p>
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('logoutModal')">Cancelar</button>
+        <button type="button" class="btn-primary logout-confirm-button" onclick="window.location.href='index.html'">Sair</button>
+      </div>
     </div>
   </div>
 

@@ -23,16 +23,36 @@ public class ClienteService {
     @Transactional
     public ClienteResponse criar(ClienteRequest req) {
         Cliente c = new Cliente();
+        c.setCodigo(normalizeCodigo(req.codigo()));
         c.setNome(req.nome());
         c.setCpf(req.cpf());
         c.setEmail(req.email());
         c.setTelefone(req.telefone());
         c.setEndereco(req.endereco());
-        return toResponse(repo.save(c));
+        Cliente salvo = repo.save(c);
+        if (salvo.getCodigo() == null) {
+            salvo.setCodigo(formatCodigo("CLI", salvo.getId()));
+            salvo = repo.save(salvo);
+        }
+        return toResponse(salvo);
     }
 
     private ClienteResponse toResponse(Cliente c) {
-        return new ClienteResponse(c.getId(), c.getNome(), c.getCpf(), c.getEmail(),
+        return new ClienteResponse(c.getId(), codigoOrDefault(c.getCodigo(), "CLI", c.getId()),
+                c.getNome(), c.getCpf(), c.getEmail(),
                 c.getTelefone(), c.getEndereco(), c.getAtivo(), c.getCriadoEm());
+    }
+
+    private String normalizeCodigo(String codigo) {
+        if (codigo == null || codigo.isBlank()) return null;
+        return codigo.trim().toUpperCase();
+    }
+
+    private String codigoOrDefault(String codigo, String prefixo, Long id) {
+        return codigo != null && !codigo.isBlank() ? codigo : formatCodigo(prefixo, id);
+    }
+
+    private String formatCodigo(String prefixo, Long id) {
+        return prefixo + "-" + String.format("%03d", id);
     }
 }

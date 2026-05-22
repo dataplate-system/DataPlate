@@ -27,6 +27,9 @@ public class Produto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "codigo", unique = true, length = 20)
+    private String codigo;
+
     @Column(name = "id_categoria", nullable = false)
     private Long idCategoria;
 

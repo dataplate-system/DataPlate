@@ -9,6 +9,7 @@ window.addEventListener('DOMContentLoaded', function () {
   const nextButton = document.querySelector('.carousel-btn.next');
   const dots = document.querySelectorAll('.carousel-dots button');
   let currentIndex = 0;
+  let autoplayInterval;
 
   if (!track || cards.length === 0) {
     return;
@@ -27,23 +28,39 @@ window.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function startAutoplay() {
+    autoplayInterval = setInterval(function () {
+      showSlide(currentIndex + 1);
+    }, 9000);
+  }
+
+  function resetAutoplay() {
+    clearInterval(autoplayInterval);
+    startAutoplay();
+  }
+
   if (prevButton) {
     prevButton.addEventListener('click', function () {
       showSlide(currentIndex - 1);
+      resetAutoplay();
     });
   }
 
   if (nextButton) {
     nextButton.addEventListener('click', function () {
       showSlide(currentIndex + 1);
+      resetAutoplay();
     });
   }
 
   dots.forEach(function (dot, index) {
     dot.addEventListener('click', function () {
       showSlide(index);
+      resetAutoplay();
     });
   });
+
+  startAutoplay();
 
   const agendarButton = document.querySelector('.Q-Agendar');
   const demonstracaoCard = document.querySelector('#demonstracao');

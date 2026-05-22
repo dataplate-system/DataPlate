@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public record FuncionarioResponse(
         Long id,
+        String codigo,
         String nome,
         String cpf,
         String telefone,
