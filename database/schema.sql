@@ -147,23 +147,26 @@ SELECT * FROM (VALUES
 ) AS v(nome, descricao, cor, ordem)
 WHERE NOT EXISTS (SELECT 1 FROM status_pedido);
 
-ALTER TABLE produto ADD COLUMN IF NOT EXISTS codigo VARCHAR(20) UNIQUE;
-ALTER TABLE clientes ADD COLUMN IF NOT EXISTS codigo VARCHAR(20) UNIQUE;
-ALTER TABLE funcionarios ADD COLUMN IF NOT EXISTS codigo VARCHAR(20) UNIQUE;
-ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS codigo VARCHAR(20) UNIQUE;
+INSERT INTO restaurante (nome, cnpj, telefone, endereco, email)
+SELECT 'DataPlate Restaurante', '00.000.000/0001-00', '(11) 99999-9999', 'Rua Principal, 1', 'contato@dataplate.com'
+WHERE NOT EXISTS (SELECT 1 FROM restaurante);
 
-UPDATE produto
-SET codigo = 'PRO-' || LPAD(id_produto::TEXT, 3, '0')
-WHERE codigo IS NULL;
+INSERT INTO categoria (id_restaurante, nome, descricao, ordem)
+SELECT r.id_restaurante, v.nome, v.descricao, v.ordem
+FROM (VALUES
+    ('Sanduiches',      'Hambúrgueres e sanduíches',    1),
+    ('Massas',          'Massas e pratos italianos',    2),
+    ('Itens Principais','Pratos principais',            3),
+    ('Saladas',         'Saladas e opções leves',       4),
+    ('Sobremesas',      'Doces e sobremesas',           5),
+    ('Bebidas',         'Bebidas e sucos',              6)
+) AS v(nome, descricao, ordem)
+CROSS JOIN (SELECT id_restaurante FROM restaurante LIMIT 1) AS r
+WHERE NOT EXISTS (SELECT 1 FROM categoria WHERE nome = v.nome);
 
-UPDATE clientes
-SET codigo = 'CLI-' || LPAD(id::TEXT, 3, '0')
-WHERE codigo IS NULL;
+INSERT INTO mesa (id_restaurante, numero, capacidade, status)
+SELECT r.id_restaurante, v.numero, 4, 'livre'
+FROM generate_series(1, 15) AS v(numero)
+CROSS JOIN (SELECT id_restaurante FROM restaurante LIMIT 1) AS r
+WHERE NOT EXISTS (SELECT 1 FROM mesa WHERE numero = v.numero);
 
-UPDATE funcionarios
-SET codigo = 'FUN-' || LPAD(id::TEXT, 3, '0')
-WHERE codigo IS NULL;
-
-UPDATE fornecedores
-SET codigo = 'FOR-' || LPAD(id::TEXT, 3, '0')
-WHERE codigo IS NULL;

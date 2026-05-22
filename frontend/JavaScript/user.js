@@ -1,7 +1,13 @@
 ﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
-const API_BASE_URL = window.location.port === "5500" ? "http://localhost:8080/api" : "/api";
+const API_BASE_URL = (() => {
+  const h = window.location.hostname;
+  const isLocal = h === 'localhost' || h === '127.0.0.1';
+  if (isLocal && window.location.port === '8080') return '/api';
+  if (isLocal) return `http://${h}:8080/api`;
+  return 'https://dataplate.onrender.com/api';
+})();
 
 async function readResponseBody(response) {
   const text = await response.text();

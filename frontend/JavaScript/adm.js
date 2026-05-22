@@ -4,9 +4,13 @@
 
 const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   || localStorage.getItem('DATAPLATE_API_BASE_URL')
-  || (window.location.port === '5500'
-    ? 'http://localhost:8080/api'
-    : 'https://dataplate.onrender.com/api');
+  || (() => {
+    const h = window.location.hostname;
+    const isLocal = h === 'localhost' || h === '127.0.0.1';
+    if (isLocal && window.location.port === '8080') return '/api';
+    if (isLocal) return `http://${h}:8080/api`;
+    return 'https://dataplate.onrender.com/api';
+  })();
 
 const WS_BASE_URL = (() => {
   const apiUrl = API_BASE_URL.startsWith('http')
@@ -16,8 +20,14 @@ const WS_BASE_URL = (() => {
   return apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
 })();
 
-const ACCESS_TOKEN_KEY = 'dataplate:accessToken';
-const REFRESH_TOKEN_KEY = 'dataplate:refreshToken';
+async function buscarEnderecoPorCep(cep) {
+  const response = await fetch(`${API_BASE_URL}/cep/${cep}`);
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error((body && body.mensagem) || 'CEP nao encontrado.');
+  }
+  return body;
+}
 
 async function readResponseBody(response) {
   const text = await response.text();
@@ -36,22 +46,10 @@ function extractErrorMessage(body, fallback) {
   return body.message || body.mensagem || body.erro || fallback;
 }
 
-function persistAuthTokens(body) {
-  if (!body || typeof body !== 'object') return;
-  if (body.accessToken) localStorage.setItem(ACCESS_TOKEN_KEY, body.accessToken);
-  if (body.refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, body.refreshToken);
-}
-
 async function apiFetch(endpoint, options = {}) {
-  const headers = { ...(options.headers || {}) };
-  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   return fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers
+    headers: { ...(options.headers || {}) }
   });
 }
 
@@ -81,9 +79,7 @@ async function postJson(endpoint, payload) {
     const body = await readResponseBody(response);
     throw new Error(extractErrorMessage(body, 'Nao foi possivel salvar os dados.'));
   }
-  const body = await readResponseBody(response);
-  if (endpoint.startsWith('/auth/')) persistAuthTokens(body);
-  return body;
+  return readResponseBody(response);
 }
 
 async function putJson(endpoint, payload) {
@@ -152,6 +148,24 @@ function navigateTo(sectionId) {
   if (activeBtn) {
     activeBtn.classList.add('active');
   }
+
+  // Persist section in URL hash so F5 restores it
+  history.replaceState(null, '', sectionId && sectionId !== 'dashboard'
+    ? '#' + sectionId
+    : location.pathname
+  );
+
+  // Load data for the section being shown
+  const sectionLoaders = {
+    clientes:       carregarClientes,
+    funcionarios:   carregarFuncionarios,
+    fornecedores:   carregarFornecedores,
+    cardapio:       carregarProdutos,
+    pedidos:        carregarPedidos,
+    cozinha:        carregarCozinha,
+    'config-usuarios': carregarUsuarios
+  };
+  if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
 }
 window.navigateTo = navigateTo;
 
@@ -709,7 +723,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
   };
 
   postJson('/produtos', produto)
-    .then(() => {
+    .then((produtoSalvo) => {
       showToast('Prato adicionado com sucesso!', 'success');
       closeModal('addDishModal');
       e.target.reset();
@@ -1049,8 +1063,9 @@ window.connectAdminWebSocket = connectAdminWebSocket;
 // =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Set default section to dashboard
-  navigateTo('dashboard');
+  // Restore last section from URL hash (F5 persistence)
+  const initialSection = window.location.hash.slice(1);
+  navigateTo(initialSection || 'dashboard');
   initClientForm();
   initCepAutocomplete();
 
@@ -1103,17 +1118,40 @@ document.addEventListener('DOMContentLoaded', () => {
     .querySelectorAll('form input, form select, form textarea, .config-form input, .config-form select, .config-form textarea')
     .forEach(configureField);
 
-  carregarClientes();
-  carregarFuncionarios();
-  carregarFornecedores();
-  carregarProdutos();
-  carregarPedidos();
-  carregarCozinha();
-  carregarUsuarios();
   connectAdminWebSocket();
 
   console.log('Admin panel loaded successfully');
 });
+
+// =============================================
+// SKELETON LOADING
+// =============================================
+
+function showTableSkeleton(sectionId, rowCount = 6) {
+  const tbody = document.querySelector(`#${sectionId} .data-table tbody`);
+  if (!tbody) return;
+  const cols = tbody.closest('table').querySelectorAll('th').length;
+  const widths = ['', 'short', 'long', '', 'short', 'long', '', 'short', 'long', ''];
+  const row = `<tr class="skeleton-row">${
+    Array.from({ length: cols }, (_, i) =>
+      `<td><div class="skeleton-cell ${widths[i % widths.length]}"></div></td>`
+    ).join('')
+  }</tr>`;
+  tbody.innerHTML = Array(rowCount).fill(row).join('');
+}
+
+function showCozinhaSkeleton() {
+  ['col-recebido', 'col-em_preparo', 'col-pronto'].forEach(id => {
+    const col = document.getElementById(id);
+    if (!col) return;
+    Array.from(col.querySelectorAll('.kitchen-card, .skeleton-card, p')).forEach(el => el.remove());
+    col.querySelector('.col-count').textContent = '0';
+    col.insertAdjacentHTML('beforeend', `
+      <div class="skeleton-card"><div class="skeleton-cell long"></div><div class="skeleton-cell"></div><div class="skeleton-cell short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-cell long"></div><div class="skeleton-cell"></div><div class="skeleton-cell short"></div></div>
+    `);
+  });
+}
 
 // =============================================
 // DATA LOADING FUNCTIONS
@@ -1129,12 +1167,29 @@ function formatCurrency(v) {
   return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
 }
 
-function setTableBody(sectionId, rows) {
+const _sectionLoaderNames = {
+  clientes: 'carregarClientes',
+  funcionarios: 'carregarFuncionarios',
+  fornecedores: 'carregarFornecedores',
+  cardapio: 'carregarProdutos',
+  pedidos: 'carregarPedidos',
+  'config-usuarios': 'carregarUsuarios'
+};
+
+function setTableBody(sectionId, rows, errorMsg) {
   const tbody = document.querySelector(`#${sectionId} .data-table tbody`);
   if (!tbody) return;
   if (!rows || rows.length === 0) {
     const cols = tbody.closest('table').querySelectorAll('th').length;
-    tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:#94a3b8">Nenhum registro encontrado</td></tr>`;
+    if (errorMsg) {
+      const fn = _sectionLoaderNames[sectionId];
+      const retryBtn = fn
+        ? `<button onclick="${fn}()" style="margin-left:12px;padding:4px 12px;border:1px solid #dc2626;background:#fff;color:#dc2626;border-radius:6px;cursor:pointer;font-size:13px">Tentar novamente</button>`
+        : '';
+      tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:#dc2626;padding:20px">&#9888; ${errorMsg}${retryBtn}</td></tr>`;
+    } else {
+      tbody.innerHTML = `<tr><td colspan="${cols}" style="text-align:center;color:#94a3b8">Nenhum registro encontrado</td></tr>`;
+    }
     return;
   }
   tbody.innerHTML = rows.join('');
@@ -1163,9 +1218,14 @@ function buildLinhaCliente(c) {
 }
 
 function carregarClientes() {
+  showTableSkeleton('clientes');
   getJson('/clientes')
     .then(list => setTableBody('clientes', list.map(buildLinhaCliente)))
-    .catch((err) => showToast(err.message || 'Erro ao carregar clientes.'));
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar clientes.';
+      setTableBody('clientes', [], msg);
+      console.error('[clientes]', err);
+    });
 }
 
 function adicionarLinhaFuncionario(f) {
@@ -1190,9 +1250,14 @@ function buildLinhaFuncionario(f) {
 }
 
 function carregarFuncionarios() {
+  showTableSkeleton('funcionarios');
   getJson('/funcionarios')
     .then(list => setTableBody('funcionarios', list.map(buildLinhaFuncionario)))
-    .catch((err) => showToast(err.message || 'Erro ao carregar funcionarios.'));
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar funcionários.';
+      setTableBody('funcionarios', [], msg);
+      console.error('[funcionarios]', err);
+    });
 }
 
 function adicionarLinhaFornecedor(f) {
@@ -1217,9 +1282,14 @@ function buildLinhaFornecedor(f) {
 }
 
 function carregarFornecedores() {
+  showTableSkeleton('fornecedores');
   getJson('/fornecedores')
     .then(list => setTableBody('fornecedores', list.map(buildLinhaFornecedor)))
-    .catch((err) => showToast(err.message || 'Erro ao carregar fornecedores.'));
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar fornecedores.';
+      setTableBody('fornecedores', [], msg);
+      console.error('[fornecedores]', err);
+    });
 }
 
 function adicionarLinhaProduto(p) {
@@ -1244,9 +1314,14 @@ function buildLinhaProduto(p) {
 }
 
 function carregarProdutos() {
+  showTableSkeleton('cardapio');
   getJson('/produtos')
     .then(list => setTableBody('cardapio', list.map(buildLinhaProduto)))
-    .catch((err) => showToast(err.message || 'Erro ao carregar produtos.'));
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar produtos.';
+      setTableBody('cardapio', [], msg);
+      console.error('[cardapio]', err);
+    });
 }
 
 function buildLinhaPedido(p) {
@@ -1266,9 +1341,14 @@ function buildLinhaPedido(p) {
 }
 
 function carregarPedidos() {
+  showTableSkeleton('pedidos');
   getJson('/pedidos')
     .then(list => setTableBody('pedidos', list.map(buildLinhaPedido)))
-    .catch((err) => showToast(err.message || 'Erro ao carregar pedidos.'));
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar pedidos.';
+      setTableBody('pedidos', [], msg);
+      console.error('[pedidos]', err);
+    });
 }
 
 function buildLinhaUsuario(u) {
@@ -1290,12 +1370,18 @@ function buildLinhaUsuario(u) {
 }
 
 function carregarUsuarios() {
+  showTableSkeleton('config-usuarios');
   getJson('/usuarios')
     .then(list => setTableBody('config-usuarios', list.map(buildLinhaUsuario)))
-    .catch((err) => showToast(err.message || 'Erro ao carregar usuarios.'));
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar usuários.';
+      setTableBody('config-usuarios', [], msg);
+      console.error('[usuarios]', err);
+    });
 }
 
 function carregarCozinha() {
+  showCozinhaSkeleton();
   getJson('/pedidos').then(pedidos => {
     const cols = {
       RECEBIDO:   document.getElementById('col-recebido'),
@@ -1305,7 +1391,7 @@ function carregarCozinha() {
 
     Object.values(cols).forEach(col => {
       if (!col) return;
-      Array.from(col.querySelectorAll('.kitchen-card')).forEach(c => c.remove());
+      Array.from(col.querySelectorAll('.kitchen-card, .skeleton-card, p')).forEach(c => c.remove());
       col.querySelector('.col-count').textContent = '0';
     });
 
@@ -1340,7 +1426,15 @@ function carregarCozinha() {
         if (col) col.insertAdjacentHTML('beforeend', '<p style="color:#94a3b8;font-size:14px">Nenhum pedido</p>');
       });
     }
-  }).catch((err) => showToast(err.message || 'Erro ao carregar cozinha.'));
+  }).catch((err) => {
+    ['col-recebido', 'col-em_preparo', 'col-pronto'].forEach(id => {
+      const col = document.getElementById(id);
+      if (!col) return;
+      Array.from(col.querySelectorAll('.skeleton-card')).forEach(el => el.remove());
+      col.insertAdjacentHTML('beforeend', '<p style="color:#94a3b8;font-size:14px">Erro ao carregar</p>');
+    });
+    showToast(err.message || 'Erro ao carregar cozinha.');
+  });
 }
 
     // Charts Configuration

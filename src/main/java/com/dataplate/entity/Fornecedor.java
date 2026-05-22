@@ -30,6 +30,7 @@ public class Fornecedor {
     private String telefone;
     private String email;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean ativo = true;
 

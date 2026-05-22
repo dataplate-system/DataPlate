@@ -27,6 +27,36 @@ body {
   min-height: 100vh;
 }
 
+/* SKELETON LOADING */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.skeleton-cell {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  width: 80%;
+}
+
+.skeleton-cell.short  { width: 40%; }
+.skeleton-cell.long   { width: 95%; }
+
+tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
+
+.skeleton-card {
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.skeleton-card .skeleton-cell { margin-bottom: 10px; }
+.skeleton-card .skeleton-cell:last-child { margin-bottom: 0; width: 50%; }
+
 /* HEADER */
 .admin-header {
   background: var(--color-white);

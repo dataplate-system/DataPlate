@@ -30,6 +30,7 @@ public class Cliente {
     private String telefone;
     private String endereco;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean ativo = true;
 

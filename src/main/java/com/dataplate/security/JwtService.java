@@ -75,10 +75,6 @@ public class JwtService {
         }
     }
 
-    private boolean isExpired(String token) {
-        return isExpired(token, false);
-    }
-
     private boolean isExpired(String token, boolean refresh) {
         return extractClaim(token, Claims::getExpiration, refresh).before(new Date());
     }
@@ -94,10 +90,6 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
         return resolver.apply(claims);
-    }
-
-    private SecretKey getSigningKey() {
-        return getSigningKey(secret);
     }
 
     private SecretKey getSigningKey(String value) {

@@ -18,7 +18,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/pedidos")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class PedidosController {
     private static final Logger logger = LoggerFactory.getLogger(PedidosController.class);

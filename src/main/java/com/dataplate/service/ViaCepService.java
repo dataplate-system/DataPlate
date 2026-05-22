@@ -3,7 +3,9 @@ package com.dataplate.service;
 import com.dataplate.dto.Endereco;
 import com.dataplate.exception.CepException;
 import com.dataplate.util.CepFormatter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,8 @@ public class ViaCepService {
 
     private static final Logger logger = LoggerFactory.getLogger(ViaCepService.class);
     private static final String BASE_URL = "https://viacep.com.br/ws";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private final HttpClient httpClient;
 
@@ -45,6 +48,7 @@ public class ViaCepService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .timeout(Duration.ofSeconds(10))
+                    .header("Accept", "application/json")
                     .GET()
                     .build();
 
@@ -78,8 +82,8 @@ public class ViaCepService {
             logger.error("URL invalida para consulta de CEP {}", cepLimpo, ex);
             throw new CepException("Erro interno ao montar consulta de CEP.", ex);
         } catch (JsonProcessingException ex) {
-            logger.error("Resposta invalida da ViaCEP para CEP {}", cepLimpo, ex);
-            throw new CepException("Resposta invalida da API ViaCEP.", ex);
+            logger.error("Resposta invalida da ViaCEP para CEP {} - resposta pode nao ser JSON", cepLimpo, ex);
+            throw new CepException("CEP nao encontrado ou servico indisponivel. Tente novamente.", ex);
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
             logger.error("Consulta ViaCEP interrompida para CEP {}", cepLimpo, ex);
@@ -96,6 +100,7 @@ public class ViaCepService {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class ViaCepResponse {
         public String cep;
         public String logradouro;

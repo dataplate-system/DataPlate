@@ -43,3 +43,6 @@ target/
 .env
 .env.local
 .env.production
+
+# Claude Code (configuração local, não vai pro repositório)
+.claude/

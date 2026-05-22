@@ -35,6 +35,7 @@ public class Funcionario {
     @Column(precision = 10, scale = 2)
     private BigDecimal salario;
 
+    @Builder.Default
     @Column(nullable = false)
     private Boolean ativo = true;
 

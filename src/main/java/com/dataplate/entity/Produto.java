@@ -45,12 +45,14 @@ public class Produto {
     @Column(name = "imagem")
     private String imagem;
 
+    @Builder.Default
     @Column(name = "ativo", nullable = false)
     private Boolean ativo = true;
 
     @Column(name = "tempo_preparo")
     private Integer tempoPreparo;
 
+    @Builder.Default
     @Column(name = "destaque", nullable = false)
     private Boolean destaque = false;
 
