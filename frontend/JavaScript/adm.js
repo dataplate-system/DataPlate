@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ADMIN PANEL - Navigation and Modal Management
  */
 
