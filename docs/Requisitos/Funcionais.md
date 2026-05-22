@@ -1,20 +1,23 @@
-## RF01 - Controle Atomico
-O sistema deve abater ingredientes do estoque individualmente ao confirmar um pedido.
+## RF01 - Cardápio Digital
+O sistema deve permitir que clientes acessem o cardápio digital por QR Code, visualizem itens, descrições, imagens e preços.
 
-## RF02 - Fila Preditiva
-O sistema deve calcular o tempo de espera baseado em pedidos em andamento e capacidade da equipe.
+## RF02 - Carrinho e Pedido
+O sistema deve permitir que clientes adicionem itens ao carrinho, ajustem quantidades e confirmem o pedido.
 
-## RF03 - Smart Pricing
-O sistema deve sugerir descontos automaticos para itens com alta taxa de estoque e validade proxima.
+## RF03 - Status do Pedido
+O sistema deve exibir o status do pedido em tempo real para clientes, cozinha e administração.
 
-## RF04 - Gestao de Ficha Tecnica
-O sistema deve permitir a composicao de pratos por meio do vinculo de multiplos ingredientes e suas respectivas quantidades.
+## RF04 - Painel da Cozinha
+O sistema deve organizar pedidos por etapa de preparo, permitindo atualização de status pela equipe operacional.
 
-## RF05 - Monitoramento de Insumos
-O sistema deve emitir alertas automaticos quando o nivel de um ingrediente atingir um limite minimo de seguranca pre-definido.
+## RF05 - Controle de Mesas
+O sistema deve permitir cadastrar mesas com número, capacidade, localização, status e observações.
 
-## RF06 - Registro e Historico de Pedidos
-O sistema deve registrar cada pedido realizado e associar os produtos consumidos para alimentar relatorios e abatimento de estoque.
+## RF06 - Gestão de Reservas
+O sistema deve permitir registrar reservas de mesa com cliente, telefone, data, horário e observações.
 
-## RF07 - Calculo de Margem de Contribuicao
-O sistema deve calcular a diferenca entre preco de venda e custo total dos insumos para apoiar decisoes de precificacao.
+## RF07 - Relatórios Administrativos
+O sistema deve gerar relatórios de vendas, desempenho do cardápio, operação e informações financeiras.
+
+## RF08 - Usuários e Permissões
+O sistema deve permitir cadastrar usuários administrativos e definir tipos de acesso.
