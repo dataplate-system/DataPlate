@@ -328,9 +328,9 @@ function finalizarPagamento() {
 
   if (pagamentoSelecionado === "Pix") {
     document.getElementById("telaPix").style.display = "block";
-  } else if (pagamentoSelecionado === "Crédito") {
+  } else if (pagamentoSelecionado === "Credito") {
     document.getElementById("telaCredito").style.display = "block";
-  } else if (pagamentoSelecionado === "Débito") {
+  } else if (pagamentoSelecionado === "Debito") {
     document.getElementById("telaDebito").style.display = "block";
   } else if (pagamentoSelecionado === "Dinheiro") {
     document.getElementById("telaDinheiro").style.display = "block";
