@@ -2,7 +2,9 @@
  * ADMIN PANEL - Navigation and Modal Management
  */
 
-const API_BASE_URL = window.location.port === '5500' ? 'http://localhost:8080/api' : '/api';
+const API_BASE_URL = window.DATAPLATE_API_BASE_URL
+  || localStorage.getItem('DATAPLATE_API_BASE_URL')
+  || (window.location.port === '5500' ? 'http://localhost:8080/api' : '/api');
 
 async function readResponseBody(response) {
   const text = await response.text();
@@ -54,6 +56,21 @@ async function getJson(endpoint) {
     throw new Error(extractErrorMessage(body, 'Erro ao carregar dados.'));
   }
   return readResponseBody(response);
+}
+
+async function buscarEnderecoPorCep(cep) {
+  try {
+    return await getJson(`/cep/buscar/${cep}`);
+  } catch (apiError) {
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const body = await readResponseBody(response);
+
+    if (!response.ok || body?.erro) {
+      throw apiError;
+    }
+
+    return body;
+  }
 }
 
 // =============================================
@@ -254,7 +271,7 @@ function configureCepAutocomplete(form) {
       field.disabled = true;
 
       try {
-        const endereco = await getJson(`/cep/buscar/${cep}`);
+        const endereco = await buscarEnderecoPorCep(cep);
         fillAddressFromCep(form, endereco);
       } catch (error) {
         lastCep = '';
