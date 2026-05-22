@@ -1,6 +1,7 @@
 package com.dataplate.controller;
 
 import com.dataplate.dto.AuthLoginRequest;
+import com.dataplate.dto.AuthRefreshRequest;
 import com.dataplate.dto.AuthRegisterRequest;
 import com.dataplate.dto.AuthResponse;
 import com.dataplate.service.AuthService;
@@ -18,6 +19,11 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody AuthLoginRequest request) {
         return service.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public AuthResponse refresh(@Valid @RequestBody AuthRefreshRequest request) {
+        return service.refresh(request);
     }
 
     @PostMapping("/register")

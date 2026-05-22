@@ -3,6 +3,7 @@ package com.dataplate.service;
 import com.dataplate.dto.Endereco;
 import com.dataplate.exception.CepException;
 import com.dataplate.util.CepFormatter;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,11 +72,27 @@ public class ViaCepService {
                     dto.ddd,
                     dto.siafi
             );
-        } catch (CepException e) {
-            throw e;
-        } catch (Exception e) {
-            logger.error("Erro ao buscar CEP {}", cepLimpo, e);
-            throw new CepException("Erro ao buscar CEP: " + e.getMessage(), e);
+        } catch (CepException ex) {
+            throw ex;
+        } catch (IllegalArgumentException ex) {
+            logger.error("URL invalida para consulta de CEP {}", cepLimpo, ex);
+            throw new CepException("Erro interno ao montar consulta de CEP.", ex);
+        } catch (JsonProcessingException ex) {
+            logger.error("Resposta invalida da ViaCEP para CEP {}", cepLimpo, ex);
+            throw new CepException("Resposta invalida da API ViaCEP.", ex);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            logger.error("Consulta ViaCEP interrompida para CEP {}", cepLimpo, ex);
+            throw new CepException("Consulta de CEP interrompida. Tente novamente.", ex);
+        } catch (java.net.http.HttpTimeoutException ex) {
+            logger.error("Timeout ao buscar CEP {}", cepLimpo, ex);
+            throw new CepException("Tempo esgotado ao buscar CEP. Tente novamente.", ex);
+        } catch (java.io.IOException ex) {
+            logger.error("Falha de comunicacao com ViaCEP para CEP {}", cepLimpo, ex);
+            throw new CepException("Falha de comunicacao com ViaCEP. Tente novamente.", ex);
+        } catch (Exception ex) {
+            logger.error("Erro ao buscar CEP {}", cepLimpo, ex);
+            throw new CepException("Erro ao buscar CEP. Tente novamente.", ex);
         }
     }
 

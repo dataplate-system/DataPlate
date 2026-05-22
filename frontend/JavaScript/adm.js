@@ -4,7 +4,20 @@
 
 const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   || localStorage.getItem('DATAPLATE_API_BASE_URL')
-  || (window.location.port === '5500' ? 'http://localhost:8080/api' : '/api');
+  || (window.location.port === '5500'
+    ? 'http://localhost:8080/api'
+    : 'https://dataplate.onrender.com/api');
+
+const WS_BASE_URL = (() => {
+  const apiUrl = API_BASE_URL.startsWith('http')
+    ? API_BASE_URL
+    : `${window.location.origin}${API_BASE_URL}`;
+
+  return apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
+})();
+
+const ACCESS_TOKEN_KEY = 'dataplate:accessToken';
+const REFRESH_TOKEN_KEY = 'dataplate:refreshToken';
 
 async function readResponseBody(response) {
   const text = await response.text();
@@ -23,8 +36,24 @@ function extractErrorMessage(body, fallback) {
   return body.message || body.mensagem || body.erro || fallback;
 }
 
+function showToast(message, type = 'error') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;right:20px;bottom:20px;z-index:9999;display:grid;gap:8px;max-width:360px;';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `padding:12px 14px;border-radius:8px;color:#fff;box-shadow:0 10px 30px rgba(15,23,42,.18);font:500 14px/1.35 Inter,system-ui,sans-serif;background:${type === 'success' ? '#16a34a' : '#dc2626'};`;
+  container.appendChild(toast);
+  window.setTimeout(() => toast.remove(), 4500);
+}
+
 async function postJson(endpoint, payload) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await apiFetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -33,11 +62,13 @@ async function postJson(endpoint, payload) {
     const body = await readResponseBody(response);
     throw new Error(extractErrorMessage(body, 'Nao foi possivel salvar os dados.'));
   }
-  return readResponseBody(response);
+  const body = await readResponseBody(response);
+  if (endpoint.startsWith('/auth/')) persistAuthTokens(body);
+  return body;
 }
 
 async function putJson(endpoint, payload) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await apiFetch(endpoint, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -50,7 +81,7 @@ async function putJson(endpoint, payload) {
 }
 
 async function getJson(endpoint) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`);
+  const response = await apiFetch(endpoint);
   if (!response.ok) {
     const body = await readResponseBody(response);
     throw new Error(extractErrorMessage(body, 'Erro ao carregar dados.'));
@@ -58,21 +89,7 @@ async function getJson(endpoint) {
   return readResponseBody(response);
 }
 
-async function buscarEnderecoPorCep(cep) {
-  try {
-    return await getJson(`/cep/buscar/${cep}`);
-  } catch (apiError) {
-    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-    const body = await readResponseBody(response);
-
-    if (!response.ok || body?.erro) {
-      throw apiError;
-    }
-
-    return body;
-  }
-}
-
+v
 // =============================================
 // NAVIGATION: Section Switching
 // =============================================
@@ -506,13 +523,13 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   const payload = { nome: fd.get('name'), cpf: documento, email: fd.get('email'), telefone: telefones, endereco };
   postJson('/clientes', payload)
     .then((cliente) => {
-      alert(`Cliente adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`);
+      showToast(`Cliente adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
       closeModal('addClientModal');
       e.target.reset();
       configureClientPersonType(e.target);
       adicionarLinhaCliente(cliente);
     })
-    .catch((err) => alert('Erro: ' + err.message));
+    .catch((err) => showToast(err.message || 'Erro ao salvar cliente.'));
 });
 
 // Add Employee Modal
@@ -525,12 +542,12 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
   const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
   postJson('/funcionarios', payload)
     .then((func) => {
-      alert(`Funcionário adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`);
+      showToast(`Funcionario adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
       closeModal('addFunctModal');
       e.target.reset();
       adicionarLinhaFuncionario(func);
     })
-    .catch((err) => alert('Erro: ' + err.message));
+    .catch((err) => showToast(err.message || 'Erro ao salvar funcionario.'));
 });
 
 // Add Supplier Modal
@@ -544,12 +561,12 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
   const payload = { razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: telefones, email: fd.get('email') };
   postJson('/fornecedores', payload)
     .then((forn) => {
-      alert(`Fornecedor adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`);
+      showToast(`Fornecedor adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
       closeModal('addSupplierModal');
       e.target.reset();
       adicionarLinhaFornecedor(forn);
     })
-    .catch((err) => alert('Erro: ' + err.message));
+    .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
 });
 
 // Add Dish Modal
@@ -669,7 +686,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
 
   postJson('/produtos', produto)
     .then(() => {
-      alert('Prato adicionado com sucesso!');
+      showToast('Prato adicionado com sucesso!', 'success');
       closeModal('addDishModal');
       e.target.reset();
       dishIngredients.length = 0;
@@ -677,7 +694,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
     })
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);
-      alert(error.message);
+      showToast(error.message || 'Erro ao salvar prato.');
     });
 });
 
@@ -695,12 +712,12 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
   };
   postJson('/auth/register', payload)
     .then(() => {
-      alert('Usuário criado com sucesso!');
+      showToast('Usuario criado com sucesso!', 'success');
       closeModal('addUserModal');
       e.target.reset();
       carregarUsuarios();
     })
-    .catch((err) => alert('Erro: ' + err.message));
+    .catch((err) => showToast(err.message || 'Erro ao criar usuario.'));
 });
 
 // =============================================
@@ -709,8 +726,11 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
 
 window.alterarStatusPedido = function(pedidoId, novoStatus) {
   putJson(`/pedidos/${pedidoId}/status`, { status: novoStatus })
-    .then(() => carregarCozinha())
-    .catch((err) => alert('Erro ao atualizar status: ' + err.message));
+    .then(() => {
+      showToast('Status atualizado com sucesso!', 'success');
+      carregarCozinha();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao atualizar status.'));
 };
 
 // =============================================
@@ -887,6 +907,59 @@ exportTableToCSV('#exportClientes', 'clientes.csv');
 exportTableToCSV('#exportPedidos', 'pedidos.csv');
 
 // =============================================
+// WEBSOCKET
+// =============================================
+
+let adminSocket = null;
+let websocketRetryTimer = null;
+let websocketRetryDelay = 1000;
+
+function connectAdminWebSocket() {
+  if (adminSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(adminSocket.readyState)) return adminSocket;
+
+  try {
+    adminSocket = new WebSocket(WS_BASE_URL);
+
+    adminSocket.addEventListener('open', () => {
+      websocketRetryDelay = 1000;
+      console.info('WebSocket conectado');
+    });
+
+    adminSocket.addEventListener('message', (event) => {
+      let payload = event.data;
+      try {
+        payload = JSON.parse(event.data);
+      } catch (_) {
+        // Mantem payload como texto quando nao for JSON.
+      }
+
+      if (payload?.type === 'PEDIDO_ATUALIZADO' || payload?.type === 'NOVO_PEDIDO') {
+        carregarPedidos();
+        carregarCozinha();
+      }
+    });
+
+    adminSocket.addEventListener('close', () => {
+      window.clearTimeout(websocketRetryTimer);
+      websocketRetryTimer = window.setTimeout(connectAdminWebSocket, websocketRetryDelay);
+      websocketRetryDelay = Math.min(websocketRetryDelay * 2, 30000);
+    });
+
+    adminSocket.addEventListener('error', () => {
+      adminSocket.close();
+    });
+  } catch (error) {
+    console.error('Erro ao conectar WebSocket:', error);
+    window.clearTimeout(websocketRetryTimer);
+    websocketRetryTimer = window.setTimeout(connectAdminWebSocket, websocketRetryDelay);
+  }
+
+  return adminSocket;
+}
+
+window.connectAdminWebSocket = connectAdminWebSocket;
+
+// =============================================
 // INITIALIZATION
 // =============================================
 
@@ -952,6 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
   carregarPedidos();
   carregarCozinha();
   carregarUsuarios();
+  connectAdminWebSocket();
 
   console.log('Admin panel loaded successfully');
 });
@@ -1005,7 +1079,7 @@ function buildLinhaCliente(c) {
 function carregarClientes() {
   getJson('/clientes')
     .then(list => setTableBody('clientes', list.map(buildLinhaCliente)))
-    .catch(() => {});
+    .catch((err) => showToast(err.message || 'Erro ao carregar clientes.'));
 }
 
 function adicionarLinhaFuncionario(f) {
@@ -1031,7 +1105,7 @@ function buildLinhaFuncionario(f) {
 function carregarFuncionarios() {
   getJson('/funcionarios')
     .then(list => setTableBody('funcionarios', list.map(buildLinhaFuncionario)))
-    .catch(() => {});
+    .catch((err) => showToast(err.message || 'Erro ao carregar funcionarios.'));
 }
 
 function adicionarLinhaFornecedor(f) {
@@ -1058,7 +1132,7 @@ function buildLinhaFornecedor(f) {
 function carregarFornecedores() {
   getJson('/fornecedores')
     .then(list => setTableBody('fornecedores', list.map(buildLinhaFornecedor)))
-    .catch(() => {});
+    .catch((err) => showToast(err.message || 'Erro ao carregar fornecedores.'));
 }
 
 function buildLinhaProduto(p) {
@@ -1076,7 +1150,7 @@ function buildLinhaProduto(p) {
 function carregarProdutos() {
   getJson('/produtos')
     .then(list => setTableBody('cardapio', list.map(buildLinhaProduto)))
-    .catch(() => {});
+    .catch((err) => showToast(err.message || 'Erro ao carregar produtos.'));
 }
 
 function buildLinhaPedido(p) {
@@ -1098,7 +1172,7 @@ function buildLinhaPedido(p) {
 function carregarPedidos() {
   getJson('/pedidos')
     .then(list => setTableBody('pedidos', list.map(buildLinhaPedido)))
-    .catch(() => {});
+    .catch((err) => showToast(err.message || 'Erro ao carregar pedidos.'));
 }
 
 function buildLinhaUsuario(u) {
@@ -1122,7 +1196,7 @@ function buildLinhaUsuario(u) {
 function carregarUsuarios() {
   getJson('/usuarios')
     .then(list => setTableBody('config-usuarios', list.map(buildLinhaUsuario)))
-    .catch(() => {});
+    .catch((err) => showToast(err.message || 'Erro ao carregar usuarios.'));
 }
 
 function carregarCozinha() {
@@ -1170,7 +1244,7 @@ function carregarCozinha() {
         if (col) col.insertAdjacentHTML('beforeend', '<p style="color:#94a3b8;font-size:14px">Nenhum pedido</p>');
       });
     }
-  }).catch(() => {});
+  }).catch((err) => showToast(err.message || 'Erro ao carregar cozinha.'));
 }
 
     // Charts Configuration

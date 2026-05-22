@@ -6,10 +6,14 @@ import com.dataplate.dto.PedidoStatusUpdateRequest;
 import com.dataplate.service.PedidoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -17,6 +21,8 @@ import java.util.List;
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class PedidosController {
+    private static final Logger logger = LoggerFactory.getLogger(PedidosController.class);
+
     private final PedidoService pedidoService;
 
     @PostMapping
@@ -26,7 +32,10 @@ public class PedidosController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PedidoResponse>> listar() {
+    public ResponseEntity<List<PedidoResponse>> listar(Authentication authentication, HttpServletRequest request) {
+        if (request.getHeader("Authorization") != null && authentication == null) {
+            logger.warn("Listagem de pedidos chamada com token invalido ou expirado");
+        }
         return ResponseEntity.ok(pedidoService.listar());
     }
 

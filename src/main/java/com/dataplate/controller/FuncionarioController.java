@@ -5,7 +5,11 @@ import com.dataplate.dto.FuncionarioResponse;
 import com.dataplate.service.FuncionarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,16 +18,28 @@ import java.util.List;
 @RequestMapping("/api/funcionarios")
 @RequiredArgsConstructor
 public class FuncionarioController {
+    private static final Logger logger = LoggerFactory.getLogger(FuncionarioController.class);
+
     private final FuncionarioService service;
 
     @GetMapping
-    public List<FuncionarioResponse> listar() {
-        return service.listar();
+    public ResponseEntity<List<FuncionarioResponse>> listar() {
+        try {
+            return ResponseEntity.ok(service.listar());
+        } catch (Exception ex) {
+            logger.error("Erro ao listar funcionarios", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao carregar funcionarios", ex);
+        }
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FuncionarioResponse criar(@Valid @RequestBody FuncionarioRequest request) {
-        return service.criar(request);
+        try {
+            return service.criar(request);
+        } catch (Exception ex) {
+            logger.error("Erro ao criar funcionario", ex);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao salvar funcionario", ex);
+        }
     }
 }
