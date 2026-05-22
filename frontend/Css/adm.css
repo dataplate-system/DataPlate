@@ -685,6 +685,213 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   color: var(--color-text);
 }
 
+/* TABLE CONTROL */
+#mesas {
+  width: min(100% - 48px, 1400px);
+}
+
+#mesas .table-container {
+  width: 100%;
+}
+
+#tableSearch {
+  min-width: 280px;
+}
+
+.table-stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.table-control-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 0.8fr);
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.panel-heading h3 {
+  margin-bottom: 0;
+}
+
+.panel-heading span {
+  color: var(--color-gray-light);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.table-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--color-gray-light);
+  font-size: 13px;
+}
+
+.table-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-available { background: #16a34a; }
+.legend-reserved { background: #f59e0b; }
+.legend-occupied { background: #2563eb; }
+.legend-maintenance { background: #ef4444; }
+
+.tables-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.table-card {
+  min-height: 150px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-secondary);
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.table-card:hover,
+.table-card.active {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.table-card.status-disponivel { border-left-color: #16a34a; }
+.table-card.status-reservada { border-left-color: #f59e0b; }
+.table-card.status-ocupada { border-left-color: #2563eb; }
+.table-card.status-manutencao { border-left-color: #ef4444; }
+
+.table-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.table-card-number {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.table-card-meta {
+  display: grid;
+  gap: 6px;
+  color: var(--color-gray-light);
+  font-size: 13px;
+}
+
+.table-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.table-card-actions .btn-small {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.table-detail-panel {
+  min-height: 280px;
+}
+
+.empty-detail,
+.table-detail-content {
+  display: grid;
+  gap: 12px;
+}
+
+.empty-detail {
+  color: var(--color-gray-light);
+}
+
+.empty-detail strong {
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.detail-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.detail-title strong {
+  font-size: 20px;
+}
+
+.detail-list {
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.detail-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-list span {
+  color: var(--color-gray-light);
+}
+
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.modal-content-table {
+  max-width: 980px;
+}
+
+#tableForm .table-form-row-3,
+#tableForm .reservation-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reservation-highlight label {
+  color: var(--color-secondary);
+}
+
+.dish-options {
+  min-height: 86px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
 /* INTEGRATIONS GRID */
 .integrations-grid {
   display: grid;
@@ -816,44 +1023,6 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
 
 .category-create-row button{
     height: 42px;
-}
-
-.ingredient-builder-row{
-    display: grid;
-    grid-template-columns: 1fr 96px 78px auto;
-    gap: 8px;
-}
-
-.ingredient-builder-row button{
-    height: 42px;
-}
-
-.ingredients-list{
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-height: 34px;
-}
-
-.ingredient-chip{
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 6px;
-    background: #f8fafc;
-    color: var(--color-text);
-    font-size: 13px;
-}
-
-.ingredient-chip button{
-    border: none;
-    background: transparent;
-    color: #ef4444;
-    cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
 }
 
 .category-remove-button{
@@ -1183,6 +1352,14 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
     width: 100%;
   }
 
+  #mesas {
+    width: calc(100% - 24px);
+  }
+
+  #tableSearch {
+    min-width: 0;
+  }
+
   .data-table {
     font-size: 12px;
   }
@@ -1200,6 +1377,14 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
     grid-template-columns: 1fr;
   }
 
+  .table-control-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tables-map {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -1213,6 +1398,11 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   }
 
   #addSupplierForm .supplier-form-row-3 {
+    grid-template-columns: 1fr;
+  }
+
+  #tableForm .table-form-row-3,
+  #tableForm .reservation-row {
     grid-template-columns: 1fr;
   }
 

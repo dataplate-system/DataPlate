@@ -12,6 +12,33 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     return 'https://dataplate.onrender.com/api';
   })();
 
+const ADMIN_SESSION_KEY = 'dataplate:adminSession';
+const isAdminPanelPage = /adm\.html(?:$|[?#])/.test(window.location.href);
+const ADMIN_PANEL_USERS = {
+  gerente: {
+    name: 'Gerente Principal',
+    initials: 'GP',
+    email: 'gerente@dataplate.com',
+    role: 'Administrador'
+  },
+  atendente: {
+    name: 'Atendente',
+    initials: 'AT',
+    email: 'atendente@dataplate.com',
+    role: 'Operacional'
+  },
+  cozinha: {
+    name: 'Cozinha',
+    initials: 'CZ',
+    email: 'cozinha@dataplate.com',
+    role: 'Pedidos e preparo'
+  }
+};
+
+if (isAdminPanelPage && !localStorage.getItem(ADMIN_SESSION_KEY)) {
+  window.location.replace('adm-login.html');
+}
+
 const WS_BASE_URL = (() => {
   const apiUrl = API_BASE_URL.startsWith('http')
     ? API_BASE_URL
@@ -68,6 +95,58 @@ function showToast(message, type = 'error') {
   container.appendChild(toast);
   window.setTimeout(() => toast.remove(), 4500);
 }
+
+function readAdminSession() {
+  try {
+    return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+  } catch (_) {
+    return null;
+  }
+}
+
+function applyAdminSession() {
+  const session = readAdminSession();
+  if (!session) return;
+
+  const isLegacyCashier = session.userKey === 'chefe'
+    || session.initials === 'CC'
+    || session.name === 'Chefe de Caixa';
+  const userKey = isLegacyCashier ? 'atendente' : session.userKey || Object.keys(ADMIN_PANEL_USERS).find((key) =>
+    ADMIN_PANEL_USERS[key].initials === session.initials
+  ) || 'gerente';
+  const normalizedSession = {
+    ...session,
+    ...(ADMIN_PANEL_USERS[userKey] || {}),
+    userKey
+  };
+  const headerName = document.querySelector('.user-button span');
+  const headerAvatar = document.querySelector('.user-button .user-avatar-small');
+  const profileName = document.querySelector('#profileModal input[name="name"]');
+  const profileEmail = document.querySelector('#profileModal input[name="email"]');
+  const profileRole = document.querySelector('#profileModal input[name="role"]');
+  const profileSummaryName = document.querySelector('#profileModal .profile-summary strong');
+  const profileSummaryEmail = document.querySelector('#profileModal .profile-summary span');
+  const profileAvatar = document.querySelector('#profileModal .user-avatar-large');
+  const switchUserOption = document.querySelector(`#switchUserForm input[name="user"][value="${userKey}"]`);
+
+  if (headerName) headerName.textContent = normalizedSession.name || 'Gerente Principal';
+  if (headerAvatar) headerAvatar.textContent = normalizedSession.initials || 'AD';
+  if (profileName) profileName.value = normalizedSession.name || 'Administrador';
+  if (profileEmail) profileEmail.value = normalizedSession.email || '';
+  if (profileRole) profileRole.value = normalizedSession.role || 'Administrador';
+  if (profileSummaryName) profileSummaryName.textContent = normalizedSession.name || 'Administrador';
+  if (profileSummaryEmail) profileSummaryEmail.textContent = normalizedSession.email || '';
+  if (profileAvatar) profileAvatar.textContent = normalizedSession.initials || 'AD';
+  if (switchUserOption) switchUserOption.checked = true;
+  if (isLegacyCashier || session.userKey !== userKey) {
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(normalizedSession));
+  }
+}
+
+window.logoutAdmin = function() {
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  window.location.href = 'adm-login.html';
+};
 
 async function postJson(endpoint, payload) {
   const response = await apiFetch(endpoint, {
@@ -162,6 +241,7 @@ function navigateTo(sectionId) {
     fornecedores:   carregarFornecedores,
     cardapio:       carregarProdutos,
     pedidos:        carregarPedidos,
+    mesas:          carregarMesas,
     cozinha:        carregarCozinha,
     'config-usuarios': carregarUsuarios
   };
@@ -184,6 +264,7 @@ function createModalIfMissing(modalId) {
     addFunctModal: 'Novo Funcionário',
     addSupplierModal: 'Novo Fornecedor',
     addDishModal: 'Novo Prato',
+    tableModal: 'Nova Mesa',
     addUserModal: 'Novo Usuário'
   };
 
@@ -653,60 +734,6 @@ document.querySelector('.category-remove-button')?.addEventListener('click', () 
   }
 });
 
-const dishIngredients = [];
-
-function renderDishIngredients() {
-  const form = document.getElementById('addDishForm');
-  const list = form?.querySelector('.ingredients-list');
-  const ingredientsField = form?.querySelector('[name="ingredients"]');
-
-  if (!list || !ingredientsField) return;
-
-  list.innerHTML = '';
-  ingredientsField.value = dishIngredients
-    .map(ingredient => `${ingredient.name} (${ingredient.weight}${ingredient.unit})`)
-    .join(', ');
-
-  dishIngredients.forEach((ingredient, index) => {
-    const item = document.createElement('span');
-    item.className = 'ingredient-chip';
-    item.textContent = `${ingredient.name} - ${ingredient.weight}${ingredient.unit}`;
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.textContent = 'x';
-    removeButton.setAttribute('aria-label', `Remover ${ingredient.name}`);
-    removeButton.addEventListener('click', () => {
-      dishIngredients.splice(index, 1);
-      renderDishIngredients();
-    });
-
-    item.appendChild(removeButton);
-    list.appendChild(item);
-  });
-}
-
-document.querySelector('.ingredient-add-button')?.addEventListener('click', () => {
-  const form = document.getElementById('addDishForm');
-  const nameInput = form?.querySelector('[name="ingredientName"]');
-  const weightInput = form?.querySelector('[name="ingredientWeight"]');
-  const unitSelect = form?.querySelector('[name="ingredientWeightUnit"]');
-  const name = nameInput?.value.trim();
-  const weight = weightInput?.value.trim();
-  const unit = unitSelect?.value;
-
-  if (!name || !weight || !unit) {
-    alert('Informe o ingrediente, o peso e a unidade antes de adicionar.');
-    return;
-  }
-
-  dishIngredients.push({ name, weight, unit });
-  nameInput.value = '';
-  weightInput.value = '';
-  unitSelect.value = 'g';
-  renderDishIngredients();
-});
-
 document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
@@ -718,8 +745,9 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
     idCategoria: Number(formData.get('category')),
     preco: Number(formData.get('price')),
     descricao: formData.get('description'),
-    ativo: true,
-    destaque: false
+    tempoPreparo: Number(formData.get('prepTime')) || null,
+    ativo: formData.get('available') === 'on',
+    destaque: formData.get('featured') === 'on'
   };
 
   postJson('/produtos', produto)
@@ -727,8 +755,6 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
       showToast('Prato adicionado com sucesso!', 'success');
       closeModal('addDishModal');
       e.target.reset();
-      dishIngredients.length = 0;
-      renderDishIngredients();
       adicionarLinhaProduto(produtoSalvo);
     })
     .catch((error) => {
@@ -757,6 +783,444 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
       carregarUsuarios();
     })
     .catch((err) => showToast(err.message || 'Erro ao criar usuario.'));
+});
+
+// Table Control
+const TABLES_STORAGE_KEY = 'dataplate:adminTables';
+let selectedTableId = null;
+
+const tableStatusMeta = {
+  disponivel: { label: 'Disponível', badge: 'badge-active', cardClass: 'status-disponivel' },
+  reservada: { label: 'Reservada', badge: 'badge-warning', cardClass: 'status-reservada' },
+  ocupada: { label: 'Ocupada', badge: 'badge-info', cardClass: 'status-ocupada' },
+  manutencao: { label: 'Manutenção', badge: 'badge-danger', cardClass: 'status-manutencao' }
+};
+
+function toDateTimeLocal(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function dateFromToday(days, time) {
+  const [hours, minutes] = time.split(':').map(Number);
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(hours, minutes || 0, 0, 0);
+  return toDateTimeLocal(date);
+}
+
+function nextReservationSlot() {
+  const date = new Date();
+  date.setHours(20, 0, 0, 0);
+  if (date.getTime() <= Date.now()) date.setDate(date.getDate() + 1);
+  return toDateTimeLocal(date);
+}
+
+function defaultTables() {
+  return [
+    { id: 1, number: 1, seats: 2, area: 'Salão principal', reference: 'Janela frontal', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Boa para casal' },
+    { id: 2, number: 2, seats: 4, area: 'Salão principal', reference: 'Centro do salão', status: 'reservada', reservationName: 'Carla Mendes', reservationPhone: '(11) 98888-2211', reservationDate: nextReservationSlot(), notes: 'Aniversário' },
+    { id: 3, number: 3, seats: 4, area: 'Salão principal', reference: 'Perto do caixa', status: 'ocupada', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pedido em andamento' },
+    { id: 4, number: 4, seats: 6, area: 'Varanda', reference: 'Vista para rua', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: '' },
+    { id: 5, number: 5, seats: 8, area: 'Espaço família', reference: 'Canto reservado', status: 'reservada', reservationName: 'Rafael Souza', reservationPhone: '(11) 97777-1444', reservationDate: dateFromToday(1, '19:30'), notes: 'Cadeira infantil' },
+    { id: 6, number: 6, seats: 2, area: 'Bar', reference: 'Balcão lateral', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: '' },
+    { id: 7, number: 7, seats: 4, area: 'Mezanino', reference: 'Escada esquerda', status: 'manutencao', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Aguardando reparo no apoio' },
+    { id: 8, number: 8, seats: 4, area: 'Área externa', reference: 'Guarda-sol 2', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pet friendly' },
+    { id: 9, number: 9, seats: 6, area: 'Mezanino', reference: 'Parede de quadros', status: 'ocupada', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Conta aberta' },
+    { id: 10, number: 10, seats: 10, area: 'Espaço família', reference: 'Mesa grande', status: 'reservada', reservationName: 'Fernanda Lima', reservationPhone: '(11) 96666-8800', reservationDate: dateFromToday(2, '21:00'), notes: 'Grupo corporativo' }
+  ];
+}
+
+function getTables() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TABLES_STORAGE_KEY) || 'null');
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+  } catch (_) {}
+
+  const seeded = defaultTables();
+  saveTables(seeded);
+  return seeded;
+}
+
+function saveTables(tables) {
+  localStorage.setItem(TABLES_STORAGE_KEY, JSON.stringify(tables));
+}
+
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value == null ? '' : String(value);
+  return div.innerHTML;
+}
+
+function formatReservationDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function getStatusMeta(status) {
+  return tableStatusMeta[status] || tableStatusMeta.disponivel;
+}
+
+function buildStatusBadge(status) {
+  const meta = getStatusMeta(status);
+  return `<span class="badge ${meta.badge}">${meta.label}</span>`;
+}
+
+function getFilteredTables(tables) {
+  const search = document.getElementById('tableSearch')?.value.toLowerCase().trim() || '';
+  const status = document.getElementById('tableStatusFilter')?.value || 'todos';
+  const area = document.getElementById('tableAreaFilter')?.value || 'todas';
+
+  return tables.filter((table) => {
+    const haystack = [
+      table.number,
+      table.seats,
+      table.area,
+      table.reference,
+      table.status,
+      table.reservationName,
+      table.reservationPhone,
+      table.notes
+    ].join(' ').toLowerCase();
+
+    const matchesSearch = !search || haystack.includes(search);
+    const matchesStatus = status === 'todos' || table.status === status;
+    const matchesArea = area === 'todas' || table.area === area;
+    return matchesSearch && matchesStatus && matchesArea;
+  });
+}
+
+function renderTableAreaFilter(tables) {
+  const select = document.getElementById('tableAreaFilter');
+  if (!select) return;
+
+  const current = select.value || 'todas';
+  const areas = Array.from(new Set(tables.map((table) => table.area).filter(Boolean))).sort();
+  select.innerHTML = '<option value="todas">Todas as áreas</option>' + areas
+    .map((area) => `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`)
+    .join('');
+  select.value = areas.includes(current) ? current : 'todas';
+}
+
+function renderTableStats(tables) {
+  const available = tables.filter((table) => table.status === 'disponivel');
+  const reserved = tables.filter((table) => table.status === 'reservada');
+  const seats = available.reduce((sum, table) => sum + Number(table.seats || 0), 0);
+  const next = reserved
+    .filter((table) => table.reservationDate && new Date(table.reservationDate).getTime() >= Date.now())
+    .sort((a, b) => new Date(a.reservationDate) - new Date(b.reservationDate))[0];
+
+  const setText = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = value;
+  };
+
+  setText('tablesTotal', tables.length);
+  setText('tablesAvailable', available.length);
+  setText('tablesReserved', reserved.length);
+  setText('tablesSeats', seats);
+  setText('nextReservation', next
+    ? `Próxima reserva: Mesa ${next.number}, ${formatReservationDate(next.reservationDate)}`
+    : 'Próxima reserva: --'
+  );
+}
+
+function buildTableActions(table) {
+  const reserveLabel = table.status === 'reservada' ? 'Editar reserva' : 'Reservar';
+  const occupyButton = table.status !== 'ocupada'
+    ? `<button class="btn-small" onclick="occupyTable(${table.id})">Ocupar</button>`
+    : '';
+  const releaseButton = table.status !== 'disponivel'
+    ? `<button class="btn-small" onclick="releaseTable(${table.id})">Liberar</button>`
+    : '';
+
+  return `
+    <button class="btn-small" onclick="openTableModal(${table.id})">Editar</button>
+    <button class="btn-small" onclick="reserveTable(${table.id})">${reserveLabel}</button>
+    ${occupyButton}
+    ${releaseButton}
+    <button class="btn-icon" title="Excluir" onclick="deleteTable(${table.id})">🗑</button>
+  `;
+}
+
+function buildTableRow(table) {
+  const location = [table.area, table.reference].filter(Boolean).join(' - ');
+  return `<tr>
+    <td><strong>Mesa ${escapeHtml(table.number)}</strong></td>
+    <td>${escapeHtml(table.seats)} lugares</td>
+    <td>${escapeHtml(location || '-')}</td>
+    <td>${buildStatusBadge(table.status)}</td>
+    <td>${escapeHtml(table.reservationName || '-')}</td>
+    <td>${escapeHtml(table.reservationPhone || '-')}</td>
+    <td>${formatReservationDate(table.reservationDate)}</td>
+    <td>${escapeHtml(table.notes || '-')}</td>
+    <td class="table-actions">${buildTableActions(table)}</td>
+  </tr>`;
+}
+
+function buildTableCard(table) {
+  const meta = getStatusMeta(table.status);
+  const activeClass = selectedTableId === table.id ? 'active' : '';
+  return `
+    <article class="table-card ${meta.cardClass} ${activeClass}" onclick="selectTable(${table.id})">
+      <div class="table-card-header">
+        <div class="table-card-number">Mesa ${escapeHtml(table.number)}</div>
+        ${buildStatusBadge(table.status)}
+      </div>
+      <div class="table-card-meta">
+        <span>${escapeHtml(table.seats)} lugares</span>
+        <span>${escapeHtml(table.area || '-')}</span>
+        <span>${escapeHtml(table.reference || 'Sem referência')}</span>
+        <span>${table.status === 'reservada' ? escapeHtml(table.reservationName || 'Reserva sem nome') : '&nbsp;'}</span>
+      </div>
+      <div class="table-card-actions" onclick="event.stopPropagation()">
+        <button class="btn-small" onclick="reserveTable(${table.id})">Reservar</button>
+        <button class="btn-small" onclick="openTableModal(${table.id})">Editar</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderTableDetail(table) {
+  const panel = document.getElementById('tableDetailPanel');
+  if (!panel) return;
+
+  if (!table) {
+    panel.innerHTML = `
+      <div class="empty-detail">
+        <strong>Selecione uma mesa</strong>
+        <span>Os detalhes da reserva e da localização aparecem aqui.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const location = [table.area, table.reference].filter(Boolean).join(' - ');
+  panel.innerHTML = `
+    <div class="table-detail-content">
+      <div class="detail-title">
+        <strong>Mesa ${escapeHtml(table.number)}</strong>
+        ${buildStatusBadge(table.status)}
+      </div>
+      <div class="detail-list">
+        <div><span>Lugares</span><strong>${escapeHtml(table.seats)}</strong></div>
+        <div><span>Localização</span><strong>${escapeHtml(location || '-')}</strong></div>
+        <div><span>Reserva</span><strong>${escapeHtml(table.reservationName || '-')}</strong></div>
+        <div><span>Telefone</span><strong>${escapeHtml(table.reservationPhone || '-')}</strong></div>
+        <div><span>Data/Hora</span><strong>${formatReservationDate(table.reservationDate)}</strong></div>
+        <div><span>Observações</span><strong>${escapeHtml(table.notes || '-')}</strong></div>
+      </div>
+      <div class="detail-actions">
+        <button type="button" class="btn-secondary" onclick="openTableModal(${table.id})">Editar</button>
+        <button type="button" class="btn-primary" onclick="reserveTable(${table.id})">Reservar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderTables() {
+  const tables = getTables().sort((a, b) => Number(a.number) - Number(b.number));
+  renderTableAreaFilter(tables);
+  renderTableStats(tables);
+
+  const filtered = getFilteredTables(tables);
+  const map = document.getElementById('tablesMap');
+  const tbody = document.getElementById('tablesTableBody');
+  const selected = filtered.find((table) => table.id === selectedTableId) || filtered[0] || null;
+  selectedTableId = selected ? selected.id : null;
+
+  if (map) {
+    map.innerHTML = filtered.length
+      ? filtered.map(buildTableCard).join('')
+      : '<p style="color:#94a3b8;font-size:14px">Nenhuma mesa encontrada.</p>';
+  }
+
+  if (tbody) {
+    const cols = tbody.closest('table').querySelectorAll('th').length;
+    tbody.innerHTML = filtered.length
+      ? filtered.map(buildTableRow).join('')
+      : `<tr><td colspan="${cols}" style="text-align:center;color:#94a3b8">Nenhuma mesa encontrada</td></tr>`;
+  }
+
+  renderTableDetail(selected);
+}
+
+function updateTableReservationFields() {
+  const form = document.getElementById('tableForm');
+  if (!form) return;
+  const status = form.querySelector('[name="status"]')?.value;
+  const fields = form.querySelectorAll('[name="reservationName"], [name="reservationPhone"], [name="reservationDate"]');
+  fields.forEach((field) => {
+    field.closest('.form-group')?.classList.toggle('reservation-highlight', status === 'reservada');
+  });
+}
+
+function fillTableForm(table) {
+  const form = document.getElementById('tableForm');
+  if (!form) return;
+
+  form.reset();
+  form.querySelector('[name="id"]').value = table?.id || '';
+  form.querySelector('[name="number"]').value = table?.number || '';
+  form.querySelector('[name="seats"]').value = table?.seats || '';
+  form.querySelector('[name="status"]').value = table?.status || 'disponivel';
+  form.querySelector('[name="area"]').value = table?.area || 'Salão principal';
+  form.querySelector('[name="reference"]').value = table?.reference || '';
+  form.querySelector('[name="reservationName"]').value = table?.reservationName || '';
+  form.querySelector('[name="reservationPhone"]').value = table?.reservationPhone || '';
+  form.querySelector('[name="reservationDate"]').value = table?.reservationDate || '';
+  form.querySelector('[name="notes"]').value = table?.notes || '';
+  updateTableReservationFields();
+}
+
+function validateTableForm(form) {
+  if (!validateForm(form)) return false;
+
+  const fd = new FormData(form);
+  const id = Number(fd.get('id')) || null;
+  const number = Number(fd.get('number'));
+  const status = fd.get('status');
+  const tables = getTables();
+  const duplicate = tables.some((table) => Number(table.number) === number && table.id !== id);
+
+  if (duplicate) {
+    const numberField = form.querySelector('[name="number"]');
+    numberField.setCustomValidity('Já existe uma mesa com esse número.');
+    numberField.reportValidity();
+    numberField.setCustomValidity('');
+    return false;
+  }
+
+  if (status === 'reservada') {
+    const nameField = form.querySelector('[name="reservationName"]');
+    const dateField = form.querySelector('[name="reservationDate"]');
+    if (!String(fd.get('reservationName') || '').trim()) {
+      nameField.setCustomValidity('Informe o nome da reserva.');
+      nameField.reportValidity();
+      nameField.setCustomValidity('');
+      return false;
+    }
+    if (!String(fd.get('reservationDate') || '').trim()) {
+      dateField.setCustomValidity('Informe a data e hora da reserva.');
+      dateField.reportValidity();
+      dateField.setCustomValidity('');
+      return false;
+    }
+  }
+
+  return true;
+}
+
+window.openTableModal = function(tableId) {
+  const table = tableId ? getTables().find((item) => item.id === tableId) : null;
+  const title = document.getElementById('tableModalTitle');
+  if (title) title.textContent = table ? `Editar Mesa ${table.number}` : 'Nova Mesa';
+  fillTableForm(table);
+  window.openModal('tableModal');
+};
+
+window.reserveTable = function(tableId) {
+  const table = getTables().find((item) => item.id === tableId);
+  if (!table) return;
+  window.openTableModal(tableId);
+  const form = document.getElementById('tableForm');
+  if (!form) return;
+  form.querySelector('[name="status"]').value = 'reservada';
+  if (!form.querySelector('[name="reservationDate"]').value) {
+    form.querySelector('[name="reservationDate"]').value = nextReservationSlot();
+  }
+  updateTableReservationFields();
+};
+
+window.occupyTable = function(tableId) {
+  const tables = getTables();
+  const table = tables.find((item) => item.id === tableId);
+  if (!table) return;
+  table.status = 'ocupada';
+  saveTables(tables);
+  showToast(`Mesa ${table.number} marcada como ocupada.`, 'success');
+  renderTables();
+};
+
+window.releaseTable = function(tableId) {
+  const tables = getTables();
+  const table = tables.find((item) => item.id === tableId);
+  if (!table) return;
+  table.status = 'disponivel';
+  table.reservationName = '';
+  table.reservationPhone = '';
+  table.reservationDate = '';
+  saveTables(tables);
+  showToast(`Mesa ${table.number} liberada.`, 'success');
+  renderTables();
+};
+
+window.deleteTable = function(tableId) {
+  const tables = getTables();
+  const table = tables.find((item) => item.id === tableId);
+  if (!table || !confirm(`Excluir a Mesa ${table.number}?`)) return;
+  const nextTables = tables.filter((item) => item.id !== tableId);
+  if (selectedTableId === tableId) selectedTableId = null;
+  saveTables(nextTables);
+  showToast(`Mesa ${table.number} excluída.`, 'success');
+  renderTables();
+};
+
+window.selectTable = function(tableId) {
+  selectedTableId = tableId;
+  renderTables();
+};
+
+document.getElementById('tableForm')?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const form = event.target;
+  if (!validateTableForm(form)) return;
+
+  const fd = new FormData(form);
+  const id = Number(fd.get('id')) || Date.now();
+  const status = fd.get('status');
+  const table = {
+    id,
+    number: Number(fd.get('number')),
+    seats: Number(fd.get('seats')),
+    area: String(fd.get('area') || '').trim(),
+    reference: String(fd.get('reference') || '').trim(),
+    status,
+    reservationName: status === 'reservada' ? String(fd.get('reservationName') || '').trim() : '',
+    reservationPhone: status === 'reservada' ? String(fd.get('reservationPhone') || '').trim() : '',
+    reservationDate: status === 'reservada' ? String(fd.get('reservationDate') || '').trim() : '',
+    notes: String(fd.get('notes') || '').trim()
+  };
+
+  const tables = getTables();
+  const index = tables.findIndex((item) => item.id === id);
+  if (index >= 0) {
+    tables[index] = table;
+  } else {
+    tables.push(table);
+  }
+
+  saveTables(tables);
+  selectedTableId = id;
+  closeModal('tableModal');
+  showToast(`Mesa ${table.number} salva com sucesso!`, 'success');
+  renderTables();
+});
+
+document.getElementById('tableForm')?.querySelector('[name="status"]')?.addEventListener('change', updateTableReservationFields);
+document.getElementById('tableSearch')?.addEventListener('input', renderTables);
+document.getElementById('tableStatusFilter')?.addEventListener('change', renderTables);
+document.getElementById('tableAreaFilter')?.addEventListener('change', renderTables);
+document.getElementById('clearTableFilters')?.addEventListener('click', () => {
+  const search = document.getElementById('tableSearch');
+  const status = document.getElementById('tableStatusFilter');
+  const area = document.getElementById('tableAreaFilter');
+  if (search) search.value = '';
+  if (status) status.value = 'todos';
+  if (area) area.value = 'todas';
+  renderTables();
 });
 
 document.getElementById('profileForm')?.addEventListener('submit', (e) => {
@@ -808,13 +1272,23 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const selectedUser = e.target.querySelector('input[name="user"]:checked');
   const selectedOption = selectedUser?.closest('.switch-user-option');
-  const name = selectedOption?.querySelector('strong')?.textContent || 'Gerente';
-  const initials = selectedOption?.querySelector('.user-avatar-small')?.textContent || 'GP';
-  const headerName = document.querySelector('.user-button span');
-  const headerAvatar = document.querySelector('.user-button .user-avatar-small');
+  const userKey = selectedUser?.value || 'gerente';
+  const user = ADMIN_PANEL_USERS[userKey] || {
+    name: selectedOption?.querySelector('strong')?.textContent || 'Gerente Principal',
+    initials: selectedOption?.querySelector('.user-avatar-small')?.textContent || 'GP',
+    email: '',
+    role: selectedOption?.querySelector('small')?.textContent || 'Administrador'
+  };
+  const currentSession = readAdminSession() || {};
 
-  if (headerName) headerName.textContent = name;
-  if (headerAvatar) headerAvatar.textContent = initials;
+  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+    ...currentSession,
+    ...user,
+    userKey,
+    switchedAt: new Date().toISOString()
+  }));
+
+  applyAdminSession();
 
   closeModal('switchUserModal');
 });
@@ -966,7 +1440,7 @@ document.addEventListener('click', (e) => {
     }
   }
 
-  if (/editar|excluir|detalhes|imprimir|permiss|hist[oó]rico|contato|ingredientes|desativar|ajustar|repor|configurar|reativar|senha|acelerar|atualizar|cancelar|ver pedidos|ver expediente/i.test(label)) {
+  if (/editar|excluir|detalhes|imprimir|permiss|hist[oó]rico|contato|desativar|ajustar|configurar|reativar|senha|acelerar|atualizar|cancelar|ver pedidos|ver expediente/i.test(label)) {
     e.preventDefault();
     alert(`${label} selecionado.`);
   }
@@ -1066,6 +1540,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Restore last section from URL hash (F5 persistence)
   const initialSection = window.location.hash.slice(1);
   navigateTo(initialSection || 'dashboard');
+  applyAdminSession();
   initClientForm();
   initCepAutocomplete();
 
@@ -1173,6 +1648,7 @@ const _sectionLoaderNames = {
   fornecedores: 'carregarFornecedores',
   cardapio: 'carregarProdutos',
   pedidos: 'carregarPedidos',
+  mesas: 'carregarMesas',
   'config-usuarios': 'carregarUsuarios'
 };
 
@@ -1306,9 +1782,10 @@ function buildLinhaProduto(p) {
     <td><strong>${p.nome}</strong></td>
     <td>${p.idCategoria || '-'}</td>
     <td>${formatCurrency(p.preco)}</td>
-    <td>-</td><td>-</td>
+    <td>${p.tempoPreparo ? `${p.tempoPreparo} min` : '-'}</td>
+    <td><span class="badge ${p.destaque ? 'badge-info' : 'badge-warning'}">${p.destaque ? 'Sim' : 'Não'}</span></td>
     <td><span class="badge badge-active">${p.ativo !== false ? 'Sim' : 'Não'}</span></td>
-    <td>-</td>
+    <td>${formatDate(p.criadoEm)}</td>
     <td><button class="btn-icon" title="Editar">✏️</button></td>
   </tr>`;
 }
@@ -1322,6 +1799,10 @@ function carregarProdutos() {
       setTableBody('cardapio', [], msg);
       console.error('[cardapio]', err);
     });
+}
+
+function carregarMesas() {
+  renderTables();
 }
 
 function buildLinhaPedido(p) {

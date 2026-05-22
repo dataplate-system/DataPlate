@@ -35,6 +35,7 @@
           <button type="button" class="nav-button">Operações</button>
           <div class="dropdown-menu">
             <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
+            <a href="#mesas" class="dropdown-link" onclick="navigateTo('mesas')">Mesas</a>
             <a href="#cozinha" class="dropdown-link" onclick="navigateTo('cozinha')">Cozinha</a>
           </div>
         </div>
@@ -187,7 +188,7 @@
         <section id="fornecedores" class="content-section">
           <div class="section-header">
             <h1>Gestão de Fornecedores</h1>
-            <p>Cadastro e controle de fornecedores e insumos</p>
+            <p>Cadastro e relacionamento com fornecedores parceiros</p>
           </div>
 
           <div class="section-toolbar">
@@ -257,10 +258,10 @@
                   <th>Item</th>
                   <th>Categoria</th>
                   <th>Preço</th>
-                  <th>Custo</th>
-                  <th>Margem</th>
+                  <th>Tempo de Preparo</th>
+                  <th>Destaque</th>
                   <th>Disponível</th>
-                  <th>Vendas (7d)</th>
+                  <th>Cadastrado em</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -312,6 +313,97 @@
                 </tr>
               </thead>
               <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- MESAS -->
+        <section id="mesas" class="content-section">
+          <div class="section-header">
+            <h1>Controle de Mesas</h1>
+            <p>Gerencie disponibilidade, reservas, capacidade e localização das mesas</p>
+          </div>
+
+          <div class="stats-grid table-stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Mesas Cadastradas</div>
+              <div class="stat-value" id="tablesTotal">0</div>
+              <div class="stat-change">Salão completo</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Disponíveis</div>
+              <div class="stat-value" id="tablesAvailable">0</div>
+              <div class="stat-change positive">Prontas para receber clientes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Reservadas</div>
+              <div class="stat-value" id="tablesReserved">0</div>
+              <div class="stat-change">Com horário marcado</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lugares Livres</div>
+              <div class="stat-value" id="tablesSeats">0</div>
+              <div class="stat-change">Capacidade disponível agora</div>
+            </div>
+          </div>
+
+          <div class="section-toolbar table-toolbar">
+            <button type="button" class="btn-primary" onclick="openTableModal()">+ Nova Mesa</button>
+            <div class="toolbar-filters">
+              <input id="tableSearch" type="text" placeholder="Pesquisar mesa, cliente ou área..." class="filter-input" />
+              <select id="tableStatusFilter" class="filter-select">
+                <option value="todos">Todos os status</option>
+                <option value="disponivel">Disponível</option>
+                <option value="reservada">Reservada</option>
+                <option value="ocupada">Ocupada</option>
+                <option value="manutencao">Manutenção</option>
+              </select>
+              <select id="tableAreaFilter" class="filter-select">
+                <option value="todas">Todas as áreas</option>
+              </select>
+              <button type="button" class="btn-secondary" id="clearTableFilters">Limpar</button>
+            </div>
+          </div>
+
+          <div class="table-control-layout">
+            <div class="report-section table-map-panel">
+              <div class="panel-heading">
+                <h3>Mapa do salão</h3>
+                <span id="nextReservation">Próxima reserva: --</span>
+              </div>
+              <div class="table-map-legend" aria-label="Legenda de status das mesas">
+                <span><i class="legend-dot legend-available"></i>Disponível</span>
+                <span><i class="legend-dot legend-reserved"></i>Reservada</span>
+                <span><i class="legend-dot legend-occupied"></i>Ocupada</span>
+                <span><i class="legend-dot legend-maintenance"></i>Manutenção</span>
+              </div>
+              <div class="tables-map" id="tablesMap"></div>
+            </div>
+
+            <aside class="report-section table-detail-panel" id="tableDetailPanel">
+              <div class="empty-detail">
+                <strong>Selecione uma mesa</strong>
+                <span>Os detalhes da reserva e da localização aparecem aqui.</span>
+              </div>
+            </aside>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nº Mesa</th>
+                  <th>Lugares</th>
+                  <th>Localização</th>
+                  <th>Status</th>
+                  <th>Reserva</th>
+                  <th>Contato</th>
+                  <th>Data/Hora</th>
+                  <th>Observações</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tablesTableBody"></tbody>
             </table>
           </div>
         </section>
@@ -486,7 +578,7 @@
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Insumos/Alimentos</td>
+                    <td>Compras operacionais</td>
                     <td>R$ 8.500,00</td>
                     <td>69%</td>
                     <td>Aumento esperado</td>
@@ -795,7 +887,7 @@
                 <div class="form-group">
                   <label class="checkbox-label">
                     <input type="checkbox" checked />
-                    <span>Estoque baixo</span>
+                    <span>Reservas próximas</span>
                   </label>
                 </div>
               </div>
@@ -821,7 +913,7 @@
                 <div class="form-group">
                   <label class="checkbox-label">
                     <input type="checkbox" checked />
-                    <span>Alerta crítico de estoque</span>
+                    <span>Mesa aguardando atendimento</span>
                   </label>
                 </div>
               </div>
@@ -838,6 +930,76 @@
   </div>
 
   <!-- MODALS -->
+  <div class="modal" id="tableModal">
+    <div class="modal-content modal-content-table">
+      <button class="modal-close" onclick="closeModal('tableModal')">✕</button>
+      <div class="modal-header" id="tableModalTitle">Nova Mesa</div>
+      <form id="tableForm">
+        <input type="hidden" name="id" data-optional="true" />
+        <div class="form-row table-form-row-3">
+          <div class="form-group">
+            <label>Número da Mesa</label>
+            <input type="number" name="number" placeholder="Ex: 12" min="1" step="1" required />
+          </div>
+          <div class="form-group">
+            <label>Número de Lugares</label>
+            <input type="number" name="seats" placeholder="Ex: 4" min="1" step="1" required />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select name="status" required>
+              <option value="disponivel">Disponível</option>
+              <option value="reservada">Reservada</option>
+              <option value="ocupada">Ocupada</option>
+              <option value="manutencao">Manutenção</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Localização</label>
+            <select name="area" required>
+              <option>Salão principal</option>
+              <option>Varanda</option>
+              <option>Mezanino</option>
+              <option>Área externa</option>
+              <option>Espaço família</option>
+              <option>Bar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ponto de referência</label>
+            <input type="text" name="reference" placeholder="Ex: perto da janela" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row reservation-row">
+          <div class="form-group">
+            <label>Nome da Reserva</label>
+            <input type="text" name="reservationName" placeholder="Cliente responsável" data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="reservationPhone" placeholder="(11) 99999-9999" maxlength="15" data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Data e Hora</label>
+            <input type="datetime-local" name="reservationDate" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Observações</label>
+            <textarea name="notes" placeholder="Preferências, acessibilidade, aniversários ou manutenção" data-optional="true"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('tableModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar Mesa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="modal" id="addClientModal">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>
@@ -1086,45 +1248,26 @@
                />
               </div>
              <div class="form-group">
-                <label>Custo (R$)</label>
+                <label>Tempo de preparo (min)</label>
                 <input
                  type="number"
-                  name="cost"
-                  placeholder="0.00"
-                  min="0"
-                 step="0.01"
+                  name="prepTime"
+                  placeholder="15"
+                  min="1"
+                 step="1"
                  required
                />
              </div>
             </div>
-           <div class="form-group ingredients-builder">
-              <label>Ingredientes</label>
-              <input type="hidden" name="ingredients" />
-              <div class="ingredient-builder-row">
-              <input
-               type="text"
-                name="ingredientName"
-                placeholder="Ex: Pão"
-                data-optional="true"
-               />
-               <input
-                type="number"
-                name="ingredientWeight"
-                placeholder="Ex: 250"
-                min="0"
-                step="0.01"
-                data-optional="true"
-               />
-               <select name="ingredientWeightUnit" data-optional="true">
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="ml">ml</option>
-                <option value="l">L</option>
-                <option value="un">un</option>
-               </select>
-               <button type="button" class="btn-secondary ingredient-add-button">Adicionar</button>
-              </div>
-              <div class="ingredients-list"></div>
+           <div class="checkbox-group dish-options">
+              <label class="checkbox-label">
+                <input type="checkbox" name="available" checked data-optional="true" />
+                <span>Disponível no cardápio</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="featured" data-optional="true" />
+                <span>Marcar como destaque</span>
+              </label>
            </div>
           </div>
           <!-- LADO DIREITO -->
@@ -1323,7 +1466,7 @@
       <p class="modal-description">Deseja encerrar sua sessão no painel administrativo?</p>
       <div class="form-actions">
         <button type="button" class="btn-secondary" onclick="closeModal('logoutModal')">Cancelar</button>
-        <button type="button" class="btn-primary logout-confirm-button" onclick="window.location.href='index.html'">Sair</button>
+        <button type="button" class="btn-primary logout-confirm-button" onclick="logoutAdmin()">Sair</button>
       </div>
     </div>
   </div>
