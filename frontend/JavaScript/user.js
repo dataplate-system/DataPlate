@@ -293,58 +293,32 @@ function voltarCarrinho() {
 
 function confirmarPedido() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+
   if (!carrinho.length) {
     alert("Adicione pelo menos um produto ao carrinho antes de confirmar o pedido.");
     return;
   }
 
+  atualizarResumoPagamento();
+
   document.getElementById("telaCarrinho").style.display = "none";
   document.getElementById("telaPagamento").style.display = "block";
 }
 
-let pagamentoSelecionado = "";
+function atualizarResumoPagamento() {
 
-// selecionar opção
-function selecionarPagamento(elemento, tipo) {
-  document.querySelectorAll(".opcao").forEach(op => {
-    op.classList.remove("ativa");
+  let carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+
+  let total = 0;
+
+  carrinho.forEach(item => {
+    total += item.preco * item.quantidade;
   });
 
-  elemento.classList.add("ativa");
-  pagamentoSelecionado = tipo;
-
-  document.getElementById("formaSelecionada").innerText =
-    "Selecionado: " + tipo;
+  document.getElementById("totalPagamento").innerText =
+    "R$ " + total.toFixed(2).replace(".", ",");
 }
 
-// finalizar pagamento
-function finalizarPagamento() {
-  if (pagamentoSelecionado === "") {
-    alert("Escolha uma forma de pagamento!");
-    return;
-  }
-
-  document.getElementById("telaPagamento").style.display = "none";
-
-  if (pagamentoSelecionado === "Pix") {
-    document.getElementById("telaPix").style.display = "block";
-  } else if (pagamentoSelecionado === "Credito") {
-    document.getElementById("telaCredito").style.display = "block";
-  } else if (pagamentoSelecionado === "Debito") {
-    document.getElementById("telaDebito").style.display = "block";
-  } else if (pagamentoSelecionado === "Dinheiro") {
-    document.getElementById("telaDinheiro").style.display = "block";
-  }
-}
-
-function fecharTelaPagamento() {
-  document.getElementById("telaPix").style.display = "none";
-  document.getElementById("telaCredito").style.display = "none";
-  document.getElementById("telaDebito").style.display = "none";
-  document.getElementById("telaDinheiro").style.display = "none";
-
-  document.getElementById("telaPagamento").style.display = "block";
-}
 
 async function pagamentoAprovado() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
@@ -406,6 +380,77 @@ function voltarPagamento() {
     op.classList.remove("ativa");
   });
 }
+// PAGAMENTO
+
+
+// ================= PAGAMENTO =================
+
+let pagamentoSelecionado = "";
+
+// telas de pagamento
+const telasPagamento = {
+  Pix: "telaPix",
+  Credito: "telaCredito",
+  Debito: "telaDebito",
+  Dinheiro: "telaDinheiro"
+};
+
+// selecionar forma
+function selecionarPagamento(elemento, tipo) {
+
+  document.querySelectorAll(".opcao").forEach(op => {
+    op.classList.remove("ativa");
+  });
+
+  elemento.classList.add("ativa");
+
+  pagamentoSelecionado = tipo;
+}
+
+// finalizar pagamento
+function finalizarPagamento() {
+
+  if (pagamentoSelecionado === "") {
+    alert("Escolha uma forma de pagamento!");
+    return;
+  }
+
+  document.getElementById("telaPagamento").style.display = "none";
+
+  // fecha todas
+  Object.values(telasPagamento).forEach(id => {
+    document.getElementById(id).style.display = "none";
+  });
+
+  // abre a escolhida
+  const telaSelecionada = telasPagamento[pagamentoSelecionado];
+
+  if (telaSelecionada) {
+    document.getElementById(telaSelecionada).style.display = "block";
+  }
+}
+
+// voltar pagamento
+function fecharTelaPagamento() {
+
+  // fecha telas internas
+  Object.values(telasPagamento).forEach(id => {
+    document.getElementById(id).style.display = "none";
+  });
+
+  // fecha tela pagamento
+  document.getElementById("telaPagamento").style.display = "none";
+
+  // volta carrinho
+  document.getElementById("telaCarrinho").style.display = "block";
+
+  pagamentoSelecionado = "";
+
+  document.querySelectorAll(".opcao").forEach(op => {
+    op.classList.remove("ativa");
+  });
+}
+
 
 // botão estatus
 
@@ -413,12 +458,11 @@ function iniciarStatusPedido() {
 
   let etapa = 1;
 
-  const status = [
-    { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
-    { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
-    { titulo: "Pronto", msg: "Seu pedido está pronto" },
-    { titulo: "Entregue", msg: "Aproveite sua refeição!" }
-  ];
+ const status = [
+  { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
+  { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
+  { titulo: "Pronto", msg: "Seu pedido está pronto" }
+];
 
   function atualizarTela() {
     document.getElementById("statusAtual").innerText = status[etapa - 1].titulo;
@@ -435,7 +479,7 @@ function iniciarStatusPedido() {
   let intervalo = setInterval(() => {
     etapa++;
 
-    if (etapa > 4) {
+    if (etapa > 3) {
       clearInterval(intervalo);
 
       localStorage.removeItem("carrinho");
@@ -447,7 +491,7 @@ function iniciarStatusPedido() {
 
     atualizarTela();
 
-  }, 3000);
+  }, 5000);
 }
 
 function novoPedido() {

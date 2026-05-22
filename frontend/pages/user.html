@@ -10,43 +10,126 @@
 <body>
 
 <!-- TELA PRINCIPAL DE PAGAMENTO -->
-<div id="telaPagamento" style="display:none; padding:20px;">
+
+
+  <!-- TELA PRINCIPAL DE PAGAMENTO -->
+<div id="telaPagamento" style="display:none;">
 
   <header class="topo">
-    <button onclick="voltarPagamento()">←</button>
-    <h2>Pagamento</h2>
+    <button class="voltar" onclick="fecharTelaPagamento()">←</button>
+
+    <img src="../images/brand/logo-emp.png" class="logo-topo">
+
+    <div></div>
   </header>
 
-  <body class="cardapio"></body>
-  
+  <div class="tela-pagamento">
 
-  <h3 style="margin:15px 0;">Escolha a forma de pagamento</h3>
+    <h2>Pagamento</h2>
+    <p class="subtitulo-pagamento">
+      Escolha a forma de pagamento
+    </p>
 
-  <div class="opcoes-pagamento">
+  <div class="opcoes-pagamento">  
 
-    <div class="opcao" onclick="selecionarPagamento(this,'Pix')">
-      💳 Pix
-    </div>
+    <!-- PIX -->
+   <div class="opcao" onclick="selecionarPagamento(this, 'Pix')">
 
-    <div class="opcao" onclick="selecionarPagamento(this, 'Credito')">
-      💳 Cartão de Crédito
-    </div>
+     <div class="opcao-info">
 
-    <div class="opcao" onclick="selecionarPagamento(this, 'Debito')">
-      💳 Cartão de Débito
-    </div>
+       <div class="icone-pagamento">💳</div>
 
-    <div class="opcao" onclick="selecionarPagamento(this, 'Dinheiro')">
-      💵 Dinheiro
+      <div>
+      <h3>PIX</h3>
+      <p>Pagamento instantâneo</p>
     </div>
 
   </div>
 
-  <div id="formaSelecionada" style="margin:15px 0; font-weight:bold;"></div>
+</div>
 
-  <button class="btn" onclick="finalizarPagamento()">
-    Finalizar Pagamento
-  </button>
+
+
+
+      
+
+    
+
+
+    <!-- CRÉDITO -->
+    <div class="opcao" onclick="selecionarPagamento(this, 'Credito')">
+
+      <div class="opcao-info">
+
+        <div class="icone-pagamento">💳</div>
+
+        <div>
+          <h3>Cartão de Crédito</h3>
+          <p>Aproxime ou insira o cartão</p>
+        </div>
+
+        
+
+      </div>
+
+    </div>
+
+    <!-- DÉBITO -->
+    <div class="opcao" onclick="selecionarPagamento(this, 'Debito')">
+
+      <div class="opcao-info">
+
+        <div class="icone-pagamento">🏦</div>
+
+        <div>
+          <h3>Cartão de Débito</h3>
+          <p>Pagamento imediato</p>
+        </div>
+
+        
+
+      </div>
+      
+
+    </div>
+
+    <!-- DINHEIRO -->
+    <div class="opcao" onclick="selecionarPagamento(this, 'Dinheiro')">
+
+      <div class="opcao-info">
+
+        <div class="icone-pagamento">💵</div>
+
+        <div>
+          <h3>Dinheiro</h3>
+          <p>Troco disponível</p>
+        </div>
+
+        
+
+      </div>
+         
+    </div>
+
+  </div>
+
+  
+
+  
+
+ <div class="resumo-pagamento total-unico">
+
+  <span>Total do Pedido</span>
+
+  <span id="totalPagamento">R$ 0,00</span>
+
+</div>
+
+  <button class="btn-finalizar" onclick="finalizarPagamento()">
+  Finalizar Pedido
+</button>
+
+</div>
 
 </div>
 
@@ -91,6 +174,8 @@
   </div>
 
 </div>
+
+
 
 <!-- TELA CRÉDITO -->
 <div id="telaCredito" style="display:none; padding:20px;">

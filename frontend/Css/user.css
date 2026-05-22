@@ -10,7 +10,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: rgba(191, 189, 165, 0.9);
+  background: rgba(173, 166, 157, 0.181);
+  box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #ffffff;
   position: sticky;
@@ -28,12 +29,36 @@
   object-fit: contain;
 }
 
-body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
+body{
+  margin:0;
+  padding:0;
 
-  background: url("../images/menu/fundo-emp.png") center/cover no-repeat fixed;
+  min-height:100vh;
+
+  font-family:"Segoe UI", Arial, sans-serif;
+
+  background:
+    linear-gradient(rgba(0,0,0,0.01), rgba(0,0,0,0.01)),
+    url("../images/menu/fundo-emp.png");
+
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+
+.layout-menu{
+  display:flex;
+  min-height:100vh;
+  background:transparent;
+}
+
+.conteudo{
+  margin-left:170px;
+  width:calc(100% - 170px);
+  flex:1;
+
+  background:transparent;
 }
 
 
@@ -263,12 +288,7 @@ body {
   color: #000000;
 }
 
-body {
-  font-family: sans-serif;
-  margin: 0px;
-  background: #f5f5f5;
-  
-}
+
 
 /* IMAGEM TOPO */
 .topo-img img {
@@ -471,10 +491,57 @@ h2 {
 }
 
 /* LIXEIRA */
+.acoes{ 
+  display:flex;
+  align-items:center;
+  justify-content:center; }
+
+  /* ITEM DO CARRINHO */
+#listaCarrinho .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ÁREA DA LIXEIRA */
+/* ÁREA DA LIXEIRA */
 .acoes{
   display:flex;
   align-items:center;
   justify-content:center;
+
+  min-width:60px;
+
+  flex-shrink:0;
+}
+
+/* IMAGEM DA LIXEIRA */
+.acoes img{
+  width:28px !important;
+  height:28px !important;
+
+  min-width:28px;
+  min-height:28px;
+
+  object-fit:contain;
+
+  cursor:pointer;
+  
+  transition:0.2s;
+}
+
+/* EFEITO */
+.acoes img:hover{
+  transform:scale(1.12);
+}
+
+/* PARTE DAS INFORMAÇÕES */
+.info {
+  flex: 1;
+  min-width: 0;
 }
 
 /* TOTAL */
@@ -519,10 +586,7 @@ h2 {
   cursor:pointer;
 }
 
-body {
-  font-family: Arial;
-  background: #f3f4f6;
-}
+
 
 .topo {
   text-align: center;
@@ -643,92 +707,425 @@ body {
 
 /* pagamento*/
 
-.opcoes-pagamento {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* ========================================= */
+/* PAGAMENTO MODERNO */
+/* ========================================= */
+
+
+#telaPagamento{
+  width:100%;
+  min-height:100vh;
+  padding:20px;
 }
 
-.opcao {
-  background: #fff;
-  padding: 15px;
-  border-radius: 12px;
-  font-size: 16px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+/* TÍTULO */
+
+.tela-pagamento h2{
+  font-size:26px;
+  font-weight:700;
+
+  color:#111827;
+
+  margin-bottom:8px;
 }
 
-.opcao:hover {
-  border: 2px solid #ff5a00;
+.subtitulo-pagamento{
+  color:#6b7280;
+  font-size:14px;
+
+  margin-bottom:24px;
 }
 
-.opcao.ativa {
-  border: 2px solid #ff5a00;
-  background: #fff3eb;
+/* OPÇÕES */
+
+.opcoes-pagamento{
+  display:flex;
+  flex-direction:column;
+
+  gap:16px;
 }
 
-/* botão status */
+/* CARD */
 
-.status-btn {
-  position: relative;
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
+.opcao{
+  position:relative;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:18px;
+
+  background:#ffffff;
+
+  border:2px solid transparent;
+
+  border-radius:18px;
+
+  cursor:pointer;
+
+  transition:0.25s;
+
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.06);
 }
 
-.badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff5a00;
-  color: white;
-  font-size: 12px;
-  padding: 3px 6px;
-  border-radius: 50%;
+/* LADO ESQUERDO */
+
+.opcao-info{
+  display:flex;
+  align-items:center;
+
+  gap:16px;
 }
 
-/* LIXEIRA */
+/* ÍCONE */
 
-.acoes {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;
-  min-width: 24px;
+.icone-pagamento{
+  width:52px;
+  height:52px;
+
+  border-radius:14px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:24px;
+
+  background:#fff3eb;
+
+  color:#000000;
 }
 
-.acoes img {
-  width: 22px !important;
-  height: 22px !important;
-  object-fit: contain;
-  display: block;
+/* TEXTOS */
+
+.opcao h3{
+  font-size:17px;
+  color:#111827;
+
+  margin-bottom:4px;
 }
 
-
-.acoes  img:hover {
-  transform: scale(1.1);
-  opacity: 1;
+.opcao p{
+  font-size:13px;
+  color:#6b7280;
 }
 
+/* HOVER */
 
+.opcao:hover{
+  transform:translateY(-2px);
 
+  border-color:#ff5a00;
 
-/* INPUTS PAGAMENTO */
+  box-shadow:
+    0 10px 24px rgba(255,90,0,0.16);
+}
+
+/* ATIVO */
+
+.opcao.ativa{
+  border-color:#ff5a00;
+
+  background:#fff8f3;
+
+  box-shadow:
+    0 8px 20px rgba(255,90,0,0.18);
+}
+
+/* CHECK */
+
+.check-pagamento{
+  width:24px;
+  height:24px;
+
+  border-radius:50%;
+
+  background:#ff5a00;
+
+  color:#ffffff;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size:13px;
+
+  font-weight:bold;
+}
+
+/* INPUTS */
 
 .input-pagamento{
   width:100%;
-  padding:14px;
-  border:none;
-  border-radius:12px;
-  margin-top:12px;
-  background:#f3f4f6;
+
+  margin-top:14px;
+
+  padding:16px;
+
+  border:1px solid #e5e7eb;
+
+  border-radius:14px;
+
+  background:#f9fafb;
+
   font-size:15px;
+
+  color:#111827;
+
   outline:none;
-  box-shadow:0 2px 5px rgba(0,0,0,0.05);
+
+  transition:0.2s;
 }
 
+.input-pagamento:focus{
+  border-color:#ff5a00;
+
+  background:#ffffff;
+
+  box-shadow:
+    0 0 0 4px rgba(255,90,0,0.10);
+}
+
+/* BOTÃO FINALIZAR */
+
+.btn-finalizar{
+  width:100%;
+
+  margin-top:24px;
+
+  padding:18px;
+
+  border:none;
+
+  border-radius:18px;
+
+  background:linear-gradient(
+    135deg,
+    #ff5a00,
+    #ff7b2c
+  );
+
+  color:#ffffff;
+
+  font-size:17px;
+  font-weight:700;
+
+  cursor:pointer;
+
+  transition:0.25s;
+
+  box-shadow:
+    0 10px 24px rgba(255,90,0,0.25);
+}
+
+.btn-finalizar:hover{
+  transform:translateY(-2px);
+
+  box-shadow:
+    0 14px 28px rgba(255,90,0,0.32);
+}
+
+/* RESUMO */
+
+.resumo-pagamento{
+  margin-top:24px;
+
+  padding:18px;
+
+  border-radius:18px;
+
+  background:#f9fafb;
+
+  border:1px solid #ececec;
+}
+
+/* TOTAL ÚNICO */
+
+.total-unico{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:22px;
+
+  background:#ffffff;
+
+  border-radius:20px;
+
+  margin-top:24px;
+
+  font-size:22px;
+  font-weight:700;
+
+  color:#111827;
+
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+
+  border:2px solid #ffefe5;
+}
+
+.total-unico span:last-child{
+  color:#000000;
+  font-size:20px;
+}
+
+
+
+.resumo-pagamento .total-final{
+  font-size:20px;
+  font-weight:700;
+
+  color:#111827;
+
+  margin-top:12px;
+
+  padding-top:12px;
+
+  border-top:1px solid #e5e7eb;
+}
+
+/* ORGANIZA A TELA */
+#telaPagamento{
+  width:100%;
+  max-width:700px;
+
+  margin:0 auto;
+
+  padding:24px;
+
+  display:flex;
+  flex-direction:column;
+
+  gap:18px;
+}
+
+/* RESUMO TOTAL */
+.total-unico{
+  width:100%;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:18px 20px;
+
+  background:#ffffff;
+
+  border-radius:18px;
+
+  border:2px solid #ffffff;
+
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+
+  margin-top:10px;
+}
+
+/* TEXO TOTAL */
+.total-unico span:first-child{
+  font-size:16px;
+  font-weight:600;
+
+  color:#5d616b;
+}
+
+/* VALOR */
+.total-unico span:last-child{
+  font-size:24px;
+  font-weight:700;
+
+  color:#000000;
+}
+
+/* BOTÃO FINALIZAR */
+.btn-finalizar{
+  width:100%;
+
+  height:58px;
+
+  border:none;
+
+  border-radius:18px;
+
+  background:linear-gradient(
+    135deg,
+    #4aad19,
+    #4aad19
+  );
+
+  color:#ffffff;
+
+  font-size:17px;
+  font-weight:700;
+
+  cursor:pointer;
+
+  margin-top:8px;
+
+  transition:0.2s;
+
+  box-shadow:
+    0 10px 22px rgba(255, 255, 255, 0.25);
+}
+
+/* HOVER */
+.btn-finalizar:hover{
+  transform:translateY(-2px);
+}
+
+/* MOBILE */
+@media(max-width:768px){
+
+  #telaPagamento{
+    padding:16px;
+  }
+
+  .total-unico{
+    padding:16px;
+  }
+
+  .total-unico span:last-child{
+    font-size:20px;
+  }
+
+  .btn-finalizar{
+    height:54px;
+    font-size:16px;
+  }
+
+}
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+  .tela-pagamento{
+    padding:18px;
+    border-radius:20px;
+  }
+
+  .opcao{
+    padding:15px;
+  }
+
+  .icone-pagamento{
+    width:46px;
+    height:46px;
+
+    font-size:20px;
+  }
+
+  .opcao h3{
+    font-size:15px;
+  }
+
+  .btn-finalizar{
+    padding:16px;
+    font-size:16px;
+  }
+
+}
 /* ========================= */
 /* NOVO LAYOUT MODERNO */
 /* ========================= */
@@ -736,7 +1133,7 @@ body {
 .layout-menu{
   display:flex;
   min-height:100vh;
-  background:#f3f4f6;
+  background:transparent;
 }
 
 /* MENU LATERAL */
@@ -928,7 +1325,8 @@ body {
 /* CARD */
 
 .lista-grid .item{
-  background:#ffffff;
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(6px);
   border-radius:18px;
   overflow:hidden;
   display:flex;
@@ -1008,7 +1406,7 @@ body {
 
 @media screen and (min-width:769px) and (max-width:1024px){
 
-  html,
+  
   body{
     width:100%;
     overflow-x:hidden;
@@ -1164,8 +1562,7 @@ body {
   }
 
   /* BOTÕES */
-  .btn,
-  .btn-carrinho,
+  
   .btn-novo-pedido{
     padding:16px;
     font-size:17px;
@@ -1218,7 +1615,7 @@ body {
     overflow-x:hidden;
     margin:0;
     padding:0;
-    background:#ffffff;
+    
   }
 
   /* LAYOUT PRINCIPAL */
@@ -1228,6 +1625,10 @@ body {
     width:100%;
     min-height:100vh;
   }
+
+  .item img {
+  max-width: 100%;  
+}
 
   /* SIDEBAR ESQUERDA */
   .sidebar{
@@ -1339,12 +1740,12 @@ body {
   /* CONTEUDO */
  .conteudo{
   margin-left:105px;  
-
   width:calc(100% - 125px);
-
   flex:1;
 
   overflow:hidden;
+
+  background:transparent;
 }
 
   /* BANNER */
@@ -1396,6 +1797,7 @@ body {
   /* CARD */
   .lista-grid .item{
     display:flex;
+
     flex-direction:column;
 
     width:100%;
@@ -1406,7 +1808,9 @@ body {
 
     border-radius:12px;
 
-    background:#ffffff;
+    background:rgba(255,255,255,0.90);
+
+    backdrop-filter:blur(6px);
   }
 
   /* IMAGEM */
@@ -1503,4 +1907,4 @@ body {
   box-shadow:
     0 6px 14px rgba(255,90,0,0.35);
 }
-/* ===============fundo da imagem do cardapio ================== */
+
