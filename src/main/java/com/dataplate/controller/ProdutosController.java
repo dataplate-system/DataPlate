@@ -1,5 +1,5 @@
 package com.dataplate.controller;
-
+ 
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -20,16 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dataplate.entity.Produto;
 import com.dataplate.exception.ErrorResponse;
 import com.dataplate.service.ProdutoService;
-
+ 
 @RestController
 @RequestMapping("/api/produtos")
 @CrossOrigin(origins = "*")
 public class ProdutosController {
     private static final Logger logger = LoggerFactory.getLogger(ProdutosController.class);
-
+ 
     @Autowired
     private ProdutoService produtoService;
-
+ 
     @GetMapping
     public ResponseEntity<List<Produto>> listar() {
         try {
@@ -40,45 +40,45 @@ public class ProdutosController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
+ 
     @GetMapping("/{id}")
     public ResponseEntity<Produto> obterPorId(@PathVariable Long id) {
         try {
             logger.info("Obtendo produto com ID: {}", id);
-
+ 
             if (id == null || id <= 0) {
                 logger.warn("ID invalido: {}", id);
                 return ResponseEntity.badRequest().build();
             }
-
+ 
             Produto produto = produtoService.obterPorId(id);
             if (produto == null) {
                 logger.warn("Produto nao encontrado com ID: {}", id);
                 return ResponseEntity.notFound().build();
             }
-
+ 
             return ResponseEntity.ok(produto);
         } catch (Exception e) {
             logger.error("Erro ao obter produto com ID: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
+ 
     @PostMapping
     public ResponseEntity<?> criar(@RequestBody Produto produto) {
         try {
             logger.info("Criando novo produto: {}", produto != null ? produto.getNome() : null);
             logger.info("Payload recebido: {}", produto);
-
+ 
             String erro = validarProduto(produto);
             if (erro != null) {
                 logger.warn("Validacao falhou: {}", erro);
                 return ResponseEntity.badRequest().body(new ErrorResponse(erro));
             }
-
+ 
             Produto salvo = produtoService.salvar(produto);
             logger.info("Produto criado com sucesso. ID: {}", salvo.getId());
-
+ 
             return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
         } catch (Exception e) {
             logger.error("Erro ao criar produto: ", e);
@@ -91,23 +91,23 @@ public class ProdutosController {
                     .body(new ErrorResponse("Erro ao criar produto: " + mensagemErro));
         }
     }
-
+ 
     @PutMapping("/{id}")
     public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody Produto produtoAtualizado) {
         try {
             logger.info("Atualizando produto com ID: {}", id);
-
+ 
             if (id == null || id <= 0) {
                 logger.warn("ID invalido: {}", id);
                 return ResponseEntity.badRequest().body(new ErrorResponse("ID invalido"));
             }
-
+ 
             Produto produtoExistente = produtoService.obterPorId(id);
             if (produtoExistente == null) {
                 logger.warn("Produto nao encontrado para atualizar. ID: {}", id);
                 return ResponseEntity.notFound().build();
             }
-
+ 
             if (produtoAtualizado.getNome() != null && !produtoAtualizado.getNome().isEmpty()) {
                 produtoExistente.setNome(produtoAtualizado.getNome().trim());
             }
@@ -117,10 +117,10 @@ public class ProdutosController {
             if (produtoAtualizado.getDescricao() != null) {
                 produtoExistente.setDescricao(produtoAtualizado.getDescricao().trim());
             }
-
+ 
             Produto atualizado = produtoService.salvar(produtoExistente);
             logger.info("Produto atualizado com sucesso. ID: {}", id);
-
+ 
             return ResponseEntity.ok(atualizado);
         } catch (Exception e) {
             logger.error("Erro ao atualizar produto com ID: " + id, e);
@@ -129,26 +129,26 @@ public class ProdutosController {
                     .body(new ErrorResponse("Erro ao atualizar produto: " + mensagemErro));
         }
     }
-
+ 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletar(@PathVariable Long id) {
         try {
             logger.info("Deletando produto com ID: {}", id);
-
+ 
             if (id == null || id <= 0) {
                 logger.warn("ID invalido para deletar: {}", id);
                 return ResponseEntity.badRequest().body(new ErrorResponse("ID invalido"));
             }
-
+ 
             Produto produto = produtoService.obterPorId(id);
             if (produto == null) {
                 logger.warn("Produto nao encontrado para deletar. ID: {}", id);
                 return ResponseEntity.notFound().build();
             }
-
+ 
             produtoService.deletar(id);
             logger.info("Produto deletado com sucesso. ID: {}", id);
-
+ 
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             logger.error("Erro ao deletar produto com ID: " + id, e);
@@ -157,7 +157,7 @@ public class ProdutosController {
                     .body(new ErrorResponse("Erro ao deletar produto: " + mensagemErro));
         }
     }
-
+ 
     private String validarProduto(Produto produto) {
         if (produto == null) {
             return "Produto nao pode ser nulo";
