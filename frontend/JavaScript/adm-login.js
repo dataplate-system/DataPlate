@@ -5,7 +5,7 @@ const demoAdmins = {
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
-    email: 'gerente@dataplate.com',
+    cpf: '000.000.000-00',
     password: 'admin123',
     role: 'Administrador',
     userKey: 'gerente'
@@ -13,7 +13,7 @@ const demoAdmins = {
   atendente: {
     name: 'Atendente',
     initials: 'AT',
-    email: 'atendente@dataplate.com',
+    cpf: '111.111.111-11',
     password: 'atendente123',
     role: 'Operacional',
     userKey: 'atendente'
@@ -29,7 +29,7 @@ function startSession(admin, remember) {
   const session = {
     name: admin.name,
     initials: admin.initials,
-    email: admin.email,
+    cpf: admin.cpf,
     role: admin.role,
     userKey: admin.userKey,
     remember: Boolean(remember),
@@ -40,9 +40,9 @@ function startSession(admin, remember) {
   window.location.href = 'adm.html';
 }
 
-function findAdmin(email, password) {
+function findAdmin(cpf, password) {
   return Object.values(demoAdmins).find((admin) =>
-    admin.email.toLowerCase() === String(email).trim().toLowerCase()
+    admin.cpf === String(cpf).trim()
     && admin.password === password
   );
 }
@@ -54,24 +54,33 @@ function setActiveDemoButton(selectedKey) {
   });
 }
 
-function fillDemoCredentials(adminKey, emailInput, passwordInput) {
+function fillDemoCredentials(adminKey, cpfInput, passwordInput) {
   const admin = demoAdmins[adminKey];
-  if (!admin || !emailInput || !passwordInput) return;
+  if (!admin || !cpfInput || !passwordInput) return;
 
-  emailInput.value = admin.email;
+  cpfInput.value = admin.cpf;
   passwordInput.value = admin.password;
   setActiveDemoButton(adminKey);
   setLoginError('');
 }
 
-function syncDemoButtonFromCredentials(emailInput, passwordInput) {
+function syncDemoButtonFromCredentials(cpfInput, passwordInput) {
   const selectedKey = Object.keys(demoAdmins).find((key) => {
     const admin = demoAdmins[key];
-    return admin.email.toLowerCase() === emailInput.value.trim().toLowerCase()
+    return admin.cpf === cpfInput.value.trim()
       && admin.password === passwordInput.value;
   });
 
   setActiveDemoButton(selectedKey || '');
+}
+
+function formatCpf(value) {
+  return String(value || '')
+    .replace(/\D/g, '')
+    .slice(0, 11)
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 }
 
 function formatPrepTime(totalSeconds) {
@@ -126,12 +135,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const form = document.getElementById('adminLoginForm');
-  const emailInput = document.getElementById('adminEmail');
+  const cpfInput = document.getElementById('adminCpf');
   const passwordInput = document.getElementById('adminPassword');
   const togglePassword = document.getElementById('togglePassword');
 
-  fillDemoCredentials(DEFAULT_DEMO_ADMIN_KEY, emailInput, passwordInput);
+  fillDemoCredentials(DEFAULT_DEMO_ADMIN_KEY, cpfInput, passwordInput);
   startPrepCountdown();
+
+  cpfInput?.addEventListener('input', () => {
+    cpfInput.value = formatCpf(cpfInput.value);
+    syncDemoButtonFromCredentials(cpfInput, passwordInput);
+  });
 
   togglePassword?.addEventListener('click', () => {
     const isPassword = passwordInput.type === 'password';
@@ -142,12 +156,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-demo-user]').forEach((button) => {
     button.addEventListener('click', () => {
-      fillDemoCredentials(button.dataset.demoUser, emailInput, passwordInput);
+      fillDemoCredentials(button.dataset.demoUser, cpfInput, passwordInput);
     });
   });
 
-  emailInput?.addEventListener('input', () => syncDemoButtonFromCredentials(emailInput, passwordInput));
-  passwordInput?.addEventListener('input', () => syncDemoButtonFromCredentials(emailInput, passwordInput));
+  passwordInput?.addEventListener('input', () => syncDemoButtonFromCredentials(cpfInput, passwordInput));
 
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -159,10 +172,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const formData = new FormData(form);
-    const admin = findAdmin(formData.get('email'), formData.get('password'));
+    const admin = findAdmin(formData.get('cpf'), formData.get('password'));
 
     if (!admin) {
-      setLoginError('Email ou senha inválidos para o acesso administrativo.');
+      setLoginError('CPF ou senha invalidos para o acesso administrativo.');
       return;
     }
 

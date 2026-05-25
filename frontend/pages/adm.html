@@ -102,18 +102,16 @@
           <div class="section-toolbar">
             <button type="button" class="btn-primary" onclick="openModal('addClientModal')" data-open-modal="addClientModal">+ Novo Cliente</button>
             <div class="toolbar-filters">
-              <input type="text" placeholder="Pesquisar por nome ou CPF..." class="filter-input" />
-              <select class="filter-select">
-                <option>Todos os Status</option>
-                <option>Ativo</option>
-                <option>Inativo</option>
+              <input id="clientSearchFilter" type="text" placeholder="Pesquisar por nome ou CPF..." class="filter-input" data-table-search data-section="clientes" />
+              <select id="clientSortFilter" class="filter-select toolbar-filter-select" aria-label="Filtrar clientes" data-table-filter data-section="clientes">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="2" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="1" data-sort-type="text">Código</option>
+                <option value="gasto" data-sort-column="6" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
+                <option value="ativo" data-filter-column="7" data-filter-match="exact">Ativos</option>
+                <option value="inativo" data-filter-column="7" data-filter-match="exact">Inativos</option>
+                <option value="bloqueado" data-filter-column="7" data-filter-match="exact">Bloqueados</option>
               </select>
-              <button class="btn-secondary">
-                <span> 
-                  <img src="../images/ui/filtro.png" width="22px" height="22px">
-                </span>
-                Filtrar
-              </button>
             </div>
             <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
           </div>
@@ -149,19 +147,18 @@
           <div class="section-toolbar">
             <button type="button" class="btn-primary" onclick="openModal('addFunctModal')" data-open-modal="addFunctModal">+ Novo Funcionário</button>
             <div class="toolbar-filters">
-              <input type="text" placeholder="Pesquisar por nome..." class="filter-input" />
-              <select class="filter-select">
-                <option>Todos os Cargos</option>
-                <option>Gerente</option>
-                <option>Cozinheiro</option>
-                <option>Atendente</option>
+              <input type="text" placeholder="Pesquisar por nome..." class="filter-input" data-table-search data-section="funcionarios" />
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar funcionários" data-table-filter data-section="funcionarios">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="1" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="salario" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Salário</option>
+                <option value="ativo" data-filter-column="5" data-filter-match="exact">Ativos</option>
+                <option value="inativo" data-filter-column="5" data-filter-match="exact">Inativos</option>
+                <option value="gerente" data-filter-column="2">Gerente</option>
+                <option value="cozinheiro" data-filter-column="2">Cozinheiro</option>
+                <option value="atendente" data-filter-column="2">Atendente</option>
               </select>
-              <button class="btn-secondary">
-                <span> 
-                  <img src="../images/ui/filtro.png" width="22px" height="22px">
-                </span>
-                Filtrar
-              </button>
             </div>
           </div>
 
@@ -194,13 +191,14 @@
           <div class="section-toolbar">
             <button type="button" class="btn-primary" onclick="openModal('addSupplierModal')" data-open-modal="addSupplierModal">+ Novo Fornecedor</button>
             <div class="toolbar-filters">
-              <input type="text" placeholder="Pesquisar fornecedor..." class="filter-input" />
-              <button class="btn-secondary">
-                <span> 
-                  <img src="../images/ui/filtro.png" width="22px" height="22px">
-                </span>
-                Filtrar
-              </button>
+              <input type="text" placeholder="Pesquisar fornecedor..." class="filter-input" data-table-search data-section="fornecedores" />
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar fornecedores" data-table-filter data-section="fornecedores">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="1" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="ativo" data-filter-column="5" data-filter-match="exact">Ativos</option>
+                <option value="inativo" data-filter-column="5" data-filter-match="exact">Inativos</option>
+              </select>
             </div>
           </div>
 
@@ -233,20 +231,19 @@
           <div class="section-toolbar">
             <button type="button" class="btn-primary" onclick="openModal('addDishModal')" data-open-modal="addDishModal">+ Novo Item</button>
             <div class="toolbar-filters">
-              <input type="text" placeholder="Pesquisar Items..." class="filter-input" />
-              <select class="filter-select">
-                <option>Todas as Categorias</option>
-                <option>Sanduíches</option>
-                <option>Massas</option>
-                <option>Saladas</option>
-                <option>Sobremesas</option>
+              <input type="text" placeholder="Pesquisar Items..." class="filter-input" data-table-search data-section="cardapio" />
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar cardápio" data-table-filter data-section="cardapio">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="1" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="preco" data-sort-column="3" data-sort-type="number" data-sort-direction="desc">Preço</option>
+                <option value="sim" data-filter-column="6" data-filter-match="exact">Disponíveis</option>
+                <option value="não" data-filter-column="6" data-filter-match="exact">Indisponíveis</option>
+                <option value="sanduíches" data-filter-column="2">Sanduíches</option>
+                <option value="massas" data-filter-column="2">Massas</option>
+                <option value="saladas" data-filter-column="2">Saladas</option>
+                <option value="sobremesas" data-filter-column="2">Sobremesas</option>
               </select>
-              <button class="btn-secondary">
-                <span> 
-                  <img src="../images/ui/filtro.png" width="22px" height="22px">
-                </span>
-                Filtrar
-              </button>
             </div>
           </div>
 
@@ -279,21 +276,17 @@
 
           <div class="section-toolbar">
             <div class="toolbar-filters">
-              <select class="filter-select">
-                <option>Todos os Pedidos</option>
-                <option>Pendente</option>
-                <option>Preparando</option>
-                <option>Pronto</option>
-                <option>Entregue</option>
-                <option>Cancelado</option>
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar pedidos" data-table-filter data-section="pedidos">
+                <option value="">Filtrar</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="total" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
+                <option value="recebido" data-filter-column="5" data-filter-match="exact">Recebido</option>
+                <option value="preparando" data-filter-column="5" data-filter-match="exact">Preparando</option>
+                <option value="pronto" data-filter-column="5" data-filter-match="exact">Pronto</option>
+                <option value="entregue" data-filter-column="5" data-filter-match="exact">Entregue</option>
+                <option value="cancelado" data-filter-column="5" data-filter-match="exact">Cancelado</option>
               </select>
-              <input type="date" class="filter-input" />
-              <button class="btn-secondary">
-                <span> 
-                  <img src="../images/ui/filtro.png" width="22px" height="22px">
-                </span>
-                Filtrar
-              </button>
+              <input type="date" class="filter-input" data-table-date data-section="pedidos" />
             </div>
             <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
           </div>
@@ -351,15 +344,12 @@
             <button type="button" class="btn-primary" onclick="openTableModal()">+ Nova Mesa</button>
             <div class="toolbar-filters">
               <input id="tableSearch" type="text" placeholder="Pesquisar mesa, cliente ou área..." class="filter-input" />
-              <select id="tableStatusFilter" class="filter-select">
-                <option value="todos">Todos os status</option>
-                <option value="disponivel">Disponível</option>
-                <option value="reservada">Reservada</option>
-                <option value="ocupada">Ocupada</option>
-                <option value="manutencao">Manutenção</option>
-              </select>
-              <select id="tableAreaFilter" class="filter-select">
-                <option value="todas">Todas as áreas</option>
+              <select id="tableFilter" class="filter-select toolbar-filter-select" aria-label="Filtrar mesas">
+                <option value="">Filtrar</option>
+                <option value="status:disponivel">Disponível</option>
+                <option value="status:reservada">Reservada</option>
+                <option value="status:ocupada">Ocupada</option>
+                <option value="status:manutencao">Manutenção</option>
               </select>
               <button type="button" class="btn-secondary" id="clearTableFilters">Limpar</button>
             </div>
@@ -819,7 +809,7 @@
               <thead>
                 <tr>
                   <th>Usuário</th>
-                  <th>Email</th>
+                  <th>CPF</th>
                   <th>Tipo de Acesso</th>
                   <th>Módulos</th>
                   <th>Status</th>
@@ -1317,8 +1307,8 @@
             <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
           </div>
           <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" placeholder="usuario@restaurante.com" autocomplete="email" required />
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row">
@@ -1353,7 +1343,7 @@
           <div class="user-avatar-large">GP</div>
           <div>
             <strong>Gerente Principal</strong>
-            <span>gerente@dataplate.com</span>
+            <span>000.000.000-00</span>
           </div>
         </div>
         <div class="form-row modal-form-row">
@@ -1362,8 +1352,8 @@
             <input type="text" name="name" value="Gerente Principal" autocomplete="name" required />
           </div>
           <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" value="gerente@dataplate.com" autocomplete="email" required />
+            <label>CPF</label>
+            <input type="text" name="cpf" value="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
           </div>
         </div>
         <div class="form-row modal-form-row">

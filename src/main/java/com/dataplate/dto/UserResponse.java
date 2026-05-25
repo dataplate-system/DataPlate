@@ -5,7 +5,7 @@ import com.dataplate.entity.Role;
 public record UserResponse(
         Long id,
         String nome,
-        String email,
+        String cpf,
         Role role
 ) {
 }

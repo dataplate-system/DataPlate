@@ -380,6 +380,10 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   transition: all 0.3s;
 }
 
+.toolbar-filter-select {
+  min-width: 136px;
+}
+
 .filter-input:focus,
 .filter-select:focus {
   outline: none;

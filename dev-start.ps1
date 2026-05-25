@@ -27,9 +27,12 @@ Get-Content $envFile | ForEach-Object {
 
 # ─── 2. Localiza o JDK 21 ────────────────────────────────────────────────────
 function Find-Jdk21 {
-    # Prioridade 1: JAVA_HOME ja definido e valido
+    # Prioridade 1: JAVA_HOME ja definido e valido para Java 21
     if ($env:JAVA_HOME -and (Test-Path "$env:JAVA_HOME\bin\java.exe")) {
-        return $env:JAVA_HOME
+        $version = (& "$env:JAVA_HOME\bin\java.exe" -version 2>&1) | Select-Object -First 1
+        if ($version -match '"21') {
+            return $env:JAVA_HOME
+        }
     }
 
     # Prioridade 2: java.exe ja esta no PATH

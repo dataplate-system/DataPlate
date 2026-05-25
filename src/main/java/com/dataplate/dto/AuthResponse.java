@@ -7,7 +7,7 @@ public record AuthResponse(
         String refreshToken,
         Long id,
         String nome,
-        String email,
+        String cpf,
         Role role
 ) {
 }

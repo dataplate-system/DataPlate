@@ -116,10 +116,67 @@ CREATE TABLE IF NOT EXISTS fornecedores (
 CREATE TABLE IF NOT EXISTS usuarios (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    cpf VARCHAR(14) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL
 );
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'usuarios'
+          AND column_name = 'email'
+    ) AND NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'usuarios'
+          AND column_name = 'cpf'
+    ) THEN
+        ALTER TABLE usuarios RENAME COLUMN email TO cpf;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'usuarios'
+          AND column_name = 'cpf'
+    ) THEN
+        ALTER TABLE usuarios ALTER COLUMN cpf TYPE VARCHAR(255);
+
+        UPDATE usuarios
+        SET cpf = (
+            WITH only_digits AS (
+                SELECT regexp_replace(COALESCE(cpf, ''), '\D', '', 'g') AS value
+            ),
+            normalized AS (
+                SELECT CASE
+                    WHEN length(value) = 11 THEN value
+                    ELSE lpad(id::TEXT, 11, '0')
+                END AS value
+                FROM only_digits
+            )
+            SELECT substring(value, 1, 3) || '.' ||
+                   substring(value, 4, 3) || '.' ||
+                   substring(value, 7, 3) || '-' ||
+                   substring(value, 10, 2)
+            FROM normalized
+        );
+
+        IF EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_name = 'usuarios'
+              AND column_name = 'email'
+        ) THEN
+            ALTER TABLE usuarios DROP COLUMN email;
+        END IF;
+
+        ALTER TABLE usuarios ALTER COLUMN cpf TYPE VARCHAR(14);
+        ALTER TABLE usuarios ALTER COLUMN cpf SET NOT NULL;
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS insumos (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

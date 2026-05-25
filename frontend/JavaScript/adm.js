@@ -18,19 +18,19 @@ const ADMIN_PANEL_USERS = {
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
-    email: 'gerente@dataplate.com',
+    cpf: '000.000.000-00',
     role: 'Administrador'
   },
   atendente: {
     name: 'Atendente',
     initials: 'AT',
-    email: 'atendente@dataplate.com',
+    cpf: '111.111.111-11',
     role: 'Operacional'
   },
   cozinha: {
     name: 'Cozinha',
     initials: 'CZ',
-    email: 'cozinha@dataplate.com',
+    cpf: '222.222.222-22',
     role: 'Pedidos e preparo'
   }
 };
@@ -122,20 +122,20 @@ function applyAdminSession() {
   const headerName = document.querySelector('.user-button span');
   const headerAvatar = document.querySelector('.user-button .user-avatar-small');
   const profileName = document.querySelector('#profileModal input[name="name"]');
-  const profileEmail = document.querySelector('#profileModal input[name="email"]');
+  const profileCpf = document.querySelector('#profileModal input[name="cpf"]');
   const profileRole = document.querySelector('#profileModal input[name="role"]');
   const profileSummaryName = document.querySelector('#profileModal .profile-summary strong');
-  const profileSummaryEmail = document.querySelector('#profileModal .profile-summary span');
+  const profileSummaryCpf = document.querySelector('#profileModal .profile-summary span');
   const profileAvatar = document.querySelector('#profileModal .user-avatar-large');
   const switchUserOption = document.querySelector(`#switchUserForm input[name="user"][value="${userKey}"]`);
 
   if (headerName) headerName.textContent = normalizedSession.name || 'Gerente Principal';
   if (headerAvatar) headerAvatar.textContent = normalizedSession.initials || 'AD';
   if (profileName) profileName.value = normalizedSession.name || 'Administrador';
-  if (profileEmail) profileEmail.value = normalizedSession.email || '';
+  if (profileCpf) profileCpf.value = normalizedSession.cpf || '';
   if (profileRole) profileRole.value = normalizedSession.role || 'Administrador';
   if (profileSummaryName) profileSummaryName.textContent = normalizedSession.name || 'Administrador';
-  if (profileSummaryEmail) profileSummaryEmail.textContent = normalizedSession.email || '';
+  if (profileSummaryCpf) profileSummaryCpf.textContent = normalizedSession.cpf || '';
   if (profileAvatar) profileAvatar.textContent = normalizedSession.initials || 'AD';
   if (switchUserOption) switchUserOption.checked = true;
   if (isLegacyCashier || session.userKey !== userKey) {
@@ -771,7 +771,7 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
   const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Visualização': 'FUNCIONARIO' };
   const payload = {
     nome: fd.get('name'),
-    email: fd.get('email'),
+    cpf: fd.get('cpf'),
     senha: fd.get('temporaryPassword'),
     role: accessTypeMap[fd.get('accessType')] || 'FUNCIONARIO'
   };
@@ -870,8 +870,8 @@ function buildStatusBadge(status) {
 
 function getFilteredTables(tables) {
   const search = document.getElementById('tableSearch')?.value.toLowerCase().trim() || '';
-  const status = document.getElementById('tableStatusFilter')?.value || 'todos';
-  const area = document.getElementById('tableAreaFilter')?.value || 'todas';
+  const filterValue = document.getElementById('tableFilter')?.value || '';
+  const [filterType, filterTarget] = filterValue.split(':');
 
   return tables.filter((table) => {
     const haystack = [
@@ -886,22 +886,31 @@ function getFilteredTables(tables) {
     ].join(' ').toLowerCase();
 
     const matchesSearch = !search || haystack.includes(search);
-    const matchesStatus = status === 'todos' || table.status === status;
-    const matchesArea = area === 'todas' || table.area === area;
-    return matchesSearch && matchesStatus && matchesArea;
+    const matchesFilter = !filterValue
+      || (filterType === 'status' && table.status === filterTarget)
+      || (filterType === 'area' && table.area === filterTarget);
+    return matchesSearch && matchesFilter;
   });
 }
 
-function renderTableAreaFilter(tables) {
-  const select = document.getElementById('tableAreaFilter');
+function renderTableFilter(tables) {
+  const select = document.getElementById('tableFilter');
   if (!select) return;
 
-  const current = select.value || 'todas';
+  const current = select.value || '';
   const areas = Array.from(new Set(tables.map((table) => table.area).filter(Boolean))).sort();
-  select.innerHTML = '<option value="todas">Todas as áreas</option>' + areas
-    .map((area) => `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`)
+  const readableStatusOptions = [
+    ['status:disponivel', 'Disponível'],
+    ['status:reservada', 'Reservada'],
+    ['status:ocupada', 'Ocupada'],
+    ['status:manutencao', 'Manutenção']
+  ];
+  const areaOptions = areas.map((area) => [`area:${area}`, area]);
+  const options = [['', 'Filtrar'], ...readableStatusOptions, ...areaOptions];
+  select.innerHTML = options
+    .map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`)
     .join('');
-  select.value = areas.includes(current) ? current : 'todas';
+  select.value = options.some(([value]) => value === current) ? current : '';
 }
 
 function renderTableStats(tables) {
@@ -1022,7 +1031,7 @@ function renderTableDetail(table) {
 
 function renderTables() {
   const tables = getTables().sort((a, b) => Number(a.number) - Number(b.number));
-  renderTableAreaFilter(tables);
+  renderTableFilter(tables);
   renderTableStats(tables);
 
   const filtered = getFilteredTables(tables);
@@ -1211,15 +1220,12 @@ document.getElementById('tableForm')?.addEventListener('submit', (event) => {
 
 document.getElementById('tableForm')?.querySelector('[name="status"]')?.addEventListener('change', updateTableReservationFields);
 document.getElementById('tableSearch')?.addEventListener('input', renderTables);
-document.getElementById('tableStatusFilter')?.addEventListener('change', renderTables);
-document.getElementById('tableAreaFilter')?.addEventListener('change', renderTables);
+document.getElementById('tableFilter')?.addEventListener('change', renderTables);
 document.getElementById('clearTableFilters')?.addEventListener('click', () => {
   const search = document.getElementById('tableSearch');
-  const status = document.getElementById('tableStatusFilter');
-  const area = document.getElementById('tableAreaFilter');
+  const filter = document.getElementById('tableFilter');
   if (search) search.value = '';
-  if (status) status.value = 'todos';
-  if (area) area.value = 'todas';
+  if (filter) filter.value = '';
   renderTables();
 });
 
@@ -1276,7 +1282,7 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
   const user = ADMIN_PANEL_USERS[userKey] || {
     name: selectedOption?.querySelector('strong')?.textContent || 'Gerente Principal',
     initials: selectedOption?.querySelector('.user-avatar-small')?.textContent || 'GP',
-    email: '',
+    cpf: '',
     role: selectedOption?.querySelector('small')?.textContent || 'Administrador'
   };
   const currentSession = readAdminSession() || {};
@@ -1310,60 +1316,90 @@ window.alterarStatusPedido = function(pedidoId, novoStatus) {
 // SEARCH & FILTER FUNCTIONALITY
 // =============================================
 
-function searchTable(inputSelector, tableSelector) {
-  const searchInput = document.querySelector(inputSelector);
-  if (!searchInput) return;
+function parseTableCurrency(value) {
+  const normalized = String(value || '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
 
-  searchInput.addEventListener('keyup', (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    const table = document.querySelector(tableSelector);
-    const rows = table.querySelectorAll('tbody tr');
+  const number = Number.parseFloat(normalized);
+  return Number.isFinite(number) ? number : 0;
+}
 
-    rows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
+function getCellText(row, columnIndex) {
+  return row.querySelectorAll('td')[columnIndex]?.textContent.trim() || '';
+}
+
+function normalizeFilterText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function dateInputToTableText(value) {
+  if (!value) return '';
+  const [year, month, day] = value.split('-');
+  return year && month && day ? `${day}/${month}/${year}` : '';
+}
+
+function sortTableRows(rows, option) {
+  const column = Number.parseInt(option?.dataset.sortColumn || '', 10);
+  if (!Number.isInteger(column)) return rows;
+
+  const type = option.dataset.sortType || 'text';
+  const direction = option.dataset.sortDirection === 'desc' ? -1 : 1;
+  const sortedRows = [...rows];
+  const collator = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
+
+  sortedRows.sort((rowA, rowB) => {
+    if (type === 'number') {
+      return (parseTableCurrency(getCellText(rowA, column)) - parseTableCurrency(getCellText(rowB, column))) * direction;
+    }
+
+    return collator.compare(getCellText(rowA, column), getCellText(rowB, column)) * direction;
+  });
+
+  return sortedRows;
+}
+
+function applyToolbarFilters(sectionId) {
+  const section = document.getElementById(sectionId);
+  const tbody = section?.querySelector('.data-table tbody');
+  if (!section || !tbody) return;
+
+  const searchTerm = normalizeFilterText(section.querySelector('[data-table-search]')?.value);
+  const dateTerm = normalizeFilterText(dateInputToTableText(section.querySelector('[data-table-date]')?.value));
+  const select = section.querySelector('[data-table-filter]');
+  const selectedOption = select?.selectedOptions?.[0];
+  const filterColumn = Number.parseInt(selectedOption?.dataset.filterColumn || '', 10);
+  const filterValue = normalizeFilterText(selectedOption?.value);
+  const filterMatch = selectedOption?.dataset.filterMatch || 'includes';
+  const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.querySelector('td[colspan]'));
+
+  sortTableRows(rows, selectedOption).forEach(row => tbody.appendChild(row));
+
+  rows.forEach(row => {
+    const rowText = normalizeFilterText(row.textContent);
+    const columnText = normalizeFilterText(getCellText(row, filterColumn));
+    const matchesSearch = !searchTerm || rowText.includes(searchTerm);
+    const matchesDate = !dateTerm || rowText.includes(dateTerm);
+    const matchesFilter = !filterValue
+      || !Number.isInteger(filterColumn)
+      || (filterMatch === 'exact' ? columnText === filterValue : columnText.includes(filterValue));
+
+    row.style.display = matchesSearch && matchesDate && matchesFilter ? '' : 'none';
   });
 }
 
-// Initialize search for all tables
-searchTable('#searchClientes', '#clientesTable');
-searchTable('#searchFuncionarios', '#funcionariosTable');
-searchTable('#searchFornecedores', '#fornecedoresTable');
-searchTable('#searchCardapio', '#cardapioTable');
-searchTable('#searchPedidos', '#pedidosTable');
-searchTable('#searchEntregas', '#entregasTable');
-
-// =============================================
-// FILTER FUNCTIONALITY
-// =============================================
-
-function filterByStatus(selectSelector, tableSelector, columnIndex) {
-  const selectElement = document.querySelector(selectSelector);
-  if (!selectElement) return;
-
-  selectElement.addEventListener('change', (e) => {
-    const selectedStatus = e.target.value;
-    const table = document.querySelector(tableSelector);
-    const rows = table.querySelectorAll('tbody tr');
-
-    rows.forEach(row => {
-      const cells = row.querySelectorAll('td');
-      const statusCell = cells[columnIndex];
-      
-      if (!statusCell) return;
-      
-      const status = statusCell.textContent.toLowerCase().trim();
-      const shouldShow = selectedStatus === 'todos' || status.includes(selectedStatus);
-      row.style.display = shouldShow ? '' : 'none';
-    });
+document.querySelectorAll('[data-table-filter], [data-table-search], [data-table-date]').forEach((element) => {
+  const eventName = element?.tagName === 'INPUT' ? 'input' : 'change';
+  element?.addEventListener(eventName, () => {
+    const sectionId = element.dataset.section || element.closest('.content-section')?.id;
+    if (sectionId) applyToolbarFilters(sectionId);
   });
-}
-
-// Initialize filters
-filterByStatus('#statusFilterClientes', '#clientesTable', 7);
-filterByStatus('#statusFilterPedidos', '#pedidosTable', 5);
-filterByStatus('#statusFilterEntregas', '#entregasTable', 4);
+});
 
 // =============================================
 // EXPORT FUNCTIONALITY
@@ -1677,6 +1713,7 @@ function adicionarLinhaCliente(c) {
   const placeholder = tbody.querySelector('td[colspan]');
   if (placeholder) tbody.innerHTML = '';
   tbody.insertAdjacentHTML('beforeend', buildLinhaCliente(c));
+  applyToolbarFilters('clientes');
 }
 
 function buildLinhaCliente(c) {
@@ -1696,7 +1733,10 @@ function buildLinhaCliente(c) {
 function carregarClientes() {
   showTableSkeleton('clientes');
   getJson('/clientes')
-    .then(list => setTableBody('clientes', list.map(buildLinhaCliente)))
+    .then(list => {
+      setTableBody('clientes', list.map(buildLinhaCliente));
+      applyToolbarFilters('clientes');
+    })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar clientes.';
       setTableBody('clientes', [], msg);
@@ -1710,6 +1750,7 @@ function adicionarLinhaFuncionario(f) {
   const placeholder = tbody.querySelector('td[colspan]');
   if (placeholder) tbody.innerHTML = '';
   tbody.insertAdjacentHTML('beforeend', buildLinhaFuncionario(f));
+  applyToolbarFilters('funcionarios');
 }
 
 function buildLinhaFuncionario(f) {
@@ -1728,7 +1769,10 @@ function buildLinhaFuncionario(f) {
 function carregarFuncionarios() {
   showTableSkeleton('funcionarios');
   getJson('/funcionarios')
-    .then(list => setTableBody('funcionarios', list.map(buildLinhaFuncionario)))
+    .then(list => {
+      setTableBody('funcionarios', list.map(buildLinhaFuncionario));
+      applyToolbarFilters('funcionarios');
+    })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar funcionários.';
       setTableBody('funcionarios', [], msg);
@@ -1742,6 +1786,7 @@ function adicionarLinhaFornecedor(f) {
   const placeholder = tbody.querySelector('td[colspan]');
   if (placeholder) tbody.innerHTML = '';
   tbody.insertAdjacentHTML('beforeend', buildLinhaFornecedor(f));
+  applyToolbarFilters('fornecedores');
 }
 
 function buildLinhaFornecedor(f) {
@@ -1760,7 +1805,10 @@ function buildLinhaFornecedor(f) {
 function carregarFornecedores() {
   showTableSkeleton('fornecedores');
   getJson('/fornecedores')
-    .then(list => setTableBody('fornecedores', list.map(buildLinhaFornecedor)))
+    .then(list => {
+      setTableBody('fornecedores', list.map(buildLinhaFornecedor));
+      applyToolbarFilters('fornecedores');
+    })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar fornecedores.';
       setTableBody('fornecedores', [], msg);
@@ -1774,6 +1822,7 @@ function adicionarLinhaProduto(p) {
   const placeholder = tbody.querySelector('td[colspan]');
   if (placeholder) tbody.innerHTML = '';
   tbody.insertAdjacentHTML('beforeend', buildLinhaProduto(p));
+  applyToolbarFilters('cardapio');
 }
 
 function buildLinhaProduto(p) {
@@ -1793,7 +1842,10 @@ function buildLinhaProduto(p) {
 function carregarProdutos() {
   showTableSkeleton('cardapio');
   getJson('/produtos')
-    .then(list => setTableBody('cardapio', list.map(buildLinhaProduto)))
+    .then(list => {
+      setTableBody('cardapio', list.map(buildLinhaProduto));
+      applyToolbarFilters('cardapio');
+    })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar produtos.';
       setTableBody('cardapio', [], msg);
@@ -1824,7 +1876,10 @@ function buildLinhaPedido(p) {
 function carregarPedidos() {
   showTableSkeleton('pedidos');
   getJson('/pedidos')
-    .then(list => setTableBody('pedidos', list.map(buildLinhaPedido)))
+    .then(list => {
+      setTableBody('pedidos', list.map(buildLinhaPedido));
+      applyToolbarFilters('pedidos');
+    })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar pedidos.';
       setTableBody('pedidos', [], msg);
@@ -1837,7 +1892,7 @@ function buildLinhaUsuario(u) {
   const roleClass = u.role === 'ADMIN' ? 'badge-info' : 'badge-active';
   return `<tr>
     <td><strong>${u.nome}</strong></td>
-    <td>${u.email || '-'}</td>
+    <td>${u.cpf || '-'}</td>
     <td><span class="badge ${roleClass}">${roleLabel[u.role] || u.role || '-'}</span></td>
     <td>${u.role === 'ADMIN' ? 'Todos' : 'Operações'}</td>
     <td><span class="badge badge-active">Ativo</span></td>

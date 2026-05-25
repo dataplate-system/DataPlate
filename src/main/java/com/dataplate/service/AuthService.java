@@ -22,12 +22,12 @@ public class AuthService {
 
     @Transactional
     public AuthResponse registrar(AuthRegisterRequest req) {
-        if (userRepository.existsByEmail(req.email())) {
-            throw new IllegalArgumentException("Email já cadastrado: " + req.email());
+        if (userRepository.existsByCpf(req.cpf())) {
+            throw new IllegalArgumentException("CPF ja cadastrado: " + req.cpf());
         }
         User user = User.builder()
                 .nome(req.nome())
-                .email(req.email())
+                .cpf(req.cpf())
                 .senha(passwordEncoder.encode(req.senha()))
                 .role(req.role())
                 .build();
@@ -36,23 +36,23 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthLoginRequest req) {
-        User user = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new BadCredentialsException("Email ou senha inválidos"));
+        User user = userRepository.findByCpf(req.cpf())
+                .orElseThrow(() -> new BadCredentialsException("CPF ou senha invalidos"));
         if (!passwordEncoder.matches(req.senha(), user.getSenha())) {
-            throw new BadCredentialsException("Email ou senha inválidos");
+            throw new BadCredentialsException("CPF ou senha invalidos");
         }
         return toAuthResponse(user);
     }
 
     public AuthResponse refresh(AuthRefreshRequest req) {
-        String email;
+        String cpf;
         try {
-            email = jwtService.extractRefreshUsername(req.refreshToken());
+            cpf = jwtService.extractRefreshUsername(req.refreshToken());
         } catch (RuntimeException ex) {
             throw new BadCredentialsException("Refresh token invalido");
         }
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByCpf(cpf)
                 .orElseThrow(() -> new BadCredentialsException("Refresh token invalido"));
 
         if (!jwtService.isRefreshTokenValid(req.refreshToken(), user)) {
@@ -65,6 +65,6 @@ public class AuthService {
     private AuthResponse toAuthResponse(User user) {
         String token = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
-        return new AuthResponse(token, refreshToken, user.getId(), user.getNome(), user.getEmail(), user.getRole());
+        return new AuthResponse(token, refreshToken, user.getId(), user.getNome(), user.getCpf(), user.getRole());
     }
 }

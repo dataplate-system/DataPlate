@@ -36,7 +36,7 @@ public class User implements UserDetails {
     private String nome;
 
     @Column(nullable = false, unique = true)
-    private String email;
+    private String cpf;
 
     @Column(nullable = false)
     private String senha;
@@ -57,6 +57,6 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return cpf;
     }
 }

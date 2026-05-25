@@ -18,7 +18,7 @@ public class UserController {
     @GetMapping
     public List<UserResponse> listar() {
         return repository.findAll().stream()
-                .map(user -> new UserResponse(user.getId(), user.getNome(), user.getEmail(), user.getRole()))
+                .map(user -> new UserResponse(user.getId(), user.getNome(), user.getCpf(), user.getRole()))
                 .toList();
     }
 }
