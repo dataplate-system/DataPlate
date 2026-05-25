@@ -309,6 +309,7 @@ function confirmarPedido() {
 
   document.getElementById("telaCarrinho").style.display = "none";
   document.getElementById("telaPagamento").style.display = "block";
+  atualizarTotalPagamento();
 }
 
 function atualizarResumoPagamento() {
@@ -365,7 +366,8 @@ async function pagamentoAprovado() {
   localStorage.removeItem("carrinho");
   atualizarBadge();
 
-  document.getElementById("telaPix").style.display = "none";
+  document.getElementById("telaPix").style.display = "block";
+  gerarPixAutomatico();
   document.getElementById("telaCredito").style.display = "none";
   document.getElementById("telaDebito").style.display = "none";
   document.getElementById("telaDinheiro").style.display = "none";
@@ -414,26 +416,42 @@ function selecionarPagamento(elemento, tipo) {
 }
 
 // finalizar pagamento
-function finalizarPagamento() {
+function finalizarPagamento(){
 
-  if (pagamentoSelecionado === "") {
-    alert("Escolha uma forma de pagamento!");
-    return;
+  if(pagamentoSelecionado === "Pix"){
+
+    document.getElementById("telaPagamento").style.display = "none";
+
+    document.getElementById("telaPix").style.display = "block";
+
+    gerarPixAutomatico();
+
   }
 
-  document.getElementById("telaPagamento").style.display = "none";
+  else if(pagamentoSelecionado === "Credito"){
 
-  // fecha todas
-  Object.values(telasPagamento).forEach(id => {
-    document.getElementById(id).style.display = "none";
-  });
+    document.getElementById("telaPagamento").style.display = "none";
 
-  // abre a escolhida
-  const telaSelecionada = telasPagamento[pagamentoSelecionado];
+    document.getElementById("telaCredito").style.display = "block";
 
-  if (telaSelecionada) {
-    document.getElementById(telaSelecionada).style.display = "block";
   }
+
+  else if(pagamentoSelecionado === "Debito"){
+
+    document.getElementById("telaPagamento").style.display = "none";
+
+    document.getElementById("telaDebito").style.display = "block";
+
+  }
+
+  else if(pagamentoSelecionado === "Dinheiro"){
+
+    document.getElementById("telaPagamento").style.display = "none";
+
+    document.getElementById("telaDinheiro").style.display = "block";
+
+  }
+
 }
 
 // voltar pagamento
@@ -554,3 +572,67 @@ function atualizarBadge() {
 }
 
 atualizarBadge();
+
+
+
+function gerarPixAutomatico(){
+
+  // PEGA O TOTAL
+  let textoTotal =
+    document.getElementById("totalPagamento")
+    .innerText;
+
+  // REMOVE R$
+  textoTotal = textoTotal
+    .replace("R$", "")
+    .replace(/\s/g, "")
+    .replace(",", ".");
+
+  let valor = parseFloat(textoTotal);
+
+  // VALIDAÇÃO
+  if(isNaN(valor) || valor <= 0){
+
+    alert("Erro ao gerar Pix. Total inválido.");
+
+    return;
+  }
+
+  // MOSTRA VALOR
+  document.getElementById("valorPix").innerText =
+    "R$ " + valor.toFixed(2).replace(".", ",");
+
+  // SUA CHAVE PIX
+  let chavePix = "pix@dataplate.com";
+
+  // CÓDIGO PIX
+  let payloadPix =
+`Pagamento DataPlate
+Valor: R$ ${valor.toFixed(2)}
+PIX: ${chavePix}`;
+
+  // GERA QR CODE
+  let qrCode =
+`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payloadPix)}`;
+
+  // APLICA QR
+  document.getElementById("qrCodePix").src =
+    qrCode;
+
+  // MOSTRA CHAVE
+  document.getElementById("chavePix").innerText =
+    chavePix;
+
+}
+function atualizarTotalPagamento(){
+
+  let total = 0;
+
+  carrinho.forEach(item => {
+    total += item.preco * item.quantidade;
+  });
+
+  document.getElementById("totalPagamento").innerText =
+    "R$ " + total.toFixed(2).replace(".", ",");
+
+}
