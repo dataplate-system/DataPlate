@@ -119,40 +119,78 @@
 </div>
 
 <!-- TELA PIX -->
+<!-- TELA PIX -->
 <div id="telaPix" style="display:none; padding:20px;">
 
   <header class="topo">
-    <button onclick="fecharTelaPagamento()">←</button>
-    <h2>Pagamento Pix</h2>
+    <button class="voltar" onclick="fecharTelaPagamento()">←</button>
+
+    <img src="../images/brand/logo-emp.png" class="logo-topo">
+
+    <div></div>
   </header>
 
   <div class="card-status">
 
     <div class="banner-pagamento">
-     <img src="../images/menu/pix.png">
+      <img src="../images/menu/pix.png">
     </div>
 
     <h2>Escaneie o QR Code</h2>
 
-    <img src="../images/payments/qrcode-pix.svg"
-         style="width:220px; margin:20px auto; display:block;">
+    <!-- QR CODE -->
+    <img
+      id="qrCodePix"
+      style="
+        width:230px;
+        height:230px;
+        margin:20px auto;
+        display:block;
+        background:#fff;
+        padding:10px;
+        border-radius:16px;
+      "
+    >
 
-    <p style="margin-top:10px;">
+    <!-- TOTAL -->
+    <div style="
+      text-align:center;
+      font-size:22px;
+      font-weight:bold;
+      margin-top:10px;
+      color:#111827;
+    ">
+      <span id="valorPix">R$ 0,00</span>
+    </div>
+
+    <p style="margin-top:18px;">
       Chave Pix:
     </p>
 
-    <div style="
+    <!-- CHAVE -->
+    <div id="chavePix" style="
       background:#f3f4f6;
-      padding:12px;
-      border-radius:10px;
+      padding:14px;
+      border-radius:12px;
       margin-top:10px;
       font-weight:bold;
+      word-break:break-all;
     ">
-      restaurante@dataplate.com
+      pix@dataplate.com
     </div>
 
     <button class="btn-carrinho"
       style="margin-top:20px;"
+      onclick="copiarPix()">
+
+      Copiar Chave Pix
+    </button>
+
+    <button class="btn-carrinho"
+      style="
+        margin-top:12px;
+        background:#4aad19;
+      "
       onclick="pagamentoAprovado()">
 
       Já realizei o pagamento

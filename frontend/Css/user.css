@@ -1885,7 +1885,7 @@ h2 {
 
 /* EFEITO AO PASSAR O MOUSE */
 .menu-categorias button:hover{
-  background:#ff5a00;
+  background:#55ff06;
   color:#ffffff;
 
   transform:translateY(-2px);
@@ -1987,8 +1987,8 @@ h2 {
 }
 
 .icone-pagamento img{
-  width:42px;
-  height:42px;
+  width:68px;
+  height:68px;
   object-fit:contain;
 }
 
@@ -2128,14 +2128,14 @@ h2 {
   }
 
   .icone-pagamento{
-    width:58px;
-    height:58px;
-    min-width:58px;
+    width:68px;
+    height:68px;
+    min-width:68px;
   }
 
   .icone-pagamento img{
-    width:34px;
-    height:34px;
+    width: 58px;
+    height:58px;
   }
 
   .texto-pagamento h3{
