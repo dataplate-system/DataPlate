@@ -1,8 +1,7 @@
 package com.dataplate.controller;
 
-import com.dataplate.entity.Produto;
-import com.dataplate.exception.ErrorResponse;
-import com.dataplate.service.ProdutoService;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.dataplate.entity.Produto;
+import com.dataplate.exception.ErrorResponse;
+import com.dataplate.service.ProdutoService;
 
 @RestController
 @RequestMapping("/api/produtos")
@@ -67,6 +68,7 @@ public class ProdutosController {
     public ResponseEntity<?> criar(@RequestBody Produto produto) {
         try {
             logger.info("Criando novo produto: {}", produto != null ? produto.getNome() : null);
+            logger.info("Payload recebido: {}", produto);
 
             String erro = validarProduto(produto);
             if (erro != null) {
@@ -79,9 +81,14 @@ public class ProdutosController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
         } catch (Exception e) {
-            logger.error("Erro ao criar produto", e);
+            logger.error("Erro ao criar produto: ", e);
+            // Retorna o erro REAL para debug
+            String mensagemErro = e.getMessage() != null ? e.getMessage() : "Erro desconhecido";
+            logger.error("Mensagem de erro: {}", mensagemErro);
+            logger.error("Tipo de exceção: {}", e.getClass().getName());
+            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Erro ao criar produto"));
+                    .body(new ErrorResponse("Erro ao criar produto: " + mensagemErro));
         }
     }
 
@@ -117,8 +124,9 @@ public class ProdutosController {
             return ResponseEntity.ok(atualizado);
         } catch (Exception e) {
             logger.error("Erro ao atualizar produto com ID: " + id, e);
+            String mensagemErro = e.getMessage() != null ? e.getMessage() : "Erro desconhecido";
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Erro ao atualizar produto"));
+                    .body(new ErrorResponse("Erro ao atualizar produto: " + mensagemErro));
         }
     }
 
@@ -144,8 +152,9 @@ public class ProdutosController {
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             logger.error("Erro ao deletar produto com ID: " + id, e);
+            String mensagemErro = e.getMessage() != null ? e.getMessage() : "Erro desconhecido";
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Erro ao deletar produto"));
+                    .body(new ErrorResponse("Erro ao deletar produto: " + mensagemErro));
         }
     }
 
