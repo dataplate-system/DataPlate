@@ -174,6 +174,15 @@ async function putJson(endpoint, payload) {
   return readResponseBody(response);
 }
 
+async function deleteJson(endpoint) {
+  const response = await apiFetch(endpoint, { method: 'DELETE' });
+  if (!response.ok) {
+    const body = await readResponseBody(response);
+    throw new Error(extractErrorMessage(body, 'Nao foi possivel excluir.'));
+  }
+  return readResponseBody(response);
+}
+
 async function getJson(endpoint) {
   const response = await apiFetch(endpoint);
   if (!response.ok) {
@@ -363,6 +372,43 @@ function formatCep(value) {
   return onlyDigits(value).slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
 }
 
+function isRepeatedDigits(digits) {
+  return /^(\d)\1+$/.test(digits);
+}
+
+function isValidCpf(value) {
+  const cpf = onlyDigits(value);
+  if (cpf.length !== 11 || isRepeatedDigits(cpf)) return false;
+
+  const calcDigit = (base) => {
+    let sum = 0;
+    for (let i = 0; i < base.length; i += 1) {
+      sum += Number(base[i]) * (base.length + 1 - i);
+    }
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+
+  return calcDigit(cpf.slice(0, 9)) === Number(cpf[9])
+    && calcDigit(cpf.slice(0, 10)) === Number(cpf[10]);
+}
+
+function isValidCnpj(value) {
+  const cnpj = onlyDigits(value);
+  if (cnpj.length !== 14 || isRepeatedDigits(cnpj)) return false;
+
+  const calcDigit = (base, weights) => {
+    const sum = base.split('').reduce((total, digit, index) => total + Number(digit) * weights[index], 0);
+    const rest = sum % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+
+  const firstWeights = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  const secondWeights = [6, ...firstWeights];
+  return calcDigit(cnpj.slice(0, 12), firstWeights) === Number(cnpj[12])
+    && calcDigit(cnpj.slice(0, 13), secondWeights) === Number(cnpj[13]);
+}
+
 function setFieldValue(form, name, value) {
   const field = form.querySelector(`[name="${name}"]`);
   if (!field || value == null || value === '') return;
@@ -489,6 +535,10 @@ function validateFields(container) {
     field.setCustomValidity('');
     if (field.value && !new RegExp(`^${field.pattern}$`).test(field.value)) {
       field.setCustomValidity(field.title || 'Preencha o campo no formato correto.');
+    } else if (field.name === 'cpf' && field.value && !isValidCpf(field.value)) {
+      field.setCustomValidity('Digite um CPF valido.');
+    } else if (field.name === 'cnpj' && field.value && !isValidCnpj(field.value)) {
+      field.setCustomValidity('Digite um CNPJ valido.');
     }
   });
 }
@@ -593,11 +643,80 @@ function initCepAutocomplete() {
   document.querySelectorAll('form').forEach(configureCepAutocomplete);
 }
 
+function setModalMode(form, modalId, editing) {
+  const modal = document.getElementById(modalId);
+  const header = modal?.querySelector('.modal-header');
+  const submit = form?.querySelector('button[type="submit"]');
+  const titles = {
+    addClientModal: editing ? 'Editar Cliente' : 'Novo Cliente',
+    addFunctModal: editing ? 'Editar Funcionário' : 'Novo Funcionário',
+    addSupplierModal: editing ? 'Editar Fornecedor' : 'Novo Fornecedor',
+    addDishModal: editing ? 'Editar Item' : 'Novo Item'
+  };
+  if (header && titles[modalId]) header.textContent = titles[modalId];
+  if (submit) submit.textContent = editing ? 'Atualizar' : 'Cadastrar';
+}
+
+function resetCrudForm(form, modalId) {
+  if (!form) return;
+  form.reset();
+  const idField = form.querySelector('[name="id"]');
+  if (idField) idField.value = '';
+  setModalMode(form, modalId, false);
+}
+
+function splitPhone(value) {
+  const parts = String(value || '').split('/').map(part => part.trim()).filter(Boolean);
+  return { phone: parts[0] || '', phone2: parts[1] || '' };
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Nao foi possivel ler a imagem.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function getCategoryLabel(idCategoria) {
+  const labels = {
+    1: 'Sanduíches',
+    2: 'Massas',
+    3: 'Itens Principais',
+    4: 'Saladas',
+    5: 'Sobremesas',
+    6: 'Bebidas'
+  };
+  return labels[Number(idCategoria)] || idCategoria || '-';
+}
+
+function getCategorySlug(idCategoria) {
+  const slugs = {
+    1: 'hamburguer',
+    2: 'massas',
+    3: 'principais',
+    4: 'entradas',
+    5: 'sobremesas',
+    6: 'bebidas'
+  };
+  return slugs[Number(idCategoria)] || 'principais';
+}
+
 // Close modal when clicking outside
 document.addEventListener('click', (e) => {
   const modalTrigger = e.target.closest('[data-open-modal]');
   if (modalTrigger) {
     e.preventDefault();
+    const modalId = modalTrigger.getAttribute('data-open-modal');
+    const modal = document.getElementById(modalId);
+    const form = modal?.querySelector('form');
+    resetCrudForm(form, modalId);
+    if (modalId === 'addClientModal') configureClientPersonType(form);
     window.openModal(modalTrigger.getAttribute('data-open-modal'));
     return;
   }
@@ -626,6 +745,7 @@ document.addEventListener('keydown', (e) => {
 document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
+  const id = e.target.querySelector('[name="id"]')?.value;
   const codeInput = e.target.querySelector('[name="codigo"]');
   const fd = new FormData(e.target);
   const telefones = [fd.get('phone'), fd.get('phone2')].filter(Boolean).join(' / ');
@@ -641,13 +761,14 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
     .filter(Boolean)
     .join(', ');
   const payload = { codigo: codeInput?.value || null, nome: fd.get('name'), cpf: documento, email: fd.get('email'), telefone: telefones, endereco };
-  postJson('/clientes', payload)
+  const request = id ? putJson(`/clientes/${id}`, payload) : postJson('/clientes', payload);
+  request
     .then((cliente) => {
-      showToast(`Cliente adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
+      showToast(`Cliente ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addClientModal');
-      e.target.reset();
+      resetCrudForm(e.target, 'addClientModal');
       configureClientPersonType(e.target);
-      adicionarLinhaCliente(cliente);
+      carregarClientes();
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar cliente.'));
 });
@@ -656,15 +777,17 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
 document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
+  const id = e.target.querySelector('[name="id"]')?.value;
   const codeInput = e.target.querySelector('[name="codigo"]');
   const fd = new FormData(e.target);
   const payload = { codigo: codeInput?.value || null, nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
-  postJson('/funcionarios', payload)
+  const request = id ? putJson(`/funcionarios/${id}`, payload) : postJson('/funcionarios', payload);
+  request
     .then((func) => {
-      showToast(`Funcionario adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
+      showToast(`Funcionario ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addFunctModal');
-      e.target.reset();
-      adicionarLinhaFuncionario(func);
+      resetCrudForm(e.target, 'addFunctModal');
+      carregarFuncionarios();
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar funcionario.'));
 });
@@ -673,16 +796,18 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
 document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
+  const id = e.target.querySelector('[name="id"]')?.value;
   const codeInput = e.target.querySelector('[name="codigo"]');
   const fd = new FormData(e.target);
   const telefones = [fd.get('phone'), fd.get('phone2')].filter(Boolean).join(' / ');
   const payload = { codigo: codeInput?.value || null, razaoSocial: fd.get('company'), cnpj: fd.get('cnpj'), especialidade: fd.get('specialty'), telefone: telefones, email: fd.get('email') };
-  postJson('/fornecedores', payload)
+  const request = id ? putJson(`/fornecedores/${id}`, payload) : postJson('/fornecedores', payload);
+  request
     .then((forn) => {
-      showToast(`Fornecedor adicionado com sucesso! Codigo: ${codeInput?.value || '-'}`, 'success');
+      showToast(`Fornecedor ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addSupplierModal');
-      e.target.reset();
-      adicionarLinhaFornecedor(forn);
+      resetCrudForm(e.target, 'addSupplierModal');
+      carregarFornecedores();
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
 });
@@ -734,10 +859,21 @@ document.querySelector('.category-remove-button')?.addEventListener('click', () 
   }
 });
 
-document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
+document.getElementById('addDishForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const formData = new FormData(e.target);
+  const id = e.target.querySelector('[name="id"]')?.value;
+  const previous = id ? (window.__produtos || []).find((item) => String(item.id) === String(id)) : null;
+  let imagem = previous?.imagem || null;
+
+  try {
+    const imageData = await fileToDataUrl(formData.get('image'));
+    if (imageData) imagem = imageData;
+  } catch (error) {
+    showToast(error.message || 'Erro ao ler imagem.');
+    return;
+  }
 
   const produto = {
     codigo: formData.get('codigo') || null,
@@ -745,17 +881,19 @@ document.getElementById('addDishForm')?.addEventListener('submit', (e) => {
     idCategoria: Number(formData.get('category')),
     preco: Number(formData.get('price')),
     descricao: formData.get('description'),
+    imagem,
     tempoPreparo: Number(formData.get('prepTime')) || null,
     ativo: formData.get('available') === 'on',
     destaque: formData.get('featured') === 'on'
   };
 
-  postJson('/produtos', produto)
+  const request = id ? putJson(`/produtos/${id}`, produto) : postJson('/produtos', produto);
+  request
     .then((produtoSalvo) => {
-      showToast('Prato adicionado com sucesso!', 'success');
+      showToast(`Prato ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addDishModal');
-      e.target.reset();
-      adicionarLinhaProduto(produtoSalvo);
+      resetCrudForm(e.target, 'addDishModal');
+      carregarProdutos();
     })
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);
@@ -1440,6 +1578,7 @@ function buttonLabel(button) {
 document.addEventListener('click', (e) => {
   const button = e.target.closest('button');
   if (!button || button.closest('.modal')) return;
+  if (button.dataset.crudAction) return;
 
   const label = buttonLabel(button);
   if (!label) return;
@@ -1678,6 +1817,11 @@ function formatCurrency(v) {
   return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
 }
 
+window.__clientes = [];
+window.__funcionarios = [];
+window.__fornecedores = [];
+window.__produtos = [];
+
 const _sectionLoaderNames = {
   clientes: 'carregarClientes',
   funcionarios: 'carregarFuncionarios',
@@ -1719,14 +1863,17 @@ function adicionarLinhaCliente(c) {
 function buildLinhaCliente(c) {
   return `<tr>
     <td><input type="checkbox" /></td>
-    <td><strong>${displayCode(c, 'CLI')}</strong></td>
-    <td><strong>${c.nome}</strong></td>
-    <td>${c.email || '-'}</td>
-    <td>${c.telefone || '-'}</td>
+    <td><strong>${escapeHtml(displayCode(c, 'CLI'))}</strong></td>
+    <td><strong>${escapeHtml(c.nome)}</strong></td>
+    <td>${escapeHtml(c.email || '-')}</td>
+    <td>${escapeHtml(c.telefone || '-')}</td>
     <td>-</td><td>-</td>
     <td><span class="badge badge-active">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(c.criadoEm)}</td>
-    <td><button class="btn-icon" title="Editar">✏️</button></td>
+    <td>
+      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarCliente(${c.id})">✏️</button>
+      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirCliente(${c.id})">🗑</button>
+    </td>
   </tr>`;
 }
 
@@ -1734,7 +1881,8 @@ function carregarClientes() {
   showTableSkeleton('clientes');
   getJson('/clientes')
     .then(list => {
-      setTableBody('clientes', list.map(buildLinhaCliente));
+      window.__clientes = list || [];
+      setTableBody('clientes', window.__clientes.map(buildLinhaCliente));
       applyToolbarFilters('clientes');
     })
     .catch((err) => {
@@ -1755,14 +1903,17 @@ function adicionarLinhaFuncionario(f) {
 
 function buildLinhaFuncionario(f) {
   return `<tr>
-    <td><strong>${displayCode(f, 'FUN')}</strong></td>
-    <td><strong>${f.nome}</strong></td>
-    <td><span class="badge badge-info">${f.cargo}</span></td>
-    <td>${f.telefone || '-'}</td>
+    <td><strong>${escapeHtml(displayCode(f, 'FUN'))}</strong></td>
+    <td><strong>${escapeHtml(f.nome)}</strong></td>
+    <td><span class="badge badge-info">${escapeHtml(f.cargo)}</span></td>
+    <td>${escapeHtml(f.telefone || '-')}</td>
     <td>${f.salario ? formatCurrency(f.salario) : '-'}</td>
     <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(f.criadoEm)}</td>
-    <td><button class="btn-icon" title="Editar">✏️</button></td>
+    <td>
+      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarFuncionario(${f.id})">✏️</button>
+      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirFuncionario(${f.id})">🗑</button>
+    </td>
   </tr>`;
 }
 
@@ -1770,7 +1921,8 @@ function carregarFuncionarios() {
   showTableSkeleton('funcionarios');
   getJson('/funcionarios')
     .then(list => {
-      setTableBody('funcionarios', list.map(buildLinhaFuncionario));
+      window.__funcionarios = list || [];
+      setTableBody('funcionarios', window.__funcionarios.map(buildLinhaFuncionario));
       applyToolbarFilters('funcionarios');
     })
     .catch((err) => {
@@ -1791,14 +1943,17 @@ function adicionarLinhaFornecedor(f) {
 
 function buildLinhaFornecedor(f) {
   return `<tr>
-    <td><strong>${displayCode(f, 'FOR')}</strong></td>
-    <td><strong>${f.razaoSocial}</strong></td>
-    <td>${f.telefone || '-'}</td>
-    <td>${f.email || '-'}</td>
+    <td><strong>${escapeHtml(displayCode(f, 'FOR'))}</strong></td>
+    <td><strong>${escapeHtml(f.razaoSocial)}</strong></td>
+    <td>${escapeHtml(f.telefone || '-')}</td>
+    <td>${escapeHtml(f.email || '-')}</td>
     <td>-</td>
     <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(f.criadoEm)}</td>
-    <td><button class="btn-icon" title="Editar">✏️</button></td>
+    <td>
+      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarFornecedor(${f.id})">✏️</button>
+      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirFornecedor(${f.id})">🗑</button>
+    </td>
   </tr>`;
 }
 
@@ -1806,7 +1961,8 @@ function carregarFornecedores() {
   showTableSkeleton('fornecedores');
   getJson('/fornecedores')
     .then(list => {
-      setTableBody('fornecedores', list.map(buildLinhaFornecedor));
+      window.__fornecedores = list || [];
+      setTableBody('fornecedores', window.__fornecedores.map(buildLinhaFornecedor));
       applyToolbarFilters('fornecedores');
     })
     .catch((err) => {
@@ -1827,15 +1983,18 @@ function adicionarLinhaProduto(p) {
 
 function buildLinhaProduto(p) {
   return `<tr>
-    <td><strong>${displayCode(p, 'PRO')}</strong></td>
-    <td><strong>${p.nome}</strong></td>
-    <td>${p.idCategoria || '-'}</td>
+    <td><strong>${escapeHtml(displayCode(p, 'PRO'))}</strong></td>
+    <td><strong>${escapeHtml(p.nome)}</strong></td>
+    <td>${escapeHtml(getCategoryLabel(p.idCategoria))}</td>
     <td>${formatCurrency(p.preco)}</td>
     <td>${p.tempoPreparo ? `${p.tempoPreparo} min` : '-'}</td>
     <td><span class="badge ${p.destaque ? 'badge-info' : 'badge-warning'}">${p.destaque ? 'Sim' : 'Não'}</span></td>
     <td><span class="badge badge-active">${p.ativo !== false ? 'Sim' : 'Não'}</span></td>
     <td>${formatDate(p.criadoEm)}</td>
-    <td><button class="btn-icon" title="Editar">✏️</button></td>
+    <td>
+      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarProduto(${p.id})">✏️</button>
+      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirProduto(${p.id})">🗑</button>
+    </td>
   </tr>`;
 }
 
@@ -1843,7 +2002,8 @@ function carregarProdutos() {
   showTableSkeleton('cardapio');
   getJson('/produtos')
     .then(list => {
-      setTableBody('cardapio', list.map(buildLinhaProduto));
+      window.__produtos = list || [];
+      setTableBody('cardapio', window.__produtos.map(buildLinhaProduto));
       applyToolbarFilters('cardapio');
     })
     .catch((err) => {
@@ -1852,6 +2012,127 @@ function carregarProdutos() {
       console.error('[cardapio]', err);
     });
 }
+
+window.editarCliente = function(id) {
+  const cliente = (window.__clientes || []).find((item) => item.id === id);
+  const form = document.getElementById('addClientForm');
+  if (!cliente || !form) return;
+
+  resetCrudForm(form, 'addClientModal');
+  form.querySelector('[name="id"]').value = cliente.id;
+  form.querySelector('[name="codigo"]').value = cliente.codigo || '';
+  const isCnpj = onlyDigits(cliente.cpf).length === 14;
+  form.querySelector('[name="tipoPessoa"]').value = isCnpj ? 'juridica' : 'fisica';
+  configureClientPersonType(form);
+  form.querySelector('[name="name"]').value = cliente.nome || '';
+  form.querySelector('[name="email"]').value = cliente.email || '';
+  form.querySelector('[name="cpf"], [name="cnpj"]').value = isCnpj ? formatCnpj(cliente.cpf) : formatCpf(cliente.cpf);
+  const phones = splitPhone(cliente.telefone);
+  form.querySelector('[name="phone"]').value = phones.phone;
+  form.querySelector('[name="phone2"]').value = phones.phone2;
+  form.querySelector('[name="address"]').value = cliente.endereco || '';
+  setModalMode(form, 'addClientModal', true);
+  window.openModal('addClientModal');
+};
+
+window.excluirCliente = function(id) {
+  const cliente = (window.__clientes || []).find((item) => item.id === id);
+  if (!cliente || !confirm(`Excluir o cliente "${cliente.nome}"?`)) return;
+  deleteJson(`/clientes/${id}`)
+    .then(() => {
+      showToast('Cliente excluido com sucesso!', 'success');
+      carregarClientes();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao excluir cliente.'));
+};
+
+window.editarFuncionario = function(id) {
+  const funcionario = (window.__funcionarios || []).find((item) => item.id === id);
+  const form = document.getElementById('addFunctForm');
+  if (!funcionario || !form) return;
+
+  resetCrudForm(form, 'addFunctModal');
+  form.querySelector('[name="id"]').value = funcionario.id;
+  form.querySelector('[name="codigo"]').value = funcionario.codigo || '';
+  form.querySelector('[name="name"]').value = funcionario.nome || '';
+  form.querySelector('[name="cpf"]').value = formatCpf(funcionario.cpf || '');
+  form.querySelector('[name="phone"]').value = funcionario.telefone || '';
+  form.querySelector('[name="role"]').value = funcionario.cargo || 'Atendente';
+  form.querySelector('[name="salary"]').value = funcionario.salario || '';
+  setModalMode(form, 'addFunctModal', true);
+  window.openModal('addFunctModal');
+};
+
+window.excluirFuncionario = function(id) {
+  const funcionario = (window.__funcionarios || []).find((item) => item.id === id);
+  if (!funcionario || !confirm(`Excluir o funcionario "${funcionario.nome}"?`)) return;
+  deleteJson(`/funcionarios/${id}`)
+    .then(() => {
+      showToast('Funcionario excluido com sucesso!', 'success');
+      carregarFuncionarios();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao excluir funcionario.'));
+};
+
+window.editarFornecedor = function(id) {
+  const fornecedor = (window.__fornecedores || []).find((item) => item.id === id);
+  const form = document.getElementById('addSupplierForm');
+  if (!fornecedor || !form) return;
+
+  resetCrudForm(form, 'addSupplierModal');
+  form.querySelector('[name="id"]').value = fornecedor.id;
+  form.querySelector('[name="codigo"]').value = fornecedor.codigo || '';
+  form.querySelector('[name="company"]').value = fornecedor.razaoSocial || '';
+  form.querySelector('[name="cnpj"]').value = formatCnpj(fornecedor.cnpj || '');
+  form.querySelector('[name="specialty"]').value = fornecedor.especialidade || '';
+  form.querySelector('[name="email"]').value = fornecedor.email || '';
+  const phones = splitPhone(fornecedor.telefone);
+  form.querySelector('[name="phone"]').value = phones.phone;
+  form.querySelector('[name="phone2"]').value = phones.phone2;
+  setModalMode(form, 'addSupplierModal', true);
+  window.openModal('addSupplierModal');
+};
+
+window.excluirFornecedor = function(id) {
+  const fornecedor = (window.__fornecedores || []).find((item) => item.id === id);
+  if (!fornecedor || !confirm(`Excluir o fornecedor "${fornecedor.razaoSocial}"?`)) return;
+  deleteJson(`/fornecedores/${id}`)
+    .then(() => {
+      showToast('Fornecedor excluido com sucesso!', 'success');
+      carregarFornecedores();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao excluir fornecedor.'));
+};
+
+window.editarProduto = function(id) {
+  const produto = (window.__produtos || []).find((item) => item.id === id);
+  const form = document.getElementById('addDishForm');
+  if (!produto || !form) return;
+
+  resetCrudForm(form, 'addDishModal');
+  form.querySelector('[name="id"]').value = produto.id;
+  form.querySelector('[name="codigo"]').value = produto.codigo || '';
+  form.querySelector('[name="name"]').value = produto.nome || '';
+  form.querySelector('[name="category"]').value = String(produto.idCategoria || 1);
+  form.querySelector('[name="price"]').value = produto.preco || '';
+  form.querySelector('[name="prepTime"]').value = produto.tempoPreparo || '';
+  form.querySelector('[name="description"]').value = produto.descricao || '';
+  form.querySelector('[name="available"]').checked = produto.ativo !== false;
+  form.querySelector('[name="featured"]').checked = produto.destaque === true;
+  setModalMode(form, 'addDishModal', true);
+  window.openModal('addDishModal');
+};
+
+window.excluirProduto = function(id) {
+  const produto = (window.__produtos || []).find((item) => item.id === id);
+  if (!produto || !confirm(`Excluir o item "${produto.nome}"?`)) return;
+  deleteJson(`/produtos/${id}`)
+    .then(() => {
+      showToast('Produto excluido com sucesso!', 'success');
+      carregarProdutos();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao excluir produto.'));
+};
 
 function carregarMesas() {
   renderTables();

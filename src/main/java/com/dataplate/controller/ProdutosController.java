@@ -115,6 +115,24 @@ public class ProdutosController {
             if (produtoAtualizado.getDescricao() != null) {
                 produtoExistente.setDescricao(produtoAtualizado.getDescricao().trim());
             }
+            if (produtoAtualizado.getCodigo() != null) {
+                produtoExistente.setCodigo(produtoAtualizado.getCodigo());
+            }
+            if (produtoAtualizado.getIdCategoria() != null && produtoAtualizado.getIdCategoria() > 0) {
+                produtoExistente.setIdCategoria(produtoAtualizado.getIdCategoria());
+            }
+            if (produtoAtualizado.getImagem() != null) {
+                produtoExistente.setImagem(produtoAtualizado.getImagem().trim());
+            }
+            if (produtoAtualizado.getTempoPreparo() != null) {
+                produtoExistente.setTempoPreparo(produtoAtualizado.getTempoPreparo());
+            }
+            if (produtoAtualizado.getAtivo() != null) {
+                produtoExistente.setAtivo(produtoAtualizado.getAtivo());
+            }
+            if (produtoAtualizado.getDestaque() != null) {
+                produtoExistente.setDestaque(produtoAtualizado.getDestaque());
+            }
 
             Produto atualizado = produtoService.salvar(produtoExistente);
             logger.info("Produto atualizado com sucesso. ID: {}", id);

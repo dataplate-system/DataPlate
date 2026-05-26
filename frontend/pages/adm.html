@@ -995,6 +995,7 @@
       <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>
       <div class="modal-header">Novo Cliente</div>
       <form id="addClientForm">
+        <input type="hidden" name="id" data-optional="true" />
         <div class="form-row">
           <div class="form-group">
             <label>Código</label>
@@ -1019,6 +1020,10 @@
           </div>
         </div>
         <div class="form-row client-form-row-3">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="cliente@email.com" autocomplete="email" data-optional="true" />
+          </div>
           <div class="form-group">
             <label>CEP</label>
             <input type="text" name="cep" placeholder="00000-000" inputmode="numeric" maxlength="9" autocomplete="postal-code" />
@@ -1073,6 +1078,7 @@
       <button class="modal-close" onclick="closeModal('addFunctModal')">✕</button>
       <div class="modal-header">Novo Funcionário</div>
       <form id="addFunctForm">
+        <input type="hidden" name="id" data-optional="true" />
         <div class="form-row">
           <div class="form-group">
             <label>Código</label>
@@ -1121,6 +1127,7 @@
       <button class="modal-close" onclick="closeModal('addSupplierModal')">✕</button>
       <div class="modal-header">Novo Fornecedor</div>
       <form id="addSupplierForm">
+        <input type="hidden" name="id" data-optional="true" />
         <div class="form-row supplier-form-row-3">
           <div class="form-group">
             <label>Código</label>
@@ -1198,6 +1205,7 @@
       </button>
      <div class="modal-header">Novo Item</div>
      <form id="addDishForm">
+       <input type="hidden" name="id" data-optional="true" />
        <div class="form-layout">
          <!-- LADO ESQUERDO -->
          <div class="left-column">
@@ -1545,6 +1553,6 @@
       });
     })();
   </script>
-  <script src="../JavaScript/adm.js?v=5" defer></script>
+  <script src="../JavaScript/adm.js?v=6" defer></script>
 </body>
 </html>

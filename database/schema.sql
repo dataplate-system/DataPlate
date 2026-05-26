@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS clientes (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     codigo VARCHAR(20) UNIQUE,
     nome VARCHAR(255) NOT NULL,
-    cpf CHAR(14) NOT NULL UNIQUE,
+    cpf CHAR(18) NOT NULL UNIQUE,
     email VARCHAR(255),
     telefone VARCHAR(20),
     endereco TEXT,
@@ -173,4 +173,3 @@ SELECT r.id_restaurante, v.numero, 4, 'livre'
 FROM generate_series(1, 15) AS v(numero)
 CROSS JOIN (SELECT id_restaurante FROM restaurante LIMIT 1) AS r
 WHERE NOT EXISTS (SELECT 1 FROM mesa WHERE numero = v.numero);
-

@@ -30,6 +30,47 @@ let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 
 let categoriaAtual = "todos";
 
+let produtosCardapio = [];
+
+function getImagemProduto(produto) {
+  return produto.imagem || "../images/menu/hamburguer.jpg";
+}
+
+function getCategoriaProduto(produto) {
+  const categorias = {
+    1: "hamburguer",
+    2: "massas",
+    3: "principais",
+    4: "entradas",
+    5: "sobremesas",
+    6: "bebidas"
+  };
+  return categorias[Number(produto.idCategoria)] || "principais";
+}
+
+function formatarPreco(valor) {
+  return "R$ " + Number(valor || 0).toFixed(2).replace(".", ",");
+}
+
+function escaparHtml(valor) {
+  const div = document.createElement("div");
+  div.textContent = valor == null ? "" : String(valor);
+  return div.innerHTML;
+}
+
+function escaparJsString(valor) {
+  return String(valor == null ? "" : valor)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, " ");
+}
+
+function esconderTelasProduto() {
+  document.querySelectorAll('[id^="telaProduto"]').forEach((tela) => {
+    tela.style.display = "none";
+  });
+}
+
 // BOTÃO VOLTAR
 function voltarPagina() {
   window.history.back(); // volta para a página anterior
@@ -40,13 +81,7 @@ function abrirCarrinho() {
   document.getElementById("telaLista").style.display = "none";
 
   // esconder todos os produtos
-  document.getElementById("telaProduto").style.display = "none";
-  document.getElementById("telaProduto2").style.display = "none";
-  document.getElementById("telaProduto3").style.display = "none";
-  document.getElementById("telaProduto4").style.display = "none";
-  document.getElementById("telaProduto5").style.display = "none";
-  document.getElementById("telaProduto6").style.display = "none";
-  document.getElementById("telaProduto7").style.display = "none";
+  esconderTelasProduto();
 
   document.getElementById("telaCarrinho").style.display = "block";
 
@@ -59,8 +94,9 @@ function abrirCarrinho() {
 // FUNÇÃO PRINCIPAL (filtra tudo junto)
 function filtrar() {
   const textoBusca = searchInput.value.toLowerCase();
+  const itensAtuais = document.querySelectorAll("#listaPratos .item");
 
-  itens.forEach(item => {
+  itensAtuais.forEach(item => {
     const nome = item.querySelector("h3").textContent.toLowerCase();
     const categoriaItem = item.getAttribute("data-categoria");
 
@@ -285,14 +321,89 @@ function voltarCarrinho() {
   document.getElementById("telaLista").style.display = "block";
 
   // esconder produtos
-  document.getElementById("telaProduto").style.display = "none";
-  document.getElementById("telaProduto2").style.display = "none";
-  document.getElementById("telaProduto3").style.display = "none";
-  document.getElementById("telaProduto4").style.display = "none";
-  document.getElementById("telaProduto5").style.display = "none";
-  document.getElementById("telaProduto6").style.display = "none";
-  document.getElementById("telaProduto7").style.display = "none";
+  esconderTelasProduto();
 
+}
+
+function voltarListaDinamica() {
+  esconderTelasProduto();
+  document.getElementById("telaLista").style.display = "block";
+}
+
+function abrirProdutoDinamico(produtoId) {
+  const produto = produtosCardapio.find((item) => Number(item.id) === Number(produtoId));
+  if (!produto) return;
+
+  esconderTelasProduto();
+  document.getElementById("telaLista").style.display = "none";
+
+  let tela = document.getElementById("telaProdutoDinamico");
+  if (!tela) {
+    tela = document.createElement("div");
+    tela.id = "telaProdutoDinamico";
+    tela.style.display = "none";
+    document.body.appendChild(tela);
+  }
+
+  const imagem = getImagemProduto(produto);
+  const nome = escaparHtml(produto.nome);
+  const descricao = escaparHtml(produto.descricao || "Sem descrição cadastrada.");
+  tela.innerHTML = `
+    <header class="topo">
+      <button class="voltar" onclick="voltarListaDinamica()">←</button>
+      <img src="../images/brand/logo-emp.png" class="logo-topo">
+      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+    </header>
+    <div class="topo-img">
+      <img src="${escaparHtml(imagem)}">
+    </div>
+    <div class="container">
+      <h2>${nome}</h2>
+      <p>${descricao}</p>
+      <span class="preco">${formatarPreco(produto.preco)}</span>
+      <h3>Quantidade</h3>
+      <div class="quantidade">
+        <button onclick="diminuirQtd(this)">-</button>
+        <span class="qtd">1</span>
+        <button onclick="aumentarQtd(this)">+</button>
+      </div>
+      <button class="btn-carrinho" onclick="adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+        Adicionar ao carrinho
+      </button>
+    </div>
+  `;
+  tela.style.display = "block";
+}
+
+async function carregarCardapio() {
+  const lista = document.getElementById("listaPratos");
+  if (!lista) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/produtos`);
+    if (!response.ok) {
+      const body = await readResponseBody(response);
+      throw new Error(extractErrorMessage(body, "Nao foi possivel carregar o cardapio."));
+    }
+
+    const produtos = await response.json();
+    produtosCardapio = produtos.filter((produto) => produto.ativo !== false);
+    if (!produtosCardapio.length) return;
+
+    lista.innerHTML = produtosCardapio.map((produto) => `
+      <div class="item" data-categoria="${getCategoriaProduto(produto)}" onclick="abrirProdutoDinamico(${produto.id})">
+        <img src="${escaparHtml(getImagemProduto(produto))}">
+        <div class="info">
+          <h3>${escaparHtml(produto.nome)}</h3>
+          <p>${escaparHtml(produto.descricao || "Sem descrição cadastrada.")}</p>
+          <span class="preco">${formatarPreco(produto.preco)}</span>
+        </div>
+      </div>
+    `).join("");
+    filtrar();
+  } catch (error) {
+    console.error("Erro ao carregar cardapio:", error);
+  }
 }
 
 // pagamento
@@ -555,6 +666,7 @@ function atualizarBotaoPedido() {
 }
 
 // roda ao abrir app
+carregarCardapio();
 atualizarBotaoPedido();
 
 

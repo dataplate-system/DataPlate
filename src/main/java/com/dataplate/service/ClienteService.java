@@ -7,6 +7,8 @@ import com.dataplate.repository.ClienteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -23,18 +25,38 @@ public class ClienteService {
     @Transactional
     public ClienteResponse criar(ClienteRequest req) {
         Cliente c = new Cliente();
-        c.setCodigo(normalizeCodigo(req.codigo()));
-        c.setNome(req.nome());
-        c.setCpf(req.cpf());
-        c.setEmail(req.email());
-        c.setTelefone(req.telefone());
-        c.setEndereco(req.endereco());
+        applyRequest(c, req);
         Cliente salvo = repo.save(c);
         if (salvo.getCodigo() == null) {
             salvo.setCodigo(formatCodigo("CLI", salvo.getId()));
             salvo = repo.save(salvo);
         }
         return toResponse(salvo);
+    }
+
+    @Transactional
+    public ClienteResponse atualizar(Long id, ClienteRequest req) {
+        Cliente c = repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado"));
+        applyRequest(c, req);
+        return toResponse(repo.save(c));
+    }
+
+    @Transactional
+    public void excluir(Long id) {
+        if (!repo.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado");
+        }
+        repo.deleteById(id);
+    }
+
+    private void applyRequest(Cliente c, ClienteRequest req) {
+        c.setCodigo(normalizeCodigo(req.codigo()));
+        c.setNome(req.nome().trim());
+        c.setCpf(req.cpf().trim());
+        c.setEmail(blankToNull(req.email()));
+        c.setTelefone(blankToNull(req.telefone()));
+        c.setEndereco(blankToNull(req.endereco()));
     }
 
     private ClienteResponse toResponse(Cliente c) {
@@ -46,6 +68,10 @@ public class ClienteService {
     private String normalizeCodigo(String codigo) {
         if (codigo == null || codigo.isBlank()) return null;
         return codigo.trim().toUpperCase();
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private String codigoOrDefault(String codigo, String prefixo, Long id) {
