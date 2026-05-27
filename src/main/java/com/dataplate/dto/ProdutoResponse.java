@@ -1,14 +1,17 @@
 package com.dataplate.dto;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public record ProdutoResponse(
-        Long id,
-        String nome,
-        String descricao,
-        BigDecimal preco,
-        String imagemUrl,
-        Boolean disponivel,
-        Integer tempoPreparo
-) {
-}
+    Long idProduto,
+    String Codigo,
+    Long idCategoria,
+    String nome,
+    String descricao,
+    Double preco,
+    String imagem,
+    Boolean ativo,
+    Integer tempoPreparo,
+    Boolean destaque,
+    LocalDateTime criadoEm
+) {}

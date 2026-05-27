@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,9 @@ public class Produto {
     @Column(name = "id_produto")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @Column(name = "codigo", unique = true, length = 20)
+    private String codigo;
 
     @Column(name = "id_categoria", nullable = false)
     private Long idCategoria;
@@ -55,7 +59,7 @@ public class Produto {
     private LocalDateTime criadoEm;
 
     // Hook para setar data de criação automaticamente
-    @jakarta.persistence.PrePersist
+    @PrePersist
     protected void onCreate() {
         if (criadoEm == null) {
             criadoEm = LocalDateTime.now();
