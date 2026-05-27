@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: dataplate
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: dataplate-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: dataplate-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: dataplate-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: dataplate-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: dataplate-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        value: https://dataplate.onrender.com
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+databases:
+  - name: dataplate-db
+    databaseName: data_plate
+    user: dataplate
+    plan: free
+    ipAllowList: []

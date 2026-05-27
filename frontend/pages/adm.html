@@ -1,0 +1,1558 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Painel Administrativo</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/adm.css" />
+</head>
+<body>
+  <div class="admin-container">
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="header-left">
+        <div class="logo-area">
+          <button class="logo-text" onclick="navigateTo('contentcenter')">
+              DataPlate
+          </button>
+        </div>
+      </div>
+      <nav class="main-nav">
+        <!-- Cadastros -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Cadastros</button>
+          <div class="dropdown-menu">
+            <a href="#clientes" class="dropdown-link" onclick="navigateTo('clientes')">Clientes</a>
+            <a href="#fornecedores" class="dropdown-link" onclick="navigateTo('fornecedores')">Fornecedores</a>
+            <a href="#funcionarios" class="dropdown-link" onclick="navigateTo('funcionarios')">Funcionários</a>
+            <a href="#cardapio" class="dropdown-link" onclick="navigateTo('cardapio')">Cardápio</a>
+          </div>
+        </div>
+
+        <!-- Operações -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Operações</button>
+          <div class="dropdown-menu">
+            <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
+            <a href="#mesas" class="dropdown-link" onclick="navigateTo('mesas')">Mesas</a>
+            <a href="#cozinha" class="dropdown-link" onclick="navigateTo('cozinha')">Cozinha</a>
+          </div>
+        </div>
+
+        <!-- Relatórios -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Relatórios</button>
+          <div class="dropdown-menu">
+            <a href="#rel-vendas" class="dropdown-link" onclick="navigateTo('rel-vendas')">Vendas</a>
+            <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
+            <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
+            <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
+          </div>
+        </div>
+
+        <!-- Configurações -->
+        <div class="nav-item dropdown">
+          <button type="button" class="nav-button">Configurações</button>
+          <div class="dropdown-menu">
+            <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
+            <a href="#config-usuarios" class="dropdown-link" onclick="navigateTo('config-usuarios')">Usuários e Permissões</a>
+            <a href="#config-integracao" class="dropdown-link" onclick="navigateTo('config-integracao')">Integração</a>
+            <a href="#config-notificacoes" class="dropdown-link" onclick="navigateTo('config-notificacoes')">Notificações</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="header-right">
+        <div class="user-menu dropdown">
+          <button type="button" class="user-button">
+            <div class="user-avatar-small">GP</div>
+            <span>Gerente</span>
+          </button>
+          <div class="dropdown-menu dropdown-right">
+            <a href="#perfil" class="dropdown-link" data-open-modal="profileModal">Meu Perfil</a>
+            <a href="#seguranca" class="dropdown-link" data-open-modal="securityModal">Segurança</a>
+            <a href="#trocar-usuario" class="dropdown-link" data-open-modal="switchUserModal">Trocar de Usuário</a>
+            <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">
+            <a href="#logout" class="dropdown-link logout-link" data-open-modal="logoutModal">Sair</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+      <!-- CONTENT -->
+      <div class="contentcenter">
+        <div class="search-box">
+          <input class="pesquisa" type="text" placeholder="Pesquisar..." />
+        </div>
+        <img src="../images/brand/logo-dataplate.png" alt="Logo" class="logocenter">
+          <div class="nomecenter">DataPlate</div>
+          <p id="textcenter">Software de gestão inteligente para restaurantes</p>
+
+        <!-- CLIENTES -->
+        <section id="clientes" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Clientes</h1>
+            <p>Gerencie cadastros de clientes e histórico de pedidos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addClientModal')" data-open-modal="addClientModal">+ Novo Cliente</button>
+            <div class="toolbar-filters">
+              <input id="clientSearchFilter" type="text" placeholder="Pesquisar por nome ou CPF..." class="filter-input" data-table-search data-section="clientes" />
+              <select id="clientSortFilter" class="filter-select toolbar-filter-select" aria-label="Filtrar clientes" data-table-filter data-section="clientes">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="2" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="1" data-sort-type="text">Código</option>
+                <option value="gasto" data-sort-column="6" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
+                <option value="ativo" data-filter-column="7" data-filter-match="exact">Ativos</option>
+                <option value="inativo" data-filter-column="7" data-filter-match="exact">Inativos</option>
+                <option value="bloqueado" data-filter-column="7" data-filter-match="exact">Bloqueados</option>
+              </select>
+            </div>
+            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" /></th>
+                  <th>Cód</th>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Telefone</th>
+                  <th>Pedidos</th>
+                  <th>Gasto Total</th>
+                  <th>Status</th>
+                  <th>Cadastrado em</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- FUNCIONÁRIOS -->
+        <section id="funcionarios" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Funcionários</h1>
+            <p>Controle de pessoal, permissões e horários</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addFunctModal')" data-open-modal="addFunctModal">+ Novo Funcionário</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar por nome..." class="filter-input" data-table-search data-section="funcionarios" />
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar funcionários" data-table-filter data-section="funcionarios">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="1" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="salario" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Salário</option>
+                <option value="ativo" data-filter-column="5" data-filter-match="exact">Ativos</option>
+                <option value="inativo" data-filter-column="5" data-filter-match="exact">Inativos</option>
+                <option value="gerente" data-filter-column="2">Gerente</option>
+                <option value="cozinheiro" data-filter-column="2">Cozinheiro</option>
+                <option value="atendente" data-filter-column="2">Atendente</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cód</th>
+                  <th>Nome</th>
+                  <th>Cargo</th>
+                  <th>Telefone</th>
+                  <th>Salário</th>
+                  <th>Status</th>
+                  <th>Admissão</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- FORNECEDORES -->
+        <section id="fornecedores" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Fornecedores</h1>
+            <p>Cadastro e relacionamento com fornecedores parceiros</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addSupplierModal')" data-open-modal="addSupplierModal">+ Novo Fornecedor</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar fornecedor..." class="filter-input" data-table-search data-section="fornecedores" />
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar fornecedores" data-table-filter data-section="fornecedores">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="1" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="ativo" data-filter-column="5" data-filter-match="exact">Ativos</option>
+                <option value="inativo" data-filter-column="5" data-filter-match="exact">Inativos</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cód</th>
+                  <th>Razão Social</th>
+                  <th>Telefone</th>
+                  <th>Email</th>
+                  <th>Cidade</th>
+                  <th>Status</th>
+                  <th>Última Compra</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CARDÁPIO -->
+        <section id="cardapio" class="content-section">
+          <div class="section-header">
+            <h1>Gestão do Cardápio</h1>
+            <p>Cadastro, preço e disponibilidade de Itens</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addDishModal')" data-open-modal="addDishModal">+ Novo Item</button>
+            <div class="toolbar-filters">
+              <input type="text" placeholder="Pesquisar Items..." class="filter-input" data-table-search data-section="cardapio" />
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar cardápio" data-table-filter data-section="cardapio">
+                <option value="">Filtrar</option>
+                <option value="az" data-sort-column="1" data-sort-type="text">A-Z</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="preco" data-sort-column="3" data-sort-type="number" data-sort-direction="desc">Preço</option>
+                <option value="sim" data-filter-column="6" data-filter-match="exact">Disponíveis</option>
+                <option value="não" data-filter-column="6" data-filter-match="exact">Indisponíveis</option>
+                <option value="sanduíches" data-filter-column="2">Sanduíches</option>
+                <option value="massas" data-filter-column="2">Massas</option>
+                <option value="saladas" data-filter-column="2">Saladas</option>
+                <option value="sobremesas" data-filter-column="2">Sobremesas</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cód</th>
+                  <th>Item</th>
+                  <th>Categoria</th>
+                  <th>Preço</th>
+                  <th>Tempo de Preparo</th>
+                  <th>Destaque</th>
+                  <th>Disponível</th>
+                  <th>Cadastrado em</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PEDIDOS -->
+        <section id="pedidos" class="content-section">
+          <div class="section-header">
+            <h1>Gestão de Pedidos</h1>
+            <p>Controle e acompanhamento de todos os pedidos</p>
+          </div>
+
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <select class="filter-select toolbar-filter-select" aria-label="Filtrar pedidos" data-table-filter data-section="pedidos">
+                <option value="">Filtrar</option>
+                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
+                <option value="total" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
+                <option value="recebido" data-filter-column="5" data-filter-match="exact">Recebido</option>
+                <option value="preparando" data-filter-column="5" data-filter-match="exact">Preparando</option>
+                <option value="pronto" data-filter-column="5" data-filter-match="exact">Pronto</option>
+                <option value="entregue" data-filter-column="5" data-filter-match="exact">Entregue</option>
+                <option value="cancelado" data-filter-column="5" data-filter-match="exact">Cancelado</option>
+              </select>
+              <input type="date" class="filter-input" data-table-date data-section="pedidos" />
+            </div>
+            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID Pedido</th>
+                  <th>Cliente</th>
+                  <th>Data/Hora</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Tempo Preparo</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- MESAS -->
+        <section id="mesas" class="content-section">
+          <div class="section-header">
+            <h1>Controle de Mesas</h1>
+            <p>Gerencie disponibilidade, reservas, capacidade e localização das mesas</p>
+          </div>
+
+          <div class="stats-grid table-stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Mesas Cadastradas</div>
+              <div class="stat-value" id="tablesTotal">0</div>
+              <div class="stat-change">Salão completo</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Disponíveis</div>
+              <div class="stat-value" id="tablesAvailable">0</div>
+              <div class="stat-change positive">Prontas para receber clientes</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Reservadas</div>
+              <div class="stat-value" id="tablesReserved">0</div>
+              <div class="stat-change">Com horário marcado</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lugares Livres</div>
+              <div class="stat-value" id="tablesSeats">0</div>
+              <div class="stat-change">Capacidade disponível agora</div>
+            </div>
+          </div>
+
+          <div class="section-toolbar table-toolbar">
+            <button type="button" class="btn-primary" onclick="openTableModal()">+ Nova Mesa</button>
+            <div class="toolbar-filters">
+              <input id="tableSearch" type="text" placeholder="Pesquisar mesa, cliente ou área..." class="filter-input" />
+              <select id="tableFilter" class="filter-select toolbar-filter-select" aria-label="Filtrar mesas">
+                <option value="">Filtrar</option>
+                <option value="status:disponivel">Disponível</option>
+                <option value="status:reservada">Reservada</option>
+                <option value="status:ocupada">Ocupada</option>
+                <option value="status:manutencao">Manutenção</option>
+              </select>
+              <button type="button" class="btn-secondary" id="clearTableFilters">Limpar</button>
+            </div>
+          </div>
+
+          <div class="table-control-layout">
+            <div class="report-section table-map-panel">
+              <div class="panel-heading">
+                <h3>Mapa do salão</h3>
+                <span id="nextReservation">Próxima reserva: --</span>
+              </div>
+              <div class="table-map-legend" aria-label="Legenda de status das mesas">
+                <span><i class="legend-dot legend-available"></i>Disponível</span>
+                <span><i class="legend-dot legend-reserved"></i>Reservada</span>
+                <span><i class="legend-dot legend-occupied"></i>Ocupada</span>
+                <span><i class="legend-dot legend-maintenance"></i>Manutenção</span>
+              </div>
+              <div class="tables-map" id="tablesMap"></div>
+            </div>
+
+            <aside class="report-section table-detail-panel" id="tableDetailPanel">
+              <div class="empty-detail">
+                <strong>Selecione uma mesa</strong>
+                <span>Os detalhes da reserva e da localização aparecem aqui.</span>
+              </div>
+            </aside>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nº Mesa</th>
+                  <th>Lugares</th>
+                  <th>Localização</th>
+                  <th>Status</th>
+                  <th>Reserva</th>
+                  <th>Contato</th>
+                  <th>Data/Hora</th>
+                  <th>Observações</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tablesTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- COZINHA -->
+        <section id="cozinha" class="content-section">
+          <div class="section-header">
+            <h1>Painel da Cozinha</h1>
+            <p>Controle de preparação de pedidos em tempo real</p>
+          </div>
+
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <select class="filter-select">
+                <option>Aguardando Preparo</option>
+                <option>Em Preparação</option>
+                <option>Pronto para Entrega</option>
+              </select>
+              <button class="btn-secondary">Atualizar</button>
+            </div>
+          </div>
+
+          <div class="kitchen-board">
+            <div class="kitchen-column" id="col-recebido">
+              <h3>Aguardando Preparo (<span class="col-count">0</span>)</h3>
+            </div>
+            <div class="kitchen-column" id="col-em_preparo">
+              <h3>Em Preparação (<span class="col-count">0</span>)</h3>
+            </div>
+            <div class="kitchen-column" id="col-pronto">
+              <h3>Pronto para Entrega (<span class="col-count">0</span>)</h3>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO DE VENDAS -->
+        <section id="rel-vendas" class="content-section">
+          <div class="section-header">
+            <h1>Relatório de Vendas</h1>
+            <p>Análise detalhada de vendas e performance</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Hoje</option>
+                <option>Últimos 7 dias</option>
+                <option>Este mês</option>
+                <option>Personalizado</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Data Inicial</label>
+              <input type="date" />
+            </div>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" />
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-secondary">📊 Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total de Vendas</div>
+              <div class="stat-value">R$ 4.250,00</div>
+              <div class="stat-change positive">↑ 15% vs período anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Quantidade de Pedidos</div>
+              <div class="stat-value">156</div>
+              <div class="stat-change positive">↑ 8 pedidos a mais</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ticket Médio</div>
+              <div class="stat-value">R$ 27,24</div>
+              <div class="stat-change">→ Sem variação</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Produto Mais Vendido</div>
+              <div class="stat-value">Hambúrguer</div>
+              <div class="stat-change">42 unidades</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Vendas por Período</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Pedidos</th>
+                    <th>Valor Total</th>
+                    <th>Ticket Médio</th>
+                    <th>Items Top</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>02/05/2026</td>
+                    <td>28</td>
+                    <td>R$ 850,00</td>
+                    <td>R$ 30,36</td>
+                    <td>Hambúrguer (12)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO FINANCEIRO -->
+        <section id="rel-financeiro" class="content-section">
+          <div class="section-header">
+            <h1>Relatório Financeiro</h1>
+            <p>Análise de receitas, despesas e lucros</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Este mês</option>
+                <option>Mês passado</option>
+                <option>Últimos 3 meses</option>
+                <option>Este ano</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-secondary">📊 Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Receita Bruta</div>
+              <div class="stat-value">R$ 28.500,00</div>
+              <div class="stat-change positive">↑ 12% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Despesas Totais</div>
+              <div class="stat-value">R$ 12.200,00</div>
+              <div class="stat-change negative">↑ 5% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lucro Líquido</div>
+              <div class="stat-value">R$ 16.300,00</div>
+              <div class="stat-change positive">↑ 18% vs mês anterior</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Margem de Lucro</div>
+              <div class="stat-value">57%</div>
+              <div class="stat-change">Saudável</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Composição de Despesas</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Categoria</th>
+                    <th>Valor</th>
+                    <th>% do Total</th>
+                    <th>Observações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Compras operacionais</td>
+                    <td>R$ 8.500,00</td>
+                    <td>69%</td>
+                    <td>Aumento esperado</td>
+                  </tr>
+                  <tr>
+                    <td>Folha de Pagamento</td>
+                    <td>R$ 3.200,00</td>
+                    <td>26%</td>
+                    <td>Normal</td>
+                  </tr>
+                  <tr>
+                    <td>Utilidades</td>
+                    <td>R$ 500,00</td>
+                    <td>5%</td>
+                    <td>Normal</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO DE CARDÁPIO -->
+        <section id="rel-cardapio" class="content-section">
+          <div class="section-header">
+            <h1>Desempenho do Cardápio</h1>
+            <p>Análise de quais Itens estão mais vendidos</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Últimos 30 dias</option>
+                <option>Este mês</option>
+                <option>Últimos 3 meses</option>
+                <option>Este ano</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+          </div>
+
+          <div class="report-section">
+            <h3>Itens Mais Vendidos</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Items</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Faturamento</th>
+                    <th>% do Total</th>
+                    <th>Custo Médio</th>
+                    <th>Lucro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Hambúrguer Artesanal</strong></td>
+                    <td>Sanduíches</td>
+                    <td>42</td>
+                    <td>R$ 1.214,00</td>
+                    <td>27%</td>
+                    <td>R$ 8,50</td>
+                    <td>R$ 855,00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Pasta Carbonara</strong></td>
+                    <td>Massas</td>
+                    <td>38</td>
+                    <td>R$ 1.615,00</td>
+                    <td>26%</td>
+                    <td>R$ 15,00</td>
+                    <td>R$ 1.045,00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- RELATÓRIO OPERACIONAL -->
+        <section id="rel-operacional" class="content-section">
+          <div class="section-header">
+            <h1>Relatório Operacional</h1>
+            <p>Análise de eficiência, tempos e performance</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Período</label>
+              <select>
+                <option>Últimos 30 dias</option>
+                <option>Este mês</option>
+                <option>Últimos 3 meses</option>
+              </select>
+            </div>
+            <button class="btn-primary">Gerar Relatório</button>
+            <button class="btn-secondary">📥 Exportar PDF</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Tempo Médio de Preparo</div>
+              <div class="stat-value">16.5 min</div>
+              <div class="stat-change positive">↓ 1.5 min a menos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Taxa de Rejeição</div>
+              <div class="stat-value">1.2%</div>
+              <div class="stat-change positive">Excelente</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ocupação Cozinha</div>
+              <div class="stat-value">82%</div>
+              <div class="stat-change">Ótima capacidade</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Pedidos Entregues no Prazo</div>
+              <div class="stat-value">96%</div>
+              <div class="stat-change positive">Acima do esperado</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO RESTAURANTE -->
+        <section id="config-restaurante" class="content-section">
+          <div class="section-header">
+            <h1>Configurações do Restaurante</h1>
+            <p>Informações gerais e operacionais</p>
+          </div>
+
+          <div class="config-form">
+            <div class="form-section">
+              <h3>Informações Básicas</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nome do Restaurante</label>
+                  <input type="text" value="Seu Restaurante" />
+                </div>
+                <div class="form-group">
+                  <label>CNPJ</label>
+                  <input type="text" value="12.345.678/0001-90" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Endereço</label>
+                  <input type="text" value="Rua das Flores, 123" />
+                </div>
+                <div class="form-group">
+                  <label>Complemento</label>
+                  <input type="text" value="Apto 456" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Cidade</label>
+                  <input type="text" value="São Paulo" />
+                </div>
+                <div class="form-group">
+                  <label>CEP</label>
+                  <input type="text" value="01234-567" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Contato</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Telefone Principal</label>
+                  <input type="tel" value="(11) 3000-0000" />
+                </div>
+                <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" value="contato@restaurante.com" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Whatsapp para Pedidos</label>
+                  <input type="tel" value="(11) 99999-9999" />
+                </div>
+                <div class="form-group">
+                  <label>Redes Sociais</label>
+                  <input type="text" placeholder="@usuario" />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Horário de Funcionamento</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Abertura</label>
+                  <input type="time" value="11:00" />
+                </div>
+                <div class="form-group">
+                  <label>Fechamento</label>
+                  <input type="time" value="23:00" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Dias de Funcionamento</label>
+                  <div class="checkbox-group">
+                    <label><input type="checkbox" checked /> Seg-Sex</label>
+                    <label><input type="checkbox" checked /> Sábado</label>
+                    <label><input type="checkbox" /> Domingo</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary">Salvar Alterações</button>
+              <button class="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO USUÁRIOS -->
+        <section id="config-usuarios" class="content-section">
+          <div class="section-header">
+            <h1>Usuários e Permissões</h1>
+            <p>Gerenciar acesso e permissões do sistema</p>
+          </div>
+
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" onclick="openModal('addUserModal')" data-open-modal="addUserModal">+ Novo Usuário</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>CPF</th>
+                  <th>Tipo de Acesso</th>
+                  <th>Módulos</th>
+                  <th>Status</th>
+                  <th>Último Acesso</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO INTEGRAÇÃO -->
+        <section id="config-integracao" class="content-section">
+          <div class="section-header">
+            <h1>Integrações</h1>
+            <p>Conecte seu restaurante com plataformas externas</p>
+          </div>
+
+          <div class="integrations-grid">
+            <div class="integration-card">
+              <div class="integration-icon">🛵</div>
+              <h4>Ifood</h4>
+              <p>Integração com plataforma de delivery</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+            <div class="integration-card">
+              <div class="integration-icon">💳</div>
+              <h4>PagSeguro</h4>
+              <p>Processamento de pagamentos online</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+            <div class="integration-card">
+              <div class="integration-icon">📍</div>
+              <h4>Google Maps</h4>
+              <p>Mapa de localização</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+            <div class="integration-card">
+              <div class="integration-icon">📧</div>
+              <h4>Email Marketing</h4>
+              <p>Disparos de promoções e notícias</p>
+              <button class="btn-small">Configurar</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONFIGURAÇÃO NOTIFICAÇÕES -->
+        <section id="config-notificacoes" class="content-section">
+          <div class="section-header">
+            <h1>Notificações</h1>
+            <p>Personalize seus alertas e notificações</p>
+          </div>
+
+          <div class="config-form">
+            <div class="form-section">
+              <h3>Notificações por Email</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Pedidos novos</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Reservas próximas</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Relatório diário</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" />
+                    <span>Manutenção do sistema</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Notificações por SMS</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" checked />
+                    <span>Mesa aguardando atendimento</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-primary">Salvar Preferências</button>
+              <button class="btn-secondary">Cancelar</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal" id="tableModal">
+    <div class="modal-content modal-content-table">
+      <button class="modal-close" onclick="closeModal('tableModal')">✕</button>
+      <div class="modal-header" id="tableModalTitle">Nova Mesa</div>
+      <form id="tableForm">
+        <input type="hidden" name="id" data-optional="true" />
+        <div class="form-row table-form-row-3">
+          <div class="form-group">
+            <label>Número da Mesa</label>
+            <input type="number" name="number" placeholder="Ex: 12" min="1" step="1" required />
+          </div>
+          <div class="form-group">
+            <label>Número de Lugares</label>
+            <input type="number" name="seats" placeholder="Ex: 4" min="1" step="1" required />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select name="status" required>
+              <option value="disponivel">Disponível</option>
+              <option value="reservada">Reservada</option>
+              <option value="ocupada">Ocupada</option>
+              <option value="manutencao">Manutenção</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Localização</label>
+            <select name="area" required>
+              <option>Salão principal</option>
+              <option>Varanda</option>
+              <option>Mezanino</option>
+              <option>Área externa</option>
+              <option>Espaço família</option>
+              <option>Bar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ponto de referência</label>
+            <input type="text" name="reference" placeholder="Ex: perto da janela" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row reservation-row">
+          <div class="form-group">
+            <label>Nome da Reserva</label>
+            <input type="text" name="reservationName" placeholder="Cliente responsável" data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="reservationPhone" placeholder="(11) 99999-9999" maxlength="15" data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Data e Hora</label>
+            <input type="datetime-local" name="reservationDate" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Observações</label>
+            <textarea name="notes" placeholder="Preferências, acessibilidade, aniversários ou manutenção" data-optional="true"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('tableModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar Mesa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addClientModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>
+      <div class="modal-header">Novo Cliente</div>
+      <form id="addClientForm">
+        <input type="hidden" name="id" data-optional="true" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código</label>
+            <input type="text" name="codigo" placeholder="Gerado ao cadastrar" autocomplete="off" readonly data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Tipo de Cliente</label>
+            <select name="tipoPessoa" class="client-type-select" required>
+              <option value="fisica" selected>Pessoa Física</option>
+              <option value="juridica">Pessoa Jurídica</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label data-client-name-label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label data-client-document-label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row client-form-row-3">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="cliente@email.com" autocomplete="email" data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>CEP</label>
+            <input type="text" name="cep" placeholder="00000-000" inputmode="numeric" maxlength="9" autocomplete="postal-code" />
+          </div>
+          <div class="form-group">
+            <label>Telefone 1</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+          <div class="form-group">
+            <label>Telefone 2</label>
+            <input type="tel" name="phone2" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row client-form-row-3">
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" name="address" placeholder="Rua ou avenida" autocomplete="street-address" required />
+          </div>
+          <div class="form-group">
+            <label>Nº</label>
+            <input type="text" name="num" placeholder="14" autocomplete="address-line2" />
+          </div>
+          <div class="form-group">
+            <label>Complemento</label>
+            <input type="text" name="complemento" placeholder="Apto, bloco, sala" autocomplete="address-line2" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row client-form-row-3">
+          <div class="form-group">
+            <label>Bairro</label>
+            <input type="text" name="bairro" placeholder="Centro" autocomplete="address-level3" required />
+          </div>
+          <div class="form-group">
+            <label>Cidade</label>
+            <input type="text" name="cidade" placeholder="São Paulo" autocomplete="address-level2" required />
+          </div>
+          <div class="form-group">
+            <label>UF</label>
+            <input type="text" name="uf" placeholder="SP" maxlength="2" autocomplete="address-level1" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addClientModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addFunctModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addFunctModal')">✕</button>
+      <div class="modal-header">Novo Funcionário</div>
+      <form id="addFunctForm">
+        <input type="hidden" name="id" data-optional="true" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Código</label>
+            <input type="text" name="codigo" placeholder="Gerado ao cadastrar" autocomplete="off" readonly data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+          <div class="form-group">
+            <label>Cargo</label>
+            <select name="role" required>
+              <option>Gerente</option>
+              <option>Cozinheiro(a)</option>
+              <option>Atendente</option>
+              <option>Entregador(a)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Salário</label>
+            <input type="number" name="salary" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addFunctModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="addSupplierModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addSupplierModal')">✕</button>
+      <div class="modal-header">Novo Fornecedor</div>
+      <form id="addSupplierForm">
+        <input type="hidden" name="id" data-optional="true" />
+        <div class="form-row supplier-form-row-3">
+          <div class="form-group">
+            <label>Código</label>
+            <input type="text" name="codigo" placeholder="Gerado ao cadastrar" autocomplete="off" readonly data-optional="true" />
+          </div>
+          <div class="form-group">
+            <label>Razão Social</label>
+            <input type="text" name="company" placeholder="Nome da empresa" autocomplete="organization" required />
+          </div>
+          <div class="form-group">
+            <label>CNPJ</label>
+            <input type="text" name="cnpj" placeholder="00.000.000/0000-00" inputmode="numeric" maxlength="18" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Especialidade</label>
+            <input type="text" name="specialty" placeholder="Carnes, Bebidas, etc" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="contato@fornecedor.com" autocomplete="email" required />
+          </div>
+        </div>
+        <div class="form-row supplier-form-row-3">
+          <div class="form-group">
+            <label>CEP</label>
+            <input type="text" name="cep" placeholder="00000-000" inputmode="numeric" maxlength="9" autocomplete="postal-code" />
+          </div>
+          <div class="form-group">
+            <label>Endereço</label>
+            <input type="text" name="address" placeholder="Rua ou avenida" autocomplete="street-address" required />
+          </div>
+          <div class="form-group">
+            <label>Complemento</label>
+            <input type="text" name="complemento" placeholder="Apto, bloco, sala" autocomplete="address-line2" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-row supplier-form-row-3">
+          <div class="form-group">
+            <label>Bairro</label>
+            <input type="text" name="bairro" placeholder="Centro" autocomplete="address-level3" required />
+          </div>
+          <div class="form-group">
+            <label>Cidade</label>
+            <input type="text" name="cidade" placeholder="São Paulo" autocomplete="address-level2" required />
+          </div>
+          <div class="form-group">
+            <label>UF</label>
+            <input type="text" name="uf" placeholder="SP" maxlength="2" autocomplete="address-level1" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Telefone 1</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" required />
+          </div>
+          <div class="form-group">
+            <label>Telefone 2</label>
+            <input type="tel" name="phone2" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" data-optional="true" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addSupplierModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+   <div class="modal" id="addDishModal">
+   <div class="modal-content">
+     <button class="modal-close" onclick="closeModal('addDishModal')">
+        ✕
+      </button>
+     <div class="modal-header">Novo Item</div>
+     <form id="addDishForm">
+       <input type="hidden" name="id" data-optional="true" />
+       <div class="form-layout">
+         <!-- LADO ESQUERDO -->
+         <div class="left-column">
+            <div class="form-group">
+             <label>Código</label>
+             <input type="text" name="codigo" placeholder="Gerado ao cadastrar" autocomplete="off" readonly data-optional="true" />
+            </div>
+            <div class="form-group">
+             <label>Nome do Item</label>
+             <input
+                type="text"
+                name="name"
+                placeholder="Ex: Hambúrguer Artesanal"
+                required
+              />
+            </div>
+            <div class="form-group">
+             <label>Categoria</label>
+             <select name="category" required>
+               <option value="1">Sanduíches</option>
+               <option value="2">Massas</option>
+               <option value="3">Itens Principais</option>
+                <option value="4">Saladas</option>
+                <option value="5">Sobremesas</option>
+                <option value="6">Bebidas</option>
+             </select>
+           </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Preço (R$)</label>
+                <input
+                  type="number"
+                 name="price"
+                  placeholder="0.00"
+                  min="0"
+                 step="0.01"
+                  required
+               />
+              </div>
+             <div class="form-group">
+                <label>Tempo de preparo (min)</label>
+                <input
+                 type="number"
+                  name="prepTime"
+                  placeholder="15"
+                  min="1"
+                 step="1"
+                 required
+               />
+             </div>
+            </div>
+           <div class="checkbox-group dish-options">
+              <label class="checkbox-label">
+                <input type="checkbox" name="available" checked data-optional="true" />
+                <span>Disponível no cardápio</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="featured" data-optional="true" />
+                <span>Marcar como destaque</span>
+              </label>
+           </div>
+          </div>
+          <!-- LADO DIREITO -->
+          <div class="right-column">
+            <div class="form-group category-create">
+             <label>Criar Categoria</label>
+             <div class="category-create-row">
+              <input type="text" name="newCategory" placeholder="Ex: Pizzas" data-optional="true" />
+              <button type="button" class="btn-secondary category-create-button">Adicionar</button>
+              <button type="button" class="btn-secondary category-remove-button">Remover</button>
+             </div>
+            </div>
+            <div class="form-group image-upload">
+             <label>Imagem do Item</label>
+             <input type="file" name="image" accept="image/*" />
+            </div>
+            <div class="form-group description-group">
+             <label>Descrição</label>
+               <textarea name="description" placeholder="Descrição do Items" required></textarea>
+           </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button
+           type="button"
+           class="btn-secondary"
+           onclick="closeModal('addDishModal')"
+         >
+            Cancelar
+         </button>
+         <button type="submit" class="btn-primary">
+            Cadastrar
+          </button>
+       </div>
+     </form>
+   </div>
+  </div>
+
+  <div class="modal" id="addUserModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+      <div class="modal-header">Novo Usuário</div>
+      <form id="addUserForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" placeholder="Nome completo" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Acesso</label>
+            <select name="accessType" required>
+              <option>Administrador</option>
+              <option>Gerente</option>
+              <option>Operacional</option>
+              <option>Visualização</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Senha</label>
+            <input type="password" name="temporaryPassword" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addUserModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Criar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="profileModal">
+    <div class="modal-content modal-content-small">
+      <button type="button" class="modal-close" onclick="closeModal('profileModal')">✕</button>
+      <div class="modal-header">Meu Perfil</div>
+      <form id="profileForm">
+        <div class="profile-summary">
+          <div class="user-avatar-large">GP</div>
+          <div>
+            <strong>Gerente Principal</strong>
+            <span>000.000.000-00</span>
+          </div>
+        </div>
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="name" value="Gerente Principal" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label>CPF</label>
+            <input type="text" name="cpf" value="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+        </div>
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" name="phone" placeholder="(11) 99999-9999" inputmode="tel" maxlength="15" autocomplete="tel" />
+          </div>
+          <div class="form-group">
+            <label>Cargo</label>
+            <input type="text" name="role" value="Gerente" readonly />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('profileModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Salvar Perfil</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="securityModal">
+    <div class="modal-content modal-content-small">
+      <button type="button" class="modal-close" onclick="closeModal('securityModal')">✕</button>
+      <div class="modal-header">Segurança</div>
+      <form id="securityForm">
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Senha Atual</label>
+            <input type="password" name="currentPassword" placeholder="Digite sua senha atual" autocomplete="current-password" required />
+          </div>
+          <div class="form-group">
+            <label>Nova Senha</label>
+            <input type="password" name="newPassword" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" minlength="8" required />
+          </div>
+        </div>
+        <div class="form-row modal-form-row">
+          <div class="form-group">
+            <label>Confirmar Nova Senha</label>
+            <input type="password" name="confirmPassword" placeholder="Repita a nova senha" autocomplete="new-password" minlength="8" required />
+          </div>
+          <div class="form-group">
+            <label>Verificação</label>
+            <label class="checkbox-label security-check">
+              <input type="checkbox" name="twoFactor" data-optional="true" />
+              <span>Ativar autenticação em duas etapas</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('securityModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Atualizar Segurança</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="switchUserModal">
+    <div class="modal-content modal-content-small">
+      <button type="button" class="modal-close" onclick="closeModal('switchUserModal')">✕</button>
+      <div class="modal-header">Trocar de Usuário</div>
+      <form id="switchUserForm">
+        <div class="switch-user-list">
+          <label class="switch-user-option">
+            <input type="radio" name="user" value="gerente" checked />
+            <span class="user-avatar-small">GP</span>
+            <span>
+              <strong>Gerente Principal</strong>
+              <small>Administrador</small>
+            </span>
+          </label>
+          <label class="switch-user-option">
+            <input type="radio" name="user" value="atendente" />
+            <span class="user-avatar-small">AT</span>
+            <span>
+              <strong>Atendente</strong>
+              <small>Operacional</small>
+            </span>
+          </label>
+          <label class="switch-user-option">
+            <input type="radio" name="user" value="cozinha" />
+            <span class="user-avatar-small">CZ</span>
+            <span>
+              <strong>Cozinha</strong>
+              <small>Pedidos e preparo</small>
+            </span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('switchUserModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Trocar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="logoutModal">
+    <div class="modal-content modal-content-confirm">
+      <button type="button" class="modal-close" onclick="closeModal('logoutModal')">✕</button>
+      <div class="modal-header">Sair</div>
+      <p class="modal-description">Deseja encerrar sua sessão no painel administrativo?</p>
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('logoutModal')">Cancelar</button>
+        <button type="button" class="btn-primary logout-confirm-button" onclick="logoutAdmin()">Sair</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      function lockBodyScroll() {
+        document.body.style.overflow = document.querySelector('.modal.active') ? 'hidden' : '';
+      }
+
+      window.openModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) {
+          console.warn('Modal nao encontrado:', modalId);
+          return;
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.setAttribute('aria-hidden', 'false');
+        lockBodyScroll();
+      };
+
+      window.closeModal = function (modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+        lockBodyScroll();
+      };
+
+      window.navigateTo = function (sectionId) {
+        document.querySelectorAll('.content-section').forEach(function (section) {
+          section.classList.remove('active');
+        });
+
+        const selectedSection = document.getElementById(sectionId);
+        if (selectedSection) selectedSection.classList.add('active');
+
+        const showWelcome = !selectedSection || sectionId === 'dashboard';
+        const logoCenter = document.querySelector('.logocenter');
+        const nomeCenter = document.querySelector('.nomecenter');
+        const textCenter = document.getElementById('textcenter');
+
+        if (logoCenter) logoCenter.style.display = showWelcome ? 'block' : 'none';
+        if (nomeCenter) nomeCenter.style.display = showWelcome ? 'block' : 'none';
+        if (textCenter) textCenter.style.display = showWelcome ? 'block' : 'none';
+      };
+
+      window.openAddDishModal = function () { window.openModal('addDishModal'); };
+      window.openAddUserModal = function () { window.openModal('addUserModal'); };
+      window.exportTable = function () { alert('Exportando dados...'); };
+      window.changeStatus = function () { alert('Status atualizado com sucesso!'); };
+
+      document.addEventListener('click', function (event) {
+        const trigger = event.target.closest('[data-open-modal]');
+        if (trigger) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.openModal(trigger.getAttribute('data-open-modal'));
+          return;
+        }
+
+        if (event.target.classList && event.target.classList.contains('modal')) {
+          window.closeModal(event.target.id);
+        }
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          document.querySelectorAll('.modal.active').forEach(function (modal) {
+            window.closeModal(modal.id);
+          });
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.modal').forEach(function (modal) {
+          modal.style.display = modal.classList.contains('active') ? 'flex' : 'none';
+          modal.setAttribute('aria-hidden', modal.classList.contains('active') ? 'false' : 'true');
+        });
+      });
+    })();
+  </script>
+  <script src="../JavaScript/adm.js?v=6" defer></script>
+</body>
+</html>

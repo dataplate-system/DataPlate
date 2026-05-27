@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Login Administrativo</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/adm-login.css" />
+</head>
+<body>
+  <main class="login-shell">
+    <section class="login-visual" aria-label="DataPlate Administrativo">
+      <div class="brand-lockup">
+        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
+        <div>
+          <strong>DataPlate</strong>
+          <span>Painel Administrativo</span>
+        </div>
+      </div>
+
+      <div class="login-preview">
+        <div class="preview-header">
+          <span>Hoje</span>
+          <strong>Operação em andamento</strong>
+        </div>
+        <div class="preview-grid">
+          <div>
+            <span>Pedidos</span>
+            <strong>28</strong>
+          </div>
+          <div>
+            <span>Mesas livres</span>
+            <strong>9</strong>
+          </div>
+          <div>
+            <span>Reservas</span>
+            <strong>6</strong>
+          </div>
+          <div class="prep-stat">
+            <span>Preparo estimado</span>
+            <strong id="prepTimer" data-default-minutes="16">16:00</strong>
+            <small>Tempo restante para a cozinha concluir o ciclo atual de pedidos.</small>
+            <div class="prep-progress" aria-hidden="true">
+              <span id="prepProgressFill"></span>
+              <span id="prepProgressDot"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="Login do administrador">
+      <div class="login-card">
+        <div class="login-card-header">
+          <p>Painel de Controle</p>
+          <h1>Entrar no administrativo</h1>
+        </div>
+
+        <form id="adminLoginForm" novalidate>
+          <div class="form-group">
+            <label for="adminCpf">CPF</label>
+            <input id="adminCpf" name="cpf" type="text" value="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+
+          <div class="form-group">
+            <label for="adminPassword">Senha</label>
+            <div class="password-field">
+              <input id="adminPassword" name="password" type="password" value="admin123" autocomplete="current-password" minlength="6" required />
+              <button type="button" id="togglePassword" aria-label="Mostrar senha">Mostrar</button>
+            </div>
+          </div>
+
+          <label class="remember-row">
+            <input type="checkbox" name="remember" checked />
+            <span>Manter acesso neste navegador</span>
+          </label>
+
+          <p class="login-error" id="loginError" role="alert"></p>
+
+          <button class="login-button" type="submit">Entrar</button>
+        </form>
+
+        <div class="demo-users">
+          <span>Tipo de login</span>
+          <button type="button" data-demo-user="gerente" aria-pressed="true">Gerente Principal</button>
+          <button type="button" data-demo-user="atendente" aria-pressed="false">Atendente</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../JavaScript/adm-login.js" defer></script>
+</body>
+</html>
