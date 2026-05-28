@@ -394,9 +394,7 @@ h2 {
 /* TELA DO CARINHO */
 
 
-/* ================================= */
-/* TELA CARRINHO */
-/* ================================= */
+ 
 
 #telaCarrinho{
   width:100%;
@@ -1885,7 +1883,7 @@ h2 {
 
 /* EFEITO AO PASSAR O MOUSE */
 .menu-categorias button:hover{
-  background:#55ff06;
+  background:#ff5a00;
   color:#ffffff;
 
   transform:translateY(-2px);
@@ -2160,4 +2158,102 @@ h2 {
 
 .opcao.cartao{
   border-left:6px solid #ff7a00;
+}
+
+/* ÁREA DAS NOTIFICAÇÕES */
+#notificacoes{
+  position:fixed;
+  top:20px;
+  right:20px;
+  z-index:99999;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* CARD */
+.notificacao{
+  min-width:320px;
+  max-width:380px;
+  padding:16px 18px;
+  border-radius:18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  animation:entrarNotificacao .35s ease;
+  box-shadow:0 10px 30px rgba(0,0,0,0.20);
+  color:#fff;
+  font-weight:600;
+  font-size:15px;
+  backdrop-filter:blur(10px);
+}
+
+/* TIPOS */
+.notificacao.sucesso{
+  background:linear-gradient(135deg,#16a34a,#22c55e);
+}
+
+.notificacao.erro{
+  background:linear-gradient(135deg,#dc2626,#ef4444);
+}
+
+.notificacao.aviso{
+  background:linear-gradient(135deg,#f59e0b,#fbbf24);
+}
+
+.notificacao.info{
+  background:linear-gradient(135deg,#2563eb,#3b82f6);
+}
+
+/* ÍCONE */
+.notificacao .icone{
+  width:42px;
+  height:42px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:20px;
+  flex-shrink:0;
+}
+
+/* TEXTO */
+.notificacao .conteudo{
+  flex:1;
+}
+
+.notificacao .titulo{
+  font-size:16px;
+  margin-bottom:3px;
+}
+
+.notificacao .mensagem{
+  font-size:14px;
+  opacity:.95;
+}
+
+/* ANIMAÇÃO */
+@keyframes entrarNotificacao{
+  from{
+    opacity:0;
+    transform:translateX(100%);
+  }
+
+  to{
+    opacity:1;
+    transform:translateX(0);
+  }
+}
+
+@keyframes sairNotificacao{
+  from{
+    opacity:1;
+    transform:translateX(0);
+  }
+
+  to{
+    opacity:0;
+    transform:translateX(100%);
+  }
 }

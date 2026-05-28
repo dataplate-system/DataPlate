@@ -296,8 +296,15 @@ carregarCarrinho();
 //adição de produtos ao carrinho
 
 function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
+
   if (!produtoId || !nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
-    alert("Selecione uma quantidade válida antes de adicionar ao carrinho.");
+
+    mostrarNotificacao(
+      "aviso",
+      "Quantidade inválida",
+      "Selecione uma quantidade válida antes de adicionar ao carrinho."
+    );
+
     return;
   }
 
@@ -313,7 +320,20 @@ function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
 
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
 
-  alert("Produto adicionado ao carrinho!");
+  mostrarNotificacao(
+    "sucesso",
+    "Carrinho atualizado",
+    "Produto adicionado ao carrinho!"
+  );
+
+  // FECHA TODAS AS TELAS DE PRODUTO
+  esconderTelasProduto();
+
+  // VOLTA PARA O CARDÁPIO
+  document.getElementById("telaLista").style.display = "block";
+
+  // ATUALIZA CARRINHO
+  carregarCarrinho();
 }
 
 function voltarCarrinho() {
@@ -412,7 +432,11 @@ function confirmarPedido() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   if (!carrinho.length) {
-    alert("Adicione pelo menos um produto ao carrinho antes de confirmar o pedido.");
+    mostrarNotificacao(
+     "aviso",
+     "Carrinho vazio",
+     "Adicione produtos antes de continuar."
+  );
     return;
   }
 
@@ -441,8 +465,12 @@ function atualizarResumoPagamento() {
 async function pagamentoAprovado() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
   if (!carrinho.length) {
-    alert("Adicione pelo menos um produto ao carrinho antes de finalizar o pagamento.");
-    return;
+    mostrarNotificacao(
+     "aviso",
+     "Carrinho vazio",
+     "Adicione produtos antes de continuar."
+   );    
+   return;
   }
 
   const pedido = {
@@ -468,7 +496,11 @@ async function pagamentoAprovado() {
     }
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
-    alert(error.message);
+    mostrarNotificacao(
+     "erro",
+     "Erro",
+     error.message
+    );
     return;
   }
 
@@ -542,7 +574,11 @@ function finalizarPagamento(){
 
     pagamentoAprovado();
 
-    alert("A maquininha será levada até sua mesa.");
+    mostrarNotificacao(
+     "info",
+     "Pagamento no cartão",
+     "A maquininha será levada até sua mesa."
+);
 
   }
 
@@ -650,7 +686,11 @@ function abrirPedidoEmAndamento() {
     document.getElementById("telaLista").style.display = "none";
     document.getElementById("telaStatus").style.display = "block";
   } else {
-    alert("Nenhum pedido em andamento!");
+    mostrarNotificacao(
+     "aviso",
+     "Pedido",
+     "Nenhum pedido em andamento!"
+);
   }
 }
 
@@ -706,7 +746,11 @@ function gerarPixAutomatico(){
   // VALIDAÇÃO
   if(isNaN(valor) || valor <= 0){
 
-    alert("Erro ao gerar Pix. Total inválido.");
+    mostrarNotificacao(
+     "erro",
+     "Erro no PIX",
+     "Não foi possível gerar o PIX. Total inválido."
+);
 
     return;
   }
@@ -747,5 +791,55 @@ function atualizarTotalPagamento(){
 
   document.getElementById("totalPagamento").innerText =
     "R$ " + total.toFixed(2).replace(".", ",");
+
+}
+
+function mostrarNotificacao(tipo, titulo, mensagem){
+
+  const area = document.getElementById("notificacoes");
+
+  let icone = "🔔";
+
+  if(tipo === "sucesso"){
+    icone = "✔";
+  }
+
+  else if(tipo === "erro"){
+    icone = "✖";
+  }
+
+  else if(tipo === "aviso"){
+    icone = "⚠";
+  }
+
+  else if(tipo === "info"){
+    icone = "ℹ";
+  }
+
+  const notificacao = document.createElement("div");
+
+  notificacao.className = `notificacao ${tipo}`;
+
+  notificacao.innerHTML = `
+    <div class="icone">${icone}</div>
+
+    <div class="conteudo">
+      <div class="titulo">${titulo}</div>
+      <div class="mensagem">${mensagem}</div>
+    </div>
+  `;
+
+  area.appendChild(notificacao);
+
+  setTimeout(() => {
+
+    notificacao.style.animation =
+      "sairNotificacao .35s ease forwards";
+
+    setTimeout(() => {
+      notificacao.remove();
+    }, 350);
+
+  }, 3000);
 
 }
