@@ -272,12 +272,14 @@ function aumentar(i) {
   carrinho[i].quantidade++;
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
   carregarCarrinho();
+  atualizarBarraFlutuante();
 }
 
 function diminuir(i) {
   let carrinho = JSON.parse(localStorage.getItem("carrinho"));
   if (carrinho[i].quantidade > 1) {
     carrinho[i].quantidade--;
+    atualizarBarraFlutuante();
   }
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
   carregarCarrinho();
@@ -288,6 +290,7 @@ function remover(i) {
   carrinho.splice(i, 1);
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
   carregarCarrinho();
+  atualizarBarraFlutuante();
 }
 
 carregarCarrinho();
@@ -334,6 +337,8 @@ function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
 
   // ATUALIZA CARRINHO
   carregarCarrinho();
+
+  atualizarBarraFlutuante();
 }
 
 function voltarCarrinho() {
@@ -469,6 +474,7 @@ async function pagamentoAprovado() {
      "aviso",
      "Carrinho vazio",
      "Adicione produtos antes de continuar."
+     
    );    
    return;
   }
@@ -517,6 +523,7 @@ async function pagamentoAprovado() {
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarStatusPedido();
+  atualizarBarraFlutuante();
 }
 
 function voltarPagamento() {
@@ -679,6 +686,7 @@ function novoPedido() {
 
   document.getElementById("statusAtual").innerText = "Pedido Recebido";
   document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
+  atualizarBarraFlutuante();
 }
 
 function abrirPedidoEmAndamento() {
@@ -843,3 +851,131 @@ function mostrarNotificacao(tipo, titulo, mensagem){
   }, 3000);
 
 }
+
+function atualizarBarraFlutuante(){
+
+  const barra =
+    document.getElementById("barraFlutuante");
+
+  if(!barra) return;
+
+  const carrinho =
+    JSON.parse(localStorage.getItem("carrinho")) || [];
+
+  let total = 0;
+  let quantidade = 0;
+
+  carrinho.forEach(item => {
+
+    total += item.preco * item.quantidade;
+
+    quantidade += item.quantidade;
+  });
+
+  const valor =
+    document.getElementById("valorBarra");
+
+  const titulo =
+    document.getElementById("tituloBarra");
+
+  const subtitulo =
+    document.getElementById("subtituloBarra");
+
+  /* ========================= */
+  /* VERIFICA SE ESTÁ NO CARDÁPIO */
+  /* ========================= */
+
+  const telaLista =
+    document.getElementById("telaLista");
+
+  const cardapioVisivel =
+    telaLista &&
+    telaLista.style.display !== "none";
+
+  if(!cardapioVisivel){
+
+    barra.classList.remove("ativa");
+
+    return;
+  }
+
+  /* ========================= */
+  /* PEDIDO EM ANDAMENTO */
+  /* ========================= */
+
+  if(pedidoEmAndamento){
+
+    barra.classList.add("ativa");
+
+    titulo.innerText =
+      "Pedido em andamento";
+
+    subtitulo.innerText =
+      "Toque para acompanhar";
+
+    valor.innerText =
+      "STATUS";
+
+    return;
+  }
+
+  /* ========================= */
+  /* CARRINHO */
+  /* ========================= */
+
+  if(carrinho.length > 0){
+
+    barra.classList.add("ativa");
+
+    titulo.innerText =
+      quantidade + " item(ns) no carrinho";
+
+    subtitulo.innerText =
+      "Toque para abrir o carrinho";
+
+    valor.innerText =
+      "R$ " + total.toFixed(2).replace(".", ",");
+
+  }else{
+
+    barra.classList.remove("ativa");
+  }
+
+}
+
+/* ========================= */
+/* CLIQUE NA BARRA */
+/* ========================= */
+
+function abrirAtalhoInferior(){
+
+  if(pedidoEmAndamento){
+
+    abrirPedidoEmAndamento();
+
+  }else{
+
+    abrirCarrinho();
+  }
+
+} 
+
+function controlarBarraFlutuante(){
+
+  const barra = document.getElementById("barraFlutuante");
+
+  const telaLista = document.getElementById("telaLista");
+
+  if(
+    telaLista &&
+    telaLista.style.display !== "none"
+  ){
+    barra.classList.add("ativa");
+  }else{
+    barra.classList.remove("ativa");
+  }
+
+}
+
+
+atualizarBarraFlutuante();
