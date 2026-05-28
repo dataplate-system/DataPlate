@@ -274,12 +274,14 @@ function aumentar(i) {
   carrinho[i].quantidade++;
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
   carregarCarrinho();
+  atualizarBarraFlutuante();
 }
 
 function diminuir(i) {
   let carrinho = JSON.parse(localStorage.getItem("carrinho"));
   if (carrinho[i].quantidade > 1) {
     carrinho[i].quantidade--;
+    atualizarBarraFlutuante();
   }
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
   carregarCarrinho();
@@ -290,6 +292,7 @@ function remover(i) {
   carrinho.splice(i, 1);
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
   carregarCarrinho();
+  atualizarBarraFlutuante();
 }
 
 carregarCarrinho();
@@ -298,8 +301,15 @@ carregarCarrinho();
 //adição de produtos ao carrinho
 
 function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
+
   if (!produtoId || !nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
-    alert("Selecione uma quantidade válida antes de adicionar ao carrinho.");
+
+    mostrarNotificacao(
+      "aviso",
+      "Quantidade inválida",
+      "Selecione uma quantidade válida antes de adicionar ao carrinho."
+    );
+
     return;
   }
 
@@ -315,7 +325,22 @@ function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
 
   localStorage.setItem("carrinho", JSON.stringify(carrinho));
 
-  alert("Produto adicionado ao carrinho!");
+  mostrarNotificacao(
+    "sucesso",
+    "Carrinho atualizado",
+    "Produto adicionado ao carrinho!"
+  );
+
+  // FECHA TODAS AS TELAS DE PRODUTO
+  esconderTelasProduto();
+
+  // VOLTA PARA O CARDÁPIO
+  document.getElementById("telaLista").style.display = "block";
+
+  // ATUALIZA CARRINHO
+  carregarCarrinho();
+
+  atualizarBarraFlutuante();
 }
 
 function voltarCarrinho() {
@@ -414,7 +439,11 @@ function confirmarPedido() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   if (!carrinho.length) {
-    alert("Adicione pelo menos um produto ao carrinho antes de confirmar o pedido.");
+    mostrarNotificacao(
+     "aviso",
+     "Carrinho vazio",
+     "Adicione produtos antes de continuar."
+  );
     return;
   }
 
@@ -443,8 +472,13 @@ function atualizarResumoPagamento() {
 async function pagamentoAprovado() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
   if (!carrinho.length) {
-    alert("Adicione pelo menos um produto ao carrinho antes de finalizar o pagamento.");
-    return;
+    mostrarNotificacao(
+     "aviso",
+     "Carrinho vazio",
+     "Adicione produtos antes de continuar."
+     
+   );    
+   return;
   }
 
   const pedido = {
@@ -470,7 +504,11 @@ async function pagamentoAprovado() {
     }
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
-    alert(error.message);
+    mostrarNotificacao(
+     "erro",
+     "Erro",
+     error.message
+    );
     return;
   }
 
@@ -487,6 +525,7 @@ async function pagamentoAprovado() {
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarStatusPedido();
+  atualizarBarraFlutuante();
 }
 
 function voltarPagamento() {
@@ -544,7 +583,11 @@ function finalizarPagamento(){
 
     pagamentoAprovado();
 
-    alert("A maquininha será levada até sua mesa.");
+    mostrarNotificacao(
+     "info",
+     "Pagamento no cartão",
+     "A maquininha será levada até sua mesa."
+);
 
   }
 
@@ -645,6 +688,7 @@ function novoPedido() {
 
   document.getElementById("statusAtual").innerText = "Pedido Recebido";
   document.getElementById("mensagemStatus").innerText = "Seu pedido foi recebido";
+  atualizarBarraFlutuante();
 }
 
 function abrirPedidoEmAndamento() {
@@ -652,7 +696,11 @@ function abrirPedidoEmAndamento() {
     document.getElementById("telaLista").style.display = "none";
     document.getElementById("telaStatus").style.display = "block";
   } else {
-    alert("Nenhum pedido em andamento!");
+    mostrarNotificacao(
+     "aviso",
+     "Pedido",
+     "Nenhum pedido em andamento!"
+);
   }
 }
 
@@ -708,7 +756,11 @@ function gerarPixAutomatico(){
   // VALIDAÇÃO
   if(isNaN(valor) || valor <= 0){
 
-    alert("Erro ao gerar Pix. Total inválido.");
+    mostrarNotificacao(
+     "erro",
+     "Erro no PIX",
+     "Não foi possível gerar o PIX. Total inválido."
+);
 
     return;
   }
@@ -751,3 +803,181 @@ function atualizarTotalPagamento(){
     "R$ " + total.toFixed(2).replace(".", ",");
 
 }
+
+function mostrarNotificacao(tipo, titulo, mensagem){
+
+  const area = document.getElementById("notificacoes");
+
+  let icone = "🔔";
+
+  if(tipo === "sucesso"){
+    icone = "✔";
+  }
+
+  else if(tipo === "erro"){
+    icone = "✖";
+  }
+
+  else if(tipo === "aviso"){
+    icone = "⚠";
+  }
+
+  else if(tipo === "info"){
+    icone = "ℹ";
+  }
+
+  const notificacao = document.createElement("div");
+
+  notificacao.className = `notificacao ${tipo}`;
+
+  notificacao.innerHTML = `
+    <div class="icone">${icone}</div>
+
+    <div class="conteudo">
+      <div class="titulo">${titulo}</div>
+      <div class="mensagem">${mensagem}</div>
+    </div>
+  `;
+
+  area.appendChild(notificacao);
+
+  setTimeout(() => {
+
+    notificacao.style.animation =
+      "sairNotificacao .35s ease forwards";
+
+    setTimeout(() => {
+      notificacao.remove();
+    }, 350);
+
+  }, 3000);
+
+}
+
+function atualizarBarraFlutuante(){
+
+  const barra =
+    document.getElementById("barraFlutuante");
+
+  if(!barra) return;
+
+  const carrinho =
+    JSON.parse(localStorage.getItem("carrinho")) || [];
+
+  let total = 0;
+  let quantidade = 0;
+
+  carrinho.forEach(item => {
+
+    total += item.preco * item.quantidade;
+
+    quantidade += item.quantidade;
+  });
+
+  const valor =
+    document.getElementById("valorBarra");
+
+  const titulo =
+    document.getElementById("tituloBarra");
+
+  const subtitulo =
+    document.getElementById("subtituloBarra");
+
+  /* ========================= */
+  /* VERIFICA SE ESTÁ NO CARDÁPIO */
+  /* ========================= */
+
+  const telaLista =
+    document.getElementById("telaLista");
+
+  const cardapioVisivel =
+    telaLista &&
+    telaLista.style.display !== "none";
+
+  if(!cardapioVisivel){
+
+    barra.classList.remove("ativa");
+
+    return;
+  }
+
+  /* ========================= */
+  /* PEDIDO EM ANDAMENTO */
+  /* ========================= */
+
+  if(pedidoEmAndamento){
+
+    barra.classList.add("ativa");
+
+    titulo.innerText =
+      "Pedido em andamento";
+
+    subtitulo.innerText =
+      "Toque para acompanhar";
+
+    valor.innerText =
+      "STATUS";
+
+    return;
+  }
+
+  /* ========================= */
+  /* CARRINHO */
+  /* ========================= */
+
+  if(carrinho.length > 0){
+
+    barra.classList.add("ativa");
+
+    titulo.innerText =
+      quantidade + " item(ns) no carrinho";
+
+    subtitulo.innerText =
+      "Toque para abrir o carrinho";
+
+    valor.innerText =
+      "R$ " + total.toFixed(2).replace(".", ",");
+
+  }else{
+
+    barra.classList.remove("ativa");
+  }
+
+}
+
+/* ========================= */
+/* CLIQUE NA BARRA */
+/* ========================= */
+
+function abrirAtalhoInferior(){
+
+  if(pedidoEmAndamento){
+
+    abrirPedidoEmAndamento();
+
+  }else{
+
+    abrirCarrinho();
+  }
+
+} 
+
+function controlarBarraFlutuante(){
+
+  const barra = document.getElementById("barraFlutuante");
+
+  const telaLista = document.getElementById("telaLista");
+
+  if(
+    telaLista &&
+    telaLista.style.display !== "none"
+  ){
+    barra.classList.add("ativa");
+  }else{
+    barra.classList.remove("ativa");
+  }
+
+}
+
+
+atualizarBarraFlutuante();
