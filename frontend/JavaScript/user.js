@@ -3,8 +3,10 @@ const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
 const API_BASE_URL = (() => {
   const h = window.location.hostname;
-  const isLocal = h === 'localhost' || h === '127.0.0.1';
+  const isLocalFile = window.location.protocol === 'file:' || !h;
+  const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
   if (isLocal && window.location.port === '8080') return '/api';
+  if (isLocalFile) return 'http://localhost:8080/api';
   if (isLocal) return `http://${h}:8080/api`;
   return 'https://dataplate.onrender.com/api';
 })();

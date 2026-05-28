@@ -2,6 +2,7 @@ package com.dataplate.exception;
 
 import com.dataplate.dto.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -38,6 +39,11 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> campos.put(error.getField(), error.getDefaultMessage()));
         return build(HttpStatus.BAD_REQUEST, "Dados invalidos", request, campos);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Registro ja cadastrado ou dados invalidos.", request, null);
     }
 
     @ExceptionHandler(Exception.class)

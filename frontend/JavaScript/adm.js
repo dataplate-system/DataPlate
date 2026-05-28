@@ -6,8 +6,10 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   || localStorage.getItem('DATAPLATE_API_BASE_URL')
   || (() => {
     const h = window.location.hostname;
-    const isLocal = h === 'localhost' || h === '127.0.0.1';
+    const isLocalFile = window.location.protocol === 'file:' || !h;
+    const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
     if (isLocal && window.location.port === '8080') return '/api';
+    if (isLocalFile) return 'http://localhost:8080/api';
     if (isLocal) return `http://${h}:8080/api`;
     return 'https://dataplate.onrender.com/api';
   })();
@@ -121,6 +123,9 @@ function applyAdminSession() {
   };
   const headerName = document.querySelector('.user-button span');
   const headerAvatar = document.querySelector('.user-button .user-avatar-small');
+  const footerName = document.querySelector('.footer-user-name');
+  const footerRole = document.querySelector('.footer-user-role');
+  const footerAvatar = document.querySelector('.footer-user-avatar');
   const profileName = document.querySelector('#profileModal input[name="name"]');
   const profileCpf = document.querySelector('#profileModal input[name="cpf"]');
   const profileRole = document.querySelector('#profileModal input[name="role"]');
@@ -131,6 +136,9 @@ function applyAdminSession() {
 
   if (headerName) headerName.textContent = normalizedSession.name || 'Gerente Principal';
   if (headerAvatar) headerAvatar.textContent = normalizedSession.initials || 'AD';
+  if (footerName) footerName.textContent = normalizedSession.name || 'Gerente Principal';
+  if (footerRole) footerRole.textContent = normalizedSession.role || 'Administrador';
+  if (footerAvatar) footerAvatar.textContent = normalizedSession.initials || 'AD';
   if (profileName) profileName.value = normalizedSession.name || 'Administrador';
   if (profileCpf) profileCpf.value = normalizedSession.cpf || '';
   if (profileRole) profileRole.value = normalizedSession.role || 'Administrador';
@@ -156,7 +164,8 @@ async function postJson(endpoint, payload) {
   });
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Nao foi possivel salvar os dados.'));
+    const message = extractErrorMessage(body, 'Nao foi possivel salvar os dados.');
+    throw new Error(`${message} (${endpoint})`);
   }
   return readResponseBody(response);
 }
@@ -169,7 +178,8 @@ async function putJson(endpoint, payload) {
   });
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Nao foi possivel atualizar.'));
+    const message = extractErrorMessage(body, 'Nao foi possivel atualizar.');
+    throw new Error(`${message} (${endpoint})`);
   }
   return readResponseBody(response);
 }
@@ -178,7 +188,8 @@ async function deleteJson(endpoint) {
   const response = await apiFetch(endpoint, { method: 'DELETE' });
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Nao foi possivel excluir.'));
+    const message = extractErrorMessage(body, 'Nao foi possivel excluir.');
+    throw new Error(`${message} (${endpoint})`);
   }
   return readResponseBody(response);
 }
@@ -187,7 +198,8 @@ async function getJson(endpoint) {
   const response = await apiFetch(endpoint);
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Erro ao carregar dados.'));
+    const message = extractErrorMessage(body, 'Erro ao carregar dados.');
+    throw new Error(`${message} (${endpoint})`);
   }
   return readResponseBody(response);
 }
@@ -207,23 +219,27 @@ function navigateTo(sectionId) {
   if (selectedSection) {
     selectedSection.classList.add('active');
   }
+  document.body.classList.toggle('admin-home-active', sectionId === 'home' || !selectedSection);
 
   // Hide logo and intro text when navigating to a section
   const logoCenter = document.querySelector('.logocenter');
   const nomeCenter = document.querySelector('.nomecenter');
   const textCenter = document.getElementById('textcenter');
   const searchInput = document.querySelector('.pesquisa');
+  const searchBox = document.querySelector('.search-box');
   
-  if (selectedSection && sectionId !== 'dashboard') {
+  if (selectedSection) {
     if (logoCenter) logoCenter.style.display = 'none';
     if (nomeCenter) nomeCenter.style.display = 'none';
     if (textCenter) textCenter.style.display = 'none';
     if (searchInput) searchInput.style.display = 'none';
+    if (searchBox) searchBox.style.display = 'none';
   } else {
     if (logoCenter) logoCenter.style.display = 'block';
     if (nomeCenter) nomeCenter.style.display = 'block';
     if (textCenter) textCenter.style.display = 'block';
     if (searchInput) searchInput.style.display = 'block';
+    if (searchBox) searchBox.style.display = 'flex';
   }
 
   // Update active nav buttons
@@ -238,7 +254,7 @@ function navigateTo(sectionId) {
   }
 
   // Persist section in URL hash so F5 restores it
-  history.replaceState(null, '', sectionId && sectionId !== 'dashboard'
+  history.replaceState(null, '', sectionId && sectionId !== 'home'
     ? '#' + sectionId
     : location.pathname
   );
@@ -257,6 +273,76 @@ function navigateTo(sectionId) {
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
 }
 window.navigateTo = navigateTo;
+
+const ADMIN_HOME_ROUTES = [
+  { id: 'dashboard', labels: ['dashboard', 'painel', 'indicadores', 'controle'] },
+  { id: 'clientes', labels: ['clientes', 'cliente', 'cadastro de clientes'] },
+  { id: 'fornecedores', labels: ['fornecedores', 'fornecedor'] },
+  { id: 'funcionarios', labels: ['funcionarios', 'funcionários', 'funcionario', 'funcionário', 'colaboradores'] },
+  { id: 'cardapio', labels: ['cardapio', 'cardápio', 'menu', 'itens', 'produtos'] },
+  { id: 'pedidos', labels: ['pedidos', 'pedido', 'vendas'] },
+  { id: 'mesas', labels: ['mesas', 'mesa', 'salao', 'salão'] },
+  { id: 'cozinha', labels: ['cozinha', 'preparo'] },
+  { id: 'rel-vendas', labels: ['relatorio de vendas', 'relatório de vendas', 'vendas'] },
+  { id: 'rel-financeiro', labels: ['relatorio financeiro', 'relatório financeiro', 'financeiro'] },
+  { id: 'rel-cardapio', labels: ['desempenho do cardapio', 'desempenho do cardápio', 'relatorio cardapio', 'relatório cardápio'] },
+  { id: 'rel-operacional', labels: ['relatorio operacional', 'relatório operacional', 'operacional'] },
+  { id: 'config-restaurante', labels: ['restaurante', 'configuracao restaurante', 'configuração restaurante'] },
+  { id: 'config-usuarios', labels: ['usuarios', 'usuários', 'permissoes', 'permissões'] },
+  { id: 'config-integracao', labels: ['integracao', 'integração', 'integracoes', 'integrações'] },
+  { id: 'config-notificacoes', labels: ['notificacoes', 'notificações', 'avisos'] }
+];
+
+function normalizeRouteSearch(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function findAdminRoute(value) {
+  const term = normalizeRouteSearch(value);
+  if (!term) return null;
+
+  return ADMIN_HOME_ROUTES.find((route) =>
+    route.labels.some((label) => normalizeRouteSearch(label) === term)
+  ) || ADMIN_HOME_ROUTES.find((route) =>
+    route.labels.some((label) => normalizeRouteSearch(label).includes(term) || term.includes(normalizeRouteSearch(label)))
+  ) || null;
+}
+
+function initAdminHomeSearch() {
+  const form = document.getElementById('adminHomeSearchForm');
+  const input = document.getElementById('adminHomeSearch');
+  const hint = document.getElementById('adminHomeSearchHint');
+  if (!form || !input) return;
+
+  function clearHint() {
+    if (!hint) return;
+    hint.textContent = 'Digite o nome de uma tela e pressione Enter.';
+    hint.classList.remove('is-error');
+  }
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const route = findAdminRoute(input.value);
+    if (!route) {
+      if (hint) {
+        hint.textContent = 'Tela não encontrada. Tente Clientes, Cardápio, Mesas, Cozinha ou Dashboard.';
+        hint.classList.add('is-error');
+      }
+      input.focus();
+      return;
+    }
+
+    clearHint();
+    input.value = '';
+    navigateTo(route.id);
+  });
+
+  input.addEventListener('input', clearHint);
+}
 
 // =============================================
 // MODAL MANAGEMENT
@@ -535,8 +621,6 @@ function validateFields(container) {
     field.setCustomValidity('');
     if (field.value && !new RegExp(`^${field.pattern}$`).test(field.value)) {
       field.setCustomValidity(field.title || 'Preencha o campo no formato correto.');
-    } else if (field.name === 'cpf' && field.value && !isValidCpf(field.value)) {
-      field.setCustomValidity('Digite um CPF valido.');
     } else if (field.name === 'cnpj' && field.value && !isValidCnpj(field.value)) {
       field.setCustomValidity('Digite um CNPJ valido.');
     }
@@ -1543,8 +1627,313 @@ document.querySelectorAll('[data-table-filter], [data-table-search], [data-table
 // EXPORT FUNCTIONALITY
 // =============================================
 
-window.exportTable = function() {
-  alert('Exportando dados...');
+function getActiveExportSection(trigger) {
+  return trigger?.closest?.('.content-section')
+    || document.querySelector('.content-section.active')
+    || document.getElementById('dashboard');
+}
+
+function slugifyFileName(value) {
+  return String(value || 'relatorio')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase() || 'relatorio';
+}
+
+function getSectionTitle(section) {
+  return section?.querySelector('.section-header h1, .dashboard-hero h1')?.textContent.trim()
+    || 'Relatorio DataPlate';
+}
+
+function cleanExportText(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[^\S\r\n]+/g, ' ')
+    .trim();
+}
+
+function getReportSummary(section) {
+  return Array.from(section.querySelectorAll('.stat-card')).map((card) => ({
+    label: cleanExportText(card.querySelector('.stat-label')?.textContent),
+    value: cleanExportText(card.querySelector('.stat-value')?.textContent),
+    change: cleanExportText(card.querySelector('.stat-change')?.textContent)
+  })).filter((item) => item.label || item.value || item.change);
+}
+
+function isActionColumn(text) {
+  return /^(acoes|ações|acao|ação)$/i.test(slugifyFileName(text).replace(/-/g, ''));
+}
+
+function extractTableData(section) {
+  const table = section.querySelector('.data-table');
+  if (!table) return { headers: [], rows: [] };
+
+  const headerCells = Array.from(table.querySelectorAll('thead th'));
+  const ignoredIndexes = new Set();
+  const headers = headerCells.map((cell, index) => {
+    const text = cleanExportText(cell.textContent);
+    if (!text || isActionColumn(text) || cell.querySelector('input[type="checkbox"]')) {
+      ignoredIndexes.add(index);
+      return '';
+    }
+    return text;
+  }).filter(Boolean);
+
+  const rows = Array.from(table.querySelectorAll('tbody tr'))
+    .filter((row) => row.offsetParent !== null && !row.querySelector('td[colspan]') && !row.classList.contains('skeleton-row'))
+    .map((row) => Array.from(row.children)
+      .filter((_, index) => !ignoredIndexes.has(index))
+      .map((cell) => cleanExportText(cell.textContent)))
+    .filter((row) => row.some(Boolean));
+
+  return { headers, rows };
+}
+
+function collectExportData(section) {
+  return {
+    title: getSectionTitle(section),
+    generatedAt: new Date().toLocaleString('pt-BR'),
+    summary: getReportSummary(section),
+    table: extractTableData(section)
+  };
+}
+
+function downloadBlob(content, fileName, type) {
+  const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function escapeXml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function exportReportToExcel(data) {
+  const rows = [];
+  rows.push(`<tr><th colspan="3">${escapeXml(data.title)}</th></tr>`);
+  rows.push(`<tr><td colspan="3">Gerado em ${escapeXml(data.generatedAt)}</td></tr>`);
+
+  if (data.summary.length) {
+    rows.push('<tr></tr><tr><th>Indicador</th><th>Valor</th><th>Variação</th></tr>');
+    data.summary.forEach((item) => {
+      rows.push(`<tr><td>${escapeXml(item.label)}</td><td>${escapeXml(item.value)}</td><td>${escapeXml(item.change)}</td></tr>`);
+    });
+  }
+
+  if (data.table.headers.length && data.table.rows.length) {
+    rows.push('<tr></tr>');
+    rows.push(`<tr>${data.table.headers.map((header) => `<th>${escapeXml(header)}</th>`).join('')}</tr>`);
+    data.table.rows.forEach((row) => {
+      rows.push(`<tr>${row.map((cell) => `<td>${escapeXml(cell)}</td>`).join('')}</tr>`);
+    });
+  }
+
+  const html = `<!doctype html><html><head><meta charset="UTF-8"></head><body><table>${rows.join('')}</table></body></html>`;
+  const fileName = `${slugifyFileName(data.title)}-${new Date().toISOString().slice(0, 10)}.xls`;
+  downloadBlob(html, fileName, 'application/vnd.ms-excel;charset=utf-8');
+}
+
+function splitPdfLine(text, maxLength = 94) {
+  const words = cleanExportText(text).split(' ');
+  const lines = [];
+  let current = '';
+
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxLength && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  });
+
+  if (current) lines.push(current);
+  return lines.length ? lines : [''];
+}
+
+function buildPdfLines(data) {
+  const lines = [data.title, `Gerado em ${data.generatedAt}`, ''];
+
+  if (data.summary.length) {
+    lines.push('Indicadores');
+    data.summary.forEach((item) => {
+      lines.push(`${item.label}: ${item.value}${item.change ? ` (${item.change})` : ''}`);
+    });
+    lines.push('');
+  }
+
+  if (data.table.headers.length && data.table.rows.length) {
+    lines.push(data.table.headers.join(' | '));
+    data.table.rows.forEach((row) => lines.push(row.join(' | ')));
+  } else {
+    lines.push('Nenhuma tabela com registros visiveis nesta tela.');
+  }
+
+  return lines.flatMap((line) => splitPdfLine(line));
+}
+
+function asciiBytes(value) {
+  return Array.from(String(value), (char) => char.charCodeAt(0) & 0x7F);
+}
+
+function normalizePdfText(value) {
+  return String(value ?? '')
+    .replace(/↑/g, '+')
+    .replace(/↓/g, '-')
+    .replace(/→/g, '->')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, '-');
+}
+
+function toWinAnsiByte(char) {
+  const code = char.charCodeAt(0);
+  return code <= 255 ? code : 63;
+}
+
+function pdfLiteralBytes(value) {
+  const bytes = [40];
+  const text = normalizePdfText(value);
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i];
+    if (char === '\\' || char === '(' || char === ')') {
+      bytes.push(92, toWinAnsiByte(char));
+    } else if (char === '\n') {
+      bytes.push(92, 110);
+    } else if (char === '\r') {
+      bytes.push(92, 114);
+    } else {
+      bytes.push(toWinAnsiByte(char));
+    }
+  }
+
+  bytes.push(41);
+  return bytes;
+}
+
+function joinBytes(parts) {
+  const total = parts.reduce((sum, part) => sum + part.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+
+  parts.forEach((part) => {
+    output.set(part, offset);
+    offset += part.length;
+  });
+
+  return output;
+}
+
+function buildSimplePdf(lines) {
+  const pageWidth = 595;
+  const pageHeight = 842;
+  const marginLeft = 42;
+  const lineHeight = 16;
+  const linesPerPage = 46;
+  const pages = [];
+
+  for (let i = 0; i < lines.length; i += linesPerPage) {
+    pages.push(lines.slice(i, i + linesPerPage));
+  }
+
+  const objects = [
+    asciiBytes('<< /Type /Catalog /Pages 2 0 R >>'),
+    [],
+    asciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>')
+  ];
+  const pageRefs = [];
+
+  pages.forEach((pageLines) => {
+    const pageNumber = objects.length + 1;
+    const contentNumber = objects.length + 2;
+    pageRefs.push(`${pageNumber} 0 R`);
+
+    const streamParts = [
+      asciiBytes(`BT\n/F1 10 Tf\n${marginLeft} ${pageHeight - 52} Td\n`)
+    ];
+    pageLines.forEach((line, index) => {
+      if (index > 0) streamParts.push(asciiBytes(`0 -${lineHeight} Td\n`));
+      streamParts.push(pdfLiteralBytes(line), asciiBytes(' Tj\n'));
+    });
+    streamParts.push(asciiBytes('ET'));
+    const stream = joinBytes(streamParts);
+
+    objects.push(asciiBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentNumber} 0 R >>`));
+    objects.push(joinBytes([
+      asciiBytes(`<< /Length ${stream.length} >>\nstream\n`),
+      stream,
+      asciiBytes('\nendstream')
+    ]));
+  });
+
+  objects[1] = asciiBytes(`<< /Type /Pages /Kids [${pageRefs.join(' ')}] /Count ${pageRefs.length} >>`);
+
+  const pdfParts = [asciiBytes('%PDF-1.4\n')];
+  const offsets = [0];
+  let byteLength = pdfParts[0].length;
+
+  objects.forEach((object, index) => {
+    offsets.push(byteLength);
+    const objectParts = [
+      asciiBytes(`${index + 1} 0 obj\n`),
+      object,
+      asciiBytes('\nendobj\n')
+    ];
+    const objectBytes = joinBytes(objectParts);
+    pdfParts.push(objectBytes);
+    byteLength += objectBytes.length;
+  });
+
+  const xrefOffset = byteLength;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    xref += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  });
+  xref += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  pdfParts.push(asciiBytes(xref));
+
+  return new Blob([joinBytes(pdfParts)], { type: 'application/pdf' });
+}
+
+function exportReportToPdf(data) {
+  const fileName = `${slugifyFileName(data.title)}-${new Date().toISOString().slice(0, 10)}.pdf`;
+  downloadBlob(buildSimplePdf(buildPdfLines(data)), fileName, 'application/pdf');
+}
+
+window.exportTable = function(format = 'excel', trigger = null) {
+  const section = getActiveExportSection(trigger);
+  if (!section) {
+    showToast('Nenhuma tela encontrada para exportar.');
+    return;
+  }
+
+  const data = collectExportData(section);
+  const hasData = data.summary.length || data.table.rows.length;
+  if (!hasData) {
+    showToast('Não há dados visíveis para exportar nesta tela.');
+    return;
+  }
+
+  if (format === 'pdf') {
+    exportReportToPdf(data);
+  } else {
+    exportReportToExcel(data);
+  }
+  showToast(`${format === 'pdf' ? 'PDF' : 'Excel'} gerado com sucesso.`, 'success');
 };
 
 function filterCurrentSection(button) {
@@ -1599,9 +1988,10 @@ document.addEventListener('click', (e) => {
     return;
   }
 
-  if (/exportar|pdf|excel|relat/i.test(label)) {
+  if (button.dataset.exportFormat || /exportar|pdf|excel/i.test(label)) {
     e.preventDefault();
-    window.exportTable();
+    const format = button.dataset.exportFormat || (/pdf/i.test(label) ? 'pdf' : 'excel');
+    window.exportTable(format, button);
     return;
   }
 
@@ -1639,20 +2029,19 @@ document.addEventListener('submit', (e) => {
   alert('Alterações salvas com sucesso!');
 });
 
-function exportTableToCSV(buttonSelector, fileName) {
+function exportTableToCSV(buttonSelector) {
   const button = document.querySelector(buttonSelector);
   if (!button) return;
 
   button.addEventListener('click', (e) => {
-    // TODO: Implement CSV export
-    console.log('Export to CSV:', fileName);
-    alert(`Exportando dados para ${fileName}...`);
+    e.preventDefault();
+    window.exportTable('excel', button);
   });
 }
 
 // Initialize exports
-exportTableToCSV('#exportClientes', 'clientes.csv');
-exportTableToCSV('#exportPedidos', 'pedidos.csv');
+exportTableToCSV('#exportClientes');
+exportTableToCSV('#exportPedidos');
 
 // =============================================
 // WEBSOCKET
@@ -1714,8 +2103,9 @@ window.connectAdminWebSocket = connectAdminWebSocket;
 document.addEventListener('DOMContentLoaded', () => {
   // Restore last section from URL hash (F5 persistence)
   const initialSection = window.location.hash.slice(1);
-  navigateTo(initialSection || 'dashboard');
+  navigateTo(initialSection || 'home');
   applyAdminSession();
+  initAdminHomeSearch();
   initClientForm();
   initCepAutocomplete();
 

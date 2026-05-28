@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataPlate - Painel Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/adm.css" />
+  <link rel="stylesheet" href="../Css/adm.css?v=2" />
 </head>
 <body>
   <div class="admin-container">
@@ -13,7 +13,7 @@
     <header class="admin-header">
       <div class="header-left">
         <div class="logo-area">
-          <button class="logo-text" onclick="navigateTo('contentcenter')">
+          <button class="logo-text" onclick="navigateTo('home')">
               DataPlate
           </button>
         </div>
@@ -57,27 +57,14 @@
           <div class="dropdown-menu">
             <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
             <a href="#config-usuarios" class="dropdown-link" onclick="navigateTo('config-usuarios')">Usuários e Permissões</a>
+            <a href="#seguranca" class="dropdown-link" data-open-modal="securityModal">Segurança</a>
             <a href="#config-integracao" class="dropdown-link" onclick="navigateTo('config-integracao')">Integração</a>
             <a href="#config-notificacoes" class="dropdown-link" onclick="navigateTo('config-notificacoes')">Notificações</a>
           </div>
         </div>
       </nav>
 
-      <div class="header-right">
-        <div class="user-menu dropdown">
-          <button type="button" class="user-button">
-            <div class="user-avatar-small">GP</div>
-            <span>Gerente</span>
-          </button>
-          <div class="dropdown-menu dropdown-right">
-            <a href="#perfil" class="dropdown-link" data-open-modal="profileModal">Meu Perfil</a>
-            <a href="#seguranca" class="dropdown-link" data-open-modal="securityModal">Segurança</a>
-            <a href="#trocar-usuario" class="dropdown-link" data-open-modal="switchUserModal">Trocar de Usuário</a>
-            <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;">
-            <a href="#logout" class="dropdown-link logout-link" data-open-modal="logoutModal">Sair</a>
-          </div>
-        </div>
-      </div>
+      <div class="header-right"></div>
     </header>
 
     <!-- MAIN CONTENT -->
@@ -85,12 +72,238 @@
 
       <!-- CONTENT -->
       <div class="contentcenter">
-        <div class="search-box">
-          <input class="pesquisa" type="text" placeholder="Pesquisar..." />
-        </div>
-        <img src="../images/brand/logo-dataplate.png" alt="Logo" class="logocenter">
-          <div class="nomecenter">DataPlate</div>
-          <p id="textcenter">Software de gestão inteligente para restaurantes</p>
+        <!-- HOME -->
+        <section id="home" class="content-section admin-home">
+          <aside class="home-shortcuts home-shortcuts-left" aria-label="Atalhos do sistema">
+            <button type="button" class="home-shortcut" onclick="navigateTo('dashboard')">
+              <span class="shortcut-icon">▦</span>
+              <span>
+                <strong>Dashboard</strong>
+                <small>Indicadores gerais</small>
+              </span>
+            </button>
+            <button type="button" class="home-shortcut" onclick="navigateTo('clientes')">
+              <span class="shortcut-icon">👥</span>
+              <span>
+                <strong>Clientes</strong>
+                <small>Cadastros e histórico</small>
+              </span>
+            </button>
+            <button type="button" class="home-shortcut" onclick="navigateTo('cardapio')">
+              <span class="shortcut-icon">☰</span>
+              <span>
+                <strong>Cardápio</strong>
+                <small>Itens, preço e destaque</small>
+              </span>
+            </button>
+            <button type="button" class="home-shortcut" onclick="navigateTo('mesas')">
+              <span class="shortcut-icon">◫</span>
+              <span>
+                <strong>Mesas</strong>
+                <small>Mapa do salão</small>
+              </span>
+            </button>
+            <button type="button" class="home-shortcut" onclick="navigateTo('cozinha')">
+              <span class="shortcut-icon">◴</span>
+              <span>
+                <strong>Cozinha</strong>
+                <small>Preparo em tempo real</small>
+              </span>
+            </button>
+          </aside>
+
+          <div class="home-center">
+            <form class="home-search" id="adminHomeSearchForm" autocomplete="off">
+              <label for="adminHomeSearch">Buscar tela</label>
+              <div class="home-search-row">
+                <span aria-hidden="true">⌕</span>
+                <input id="adminHomeSearch" type="search" placeholder="O que você precisa?" list="adminHomeSearchOptions" />
+                <datalist id="adminHomeSearchOptions">
+                  <option value="Dashboard"></option>
+                  <option value="Clientes"></option>
+                  <option value="Fornecedores"></option>
+                  <option value="Funcionários"></option>
+                  <option value="Cardápio"></option>
+                  <option value="Pedidos"></option>
+                  <option value="Mesas"></option>
+                  <option value="Cozinha"></option>
+                  <option value="Relatório de Vendas"></option>
+                  <option value="Relatório Financeiro"></option>
+                  <option value="Desempenho do Cardápio"></option>
+                  <option value="Relatório Operacional"></option>
+                  <option value="Restaurante"></option>
+                  <option value="Usuários e Permissões"></option>
+                  <option value="Integrações"></option>
+                  <option value="Notificações"></option>
+                </datalist>
+              </div>
+              <p id="adminHomeSearchHint">Digite o nome de uma tela e pressione Enter.</p>
+            </form>
+
+            <div class="home-brand">
+              <img src="../images/brand/logo-dataplate.png" alt="Logo DataPlate" class="home-logo">
+              <h1>DataPlate</h1>
+              <p>Software de gestão inteligente para restaurantes</p>
+            </div>
+          </div>
+
+          <aside class="home-shortcuts home-shortcuts-right" aria-label="Suporte e avisos">
+            <article class="home-status-card">
+              <strong>Suporte Técnico Disponível</strong>
+              <span>Atendimento liberado para sua operação.</span>
+            </article>
+            <article class="home-status-card">
+              <strong>Avisos</strong>
+              <span>Nenhuma pendência crítica no momento.</span>
+            </article>
+          </aside>
+        </section>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="content-section">
+          <div class="dashboard-hero">
+            <div>
+              <span class="dashboard-eyebrow">Visão geral</span>
+              <h1>Dashboard DataPlate</h1>
+              <p>Acompanhe pedidos, mesas, cozinha e resultados do restaurante em uma única tela.</p>
+            </div>
+            <div class="dashboard-actions">
+              <button type="button" id="verdash" onclick="navigateTo('pedidos')">Ver Pedidos</button>
+              <button type="button" class="btn-secondary" onclick="navigateTo('rel-vendas')">Relatório de Vendas</button>
+            </div>
+          </div>
+
+          <div class="stats-grid dashboard-stats">
+            <div class="stat-card dashboard-stat-card">
+              <div class="stat-label">Faturamento de hoje</div>
+              <div class="stat-value">R$ 4.250,00</div>
+              <div class="stat-change positive">15% acima do período anterior</div>
+            </div>
+            <div class="stat-card dashboard-stat-card">
+              <div class="stat-label">Pedidos ativos</div>
+              <div class="stat-value">18</div>
+              <div class="stat-change">7 em preparo e 3 prontos</div>
+            </div>
+            <div class="stat-card dashboard-stat-card">
+              <div class="stat-label">Mesas ocupadas</div>
+              <div class="stat-value">12/20</div>
+              <div class="stat-change positive">8 mesas disponíveis</div>
+            </div>
+            <div class="stat-card dashboard-stat-card">
+              <div class="stat-label">Ticket médio</div>
+              <div class="stat-value">R$ 27,24</div>
+              <div class="stat-change">Sem variação relevante</div>
+            </div>
+          </div>
+
+          <div class="dashboard-layout">
+            <section class="report-section dashboard-panel">
+              <div class="panel-heading">
+                <h3>Movimento do dia</h3>
+                <span>Atualizado agora</span>
+              </div>
+              <div class="dashboard-chart" aria-label="Gráfico de movimento do dia">
+                <span style="height: 42%"><strong>10h</strong></span>
+                <span style="height: 58%"><strong>12h</strong></span>
+                <span style="height: 76%"><strong>14h</strong></span>
+                <span style="height: 48%"><strong>16h</strong></span>
+                <span style="height: 84%"><strong>18h</strong></span>
+                <span style="height: 92%"><strong>20h</strong></span>
+              </div>
+            </section>
+
+            <section class="report-section dashboard-panel">
+              <div class="panel-heading">
+                <h3>Status da operação</h3>
+                <span>Tempo médio: 18 min</span>
+              </div>
+              <div class="operation-list">
+                <div>
+                  <strong>Cozinha</strong>
+                  <span class="badge badge-warning">7 preparando</span>
+                </div>
+                <div>
+                  <strong>Pedidos</strong>
+                  <span class="badge badge-info">18 ativos</span>
+                </div>
+                <div>
+                  <strong>Mesas</strong>
+                  <span class="badge badge-success">8 livres</span>
+                </div>
+                <div>
+                  <strong>Cardápio</strong>
+                  <span class="badge badge-active">32 itens</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-layout dashboard-layout-wide">
+            <section class="report-section dashboard-panel">
+              <div class="panel-heading">
+                <h3>Atalhos rápidos</h3>
+                <span>Acesso direto</span>
+              </div>
+              <div class="quick-actions-grid">
+                <button type="button" class="quick-action" onclick="navigateTo('clientes')">
+                  <strong>Clientes</strong>
+                  <span>Cadastros e histórico</span>
+                </button>
+                <button type="button" class="quick-action" onclick="navigateTo('cardapio')">
+                  <strong>Cardápio</strong>
+                  <span>Itens, preço e destaque</span>
+                </button>
+                <button type="button" class="quick-action" onclick="navigateTo('mesas')">
+                  <strong>Mesas</strong>
+                  <span>Mapa do salão</span>
+                </button>
+                <button type="button" class="quick-action" onclick="navigateTo('cozinha')">
+                  <strong>Cozinha</strong>
+                  <span>Preparo em tempo real</span>
+                </button>
+              </div>
+            </section>
+
+            <section class="report-section dashboard-panel">
+              <div class="panel-heading">
+                <h3>Últimos pedidos</h3>
+                <span>Hoje</span>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Pedido</th>
+                      <th>Mesa</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>#1028</td>
+                      <td>07</td>
+                      <td>R$ 86,90</td>
+                      <td><span class="badge badge-warning">Preparando</span></td>
+                    </tr>
+                    <tr>
+                      <td>#1027</td>
+                      <td>12</td>
+                      <td>R$ 124,50</td>
+                      <td><span class="badge badge-success">Pronto</span></td>
+                    </tr>
+                    <tr>
+                      <td>#1026</td>
+                      <td>04</td>
+                      <td>R$ 52,00</td>
+                      <td><span class="badge badge-info">Recebido</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
 
         <!-- CLIENTES -->
         <section id="clientes" class="content-section">
@@ -454,9 +667,9 @@
               <label>Data Final</label>
               <input type="date" />
             </div>
-            <button class="btn-primary">Gerar Relatório</button>
-            <button class="btn-secondary">📥 Exportar PDF</button>
-            <button class="btn-secondary">📊 Exportar Excel</button>
+            <button class="btn-primary" type="button">Gerar Relatório</button>
+            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
           </div>
 
           <div class="stats-grid">
@@ -526,9 +739,9 @@
                 <option>Este ano</option>
               </select>
             </div>
-            <button class="btn-primary">Gerar Relatório</button>
-            <button class="btn-secondary">📥 Exportar PDF</button>
-            <button class="btn-secondary">📊 Exportar Excel</button>
+            <button class="btn-primary" type="button">Gerar Relatório</button>
+            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
           </div>
 
           <div class="stats-grid">
@@ -608,8 +821,9 @@
                 <option>Este ano</option>
               </select>
             </div>
-            <button class="btn-primary">Gerar Relatório</button>
-            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-primary" type="button">Gerar Relatório</button>
+            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
           </div>
 
           <div class="report-section">
@@ -668,8 +882,9 @@
                 <option>Últimos 3 meses</option>
               </select>
             </div>
-            <button class="btn-primary">Gerar Relatório</button>
-            <button class="btn-secondary">📥 Exportar PDF</button>
+            <button class="btn-primary" type="button">Gerar Relatório</button>
+            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
           </div>
 
           <div class="stats-grid">
@@ -917,6 +1132,20 @@
         </section>
       </div>
     </div>
+
+    <footer class="admin-footer-user">
+      <div class="footer-user-main">
+        <div class="user-avatar-small footer-user-avatar">GP</div>
+        <span>Usuário:</span>
+        <strong class="footer-user-name">Gerente Principal</strong>
+        <small class="footer-user-role">Administrador</small>
+      </div>
+      <div class="footer-user-actions">
+        <button type="button" data-open-modal="profileModal">Meu Perfil</button>
+        <button type="button" data-open-modal="switchUserModal">Trocar Usuário</button>
+        <button type="button" class="logout-link" data-open-modal="logoutModal">Sair</button>
+      </div>
+    </footer>
   </div>
 
   <!-- MODALS -->
@@ -1508,14 +1737,9 @@
         const selectedSection = document.getElementById(sectionId);
         if (selectedSection) selectedSection.classList.add('active');
 
-        const showWelcome = !selectedSection || sectionId === 'dashboard';
-        const logoCenter = document.querySelector('.logocenter');
-        const nomeCenter = document.querySelector('.nomecenter');
-        const textCenter = document.getElementById('textcenter');
-
-        if (logoCenter) logoCenter.style.display = showWelcome ? 'block' : 'none';
-        if (nomeCenter) nomeCenter.style.display = showWelcome ? 'block' : 'none';
-        if (textCenter) textCenter.style.display = showWelcome ? 'block' : 'none';
+        if (!selectedSection) {
+          document.getElementById('home')?.classList.add('active');
+        }
       };
 
       window.openAddDishModal = function () { window.openModal('addDishModal'); };
@@ -1553,6 +1777,6 @@
       });
     })();
   </script>
-  <script src="../JavaScript/adm.js?v=6" defer></script>
+  <script src="../JavaScript/adm.js?v=9" defer></script>
 </body>
 </html>
