@@ -509,8 +509,7 @@ let pagamentoSelecionado = "";
 // telas de pagamento
 const telasPagamento = {
   Pix: "telaPix",
-  Credito: "telaCredito",
-  Debito: "telaDebito",
+  CartaoMesa: "telaCartaoMesa",
   Dinheiro: "telaDinheiro"
 };
 
@@ -539,19 +538,11 @@ function finalizarPagamento(){
 
   }
 
-  else if(pagamentoSelecionado === "Credito"){
+  else if(pagamentoSelecionado === "CartaoMesa"){
 
-    document.getElementById("telaPagamento").style.display = "none";
+    pagamentoAprovado();
 
-    document.getElementById("telaCredito").style.display = "block";
-
-  }
-
-  else if(pagamentoSelecionado === "Debito"){
-
-    document.getElementById("telaPagamento").style.display = "none";
-
-    document.getElementById("telaDebito").style.display = "block";
+    alert("A maquininha será levada até sua mesa.");
 
   }
 
@@ -568,22 +559,32 @@ function finalizarPagamento(){
 // voltar pagamento
 function fecharTelaPagamento() {
 
-  // fecha telas internas
-  Object.values(telasPagamento).forEach(id => {
-    document.getElementById(id).style.display = "none";
+  // FECHA TODAS AS TELAS DE PAGAMENTO
+  const telas = [
+    "telaPagamento",
+    "telaPix",
+    "telaDinheiro",
+    "telaStatus"
+  ];
+
+  telas.forEach(id => {
+    const tela = document.getElementById(id);
+
+    if(tela){
+      tela.style.display = "none";
+    }
   });
 
-  // fecha tela pagamento
-  document.getElementById("telaPagamento").style.display = "none";
-
-  // volta carrinho
+  // VOLTA PARA O CARRINHO
   document.getElementById("telaCarrinho").style.display = "block";
 
+  // LIMPA SELEÇÃO
   pagamentoSelecionado = "";
 
   document.querySelectorAll(".opcao").forEach(op => {
     op.classList.remove("ativa");
   });
+
 }
 
 

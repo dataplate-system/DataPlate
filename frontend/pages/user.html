@@ -48,37 +48,21 @@
 
   </div>
 
-  <!-- CRÉDITO -->
-  <div class="opcao credito" onclick="selecionarPagamento(this, 'Credito')">
+ <!-- CARTÃO NA MESA -->
+<div class="opcao cartao" onclick="selecionarPagamento(this, 'CartaoMesa')">
 
-    <div class="icone-pagamento">
-      <img src="../images/menu/Credito.png">
-    </div>
-
-    <div class="texto-pagamento">
-      <h3>Cartão de Crédito</h3>
-      <p>Pague parcelado com segurança</p>
-    </div>
-
-    <div class="seta">›</div>
-
+  <div class="icone-pagamento">
+    <img src="../images/menu/Credito.png">
   </div>
 
-  <!-- DÉBITO -->
-  <div class="opcao debito" onclick="selecionarPagamento(this, 'Debito')">
-
-    <div class="icone-pagamento">
-      <img src="../images/menu/Debito.png">
-    </div>
-
-    <div class="texto-pagamento">
-      <h3>Cartão de Débito</h3>
-      <p>Pagamento imediato na conta</p>
-    </div>
-
-    <div class="seta">›</div>
-
+  <div class="texto-pagamento">
+    <h3>Cartão na Mesa</h3>
+    <p>A maquininha será levada até sua mesa</p>
   </div>
+
+  <div class="seta">›</div>
+
+</div>
 
   <!-- DINHEIRO -->
   <div class="opcao dinheiro" onclick="selecionarPagamento(this, 'Dinheiro')">
@@ -118,7 +102,7 @@
 
 </div>
 
-<!-- TELA PIX -->
+
 <!-- TELA PIX -->
 <div id="telaPix" style="display:none; padding:20px;">
 
@@ -202,89 +186,9 @@
 
 
 
-<!-- TELA CRÉDITO -->
-<div id="telaCredito" style="display:none; padding:20px;">
 
-  <header class="topo">
-    <button onclick="fecharTelaPagamento()">←</button>
-    <h2>Cartão de Crédito</h2>
-  </header>
 
-  <div class="card-status">
 
-    <div class="banner-pagamento">
-  <img src="../images/menu/Credito.png">
-</div>
-
-    <input type="text"
-      placeholder="Número do cartão"
-      class="input-pagamento">
-
-    <input type="text"
-      placeholder="Nome impresso"
-      class="input-pagamento">
-
-    <div style="display:flex; gap:10px;">
-      <input type="text"
-        placeholder="MM/AA"
-        class="input-pagamento">
-
-      <input type="text"
-        placeholder="CVV"
-        class="input-pagamento">
-    </div>
-
-    <button class="btn-carrinho"
-      onclick="pagamentoAprovado()">
-
-      Pagar Agora
-    </button>
-
-  </div>
-
-</div>
-
-<!-- TELA DÉBITO -->
-<div id="telaDebito" style="display:none; padding:20px;">
-
-  <header class="topo">
-    <button onclick="fecharTelaPagamento()">←</button>
-    <h2>Cartão de Débito</h2>
-  </header>
-
-  <div class="card-status">
-
-    <div class="banner-pagamento">
-  <img src="../images/menu/Debito.png">
-</div>
-
-    <input type="text"
-      placeholder="Número do cartão"
-      class="input-pagamento">
-
-    <input type="text"
-      placeholder="Nome impresso"
-      class="input-pagamento">
-
-    <div style="display:flex; gap:10px;">
-      <input type="text"
-        placeholder="MM/AA"
-        class="input-pagamento">
-
-      <input type="text"
-        placeholder="CVV"
-        class="input-pagamento">
-    </div>
-
-    <button class="btn-carrinho"
-      onclick="pagamentoAprovado()">
-
-      Confirmar Débito
-    </button>
-
-  </div>
-
-</div>
 
 <!-- TELA DINHEIRO -->
 <div id="telaDinheiro" style="display:none; padding:20px;">
