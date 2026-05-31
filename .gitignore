@@ -38,6 +38,8 @@ target/
 
 # Local browser test profiles
 .edge-*-profile/
+.edge-home-profile-*/
+.edge-*-profile-*/
 
 # Variáveis de ambiente (nunca commitar senhas)
 .env

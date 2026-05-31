@@ -82,6 +82,84 @@ async function apiFetch(endpoint, options = {}) {
   });
 }
 
+function showSuccessModal(title, message, duration = 4000) {
+  const overlay = document.createElement('div');
+  overlay.className = 'success-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.style.setProperty('--success-duration', `${duration}ms`);
+
+  overlay.innerHTML = `
+    <div class="success-box">
+      <button class="success-close-btn" aria-label="Fechar">✕</button>
+      <div class="success-icon-wrap">
+        <svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 7"/></svg>
+      </div>
+      <h3 class="success-title">${title}</h3>
+      <p class="success-message">${message}</p>
+      <div class="success-progress-bar"><div class="success-progress-fill"></div></div>
+      <button class="btn-primary success-btn">Concluir</button>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  function close() {
+    overlay.style.animation = 'none';
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.2s';
+    window.setTimeout(() => overlay.remove(), 200);
+  }
+
+  const timer = window.setTimeout(close, duration);
+
+  overlay.querySelector('.success-close-btn').addEventListener('click', () => { window.clearTimeout(timer); close(); });
+  overlay.querySelector('.success-btn').addEventListener('click', () => { window.clearTimeout(timer); close(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { window.clearTimeout(timer); close(); } });
+}
+
+function showConfirmModal(title, message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.setAttribute('role', 'alertdialog');
+    overlay.setAttribute('aria-modal', 'true');
+
+    overlay.innerHTML = `
+      <div class="confirm-box">
+        <button class="confirm-close-btn" aria-label="Fechar">✕</button>
+        <div class="confirm-icon-wrap">
+          <svg viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+        </div>
+        <h3 class="confirm-title">${title}</h3>
+        <p class="confirm-message">${message}</p>
+        <div class="confirm-actions">
+          <button class="btn-secondary confirm-cancel-btn">Cancelar</button>
+          <button class="btn-danger confirm-ok-btn">Excluir</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+
+    function close(result) {
+      overlay.style.opacity = '0';
+      overlay.style.transition = 'opacity 0.18s';
+      window.setTimeout(() => overlay.remove(), 180);
+      resolve(result);
+    }
+
+    overlay.querySelector('.confirm-ok-btn').addEventListener('click', () => close(true));
+    overlay.querySelector('.confirm-cancel-btn').addEventListener('click', () => close(false));
+    overlay.querySelector('.confirm-close-btn').addEventListener('click', () => close(false));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+    overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(false); });
+  });
+}
+
 function showToast(message, type = 'error') {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -458,6 +536,30 @@ function formatCep(value) {
   return onlyDigits(value).slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
 }
 
+// Máscara de moeda BRL (estilo ATM): digitar "800000" → "R$ 8.000,00"
+function formatCurrencyInput(value) {
+  const digits = onlyDigits(value).slice(0, 13);
+  if (!digits) return '';
+  const padded = digits.padStart(3, '0');
+  const intPart = padded.slice(0, -2).replace(/^0+/, '') || '0';
+  const decPart = padded.slice(-2);
+  const withDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `R$ ${withDots},${decPart}`;
+}
+
+// Converte "R$ 8.000,00" → 8000.00 (float para enviar à API)
+function parseCurrencyValue(value) {
+  const digits = onlyDigits(value);
+  if (!digits) return null;
+  return Number(digits) / 100;
+}
+
+// Converte float da API → string de dígitos para formatCurrencyInput
+function floatToInputDigits(value) {
+  const num = Number(value) || 0;
+  return String(Math.round(num * 100));
+}
+
 function isRepeatedDigits(digits) {
   return /^(\d)\1+$/.test(digits);
 }
@@ -605,6 +707,24 @@ function configureField(field) {
     field.pattern = '\\d{5}-\\d{3}';
     field.title = 'Digite um CEP no formato 00000-000';
     field.addEventListener('input', () => { field.value = formatCep(field.value); });
+  } else if (key.includes('salário') || key.includes('salario') || key.includes('salary') ||
+             key.includes('preço') || key.includes('preco') || key.includes('price') ||
+             (field.name === 'salary' || field.name === 'price')) {
+    field.classList.add('masked-input');
+    field.inputMode = 'numeric';
+    field.addEventListener('input', () => {
+      const pos = field.selectionStart;
+      const prevLen = field.value.length;
+      field.value = formatCurrencyInput(field.value) || '';
+      const newLen = field.value.length;
+      field.setSelectionRange(pos + (newLen - prevLen), pos + (newLen - prevLen));
+    });
+    field.addEventListener('focus', () => {
+      if (field.value === '' || field.value === 'R$ 0,00') field.value = '';
+    });
+    field.addEventListener('blur', () => {
+      if (!field.value.trim()) field.value = '';
+    });
   } else if (type === 'number') {
     field.min = field.min || '0';
     field.step = field.step || '1';
@@ -621,8 +741,6 @@ function validateFields(container) {
     field.setCustomValidity('');
     if (field.value && !new RegExp(`^${field.pattern}$`).test(field.value)) {
       field.setCustomValidity(field.title || 'Preencha o campo no formato correto.');
-    } else if (field.name === 'cnpj' && field.value && !isValidCnpj(field.value)) {
-      field.setCustomValidity('Digite um CNPJ valido.');
     }
   });
 }
@@ -848,11 +966,15 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   const request = id ? putJson(`/clientes/${id}`, payload) : postJson('/clientes', payload);
   request
     .then((cliente) => {
-      showToast(`Cliente ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addClientModal');
       resetCrudForm(e.target, 'addClientModal');
       configureClientPersonType(e.target);
       carregarClientes();
+      showSuccessModal(
+        id ? 'Cliente atualizado!' : 'Cliente cadastrado!',
+        id ? `Os dados de <strong>${cliente.nome}</strong> foram salvos com sucesso.`
+           : `<strong>${cliente.nome}</strong> foi adicionado à lista de clientes.`
+      );
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar cliente.'));
 });
@@ -864,14 +986,18 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
   const id = e.target.querySelector('[name="id"]')?.value;
   const codeInput = e.target.querySelector('[name="codigo"]');
   const fd = new FormData(e.target);
-  const payload = { codigo: codeInput?.value || null, nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: Number(fd.get('salary')) || null };
+  const payload = { codigo: codeInput?.value || null, nome: fd.get('name'), cpf: fd.get('cpf'), telefone: fd.get('phone'), cargo: fd.get('role'), salario: parseCurrencyValue(fd.get('salary')) };
   const request = id ? putJson(`/funcionarios/${id}`, payload) : postJson('/funcionarios', payload);
   request
     .then((func) => {
-      showToast(`Funcionario ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addFunctModal');
       resetCrudForm(e.target, 'addFunctModal');
       carregarFuncionarios();
+      showSuccessModal(
+        id ? 'Funcionário atualizado!' : 'Funcionário cadastrado!',
+        id ? `Os dados de <strong>${func.nome}</strong> foram salvos com sucesso.`
+           : `<strong>${func.nome}</strong> foi adicionado à equipe.`
+      );
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar funcionario.'));
 });
@@ -888,10 +1014,14 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
   const request = id ? putJson(`/fornecedores/${id}`, payload) : postJson('/fornecedores', payload);
   request
     .then((forn) => {
-      showToast(`Fornecedor ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addSupplierModal');
       resetCrudForm(e.target, 'addSupplierModal');
       carregarFornecedores();
+      showSuccessModal(
+        id ? 'Fornecedor atualizado!' : 'Fornecedor cadastrado!',
+        id ? `Os dados de <strong>${forn.razaoSocial}</strong> foram salvos com sucesso.`
+           : `<strong>${forn.razaoSocial}</strong> foi adicionado à lista de fornecedores.`
+      );
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
 });
@@ -910,7 +1040,7 @@ document.querySelector('.category-create-button')?.addEventListener('click', () 
   );
 
   if (alreadyExists) {
-    alert('Essa categoria ja existe.');
+    showToast('Essa categoria já existe.');
     return;
   }
 
@@ -924,7 +1054,7 @@ document.querySelector('.category-create-button')?.addEventListener('click', () 
   categoryInput.value = '';
 });
 
-document.querySelector('.category-remove-button')?.addEventListener('click', () => {
+document.querySelector('.category-remove-button')?.addEventListener('click', async () => {
   const form = document.getElementById('addDishForm');
   const categorySelect = form?.querySelector('[name="category"]');
   const selectedOption = categorySelect?.selectedOptions[0];
@@ -932,9 +1062,8 @@ document.querySelector('.category-remove-button')?.addEventListener('click', () 
   if (!categorySelect || !selectedOption) return;
 
   const categoryName = selectedOption.textContent.trim();
-  const shouldRemove = confirm(`Remover a categoria "${categoryName}"?`);
-
-  if (!shouldRemove) return;
+  const ok = await showConfirmModal('Remover categoria?', `Deseja remover a categoria <strong>${categoryName}</strong> desta lista?`);
+  if (!ok) return;
 
   selectedOption.remove();
 
@@ -963,7 +1092,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
     codigo: formData.get('codigo') || null,
     nome: formData.get('name'),
     idCategoria: Number(formData.get('category')),
-    preco: Number(formData.get('price')),
+    preco: parseCurrencyValue(formData.get('price')),
     descricao: formData.get('description'),
     imagem,
     tempoPreparo: Number(formData.get('prepTime')) || null,
@@ -974,10 +1103,14 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
   const request = id ? putJson(`/produtos/${id}`, produto) : postJson('/produtos', produto);
   request
     .then((produtoSalvo) => {
-      showToast(`Prato ${id ? 'atualizado' : 'adicionado'} com sucesso!`, 'success');
       closeModal('addDishModal');
       resetCrudForm(e.target, 'addDishModal');
       carregarProdutos();
+      showSuccessModal(
+        id ? 'Prato atualizado!' : 'Prato cadastrado!',
+        id ? `<strong>${produtoSalvo.nome}</strong> foi atualizado no cardápio.`
+           : `<strong>${produtoSalvo.nome}</strong> foi adicionado ao cardápio com sucesso.`
+      );
     })
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);
@@ -1172,7 +1305,7 @@ function buildTableActions(table) {
     <button class="btn-small" onclick="reserveTable(${table.id})">${reserveLabel}</button>
     ${occupyButton}
     ${releaseButton}
-    <button class="btn-icon" title="Excluir" onclick="deleteTable(${table.id})">🗑</button>
+    <button class="btn-icon btn-icon-delete" title="Excluir" onclick="deleteTable(${table.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
   `;
 }
 
@@ -1388,10 +1521,12 @@ window.releaseTable = function(tableId) {
   renderTables();
 };
 
-window.deleteTable = function(tableId) {
+window.deleteTable = async function(tableId) {
   const tables = getTables();
   const table = tables.find((item) => item.id === tableId);
-  if (!table || !confirm(`Excluir a Mesa ${table.number}?`)) return;
+  if (!table) return;
+  const ok = await showConfirmModal('Excluir mesa?', `Esta ação não pode ser desfeita.<br>Deseja excluir a <strong>Mesa ${table.number}</strong>?`);
+  if (!ok) return;
   const nextTables = tables.filter((item) => item.id !== tableId);
   if (selectedTableId === tableId) selectedTableId = null;
   saveTables(nextTables);
@@ -1472,8 +1607,8 @@ document.getElementById('profileForm')?.addEventListener('submit', (e) => {
   if (headerAvatar) headerAvatar.textContent = initials;
   if (profileAvatar) profileAvatar.textContent = initials;
 
-  alert('Perfil atualizado com sucesso!');
   closeModal('profileModal');
+  showSuccessModal('Perfil atualizado!', 'Suas informações foram salvas com sucesso.');
 });
 
 document.getElementById('securityForm')?.addEventListener('submit', (e) => {
@@ -1491,8 +1626,8 @@ document.getElementById('securityForm')?.addEventListener('submit', (e) => {
   }
 
   confirmPassword.setCustomValidity('');
-  alert('Configurações de segurança atualizadas!');
   closeModal('securityModal');
+  showSuccessModal('Segurança atualizada!', 'Suas configurações de acesso foram salvas.');
   e.target.reset();
 });
 
@@ -2000,14 +2135,9 @@ document.addEventListener('click', (e) => {
     if (configForm) {
       e.preventDefault();
       if (!validateContainer(configForm)) return;
-      alert('Alterações salvas com sucesso!');
+      showToast('Alterações salvas com sucesso!', 'success');
       return;
     }
-  }
-
-  if (/editar|excluir|detalhes|imprimir|permiss|hist[oó]rico|contato|desativar|ajustar|configurar|reativar|senha|acelerar|atualizar|cancelar|ver pedidos|ver expediente/i.test(label)) {
-    e.preventDefault();
-    alert(`${label} selecionado.`);
   }
 });
 
@@ -2020,13 +2150,10 @@ document.addEventListener('submit', (e) => {
   const modal = form.closest('.modal');
 
   if (modal) {
-    alert('Cadastro salvo com sucesso!');
     window.closeModal(modal.id);
     form.reset();
     return;
   }
-
-  alert('Alterações salvas com sucesso!');
 });
 
 function exportTableToCSV(buttonSelector) {
@@ -2261,8 +2388,8 @@ function buildLinhaCliente(c) {
     <td><span class="badge badge-active">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(c.criadoEm)}</td>
     <td>
-      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarCliente(${c.id})">✏️</button>
-      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirCliente(${c.id})">🗑</button>
+      <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
   </tr>`;
 }
@@ -2301,8 +2428,8 @@ function buildLinhaFuncionario(f) {
     <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(f.criadoEm)}</td>
     <td>
-      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarFuncionario(${f.id})">✏️</button>
-      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirFuncionario(${f.id})">🗑</button>
+      <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarFuncionario(${f.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirFuncionario(${f.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
   </tr>`;
 }
@@ -2341,8 +2468,8 @@ function buildLinhaFornecedor(f) {
     <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(f.criadoEm)}</td>
     <td>
-      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarFornecedor(${f.id})">✏️</button>
-      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirFornecedor(${f.id})">🗑</button>
+      <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarFornecedor(${f.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirFornecedor(${f.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
   </tr>`;
 }
@@ -2382,8 +2509,8 @@ function buildLinhaProduto(p) {
     <td><span class="badge badge-active">${p.ativo !== false ? 'Sim' : 'Não'}</span></td>
     <td>${formatDate(p.criadoEm)}</td>
     <td>
-      <button class="btn-icon" title="Editar" data-crud-action="edit" onclick="editarProduto(${p.id})">✏️</button>
-      <button class="btn-icon" title="Excluir" data-crud-action="delete" onclick="excluirProduto(${p.id})">🗑</button>
+      <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarProduto(${p.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirProduto(${p.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
   </tr>`;
 }
@@ -2425,14 +2552,13 @@ window.editarCliente = function(id) {
   window.openModal('addClientModal');
 };
 
-window.excluirCliente = function(id) {
+window.excluirCliente = async function(id) {
   const cliente = (window.__clientes || []).find((item) => item.id === id);
-  if (!cliente || !confirm(`Excluir o cliente "${cliente.nome}"?`)) return;
+  if (!cliente) return;
+  const ok = await showConfirmModal('Excluir cliente?', `Esta ação não pode ser desfeita.<br>Deseja excluir <strong>${cliente.nome}</strong>?`);
+  if (!ok) return;
   deleteJson(`/clientes/${id}`)
-    .then(() => {
-      showToast('Cliente excluido com sucesso!', 'success');
-      carregarClientes();
-    })
+    .then(() => { showToast('Cliente excluído com sucesso!', 'success'); carregarClientes(); })
     .catch((err) => showToast(err.message || 'Erro ao excluir cliente.'));
 };
 
@@ -2448,20 +2574,19 @@ window.editarFuncionario = function(id) {
   form.querySelector('[name="cpf"]').value = formatCpf(funcionario.cpf || '');
   form.querySelector('[name="phone"]').value = funcionario.telefone || '';
   form.querySelector('[name="role"]').value = funcionario.cargo || 'Atendente';
-  form.querySelector('[name="salary"]').value = funcionario.salario || '';
+  form.querySelector('[name="salary"]').value = funcionario.salario ? formatCurrencyInput(floatToInputDigits(funcionario.salario)) : '';
   setModalMode(form, 'addFunctModal', true);
   window.openModal('addFunctModal');
 };
 
-window.excluirFuncionario = function(id) {
+window.excluirFuncionario = async function(id) {
   const funcionario = (window.__funcionarios || []).find((item) => item.id === id);
-  if (!funcionario || !confirm(`Excluir o funcionario "${funcionario.nome}"?`)) return;
+  if (!funcionario) return;
+  const ok = await showConfirmModal('Excluir funcionário?', `Esta ação não pode ser desfeita.<br>Deseja excluir <strong>${funcionario.nome}</strong>?`);
+  if (!ok) return;
   deleteJson(`/funcionarios/${id}`)
-    .then(() => {
-      showToast('Funcionario excluido com sucesso!', 'success');
-      carregarFuncionarios();
-    })
-    .catch((err) => showToast(err.message || 'Erro ao excluir funcionario.'));
+    .then(() => { showToast('Funcionário excluído com sucesso!', 'success'); carregarFuncionarios(); })
+    .catch((err) => showToast(err.message || 'Erro ao excluir funcionário.'));
 };
 
 window.editarFornecedor = function(id) {
@@ -2483,14 +2608,13 @@ window.editarFornecedor = function(id) {
   window.openModal('addSupplierModal');
 };
 
-window.excluirFornecedor = function(id) {
+window.excluirFornecedor = async function(id) {
   const fornecedor = (window.__fornecedores || []).find((item) => item.id === id);
-  if (!fornecedor || !confirm(`Excluir o fornecedor "${fornecedor.razaoSocial}"?`)) return;
+  if (!fornecedor) return;
+  const ok = await showConfirmModal('Excluir fornecedor?', `Esta ação não pode ser desfeita.<br>Deseja excluir <strong>${fornecedor.razaoSocial}</strong>?`);
+  if (!ok) return;
   deleteJson(`/fornecedores/${id}`)
-    .then(() => {
-      showToast('Fornecedor excluido com sucesso!', 'success');
-      carregarFornecedores();
-    })
+    .then(() => { showToast('Fornecedor excluído com sucesso!', 'success'); carregarFornecedores(); })
     .catch((err) => showToast(err.message || 'Erro ao excluir fornecedor.'));
 };
 
@@ -2504,7 +2628,7 @@ window.editarProduto = function(id) {
   form.querySelector('[name="codigo"]').value = produto.codigo || '';
   form.querySelector('[name="name"]').value = produto.nome || '';
   form.querySelector('[name="category"]').value = String(produto.idCategoria || 1);
-  form.querySelector('[name="price"]').value = produto.preco || '';
+  form.querySelector('[name="price"]').value = produto.preco ? formatCurrencyInput(floatToInputDigits(produto.preco)) : '';
   form.querySelector('[name="prepTime"]').value = produto.tempoPreparo || '';
   form.querySelector('[name="description"]').value = produto.descricao || '';
   form.querySelector('[name="available"]').checked = produto.ativo !== false;
@@ -2513,15 +2637,14 @@ window.editarProduto = function(id) {
   window.openModal('addDishModal');
 };
 
-window.excluirProduto = function(id) {
+window.excluirProduto = async function(id) {
   const produto = (window.__produtos || []).find((item) => item.id === id);
-  if (!produto || !confirm(`Excluir o item "${produto.nome}"?`)) return;
+  if (!produto) return;
+  const ok = await showConfirmModal('Excluir item do cardápio?', `Esta ação não pode ser desfeita.<br>Deseja excluir <strong>${produto.nome}</strong>?`);
+  if (!ok) return;
   deleteJson(`/produtos/${id}`)
-    .then(() => {
-      showToast('Produto excluido com sucesso!', 'success');
-      carregarProdutos();
-    })
-    .catch((err) => showToast(err.message || 'Erro ao excluir produto.'));
+    .then(() => { showToast('Item excluído com sucesso!', 'success'); carregarProdutos(); })
+    .catch((err) => showToast(err.message || 'Erro ao excluir item.'));
 };
 
 function carregarMesas() {

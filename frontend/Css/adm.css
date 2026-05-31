@@ -847,6 +847,22 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   background: rgba(37, 99, 235, 0.08);
 }
 
+.btn-icon-edit {
+  color: #2563eb;
+}
+.btn-icon-edit:hover {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.btn-icon-delete {
+  color: #dc2626;
+}
+.btn-icon-delete:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
 /* TABLES */
 .table-container {
   background: var(--color-white);
@@ -1966,6 +1982,247 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
     width: 150px;
     margin-bottom: 10px;
   }
+
+/* =============================================
+   MODAL DE SUCESSO
+   ============================================= */
+
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.success-box {
+  background: var(--color-white);
+  border-radius: 14px;
+  padding: 36px 32px 28px;
+  width: min(420px, calc(100vw - 32px));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: successPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+@keyframes successPop {
+  from { transform: scale(0.82); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.success-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--color-gray-light);
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+.success-close-btn:hover { color: var(--color-text); background: var(--color-bg); }
+
+.success-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  animation: successIconIn 0.4s 0.1s both;
+}
+
+@keyframes successIconIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.success-icon-wrap svg {
+  width: 36px;
+  height: 36px;
+  stroke: #16a34a;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  animation: drawCheck 0.4s 0.25s both;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+}
+
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+
+.success-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
+
+.success-message {
+  font-size: 14px;
+  color: var(--color-gray-light);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.success-progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--color-border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.success-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  border-radius: 99px;
+  animation: progressDrain var(--success-duration, 4s) linear forwards;
+  transform-origin: left;
+}
+
+@keyframes progressDrain {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.success-btn {
+  min-width: 120px;
+  justify-content: center;
+}
+
+/* =============================================
+   fim MODAL DE SUCESSO
+   ============================================= */
+
+/* =============================================
+   MODAL DE CONFIRMAÇÃO (DELETE)
+   ============================================= */
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3100;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-box {
+  background: var(--color-white);
+  border-radius: 14px;
+  padding: 32px 28px 24px;
+  width: min(400px, calc(100vw - 32px));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: successPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+.confirm-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--color-gray-light);
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+.confirm-close-btn:hover { color: var(--color-text); background: var(--color-bg); }
+
+.confirm-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.confirm-icon-wrap svg {
+  width: 32px;
+  height: 32px;
+  stroke: #dc2626;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
+
+.confirm-message {
+  font-size: 13px;
+  color: var(--color-gray-light);
+  line-height: 1.55;
+  margin: 0 0 24px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-danger {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.25s;
+  min-width: 100px;
+}
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+}
+
+/* =============================================
+   fim MODAL DE CONFIRMAÇÃO
+   ============================================= */
 
   .nomecenter {
     font-size: 24px;

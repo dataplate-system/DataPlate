@@ -1,5 +1,0 @@
-2026/05/28-02:47:31.362 35d0 Creating DB C:\Users\vitor\DataPlate\.edge-home-profile-20260528024727\Default\EdgeCoupons/coupons_data.db since it was missing.
-2026/05/28-02:47:31.491 35d0 Reusing MANIFEST C:\Users\vitor\DataPlate\.edge-home-profile-20260528024727\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/28-02:47:32.891 91d4 Level-0 table #5: started
-2026/05/28-02:47:32.906 91d4 Level-0 table #5: 682644 bytes OK
-2026/05/28-02:47:32.911 91d4 Delete type=0 #3
