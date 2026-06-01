@@ -1156,6 +1156,35 @@ function toDateTimeLocal(date) {
   return local.toISOString().slice(0, 16);
 }
 
+function currentReservationBoundary() {
+  const date = new Date();
+  date.setSeconds(0, 0);
+  return date;
+}
+
+function reservationMinDateTimeLocal() {
+  return toDateTimeLocal(currentReservationBoundary());
+}
+
+function isReservationInPast(value) {
+  if (!value) return false;
+  const selectedDate = new Date(value);
+  if (Number.isNaN(selectedDate.getTime())) return false;
+  return selectedDate.getTime() < currentReservationBoundary().getTime();
+}
+
+function updateReservationDateConstraints(form = document.getElementById('tableForm')) {
+  const dateField = form?.querySelector('[name="reservationDate"]');
+  if (!dateField) return;
+
+  const status = form?.querySelector('[name="status"]')?.value;
+  dateField.min = reservationMinDateTimeLocal();
+  dateField.setCustomValidity(status === 'reservada' && isReservationInPast(dateField.value)
+    ? 'Selecione uma data e horário que ainda não passou.'
+    : ''
+  );
+}
+
 function dateFromToday(days, time) {
   const [hours, minutes] = time.split(':').map(Number);
   const date = new Date();
@@ -1416,6 +1445,7 @@ function updateTableReservationFields() {
   if (!form) return;
   const status = form.querySelector('[name="status"]')?.value;
   const fields = form.querySelectorAll('[name="reservationName"], [name="reservationPhone"], [name="reservationDate"]');
+  updateReservationDateConstraints(form);
   fields.forEach((field) => {
     field.closest('.form-group')?.classList.toggle('reservation-highlight', status === 'reservada');
   });
@@ -1436,10 +1466,12 @@ function fillTableForm(table) {
   form.querySelector('[name="reservationPhone"]').value = table?.reservationPhone || '';
   form.querySelector('[name="reservationDate"]').value = table?.reservationDate || '';
   form.querySelector('[name="notes"]').value = table?.notes || '';
+  updateReservationDateConstraints(form);
   updateTableReservationFields();
 }
 
 function validateTableForm(form) {
+  updateReservationDateConstraints(form);
   if (!validateForm(form)) return false;
 
   const fd = new FormData(form);
@@ -1472,6 +1504,12 @@ function validateTableForm(form) {
       dateField.setCustomValidity('');
       return false;
     }
+    if (isReservationInPast(fd.get('reservationDate'))) {
+      dateField.setCustomValidity('Selecione uma data e horário que ainda não passou.');
+      dateField.reportValidity();
+      dateField.setCustomValidity('');
+      return false;
+    }
   }
 
   return true;
@@ -1492,8 +1530,9 @@ window.reserveTable = function(tableId) {
   const form = document.getElementById('tableForm');
   if (!form) return;
   form.querySelector('[name="status"]').value = 'reservada';
-  if (!form.querySelector('[name="reservationDate"]').value) {
-    form.querySelector('[name="reservationDate"]').value = nextReservationSlot();
+  const dateField = form.querySelector('[name="reservationDate"]');
+  if (!dateField.value || isReservationInPast(dateField.value)) {
+    dateField.value = nextReservationSlot();
   }
   updateTableReservationFields();
 };
@@ -1576,6 +1615,9 @@ document.getElementById('tableForm')?.addEventListener('submit', (event) => {
 });
 
 document.getElementById('tableForm')?.querySelector('[name="status"]')?.addEventListener('change', updateTableReservationFields);
+document.getElementById('tableForm')?.querySelector('[name="reservationDate"]')?.addEventListener('input', () => {
+  updateReservationDateConstraints();
+});
 document.getElementById('tableSearch')?.addEventListener('input', renderTables);
 document.getElementById('tableFilter')?.addEventListener('change', renderTables);
 document.getElementById('clearTableFilters')?.addEventListener('click', () => {
