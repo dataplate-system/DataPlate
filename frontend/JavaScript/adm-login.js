@@ -1,7 +1,9 @@
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
 const DEFAULT_DEMO_ADMIN_KEY = 'gerente';
 
-const demoAdmins = {
+const adminAuth = window.DataPlateAdminAuth;
+
+const fallbackDemoAdmins = {
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
@@ -28,9 +30,20 @@ const demoAdmins = {
   }
 };
 
-function setLoginError(message) {
+function getDemoAdmins() {
+  return adminAuth?.getAdmins ? adminAuth.getAdmins() : fallbackDemoAdmins;
+}
+
+function getDemoAdmin(adminKey) {
+  return adminAuth?.getAdmin ? adminAuth.getAdmin(adminKey) : fallbackDemoAdmins[adminKey];
+}
+
+function setLoginError(message, type = 'error') {
   const error = document.getElementById('loginError');
-  if (error) error.textContent = message || '';
+  if (!error) return;
+
+  error.textContent = message || '';
+  error.classList.toggle('is-success', type === 'success');
 }
 
 function startSession(admin, remember) {
@@ -49,7 +62,9 @@ function startSession(admin, remember) {
 }
 
 function findAdmin(cpf, password) {
-  return Object.values(demoAdmins).find((admin) =>
+  if (adminAuth?.findAdmin) return adminAuth.findAdmin(cpf, password);
+
+  return Object.values(fallbackDemoAdmins).find((admin) =>
     admin.cpf === String(cpf).trim()
     && admin.password === password
   );
@@ -63,7 +78,7 @@ function setActiveDemoButton(selectedKey) {
 }
 
 function fillDemoCredentials(adminKey, cpfInput, passwordInput) {
-  const admin = demoAdmins[adminKey];
+  const admin = getDemoAdmin(adminKey);
   if (!admin || !cpfInput || !passwordInput) return;
 
   cpfInput.value = admin.cpf;
@@ -73,8 +88,8 @@ function fillDemoCredentials(adminKey, cpfInput, passwordInput) {
 }
 
 function syncDemoButtonFromCredentials(cpfInput, passwordInput) {
-  const selectedKey = Object.keys(demoAdmins).find((key) => {
-    const admin = demoAdmins[key];
+  const selectedKey = Object.keys(getDemoAdmins()).find((key) => {
+    const admin = getDemoAdmin(key);
     return admin.cpf === cpfInput.value.trim()
       && admin.password === passwordInput.value;
   });
@@ -83,12 +98,31 @@ function syncDemoButtonFromCredentials(cpfInput, passwordInput) {
 }
 
 function formatCpf(value) {
+  if (adminAuth?.formatCpf) return adminAuth.formatCpf(value);
+
   return String(value || '')
     .replace(/\D/g, '')
     .slice(0, 11)
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
+function applyPasswordResetFeedback(cpfInput, passwordInput) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('senhaAtualizada') !== '1') return;
+
+  const adminKey = params.get('user') || DEFAULT_DEMO_ADMIN_KEY;
+  const admin = getDemoAdmin(adminKey);
+
+  if (admin && cpfInput && passwordInput) {
+    cpfInput.value = admin.cpf;
+    passwordInput.value = '';
+    setActiveDemoButton(adminKey);
+  }
+
+  setLoginError('Senha atualizada com sucesso. Entre com a nova senha.', 'success');
+  window.history.replaceState({}, document.title, window.location.pathname);
 }
 
 function formatPrepTime(totalSeconds) {
@@ -154,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const togglePassword = document.getElementById('togglePassword');
 
   fillDemoCredentials(DEFAULT_DEMO_ADMIN_KEY, cpfInput, passwordInput);
+  applyPasswordResetFeedback(cpfInput, passwordInput);
   startPrepCountdown();
 
   cpfInput?.addEventListener('input', () => {
