@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Recuperar Senha</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/adm-login.css" />
+</head>
+<body>
+  <main class="login-shell reset-shell">
+    <section class="login-visual" aria-label="DataPlate Administrativo">
+      <div class="brand-lockup">
+        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
+        <div>
+          <strong>DataPlate</strong>
+          <span>Recuperação de acesso</span>
+        </div>
+      </div>
+
+      <div class="login-preview security-preview">
+        <div class="preview-header">
+          <span>Segurança</span>
+          <strong>Verificação em etapas</strong>
+        </div>
+        <div class="security-checklist">
+          <span>CPF do usuário administrativo</span>
+          <span>Código temporário de 6 dígitos</span>
+          <span>Nova senha com letras e números</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="Recuperação de senha administrativa">
+      <div class="login-card reset-card">
+        <div class="login-card-header">
+          <p>Acesso Administrativo</p>
+          <h1>Recuperar senha</h1>
+        </div>
+
+        <ol class="reset-steps" aria-label="Etapas da recuperação">
+          <li class="is-active" data-step="identify">CPF</li>
+          <li data-step="code">Código</li>
+          <li data-step="password">Nova senha</li>
+        </ol>
+
+        <form id="identifyCpfForm" class="reset-step-panel" data-step-panel="identify" novalidate>
+          <div class="form-group">
+            <label for="recoveryCpf">CPF cadastrado</label>
+            <input id="recoveryCpf" name="cpf" type="text" value="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+          </div>
+
+          <button class="login-button" type="submit">Continuar verificação</button>
+        </form>
+
+        <form id="securityCodeForm" class="reset-step-panel" data-step-panel="code" novalidate hidden>
+          <div class="security-code-box">
+            <span>Código de segurança simulado</span>
+            <strong id="resetCodePreview">------</strong>
+            <small id="resetCodeHint">Código temporário aguardando envio.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="securityCode">Digite o código recebido</label>
+            <input id="securityCode" name="securityCode" type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" required />
+          </div>
+
+          <button class="login-button" type="submit">Validar código</button>
+          <button class="secondary-link-button" type="button" id="resendSecurityCode">Reenviar código</button>
+        </form>
+
+        <form id="newPasswordForm" class="reset-step-panel" data-step-panel="password" novalidate hidden>
+          <div class="form-group">
+            <label for="newAdminPassword">Nova senha</label>
+            <input id="newAdminPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" required />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmAdminPassword">Confirmar nova senha</label>
+            <input id="confirmAdminPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required />
+          </div>
+
+          <label class="remember-row security-confirmation">
+            <input type="checkbox" name="confirmOwnership" required />
+            <span>Confirmo que a troca foi solicitada pelo titular deste acesso.</span>
+          </label>
+
+          <button class="login-button" type="submit">Atualizar senha</button>
+        </form>
+
+        <p class="login-error" id="resetMessage" role="alert"></p>
+
+        <a class="back-login-link" href="adm-login.html">Voltar ao login</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="../JavaScript/adm-auth.js" defer></script>
+  <script src="../JavaScript/adm-recuperar-senha.js" defer></script>
+</body>
+</html>

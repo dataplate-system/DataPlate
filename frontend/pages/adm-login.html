@@ -70,10 +70,13 @@
             </div>
           </div>
 
-          <label class="remember-row">
-            <input type="checkbox" name="remember" checked />
-            <span>Manter acesso neste navegador</span>
-          </label>
+          <div class="login-options-row">
+            <label class="remember-row">
+              <input type="checkbox" name="remember" checked />
+              <span>Manter acesso neste navegador</span>
+            </label>
+            <a class="forgot-password-link" href="adm-recuperar-senha.html">Esqueci minha senha</a>
+          </div>
 
           <p class="login-error" id="loginError" role="alert"></p>
 
@@ -90,6 +93,7 @@
     </section>
   </main>
 
+  <script src="../JavaScript/adm-auth.js" defer></script>
   <script src="../JavaScript/adm-login.js" defer></script>
 </body>
 </html>
