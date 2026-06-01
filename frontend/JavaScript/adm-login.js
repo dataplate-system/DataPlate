@@ -17,6 +17,14 @@ const demoAdmins = {
     password: 'atendente123',
     role: 'Operacional',
     userKey: 'atendente'
+  },
+  cozinha: {
+    name: 'Cozinha',
+    initials: 'CZ',
+    cpf: '222.222.222-22',
+    password: 'cozinha123',
+    role: 'Pedidos e preparo',
+    userKey: 'cozinha'
   }
 };
 
@@ -37,7 +45,7 @@ function startSession(admin, remember) {
   };
 
   localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-  window.location.href = 'adm.html';
+  window.location.href = admin.userKey === 'cozinha' ? 'cozinha.html' : 'adm.html';
 }
 
 function findAdmin(cpf, password) {
@@ -129,8 +137,14 @@ function startPrepCountdown() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (localStorage.getItem(ADMIN_SESSION_KEY)) {
-    window.location.replace('adm.html');
+  const existingSession = localStorage.getItem(ADMIN_SESSION_KEY);
+  if (existingSession) {
+    try {
+      const session = JSON.parse(existingSession);
+      window.location.replace(session?.userKey === 'cozinha' ? 'cozinha.html' : 'adm.html');
+    } catch (_) {
+      window.location.replace('adm.html');
+    }
     return;
   }
 
