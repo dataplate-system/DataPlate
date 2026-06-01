@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Cozinha</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/cozinha.css" />
+</head>
+<body>
+  <div class="kitchen-shell">
+    <header class="kitchen-header">
+      <button class="brand-button" type="button" id="reloadKitchen">
+        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
+        <span>
+          <strong>DataPlate</strong>
+          <small>Painel da Cozinha</small>
+        </span>
+      </button>
+
+      <div class="header-actions">
+        <span class="connection-pill" id="connectionStatus">Conectando</span>
+        <div class="session-summary" aria-label="Usuário logado">
+          <span class="user-avatar" id="sessionInitials">CZ</span>
+          <span>
+            <strong id="sessionName">Cozinha</strong>
+            <small id="sessionRole">Pedidos e preparo</small>
+          </span>
+        </div>
+        <button class="header-button" type="button" id="refreshButton">Atualizar</button>
+        <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
+      </div>
+    </header>
+
+    <main class="kitchen-main">
+      <section class="kitchen-hero">
+        <div>
+          <span class="hero-eyebrow">Operação em tempo real</span>
+          <h1>Fila de preparo</h1>
+          <p>Pedidos recebidos, preparo e saída em uma tela dedicada para a equipe da cozinha.</p>
+        </div>
+        <div class="hero-clock" aria-label="Horário atual">
+          <strong id="currentTime">--:--</strong>
+          <span id="currentDate">--</span>
+        </div>
+      </section>
+
+      <section class="stats-grid" aria-label="Resumo da cozinha">
+        <article class="stat-card stat-pending">
+          <span>Recebidos</span>
+          <strong id="statRecebido">0</strong>
+          <small>Aguardando início</small>
+        </article>
+        <article class="stat-card stat-preparing">
+          <span>Em preparo</span>
+          <strong id="statPreparo">0</strong>
+          <small>Produção ativa</small>
+        </article>
+        <article class="stat-card stat-ready">
+          <span>Prontos</span>
+          <strong id="statPronto">0</strong>
+          <small>Saída liberada</small>
+        </article>
+        <article class="stat-card stat-late">
+          <span>Atrasados</span>
+          <strong id="statAtrasado">0</strong>
+          <small>Acima do tempo ideal</small>
+        </article>
+        <article class="stat-card stat-time">
+          <span>Tempo médio</span>
+          <strong id="statTempo">--</strong>
+          <small>Pedidos ativos</small>
+        </article>
+      </section>
+
+      <section class="kitchen-controls" aria-label="Filtros da cozinha">
+        <label class="control-field search-field" for="orderSearch">
+          <span>Buscar</span>
+          <input id="orderSearch" type="search" placeholder="Pedido, mesa ou item" autocomplete="off" />
+        </label>
+
+        <label class="control-field" for="statusFilter">
+          <span>Status</span>
+          <select id="statusFilter">
+            <option value="">Todos</option>
+            <option value="RECEBIDO">Recebidos</option>
+            <option value="EM_PREPARO">Em preparo</option>
+            <option value="PRONTO">Prontos</option>
+          </select>
+        </label>
+
+        <label class="control-field" for="priorityFilter">
+          <span>Prioridade</span>
+          <select id="priorityFilter">
+            <option value="">Todos</option>
+            <option value="urgent">Urgentes</option>
+            <option value="late">Atrasados</option>
+          </select>
+        </label>
+
+        <label class="control-field" for="sortFilter">
+          <span>Ordenar</span>
+          <select id="sortFilter">
+            <option value="oldest">Mais antigos</option>
+            <option value="urgent">Prioridade</option>
+            <option value="table">Mesa</option>
+          </select>
+        </label>
+
+        <label class="auto-refresh">
+          <input id="autoRefresh" type="checkbox" checked />
+          <span>Atualização automática</span>
+        </label>
+
+        <button class="secondary-button" type="button" id="clearFilters">Limpar</button>
+      </section>
+
+      <section class="next-order-strip" id="nextOrderStrip" aria-live="polite"></section>
+
+      <section class="kitchen-board" aria-label="Quadro de pedidos">
+        <article class="kitchen-column column-recebido">
+          <div class="column-header">
+            <span>Aguardando preparo</span>
+            <strong id="countRecebido">0</strong>
+          </div>
+          <div class="column-list" id="listRecebido"></div>
+        </article>
+
+        <article class="kitchen-column column-preparo">
+          <div class="column-header">
+            <span>Em preparação</span>
+            <strong id="countPreparo">0</strong>
+          </div>
+          <div class="column-list" id="listPreparo"></div>
+        </article>
+
+        <article class="kitchen-column column-pronto">
+          <div class="column-header">
+            <span>Pronto para entrega</span>
+            <strong id="countPronto">0</strong>
+          </div>
+          <div class="column-list" id="listPronto"></div>
+        </article>
+      </section>
+
+      <section class="kitchen-bottom-grid">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Fila completa</h2>
+            <span id="queueSummary">0 pedidos ativos</span>
+          </div>
+          <div class="table-shell">
+            <table class="orders-table">
+              <thead>
+                <tr>
+                  <th>Pedido</th>
+                  <th>Mesa</th>
+                  <th>Itens</th>
+                  <th>Tempo</th>
+                  <th>Prioridade</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTableBody"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <aside class="panel order-detail-panel">
+          <div class="panel-heading">
+            <h2>Detalhe</h2>
+            <span id="detailStatus">--</span>
+          </div>
+          <div id="orderDetail" class="order-detail-empty">
+            Nenhum pedido selecionado.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <script src="../JavaScript/cozinha.js" defer></script>
+</body>
+</html>

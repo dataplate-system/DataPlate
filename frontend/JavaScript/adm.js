@@ -1651,6 +1651,11 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
     switchedAt: new Date().toISOString()
   }));
 
+  if (userKey === 'cozinha') {
+    window.location.href = 'cozinha.html';
+    return;
+  }
+
   applyAdminSession();
 
   closeModal('switchUserModal');
