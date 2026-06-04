@@ -105,7 +105,7 @@ let checklistState = {};
 
 function readSession() {
   try {
-    return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+    return JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null');
   } catch (_) {
     return null;
   }
@@ -144,7 +144,7 @@ function applySession(session) {
 }
 
 function logout() {
-  localStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
   window.location.href = 'adm-login.html';
 }
 

@@ -72,7 +72,7 @@ function startSession(admin, remember, auth = {}) {
     loggedAt: new Date().toISOString()
   };
 
-  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
+  sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
   window.location.href = admin.userKey === 'cozinha' ? 'cozinha.html' : 'adm.html';
 }
 
@@ -219,7 +219,7 @@ function startPrepCountdown() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const existingSession = localStorage.getItem(ADMIN_SESSION_KEY);
+  const existingSession = sessionStorage.getItem(ADMIN_SESSION_KEY);
   if (existingSession) {
     try {
       const session = JSON.parse(existingSession);
