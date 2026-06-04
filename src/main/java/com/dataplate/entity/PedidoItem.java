@@ -47,7 +47,7 @@ public class PedidoItem {
     @Column(name = "subtotal", insertable = false, updatable = false, precision = 10, scale = 2)
     private BigDecimal subtotal;
 
-    @Column(name = "observacao")
+    @Column(name = "observacao", columnDefinition = "TEXT")
     private String observacao;
 
     @Builder.Default

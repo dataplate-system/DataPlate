@@ -44,7 +44,7 @@ public class Pedido {
     @Column(name = "data_hora", nullable = false)
     private LocalDateTime dataHora;
 
-    @Column(name = "observacoes")
+    @Column(name = "observacoes", columnDefinition = "TEXT")
     private String observacoes;
 
     @Column(name = "valor_total", nullable = false, precision = 10, scale = 2)

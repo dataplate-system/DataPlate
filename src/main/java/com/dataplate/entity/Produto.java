@@ -37,13 +37,13 @@ public class Produto {
     @Column(name = "nome", nullable = false, length = 200)
     private String nome;
 
-    @Column(name = "descricao", length = 1000)
+    @Column(name = "descricao", columnDefinition = "TEXT")
     private String descricao;
 
     @Column(name = "preco", nullable = false, precision = 10, scale = 2)
     private BigDecimal preco;
 
-    @Column(name = "imagem")
+    @Column(name = "imagem", columnDefinition = "TEXT")
     private String imagem;
 
     @Builder.Default

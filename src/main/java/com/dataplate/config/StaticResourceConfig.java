@@ -31,5 +31,8 @@ public class StaticResourceConfig implements WebMvcConfigurer {
         registry.addRedirectViewController("/", "/frontend/pages/index.html");
         registry.addRedirectViewController("/adm", "/frontend/pages/adm.html");
         registry.addRedirectViewController("/admin", "/frontend/pages/adm.html");
+        registry.addRedirectViewController("/frontend/adm", "/frontend/pages/adm.html");
+        registry.addRedirectViewController("/frontend/adm/", "/frontend/pages/adm.html");
+        registry.addRedirectViewController("/frontend/adm/index.html", "/frontend/pages/adm.html");
     }
 }

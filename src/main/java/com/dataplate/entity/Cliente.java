@@ -26,8 +26,13 @@ public class Cliente {
     @Column(nullable = false, unique = true, length = 18)
     private String cpf;
 
+    @Column(length = 255)
     private String email;
+
+    @Column(length = 20)
     private String telefone;
+
+    @Column(columnDefinition = "TEXT")
     private String endereco;
 
     @Builder.Default
