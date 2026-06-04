@@ -37,7 +37,7 @@ const ADMIN_PANEL_USERS = {
   }
 };
 
-if (isAdminPanelPage && !localStorage.getItem(ADMIN_SESSION_KEY)) {
+if (isAdminPanelPage && !sessionStorage.getItem(ADMIN_SESSION_KEY)) {
   window.location.replace('adm-login.html');
 }
 
@@ -183,7 +183,7 @@ function showToast(message, type = 'error') {
 
 function readAdminSession() {
   try {
-    return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+    return JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null');
   } catch (_) {
     return null;
   }
@@ -230,12 +230,12 @@ function applyAdminSession() {
   if (profileAvatar) profileAvatar.textContent = normalizedSession.initials || 'AD';
   if (switchUserOption) switchUserOption.checked = true;
   if (isLegacyCashier || session.userKey !== userKey) {
-    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(normalizedSession));
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(normalizedSession));
   }
 }
 
 window.logoutAdmin = function() {
-  localStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
   window.location.href = 'adm-login.html';
 };
 
@@ -1737,7 +1737,7 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
   };
   const currentSession = readAdminSession() || {};
 
-  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+  sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
     ...currentSession,
     ...user,
     userKey,
