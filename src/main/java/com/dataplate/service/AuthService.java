@@ -1,5 +1,10 @@
 package com.dataplate.service;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.dataplate.dto.AuthLoginRequest;
 import com.dataplate.dto.AuthPasswordResetRequest;
 import com.dataplate.dto.AuthRefreshRequest;
@@ -8,11 +13,8 @@ import com.dataplate.dto.AuthResponse;
 import com.dataplate.entity.User;
 import com.dataplate.repository.UserRepository;
 import com.dataplate.security.JwtService;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,12 +25,22 @@ public class AuthService {
 
     @Transactional
     public AuthResponse registrar(AuthRegisterRequest req) {
-        if (userRepository.existsByCpf(req.cpf())) {
-            throw new IllegalArgumentException("CPF ja cadastrado: " + req.cpf());
+        String nome = req.nome() == null ? "" : req.nome().trim();
+        String cpf = req.cpf() == null ? "" : req.cpf().trim();
+
+        if (nome.isBlank()) {
+            throw new IllegalArgumentException("Nome obrigatorio");
         }
+        if (cpf.isBlank()) {
+            throw new IllegalArgumentException("CPF obrigatorio");
+        }
+        if (userRepository.existsByCpf(cpf)) {
+            throw new IllegalArgumentException("CPF ja cadastrado: " + cpf);
+        }
+
         User user = User.builder()
-                .nome(req.nome())
-                .cpf(req.cpf())
+                .nome(nome)
+                .cpf(cpf)
                 .senha(passwordEncoder.encode(req.senha()))
                 .role(req.role())
                 .build();
