@@ -38,6 +38,11 @@ public class PedidosController {
         return ResponseEntity.ok(pedidoService.listar());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<PedidoResponse> obter(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.obter(id));
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<PedidoResponse> atualizarStatus(
             @PathVariable Long id,

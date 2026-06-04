@@ -165,9 +165,14 @@ function extractErrorMessage(body, fallback) {
 }
 
 async function apiFetch(endpoint, options = {}) {
+  const session = readSession();
+  const headers = { ...(options.headers || {}) };
+  if (session?.token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${session.token}`;
+  }
   return fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers: { ...(options.headers || {}) }
+    headers
   });
 }
 

@@ -1,4 +1,15 @@
 const adminAuth = window.DataPlateAdminAuth;
+const API_BASE_URL = window.DATAPLATE_API_BASE_URL
+  || localStorage.getItem('DATAPLATE_API_BASE_URL')
+  || (() => {
+    const h = window.location.hostname;
+    const isLocalFile = window.location.protocol === 'file:' || !h;
+    const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
+    if (isLocal && window.location.port === '8080') return '/api';
+    if (isLocalFile) return 'http://localhost:8080/api';
+    if (isLocal) return `http://${h}:8080/api`;
+    return 'https://dataplate.onrender.com/api';
+  })();
 
 let selectedAdmin = null;
 let codeVerified = false;
@@ -44,6 +55,19 @@ function preparePasswordStep() {
   setActiveStep('password');
   setResetMessage('Codigo validado. Cadastre a nova senha.', 'success');
   document.getElementById('newAdminPassword')?.focus();
+}
+
+async function resetBackendPassword(cpf, novaSenha) {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cpf, novaSenha })
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.message || body?.mensagem || 'Nao foi possivel atualizar a senha no servidor.');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -153,8 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    adminAuth.updatePassword(selectedAdmin.userKey, newPassword.value);
-    adminAuth.clearPasswordResetChallenge();
+    try {
+      await resetBackendPassword(selectedAdmin.cpf, newPassword.value);
+      adminAuth.updatePassword(selectedAdmin.userKey, newPassword.value);
+      adminAuth.clearPasswordResetChallenge();
+    } catch (error) {
+      setResetMessage(error.message || 'Nao foi possivel atualizar a senha.');
+      return;
+    }
 
     setResetMessage('Senha atualizada. Redirecionando para o login...', 'success');
     passwordForm.querySelector('.login-button').disabled = true;

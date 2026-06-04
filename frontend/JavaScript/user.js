@@ -29,6 +29,7 @@ function extractErrorMessage(body, fallback) {
 }
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
+let pedidoAtivoId = localStorage.getItem("pedidoAtivoId") || "";
 
 let categoriaAtual = "todos";
 
@@ -52,6 +53,16 @@ function getCategoriaProduto(produto) {
 
 function formatarPreco(valor) {
   return "R$ " + Number(valor || 0).toFixed(2).replace(".", ",");
+}
+
+function getMesaDoPedido() {
+  const params = new URLSearchParams(window.location.search);
+  const mesaId = Number(params.get("mesaId") || localStorage.getItem("mesaId") || 0);
+  const numeroMesa = Number(params.get("mesa") || params.get("numeroMesa") || localStorage.getItem("numeroMesa") || 1);
+  return {
+    mesaId: mesaId > 0 ? mesaId : null,
+    numeroMesa: numeroMesa > 0 ? numeroMesa : 1
+  };
 }
 
 function escaparHtml(valor) {
@@ -481,8 +492,10 @@ async function pagamentoAprovado() {
    return;
   }
 
+  const mesa = getMesaDoPedido();
   const pedido = {
-    numeroMesa: 1,
+    numeroMesa: mesa.numeroMesa,
+    mesaId: mesa.mesaId,
     itens: carrinho.map(item => ({
       produtoId: item.produtoId,
       quantidade: item.quantidade
@@ -502,6 +515,9 @@ async function pagamentoAprovado() {
       const body = await readResponseBody(response);
       throw new Error(extractErrorMessage(body, "Nao foi possivel salvar o pedido."));
     }
+    const pedidoCriado = await response.json();
+    pedidoAtivoId = String(pedidoCriado.id || "");
+    if (pedidoAtivoId) localStorage.setItem("pedidoAtivoId", pedidoAtivoId);
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     mostrarNotificacao(
@@ -524,7 +540,7 @@ async function pagamentoAprovado() {
   document.getElementById("telaDinheiro").style.display = "none";
   document.getElementById("telaStatus").style.display = "block";
 
-  iniciarStatusPedido();
+  iniciarAcompanhamentoPedidoReal();
   atualizarBarraFlutuante();
 }
 
@@ -665,7 +681,9 @@ function iniciarStatusPedido() {
 
       localStorage.removeItem("carrinho");
       localStorage.removeItem("pedidoAtivo");
+      localStorage.removeItem("pedidoAtivoId");
       pedidoEmAndamento = false;
+      pedidoAtivoId = "";
 
       return;
     }
@@ -680,7 +698,9 @@ function novoPedido() {
   document.getElementById("telaLista").style.display = "block";
 
   localStorage.removeItem("pedidoAtivo");
+  localStorage.removeItem("pedidoAtivoId");
   pedidoEmAndamento = false;
+  pedidoAtivoId = "";
 
   document.querySelectorAll(".step").forEach(el => {
     el.classList.remove("ativo");
@@ -702,6 +722,66 @@ function abrirPedidoEmAndamento() {
      "Nenhum pedido em andamento!"
 );
   }
+}
+
+function aplicarStatusPedidoReal(statusPedido) {
+  const etapas = {
+    RECEBIDO: 1,
+    EM_PREPARO: 2,
+    PRONTO: 3,
+    ENTREGUE: 4,
+    CANCELADO: 4
+  };
+  const textos = {
+    RECEBIDO: ["Pedido Recebido", "Seu pedido foi recebido"],
+    EM_PREPARO: ["Em Preparo", "Nosso chef está preparando"],
+    PRONTO: ["Pronto", "Seu pedido está pronto"],
+    ENTREGUE: ["Entregue", "Pedido entregue. Bom apetite!"],
+    CANCELADO: ["Cancelado", "Seu pedido foi cancelado"]
+  };
+  const etapa = etapas[statusPedido] || 1;
+  const texto = textos[statusPedido] || textos.RECEBIDO;
+
+  document.getElementById("statusAtual").innerText = texto[0];
+  document.getElementById("mensagemStatus").innerText = texto[1];
+  document.querySelectorAll(".step").forEach((el, i) => {
+    el.classList.toggle("ativo", i < etapa);
+  });
+
+  if (statusPedido === "ENTREGUE" || statusPedido === "CANCELADO") {
+    localStorage.removeItem("pedidoAtivo");
+    localStorage.removeItem("pedidoAtivoId");
+    pedidoEmAndamento = false;
+    pedidoAtivoId = "";
+  }
+}
+
+function iniciarAcompanhamentoPedidoReal() {
+  if (!pedidoAtivoId) {
+    iniciarStatusPedido();
+    return;
+  }
+
+  const carregarStatus = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/pedidos/${pedidoAtivoId}`);
+      if (!response.ok) throw new Error("Status indisponivel");
+      const pedido = await response.json();
+      aplicarStatusPedidoReal(pedido.status);
+      return pedido.status;
+    } catch (error) {
+      console.error("Erro ao acompanhar pedido:", error);
+      return null;
+    }
+  };
+
+  carregarStatus();
+  const timer = setInterval(async () => {
+    const status = await carregarStatus();
+    if (status === "ENTREGUE" || status === "CANCELADO" || !pedidoAtivoId) {
+      clearInterval(timer);
+    }
+  }, 5000);
 }
 
 function atualizarBotaoPedido() {
@@ -792,6 +872,9 @@ PIX: ${chavePix}`;
 
 }
 function atualizarTotalPagamento(){
+
+  const carrinho =
+    JSON.parse(localStorage.getItem("carrinho")) || [];
 
   let total = 0;
 

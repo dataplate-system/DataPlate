@@ -1,5 +1,16 @@
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
 const DEFAULT_DEMO_ADMIN_KEY = 'gerente';
+const API_BASE_URL = window.DATAPLATE_API_BASE_URL
+  || localStorage.getItem('DATAPLATE_API_BASE_URL')
+  || (() => {
+    const h = window.location.hostname;
+    const isLocalFile = window.location.protocol === 'file:' || !h;
+    const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
+    if (isLocal && window.location.port === '8080') return '/api';
+    if (isLocalFile) return 'http://localhost:8080/api';
+    if (isLocal) return `http://${h}:8080/api`;
+    return 'https://dataplate.onrender.com/api';
+  })();
 
 const adminAuth = window.DataPlateAdminAuth;
 
@@ -46,13 +57,17 @@ function setLoginError(message, type = 'error') {
   error.classList.toggle('is-success', type === 'success');
 }
 
-function startSession(admin, remember) {
+function startSession(admin, remember, auth = {}) {
   const session = {
     name: admin.name,
     initials: admin.initials,
     cpf: admin.cpf,
     role: admin.role,
     userKey: admin.userKey,
+    token: auth.token || auth.accessToken || null,
+    refreshToken: auth.refreshToken || null,
+    backendUserId: auth.id || null,
+    backendRole: auth.role || null,
     remember: Boolean(remember),
     loggedAt: new Date().toISOString()
   };
@@ -68,6 +83,39 @@ function findAdmin(cpf, password) {
     admin.cpf === String(cpf).trim()
     && admin.password === password
   );
+}
+
+async function loginBackend(cpf, password) {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cpf, senha: password })
+  });
+
+  const body = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(body?.message || body?.mensagem || 'CPF ou senha invalidos para o acesso administrativo.');
+  }
+
+  return body;
+}
+
+function userKeyFromRole(role) {
+  if (role === 'COZINHA') return 'cozinha';
+  if (role === 'FUNCIONARIO') return 'atendente';
+  return 'gerente';
+}
+
+function adminFromAuth(auth) {
+  const userKey = userKeyFromRole(auth.role);
+  const fallback = getDemoAdmin(userKey) || fallbackDemoAdmins.gerente;
+  return {
+    ...fallback,
+    name: auth.nome || fallback.name,
+    cpf: auth.cpf || fallback.cpf,
+    role: auth.role === 'COZINHA' ? 'Pedidos e preparo' : auth.role === 'FUNCIONARIO' ? 'Operacional' : 'Administrador',
+    userKey
+  };
 }
 
 function setActiveDemoButton(selectedKey) {
@@ -211,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   passwordInput?.addEventListener('input', () => syncDemoButtonFromCredentials(cpfInput, passwordInput));
 
-  form?.addEventListener('submit', (event) => {
+  form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     setLoginError('');
 
@@ -221,7 +269,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const formData = new FormData(form);
-    const admin = findAdmin(formData.get('cpf'), formData.get('password'));
+    const cpf = formData.get('cpf');
+    const password = formData.get('password');
+
+    try {
+      const auth = await loginBackend(cpf, password);
+      startSession(adminFromAuth(auth), formData.get('remember') === 'on', auth);
+      return;
+    } catch (error) {
+      console.warn('[adm-login] falha no login backend:', error);
+    }
+
+    const admin = findAdmin(cpf, password);
 
     if (!admin) {
       setLoginError('CPF ou senha invalidos para o acesso administrativo.');

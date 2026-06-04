@@ -84,3 +84,37 @@ questions.forEach(question => {
     item.classList.toggle("active");
   });
 });
+
+const telefoneInput = document.getElementById('telefone');
+if (telefoneInput) {
+  telefoneInput.addEventListener('input', function (e) {
+    let valor = e.target.value.replace(/\D/g, '');
+
+    if (valor.length > 11) {
+      valor = valor.slice(0, 11);
+    }
+
+    valor = valor.replace(/^(\d{2})(\d)/g, '($1) $2');
+    valor = valor.replace(/(\d{5})(\d)/, '$1-$2');
+
+    e.target.value = valor;
+  });
+}
+
+const cnpjInput = document.getElementById('cnpj');
+if (cnpjInput) {
+  cnpjInput.addEventListener('input', function (e) {
+    let valor = e.target.value.replace(/\D/g, '');
+
+    if (valor.length > 14) {
+      valor = valor.slice(0, 14);
+    }
+
+    valor = valor.replace(/^(\d{2})(\d)/g, '$1.$2');
+    valor = valor.replace(/^(\d{2})\.(\d{3})(\d)/g, '$1.$2.$3');
+    valor = valor.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/g, '$1.$2.$3/$4');
+    valor = valor.replace(/(\d{4})(\d)/, '$1-$2');
+
+    e.target.value = valor;
+  });
+}

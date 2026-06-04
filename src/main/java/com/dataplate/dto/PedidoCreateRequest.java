@@ -9,6 +9,7 @@ import java.util.List;
 
 public record PedidoCreateRequest(
         @NotNull @Min(1) Integer numeroMesa,
+        Long mesaId,
         @NotEmpty List<@Valid PedidoItemRequest> itens
 ) {
 }

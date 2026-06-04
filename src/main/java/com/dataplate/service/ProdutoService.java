@@ -13,7 +13,9 @@ public class ProdutoService {
     private ProdutoRepository produtoRepository;
     
     public List<Produto> listarTodos() {
-        return produtoRepository.findAll();
+        return produtoRepository.findAll().stream()
+                .filter(produto -> produto.getAtivo() == null || produto.getAtivo())
+                .toList();
     }
     
     public Produto obterPorId(Long id) {
@@ -36,6 +38,10 @@ public class ProdutoService {
     }
     
     public void deletar(Long id) {
-        produtoRepository.deleteById(id);
+        Produto produto = obterPorId(id);
+        if (produto != null) {
+            produto.setAtivo(false);
+            produtoRepository.save(produto);
+        }
     }
 }

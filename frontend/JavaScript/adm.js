@@ -76,9 +76,14 @@ function extractErrorMessage(body, fallback) {
 }
 
 async function apiFetch(endpoint, options = {}) {
+  const session = readAdminSession();
+  const headers = { ...(options.headers || {}) };
+  if (session?.token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${session.token}`;
+  }
   return fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers: { ...(options.headers || {}) }
+    headers
   });
 }
 
@@ -339,6 +344,7 @@ function navigateTo(sectionId) {
 
   // Load data for the section being shown
   const sectionLoaders = {
+    dashboard:      carregarRelatorios,
     clientes:       carregarClientes,
     funcionarios:   carregarFuncionarios,
     fornecedores:   carregarFornecedores,
@@ -346,6 +352,10 @@ function navigateTo(sectionId) {
     pedidos:        carregarPedidos,
     mesas:          carregarMesas,
     cozinha:        carregarCozinha,
+    'rel-vendas':   carregarRelatorios,
+    'rel-financeiro': carregarRelatorios,
+    'rel-cardapio': carregarRelatorios,
+    'rel-operacional': carregarRelatorios,
     'config-usuarios': carregarUsuarios
   };
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
@@ -1151,6 +1161,40 @@ const tableStatusMeta = {
   manutencao: { label: 'Manutenção', badge: 'badge-danger', cardClass: 'status-manutencao' }
 };
 
+function apiStatusToUiStatus(status) {
+  const value = String(status || '').toLowerCase();
+  return value === 'livre' ? 'disponivel' : value;
+}
+
+function uiStatusToApiStatus(status) {
+  const value = String(status || '').toLowerCase();
+  return value === 'disponivel' ? 'livre' : value;
+}
+
+function mesaApiToTable(mesa) {
+  return {
+    id: mesa.id,
+    number: mesa.numero,
+    seats: mesa.capacidade,
+    area: mesa.localizacao || 'Salão principal',
+    reference: mesa.localizacao || '',
+    status: apiStatusToUiStatus(mesa.status),
+    reservationName: '',
+    reservationPhone: '',
+    reservationDate: '',
+    notes: ''
+  };
+}
+
+function tableToMesaPayload(table) {
+  return {
+    numero: table.number,
+    capacidade: table.seats,
+    status: uiStatusToApiStatus(table.status),
+    localizacao: table.reference || table.area || null
+  };
+}
+
 function toDateTimeLocal(date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 16);
@@ -1543,8 +1587,10 @@ window.occupyTable = function(tableId) {
   if (!table) return;
   table.status = 'ocupada';
   saveTables(tables);
-  showToast(`Mesa ${table.number} marcada como ocupada.`, 'success');
-  renderTables();
+  putJson(`/mesas/${tableId}`, tableToMesaPayload(table))
+    .then(() => showToast(`Mesa ${table.number} marcada como ocupada.`, 'success'))
+    .catch((err) => showToast(err.message || 'Erro ao atualizar mesa.'))
+    .finally(carregarMesas);
 };
 
 window.releaseTable = function(tableId) {
@@ -1556,8 +1602,10 @@ window.releaseTable = function(tableId) {
   table.reservationPhone = '';
   table.reservationDate = '';
   saveTables(tables);
-  showToast(`Mesa ${table.number} liberada.`, 'success');
-  renderTables();
+  putJson(`/mesas/${tableId}`, tableToMesaPayload(table))
+    .then(() => showToast(`Mesa ${table.number} liberada.`, 'success'))
+    .catch((err) => showToast(err.message || 'Erro ao atualizar mesa.'))
+    .finally(carregarMesas);
 };
 
 window.deleteTable = async function(tableId) {
@@ -1566,11 +1614,15 @@ window.deleteTable = async function(tableId) {
   if (!table) return;
   const ok = await showConfirmModal('Excluir mesa?', `Esta ação não pode ser desfeita.<br>Deseja excluir a <strong>Mesa ${table.number}</strong>?`);
   if (!ok) return;
-  const nextTables = tables.filter((item) => item.id !== tableId);
-  if (selectedTableId === tableId) selectedTableId = null;
-  saveTables(nextTables);
-  showToast(`Mesa ${table.number} excluída.`, 'success');
-  renderTables();
+  deleteJson(`/mesas/${tableId}`)
+    .then(() => {
+      const nextTables = tables.filter((item) => item.id !== tableId);
+      if (selectedTableId === tableId) selectedTableId = null;
+      saveTables(nextTables);
+      showToast(`Mesa ${table.number} excluída.`, 'success');
+      carregarMesas();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao excluir mesa.'));
 };
 
 window.selectTable = function(tableId) {
@@ -1599,19 +1651,18 @@ document.getElementById('tableForm')?.addEventListener('submit', (event) => {
     notes: String(fd.get('notes') || '').trim()
   };
 
-  const tables = getTables();
-  const index = tables.findIndex((item) => item.id === id);
-  if (index >= 0) {
-    tables[index] = table;
-  } else {
-    tables.push(table);
-  }
+  const request = Number(fd.get('id'))
+    ? putJson(`/mesas/${id}`, tableToMesaPayload(table))
+    : postJson('/mesas', tableToMesaPayload(table));
 
-  saveTables(tables);
-  selectedTableId = id;
-  closeModal('tableModal');
-  showToast(`Mesa ${table.number} salva com sucesso!`, 'success');
-  renderTables();
+  request
+    .then((mesa) => {
+      selectedTableId = mesa.id;
+      closeModal('tableModal');
+      showToast(`Mesa ${table.number} salva com sucesso!`, 'success');
+      carregarMesas();
+    })
+    .catch((err) => showToast(err.message || 'Erro ao salvar mesa.'));
 });
 
 document.getElementById('tableForm')?.querySelector('[name="status"]')?.addEventListener('change', updateTableReservationFields);
@@ -2381,6 +2432,65 @@ function formatCurrency(v) {
   return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
 }
 
+function setStatByLabel(sectionId, label, value, change) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  const cards = Array.from(section.querySelectorAll('.stat-card'));
+  const card = cards.find((item) => normalizeFilterText(item.querySelector('.stat-label')?.textContent) === normalizeFilterText(label));
+  if (!card) return;
+  const valueEl = card.querySelector('.stat-value');
+  const changeEl = card.querySelector('.stat-change');
+  if (valueEl) valueEl.textContent = value;
+  if (changeEl && change != null) changeEl.textContent = change;
+}
+
+function updateDashboardResumo(resumo) {
+  const ativos = Number(resumo.pedidosRecebidos || 0)
+    + Number(resumo.pedidosEmPreparo || 0)
+    + Number(resumo.pedidosProntos || 0);
+  setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), 'Dados reais do banco');
+  setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
+  setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
+
+  setStatByLabel('rel-vendas', 'Total de Vendas', formatCurrency(resumo.faturamento), 'Dados reais do período');
+  setStatByLabel('rel-vendas', 'Quantidade de Pedidos', String(
+    Number(resumo.pedidosRecebidos || 0)
+    + Number(resumo.pedidosEmPreparo || 0)
+    + Number(resumo.pedidosProntos || 0)
+    + Number(resumo.pedidosEntregues || 0)
+    + Number(resumo.pedidosCancelados || 0)
+  ), 'Pedidos registrados');
+  setStatByLabel('rel-vendas', 'Ticket Médio', formatCurrency(resumo.ticketMedio), 'Calculado do banco');
+  const topProduto = resumo.topProdutos?.[0];
+  if (topProduto) {
+    setStatByLabel('rel-vendas', 'Produto Mais Vendido', topProduto.nome, `${Number(topProduto.quantidadeVendida || 0)} unidades`);
+  }
+
+  setStatByLabel('rel-financeiro', 'Receita Bruta', formatCurrency(resumo.faturamento), 'Pedidos não cancelados');
+  setStatByLabel('rel-financeiro', 'Lucro Líquido', formatCurrency(resumo.faturamento), 'Custos ainda não integrados');
+  setStatByLabel('rel-operacional', 'Taxa de Rejeição', `${resumo.pedidosCancelados || 0}`, 'Pedidos cancelados');
+}
+
+function updateDashboardMesas(mesas) {
+  const total = mesas.length;
+  const ocupadas = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'ocupada').length;
+  const disponiveis = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
+  setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
+}
+
+function carregarRelatorios() {
+  getJson('/relatorios/resumo')
+    .then(updateDashboardResumo)
+    .catch((err) => {
+      console.error('[relatorios]', err);
+      showToast(err.message || 'Erro ao carregar relatórios.');
+    });
+
+  getJson('/mesas')
+    .then(updateDashboardMesas)
+    .catch((err) => console.error('[relatorios-mesas]', err));
+}
+
 window.__clientes = [];
 window.__funcionarios = [];
 window.__fornecedores = [];
@@ -2695,7 +2805,16 @@ window.excluirProduto = async function(id) {
 };
 
 function carregarMesas() {
-  renderTables();
+  getJson('/mesas')
+    .then((mesas) => {
+      saveTables((mesas || []).map(mesaApiToTable));
+      renderTables();
+    })
+    .catch((err) => {
+      console.error('[mesas]', err);
+      showToast(err.message || 'Erro ao carregar mesas.');
+      renderTables();
+    });
 }
 
 function buildLinhaPedido(p) {
