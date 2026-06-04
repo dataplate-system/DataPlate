@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate PDV</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/pdv.css" />
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="pdv-topbar">
+    <a href="adm.html" class="pdv-back">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 3 5 8 10 13"/></svg>
+      Painel
+    </a>
+    <span class="pdv-brand">PDV Caixa</span>
+    <span id="operatorLabel" class="pdv-operator"></span>
+  </header>
+
+  <!-- LAYOUT -->
+  <div class="pdv-layout">
+
+    <!-- ESQUERDA: catálogo -->
+    <div class="pdv-left">
+      <!-- Entrada por código (caixa rápido) -->
+      <div class="codigo-bar">
+        <div class="codigo-wrap">
+          <svg class="codigo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 5h2M3 12h2M3 19h2M7 5v14M17 5v14M21 5h-2M21 12h-2M21 19h-2M11 5v14M13 5v3M13 11v3M13 17v2"/>
+          </svg>
+          <input type="text" id="codigoInput" placeholder="Código do produto…" autocomplete="off" autocorrect="off" spellcheck="false" />
+          <kbd class="codigo-hint">Enter</kbd>
+        </div>
+      </div>
+
+      <div class="produtos-toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="produtoSearch" placeholder="Buscar produto…" autocomplete="off" />
+        </div>
+        <nav class="categorias-bar" id="categoriasFiltro">
+          <button class="cat-btn is-active" data-cat="todos">Todos</button>
+          <button class="cat-btn" data-cat="hamburguer">Lanches</button>
+          <button class="cat-btn" data-cat="massas">Massas</button>
+          <button class="cat-btn" data-cat="principais">Principais</button>
+          <button class="cat-btn" data-cat="entradas">Entradas</button>
+          <button class="cat-btn" data-cat="sobremesas">Sobremesas</button>
+          <button class="cat-btn" data-cat="bebidas">Bebidas</button>
+        </nav>
+      </div>
+
+      <div class="produtos-grid" id="produtosGrid">
+        <div class="grid-loading" id="produtosLoading">
+          <div class="spinner"></div>
+          <span>Carregando cardápio…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIREITA: pedido -->
+    <aside class="pdv-right">
+
+      <!-- Seleção de mesa -->
+      <div class="mesa-selector">
+        <label class="mesa-selector-label" for="mesaSelect">Mesa</label>
+        <div class="mesa-select-row">
+          <span class="mesa-status-dot" id="mesaStatusDot"></span>
+          <select id="mesaSelect">
+            <option value="">Selecione a mesa…</option>
+          </select>
+          <div class="spinner mesa-loading" id="mesaLoading"></div>
+        </div>
+        <span id="mesaInfo" class="mesa-info"></span>
+      </div>
+
+      <!-- Tabs -->
+      <div class="order-tabs" id="orderTabs" hidden>
+        <button class="order-tab is-active" data-tab="venda">Nova venda</button>
+        <button class="order-tab" data-tab="conta">Fechar conta</button>
+      </div>
+
+      <!-- Painel: nova venda -->
+      <div id="panelVenda" class="order-panel">
+        <div class="order-items" id="cartItems">
+          <div class="order-empty">
+            <span>🛒</span>
+            <p>Selecione uma mesa e adicione produtos</p>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div class="total-row">
+            <span>Total</span>
+            <strong id="cartTotal">R$ 0,00</strong>
+          </div>
+          <div class="section">
+            <label class="section-label">Pagamento</label>
+            <div class="pgto-grid">
+              <button class="pgto-btn" data-pgto="PIX">PIX</button>
+              <button class="pgto-btn" data-pgto="CREDITO">Crédito</button>
+              <button class="pgto-btn" data-pgto="DEBITO">Débito</button>
+              <button class="pgto-btn" data-pgto="DINHEIRO">Dinheiro</button>
+            </div>
+          </div>
+          <div class="section">
+            <label class="section-label" for="pedidoObs">Observação</label>
+            <textarea id="pedidoObs" rows="2" placeholder="Ex: sem cebola, alergia a glúten…"></textarea>
+          </div>
+          <button id="finalizarBtn" class="btn-action btn-primary" disabled>Abrir Pedido</button>
+        </div>
+      </div>
+
+      <!-- Painel: fechar conta -->
+      <div id="panelConta" class="order-panel" hidden>
+        <div class="conta-loading" id="contaLoading" hidden>
+          <div class="spinner"></div>
+          <span>Buscando pedidos…</span>
+        </div>
+        <div class="order-items" id="contaItens">
+          <div class="order-empty">
+            <span>🧾</span>
+            <p>Nenhum pedido aberto nesta mesa</p>
+          </div>
+        </div>
+        <div class="order-footer">
+          <div class="total-row">
+            <span>Total da conta</span>
+            <strong id="contaTotal">R$ 0,00</strong>
+          </div>
+          <div class="section">
+            <label class="section-label">Pagamento</label>
+            <div class="pgto-grid">
+              <button class="pgto-btn pgto-conta" data-pgto="PIX">PIX</button>
+              <button class="pgto-btn pgto-conta" data-pgto="CREDITO">Crédito</button>
+              <button class="pgto-btn pgto-conta" data-pgto="DEBITO">Débito</button>
+              <button class="pgto-btn pgto-conta" data-pgto="DINHEIRO">Dinheiro</button>
+            </div>
+          </div>
+          <button id="fecharContaBtn" class="btn-action btn-success" disabled>Fechar Conta</button>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- OVERLAY DE SUCESSO -->
+  <div id="successOverlay" class="pdv-overlay" hidden role="dialog" aria-modal="true">
+    <div class="success-box">
+      <div class="success-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 12 9 17 20 7"/></svg>
+      </div>
+      <h3 id="successTitle">Pedido criado!</h3>
+      <p id="successMsg" class="success-detail"></p>
+      <button id="novoBtn" class="btn-action btn-primary" style="width:100%">Novo atendimento</button>
+    </div>
+  </div>
+
+  <div id="toastArea" aria-live="polite"></div>
+
+  <script src="../JavaScript/pdv.js"></script>
+</body>
+</html>

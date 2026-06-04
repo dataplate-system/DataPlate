@@ -181,6 +181,26 @@ function showToast(message, type = 'error') {
   window.setTimeout(() => toast.remove(), 4500);
 }
 
+// Destaca o campo CPF quando o erro indica duplicidade
+function mostrarErroCpf(form, mensagem) {
+  const ehDuplicado = /cpf|ja cadastrado|already exists|duplicate|unique/i.test(mensagem);
+  if (!ehDuplicado) { showToast(mensagem); return; }
+
+  const campo = form?.querySelector('[name="cpf"], [name="cnpj"]');
+  if (campo) {
+    campo.style.borderColor = '#dc2626';
+    campo.style.boxShadow  = '0 0 0 3px rgba(220,38,38,.18)';
+    campo.setCustomValidity('CPF já cadastrado no sistema.');
+    campo.reportValidity();
+    campo.addEventListener('input', () => {
+      campo.style.borderColor = '';
+      campo.style.boxShadow  = '';
+      campo.setCustomValidity('');
+    }, { once: true });
+  }
+  showToast('CPF já está cadastrado no sistema.', 'error');
+}
+
 function readAdminSession() {
   try {
     return JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null');
@@ -231,6 +251,19 @@ function applyAdminSession() {
   if (switchUserOption) switchUserOption.checked = true;
   if (isLegacyCashier || session.userKey !== userKey) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(normalizedSession));
+  }
+
+  // Controle de visibilidade por role
+  const backendRole = normalizedSession.backendRole || '';
+  const isAdmin = backendRole === 'ADMIN' || normalizedSession.userKey === 'gerente';
+  if (!isAdmin) {
+    document.querySelectorAll('[data-role="admin"]').forEach((el) => {
+      el.style.display = 'none';
+    });
+    // também oculta atalhos da home que exigem admin
+    document.querySelectorAll('.home-shortcut[data-role="admin"]').forEach((el) => {
+      el.style.display = 'none';
+    });
   }
 }
 
@@ -352,11 +385,13 @@ function navigateTo(sectionId) {
     pedidos:        carregarPedidos,
     mesas:          carregarMesas,
     cozinha:        carregarCozinha,
-    'rel-vendas':   carregarRelatorios,
-    'rel-financeiro': carregarRelatorios,
-    'rel-cardapio': carregarRelatorios,
-    'rel-operacional': carregarRelatorios,
-    'config-usuarios': carregarUsuarios
+    'rel-vendas':      () => { preencherDatasRelatorio('rel-vendas', 30);    const r = getRelDateRange('rel-vendas');      carregarRelVendas(r.inicio, r.fim); },
+    'rel-financeiro':  () => { preencherDatasRelatorio('rel-financeiro', 30); const r = getRelDateRange('rel-financeiro');  carregarRelFinanceiro(r.inicio, r.fim); },
+    'rel-cardapio':    () => { preencherDatasRelatorio('rel-cardapio', 30);   const r = getRelDateRange('rel-cardapio');    carregarRelCardapio(r.inicio, r.fim); },
+    'rel-operacional': () => { preencherDatasRelatorio('rel-operacional', 30); const r = getRelDateRange('rel-operacional'); carregarRelOperacional(r.inicio, r.fim); },
+    'config-usuarios': carregarUsuarios,
+    'config-restaurante': carregarConfiguracaoRestaurante,
+    insumos: carregarInsumos
   };
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
 }
@@ -929,6 +964,13 @@ document.addEventListener('click', (e) => {
     const form = modal?.querySelector('form');
     resetCrudForm(form, modalId);
     if (modalId === 'addClientModal') configureClientPersonType(form);
+    if (modalId === 'addDishModal') {
+      window.__produtoAtivoId = null;
+      const secFT = document.getElementById('fichaTecnicaSection');
+      if (secFT) secFT.style.display = 'none';
+      const formFT = document.getElementById('fichaTecnicaForm');
+      if (formFT) formFT.style.display = 'none';
+    }
     window.openModal(modalTrigger.getAttribute('data-open-modal'));
     return;
   }
@@ -986,7 +1028,7 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
            : `<strong>${cliente.nome}</strong> foi adicionado à lista de clientes.`
       );
     })
-    .catch((err) => showToast(err.message || 'Erro ao salvar cliente.'));
+    .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao salvar cliente.'));
 });
 
 // Add Employee Modal
@@ -1009,7 +1051,7 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
            : `<strong>${func.nome}</strong> foi adicionado à equipe.`
       );
     })
-    .catch((err) => showToast(err.message || 'Erro ao salvar funcionario.'));
+    .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao salvar funcionário.'));
 });
 
 // Add Supplier Modal
@@ -1124,7 +1166,13 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
     })
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);
-      showToast(error.message || 'Erro ao salvar prato.');
+      const msg = error.message || '';
+      // Mensagem amigável quando a categoria (FK) não existe no banco
+      if (msg.includes('categoria') || msg.includes('id_categoria') || msg.includes('violates foreign key') || msg.includes('constraint')) {
+        showToast('Categoria não encontrada no banco. Verifique se as migrations do Flyway (V1) foram executadas corretamente.', 'error');
+      } else {
+        showToast(msg || 'Erro ao salvar prato.');
+      }
     });
 });
 
@@ -1147,7 +1195,7 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
       e.target.reset();
       carregarUsuarios();
     })
-    .catch((err) => showToast(err.message || 'Erro ao criar usuario.'));
+    .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao criar usuário.'));
 });
 
 // Table Control
@@ -1955,6 +2003,7 @@ function escapeXml(value) {
 
 function exportReportToExcel(data) {
   const rows = [];
+  rows.push(`<tr><th colspan="3" style="background:#f85b15;color:#fff;font-size:14pt">DataPlate</th></tr>`);
   rows.push(`<tr><th colspan="3">${escapeXml(data.title)}</th></tr>`);
   rows.push(`<tr><td colspan="3">Gerado em ${escapeXml(data.generatedAt)}</td></tr>`);
 
@@ -1998,22 +2047,38 @@ function splitPdfLine(text, maxLength = 94) {
 }
 
 function buildPdfLines(data) {
-  const lines = [data.title, `Gerado em ${data.generatedAt}`, ''];
+  // Fallback PDF (texto simples, sem jsPDF)
+  const sep = '-'.repeat(80);
+
+  const lines = [
+    'DataPlate | Sistema de Gestao Gastronomica',
+    sep,
+    data.title,
+    `Gerado em ${data.generatedAt}`,
+    ''
+  ];
 
   if (data.summary.length) {
     lines.push('Indicadores');
+    lines.push(sep);
     data.summary.forEach((item) => {
-      lines.push(`${item.label}: ${item.value}${item.change ? ` (${item.change})` : ''}`);
+      lines.push(`${item.label}: ${item.value}${item.change ? `  (${item.change})` : ''}`);
     });
     lines.push('');
   }
 
   if (data.table.headers.length && data.table.rows.length) {
-    lines.push(data.table.headers.join(' | '));
-    data.table.rows.forEach((row) => lines.push(row.join(' | ')));
+    lines.push(sep);
+    lines.push(data.table.headers.join('  |  '));
+    lines.push(sep);
+    data.table.rows.forEach((row) => lines.push(row.join('  |  ')));
   } else {
     lines.push('Nenhuma tabela com registros visiveis nesta tela.');
   }
+
+  lines.push('');
+  lines.push(sep);
+  lines.push('DataPlate - Todos os direitos reservados');
 
   return lines.flatMap((line) => splitPdfLine(line));
 }
@@ -2143,8 +2208,157 @@ function buildSimplePdf(lines) {
 }
 
 function exportReportToPdf(data) {
+  // Usa jsPDF quando disponível (qualidade profissional)
+  if (window.jspdf?.jsPDF) {
+    exportReportToPdfJsPDF(data);
+    return;
+  }
+  // Fallback: PDF texto simples
   const fileName = `${slugifyFileName(data.title)}-${new Date().toISOString().slice(0, 10)}.pdf`;
   downloadBlob(buildSimplePdf(buildPdfLines(data)), fileName, 'application/pdf');
+}
+
+function exportReportToPdfJsPDF(data) {
+  const { jsPDF } = window.jspdf;
+
+  // Decide orientação conforme qtd de colunas
+  const muitasColunas = data.table.headers.length > 5;
+  const doc = new jsPDF({ orientation: muitasColunas ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
+
+  const W    = doc.internal.pageSize.getWidth();
+  const PRIMARY = [248, 91, 21];   // laranja DataPlate #f85b15
+  const DARK    = [17, 24, 39];    // #111827
+  const GRAY    = [100, 116, 139]; // #64748b
+  const LIGHT   = [241, 245, 249]; // #f1f5f9
+  const WHITE   = [255, 255, 255];
+
+  // ── Cabeçalho ──────────────────────────────────────────────────
+  doc.setFillColor(...PRIMARY);
+  doc.rect(0, 0, W, 22, 'F');
+
+  // Palavra "Data" branca + "Plate" branca (simula logo texto)
+  doc.setTextColor(...WHITE);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DataPlate', 12, 14);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Sistema de Gestao Gastronomica', 46, 14);
+
+  // ── Título e data ───────────────────────────────────────────────
+  doc.setTextColor(...DARK);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.title, 12, 34);
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GRAY);
+  doc.text(`Gerado em ${data.generatedAt}`, 12, 40);
+
+  let y = 50;
+
+  // ── Indicadores (stat cards) ────────────────────────────────────
+  if (data.summary.length > 0) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...DARK);
+    doc.text('Indicadores', 12, y);
+    y += 4;
+
+    const cols    = Math.min(data.summary.length, 4);
+    const margin  = 12;
+    const gap     = 3;
+    const cardW   = (W - margin * 2 - gap * (cols - 1)) / cols;
+    const cardH   = 16;
+
+    data.summary.forEach((item, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x   = margin + col * (cardW + gap);
+      const cy  = y + row * (cardH + gap);
+
+      doc.setFillColor(...LIGHT);
+      doc.roundedRect(x, cy, cardW, cardH, 2, 2, 'F');
+
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...GRAY);
+      doc.text(String(item.label || ''), x + 3, cy + 5, { maxWidth: cardW - 6 });
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...DARK);
+      doc.text(String(item.value || '—'), x + 3, cy + 13);
+    });
+
+    const rows = Math.ceil(data.summary.length / cols);
+    y += rows * (cardH + gap) + 8;
+  }
+
+  // ── Tabela ──────────────────────────────────────────────────────
+  if (data.table.headers.length > 0 && data.table.rows.length > 0) {
+    doc.autoTable({
+      head: [data.table.headers],
+      body: data.table.rows,
+      startY: y,
+      theme: 'striped',
+      headStyles: {
+        fillColor: PRIMARY,
+        textColor: WHITE,
+        fontStyle: 'bold',
+        fontSize: 8,
+        cellPadding: 3
+      },
+      bodyStyles: {
+        fontSize: 8,
+        textColor: DARK,
+        cellPadding: 3
+      },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      styles: { lineColor: [226, 232, 240], lineWidth: 0.1, overflow: 'linebreak' },
+      columnStyles: {},
+      margin: { left: 12, right: 12 },
+      didDrawPage: (hookData) => _adicionarRodapePdf(doc, hookData, data.title)
+    });
+  } else {
+    doc.setFontSize(9);
+    doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Nenhum registro encontrado no período selecionado.', 12, y + 6);
+    _adicionarRodapePdf(doc, null, data.title);
+  }
+
+  // Rodapé na última página se autoTable não foi chamado
+  const pags = doc.internal.getNumberOfPages();
+  if (data.table.rows.length === 0) {
+    for (let p = 1; p <= pags; p++) {
+      doc.setPage(p);
+      _adicionarRodapePdf(doc, null, data.title, p, pags);
+    }
+  }
+
+  const fileName = `dataplate-${slugifyFileName(data.title)}-${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(fileName);
+}
+
+function _adicionarRodapePdf(doc, hookData, title, pageNum, pageTotal) {
+  const pN = pageNum  ?? doc.internal.getNumberOfPages();
+  const pT = pageTotal ?? doc.internal.getNumberOfPages();
+  const W  = doc.internal.pageSize.getWidth();
+  const H  = doc.internal.pageSize.getHeight();
+  const GRAY = [100, 116, 139];
+
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.2);
+  doc.line(12, H - 10, W - 12, H - 10);
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GRAY);
+  doc.text('DataPlate - Todos os direitos reservados', 12, H - 5);
+  doc.text(`Pag. ${pN} / ${pT}`, W - 12, H - 5, { align: 'right' });
 }
 
 window.exportTable = function(format = 'excel', trigger = null) {
@@ -2264,9 +2478,7 @@ function exportTableToCSV(buttonSelector) {
   });
 }
 
-// Initialize exports
-exportTableToCSV('#exportClientes');
-exportTableToCSV('#exportPedidos');
+// (exports via data-export-format no HTML, sem necessidade de init manual)
 
 // =============================================
 // WEBSOCKET
@@ -2452,23 +2664,29 @@ function updateDashboardResumo(resumo) {
   setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
   setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
 
-  setStatByLabel('rel-vendas', 'Total de Vendas', formatCurrency(resumo.faturamento), 'Dados reais do período');
-  setStatByLabel('rel-vendas', 'Quantidade de Pedidos', String(
-    Number(resumo.pedidosRecebidos || 0)
-    + Number(resumo.pedidosEmPreparo || 0)
-    + Number(resumo.pedidosProntos || 0)
-    + Number(resumo.pedidosEntregues || 0)
-    + Number(resumo.pedidosCancelados || 0)
-  ), 'Pedidos registrados');
-  setStatByLabel('rel-vendas', 'Ticket Médio', formatCurrency(resumo.ticketMedio), 'Calculado do banco');
-  const topProduto = resumo.topProdutos?.[0];
-  if (topProduto) {
-    setStatByLabel('rel-vendas', 'Produto Mais Vendido', topProduto.nome, `${Number(topProduto.quantidadeVendida || 0)} unidades`);
+  // Gráficos do dashboard com dados reais
+  if (resumo.topProdutos?.length) {
+    renderDishesChart(resumo.topProdutos);
+    renderTopDishesChart(resumo.topProdutos);
   }
+  renderOrdersChart({
+    entregues: resumo.pedidosEntregues || 0,
+    emPreparo: Number(resumo.pedidosRecebidos || 0) + Number(resumo.pedidosEmPreparo || 0) + Number(resumo.pedidosProntos || 0),
+    cancelados: resumo.pedidosCancelados || 0
+  });
 
-  setStatByLabel('rel-financeiro', 'Receita Bruta', formatCurrency(resumo.faturamento), 'Pedidos não cancelados');
-  setStatByLabel('rel-financeiro', 'Lucro Líquido', formatCurrency(resumo.faturamento), 'Custos ainda não integrados');
-  setStatByLabel('rel-operacional', 'Taxa de Rejeição', `${resumo.pedidosCancelados || 0}`, 'Pedidos cancelados');
+  // Label do salesChart
+  const lbl = document.getElementById('dashSalesLabel');
+  if (lbl) lbl.textContent = `Faturamento: ${formatCurrency(resumo.faturamento)}`;
+}
+
+// Alimenta o salesChart do dashboard com dados de hoje
+function carregarSalesChartDashboard() {
+  getJson('/relatorios/vendas')
+    .then((data) => {
+      if (data.timeline?.length) renderSalesChart(data.timeline);
+    })
+    .catch(() => {});
 }
 
 function updateDashboardMesas(mesas) {
@@ -2479,16 +2697,194 @@ function updateDashboardMesas(mesas) {
 }
 
 function carregarRelatorios() {
+  // Dashboard: resumo de hoje
   getJson('/relatorios/resumo')
     .then(updateDashboardResumo)
-    .catch((err) => {
-      console.error('[relatorios]', err);
-      showToast(err.message || 'Erro ao carregar relatórios.');
-    });
+    .catch((err) => console.error('[relatorios]', err));
 
   getJson('/mesas')
     .then(updateDashboardMesas)
     .catch((err) => console.error('[relatorios-mesas]', err));
+
+  // Últimos pedidos no dashboard
+  carregarUltimosPedidosDashboard();
+
+  // Gráfico de vendas por hora do dashboard
+  carregarSalesChartDashboard();
+
+  // Alerta de estoque baixo
+  verificarEstoqueBaixo();
+}
+
+function carregarUltimosPedidosDashboard() {
+  getJson('/pedidos')
+    .then((pedidos) => {
+      const tbody = document.querySelector('#dashboard .dashboard-panel .data-table tbody');
+      if (!tbody) return;
+      const ultimos = (pedidos || []).slice(0, 5);
+      if (!ultimos.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Nenhum pedido registrado</td></tr>';
+        return;
+      }
+      const badgeClass = { RECEBIDO: 'badge-info', EM_PREPARO: 'badge-warning', PRONTO: 'badge-success', ENTREGUE: 'badge-active', CANCELADO: 'badge-danger' };
+      const badgeLabel = { RECEBIDO: 'Recebido', EM_PREPARO: 'Preparando', PRONTO: 'Pronto', ENTREGUE: 'Entregue', CANCELADO: 'Cancelado' };
+      tbody.innerHTML = ultimos.map((p) => `<tr>
+        <td>#${p.id}</td>
+        <td>${p.numeroMesa || '-'}</td>
+        <td>${formatCurrency(p.valorTotal)}</td>
+        <td><span class="badge ${badgeClass[p.status] || ''}">${badgeLabel[p.status] || p.status}</span></td>
+      </tr>`).join('');
+    })
+    .catch((err) => console.error('[dashboard-pedidos]', err));
+}
+
+// ── Relatório de Vendas ────────────────────────────────────────
+function carregarRelVendas(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  showTableSkeleton('rel-vendas');
+  getJson(`/relatorios/vendas${params}`)
+    .then((data) => {
+      setStatByLabel('rel-vendas', 'Total de Vendas', formatCurrency(data.faturamento), 'Dados reais do período');
+      setStatByLabel('rel-vendas', 'Quantidade de Pedidos', String(data.totalPedidos), 'Pedidos registrados');
+      setStatByLabel('rel-vendas', 'Ticket Médio', formatCurrency(data.ticketMedio), 'Calculado do banco');
+      const top = data.topProdutos?.[0];
+      if (top) setStatByLabel('rel-vendas', 'Produto Mais Vendido', top.nome, `${Number(top.quantidadeVendida || 0)} unidades`);
+
+      // Tabela de vendas por dia
+      const tbody = document.querySelector('#rel-vendas .data-table tbody');
+      if (tbody) {
+        if (!data.porDia?.length) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">
+            Nenhuma venda registrada no período selecionado.<br>
+            <small>Os pedidos aparecem aqui quando forem criados pelo PDV ou pelo cardápio do cliente.</small>
+          </td></tr>`;
+        } else {
+          tbody.innerHTML = data.porDia.map((d) => `<tr>
+            <td>${d.data}</td>
+            <td>${d.pedidos}</td>
+            <td>${formatCurrency(d.faturamento)}</td>
+            <td>${formatCurrency(d.ticketMedio)}</td>
+            <td>${data.topProdutos?.[0]?.nome || '-'}</td>
+          </tr>`).join('');
+        }
+      }
+
+      // Gráfico de vendas
+      if (data.timeline?.length) renderSalesChart(data.timeline);
+    })
+    .catch((err) => {
+      console.error('[rel-vendas]', err);
+      showToast(err.message || 'Erro ao carregar relatório de vendas.');
+    });
+}
+
+// ── Relatório Financeiro ───────────────────────────────────────
+function carregarRelFinanceiro(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  getJson(`/relatorios/vendas${params}`)
+    .then((data) => {
+      setStatByLabel('rel-financeiro', 'Receita Bruta', formatCurrency(data.faturamento), `${data.totalPedidos} pedidos no período`);
+      setStatByLabel('rel-financeiro', 'Despesas Totais', data.custoTotal ? formatCurrency(data.custoTotal) : 'Não integrado', data.custoTotal ? 'Calculado via insumos' : 'Vincule insumos aos produtos');
+      const lucro = data.custoTotal ? Number(data.faturamento) - Number(data.custoTotal) : null;
+      setStatByLabel('rel-financeiro', 'Lucro Líquido', lucro != null ? formatCurrency(lucro) : formatCurrency(data.faturamento), lucro != null ? 'Receita menos custos' : 'Sem dedução de custos');
+      const margem = (data.faturamento > 0 && lucro != null) ? ((lucro / Number(data.faturamento)) * 100).toFixed(1) + '%' : '—';
+      setStatByLabel('rel-financeiro', 'Margem de Lucro', margem, margem !== '—' ? 'Calculada' : 'Depende dos insumos cadastrados');
+
+      renderProfitChart(data.faturamento, data.custoTotal || 0);
+
+      const tbody = document.querySelector('#rel-financeiro .data-table tbody');
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr><td>Receita de pedidos</td><td>${formatCurrency(data.faturamento)}</td><td>100%</td><td>${data.totalPedidos} pedidos</td></tr>
+          <tr><td>Pedidos cancelados</td><td>${data.pedidosCancelados || 0}</td><td>—</td><td>Não geram receita</td></tr>
+          ${data.custoTotal ? `<tr><td>Custos operacionais</td><td>${formatCurrency(data.custoTotal)}</td><td>${((Number(data.custoTotal)/Number(data.faturamento))*100).toFixed(1)}%</td><td>Calculado via insumos</td></tr>` : `<tr><td>Custos operacionais</td><td colspan="3" style="color:#94a3b8">Vincule insumos aos produtos para calcular custos</td></tr>`}`;
+      }
+    })
+    .catch((err) => console.error('[rel-financeiro]', err));
+}
+
+// ── Relatório de Cardápio ──────────────────────────────────────
+function carregarRelCardapio(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  showTableSkeleton('rel-cardapio');
+  getJson(`/relatorios/cardapio${params}`)
+    .then((data) => {
+      const tbody = document.querySelector('#rel-cardapio .data-table tbody');
+      if (!tbody) return;
+      if (!data.topProdutos?.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8">Nenhum produto vendido no período</td></tr>';
+        return;
+      }
+      const totalQtd = Number(data.totalItensVendidos || 0);
+      const totalFat = Number(data.faturamentoTotal || 0);
+      tbody.innerHTML = data.topProdutos.map((p) => {
+        const pct = totalQtd > 0 ? ((Number(p.quantidadeVendida || 0) / totalQtd) * 100).toFixed(1) : '0.0';
+        return `<tr>
+          <td><strong>${escapeHtml(p.nome)}</strong></td>
+          <td>—</td>
+          <td>${Number(p.quantidadeVendida || 0)}</td>
+          <td>${formatCurrency(p.faturamento)}</td>
+          <td>${pct}%</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>`;
+      }).join('');
+    })
+    .catch((err) => {
+      console.error('[rel-cardapio]', err);
+      showToast(err.message || 'Erro ao carregar desempenho do cardápio.');
+    });
+}
+
+// ── Relatório Operacional ──────────────────────────────────────
+function carregarRelOperacional(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  getJson(`/relatorios/operacional${params}`)
+    .then((data) => {
+      const tempoMedio = data.tempoMedioPreparoMin > 0
+        ? `${data.tempoMedioPreparoMin.toFixed(1)} min`
+        : '—';
+      const tempoChange = data.tempoMedioPreparoMin > 0
+        ? 'Calculado via histórico de status'
+        : 'Novos pedidos registrarão o tempo automaticamente';
+      setStatByLabel('rel-operacional', 'Tempo Médio de Preparo', tempoMedio, tempoChange);
+      setStatByLabel('rel-operacional', 'Taxa de Rejeição', `${data.taxaCancelamento || 0}%`, `${data.pedidosCancelados || 0} cancelados`);
+      setStatByLabel('rel-operacional', 'Ocupação Cozinha', `${data.pedidosEntregues || 0}`, 'Pedidos entregues');
+      setStatByLabel('rel-operacional', 'Pedidos Entregues no Prazo', `${data.taxaEntrega || 0}%`, `de ${data.totalPedidos || 0} pedidos`);
+    })
+    .catch((err) => console.error('[rel-operacional]', err));
+}
+
+function buildDateParams(inicio, fim) {
+  const p = [];
+  if (inicio) p.push(`inicio=${inicio}`);
+  if (fim)    p.push(`fim=${fim}`);
+  return p.length ? '?' + p.join('&') : '';
+}
+
+function getRelDateRange(sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return {};
+  const inputs = section.querySelectorAll('input[type="date"]');
+  return { inicio: inputs[0]?.value || null, fim: inputs[1]?.value || null };
+}
+
+// Preenche os campos de data com um range padrão (dias atrás até hoje)
+// Só preenche se ainda estiverem vazios (não substitui escolha do usuário)
+function preencherDatasRelatorio(sectionId, diasAtras) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  const inputs = section.querySelectorAll('input[type="date"]');
+  if (!inputs[0] || !inputs[1]) return;
+  if (inputs[0].value && inputs[1].value) return; // já preenchido
+
+  const hoje = new Date();
+  const inicio = new Date(hoje);
+  inicio.setDate(inicio.getDate() - diasAtras);
+
+  const fmt = (d) => d.toISOString().slice(0, 10);
+  inputs[0].value = fmt(inicio);
+  inputs[1].value = fmt(hoje);
 }
 
 window.__clientes = [];
@@ -2792,6 +3188,12 @@ window.editarProduto = function(id) {
   form.querySelector('[name="featured"]').checked = produto.destaque === true;
   setModalMode(form, 'addDishModal', true);
   window.openModal('addDishModal');
+  window.__produtoAtivoId = id;
+  const secFT = document.getElementById('fichaTecnicaSection');
+  if (secFT) secFT.style.display = 'block';
+  const formFT = document.getElementById('fichaTecnicaForm');
+  if (formFT) formFT.style.display = 'none';
+  carregarFichaTecnica(id);
 };
 
 window.excluirProduto = async function(id) {
@@ -2802,6 +3204,89 @@ window.excluirProduto = async function(id) {
   deleteJson(`/produtos/${id}`)
     .then(() => { showToast('Item excluído com sucesso!', 'success'); carregarProdutos(); })
     .catch((err) => showToast(err.message || 'Erro ao excluir item.'));
+};
+
+// =============================================
+// FICHA TÉCNICA (INSUMOS DO PRODUTO)
+// =============================================
+
+window.__produtoAtivoId = null;
+
+function carregarFichaTecnica(produtoId) {
+  const lista = document.getElementById('fichaTecnicaLista');
+  if (!lista) return;
+  lista.textContent = 'Carregando…';
+  getJson(`/produtos/${produtoId}/insumos`)
+    .then((vinculosList) => renderFichaTecnica(vinculosList || []))
+    .catch(() => { lista.textContent = 'Erro ao carregar ficha técnica.'; });
+}
+
+function renderFichaTecnica(vinculosList) {
+  const lista = document.getElementById('fichaTecnicaLista');
+  if (!lista) return;
+  if (!vinculosList.length) {
+    lista.innerHTML = '<span style="color:#94a3b8">Nenhum insumo vinculado.</span>';
+    return;
+  }
+  lista.innerHTML = vinculosList.map((v) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9">
+      <span>${escapeHtml(v.nomeInsumo)} <small style="color:#94a3b8">(${Number(v.quantidade).toFixed(3)} ${escapeHtml(v.unidade)})</small></span>
+      <button type="button" class="btn-icon btn-icon-delete" title="Remover" onclick="removerVinculoInsumo(${v.insumoId}, '${escapeHtml(v.nomeInsumo)}')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+window.abrirAdicionarInsumo = function() {
+  const form = document.getElementById('fichaTecnicaForm');
+  if (form) form.style.display = 'block';
+  const select = document.getElementById('ftInsumoSelect');
+  if (!select) return;
+
+  const populate = (list) => {
+    select.innerHTML = list.length
+      ? list.map((i) => `<option value="${i.id}">${escapeHtml(i.nome)} (${escapeHtml(i.unidade)})</option>`).join('')
+      : '<option value="">Nenhum insumo cadastrado</option>';
+  };
+
+  if (window.__insumos && window.__insumos.length) {
+    populate(window.__insumos);
+  } else {
+    select.innerHTML = '<option value="">Carregando…</option>';
+    getJson('/insumos')
+      .then((list) => { window.__insumos = list || []; populate(window.__insumos); })
+      .catch(() => { select.innerHTML = '<option value="">Erro ao carregar insumos</option>'; });
+  }
+};
+
+window.salvarVinculoInsumo = async function() {
+  const produtoId = window.__produtoAtivoId;
+  if (!produtoId) return;
+  const insumoId = Number(document.getElementById('ftInsumoSelect')?.value);
+  const quantidade = Number(document.getElementById('ftQuantidade')?.value);
+  if (!insumoId || !quantidade || quantidade < 0.001) {
+    showToast('Selecione um insumo e informe a quantidade (mínimo 0.001).');
+    return;
+  }
+  try {
+    await postJson(`/produtos/${produtoId}/insumos`, { insumoId, quantidade });
+    document.getElementById('fichaTecnicaForm').style.display = 'none';
+    document.getElementById('ftQuantidade').value = '';
+    carregarFichaTecnica(produtoId);
+  } catch (err) {
+    showToast(err.message || 'Erro ao adicionar insumo.');
+  }
+};
+
+window.removerVinculoInsumo = async function(insumoId, nome) {
+  const produtoId = window.__produtoAtivoId;
+  if (!produtoId) return;
+  const ok = await showConfirmModal('Remover insumo?', `Deseja remover <strong>${nome}</strong> desta ficha técnica?`);
+  if (!ok) return;
+  deleteJson(`/produtos/${produtoId}/insumos/${insumoId}`)
+    .then(() => { showToast('Insumo removido.', 'success'); carregarFichaTecnica(produtoId); })
+    .catch((err) => showToast(err.message || 'Erro ao remover insumo.'));
 };
 
 function carregarMesas() {
@@ -2833,18 +3318,45 @@ function buildLinhaPedido(p) {
   </tr>`;
 }
 
-function carregarPedidos() {
+let _pedidosPage = 0;
+
+function carregarPedidos(page = 0) {
+  _pedidosPage = page;
   showTableSkeleton('pedidos');
-  getJson('/pedidos')
-    .then(list => {
+  getJson(`/pedidos?page=${page}&size=50`)
+    .then(data => {
+      // suporta resposta paginada {content, totalPages} ou lista simples
+      const list = Array.isArray(data) ? data : (data.content || []);
+      const totalPages = data.totalPages ?? 1;
       setTableBody('pedidos', list.map(buildLinhaPedido));
       applyToolbarFilters('pedidos');
+      renderPedidosPaginacao(page, totalPages);
     })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar pedidos.';
       setTableBody('pedidos', [], msg);
       console.error('[pedidos]', err);
     });
+}
+
+function renderPedidosPaginacao(page, totalPages) {
+  const section = document.getElementById('pedidos');
+  if (!section || totalPages <= 1) {
+    section?.querySelector('.pagination-bar')?.remove();
+    return;
+  }
+  let bar = section.querySelector('.pagination-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'pagination-bar';
+    bar.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;padding:12px 0;font-size:13px';
+    section.querySelector('.table-container')?.after(bar);
+  }
+  bar.innerHTML = `
+    <button class="btn-secondary" style="padding:4px 10px" ${page === 0 ? 'disabled' : ''} onclick="carregarPedidos(${page - 1})">← Anterior</button>
+    <span style="color:#64748b">Página ${page + 1} de ${totalPages}</span>
+    <button class="btn-secondary" style="padding:4px 10px" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="carregarPedidos(${page + 1})">Próxima →</button>
+  `;
 }
 
 function buildLinhaUsuario(u) {
@@ -2878,7 +3390,8 @@ function carregarUsuarios() {
 
 function carregarCozinha() {
   showCozinhaSkeleton();
-  getJson('/pedidos').then(pedidos => {
+  getJson('/pedidos?size=200').then(raw => {
+  const pedidos = Array.isArray(raw) ? raw : (raw.content || []);
     const cols = {
       RECEBIDO:   document.getElementById('col-recebido'),
       EM_PREPARO: document.getElementById('col-em_preparo'),
@@ -2933,200 +3446,504 @@ function carregarCozinha() {
   });
 }
 
-    // Charts Configuration
-    const chartOptions = {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: {
-          labels: {
-            font: { family: '"Inter", sans-serif', size: 12 },
-            color: '#64748b',
-            padding: 20,
-            usePointStyle: true
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: '#e2e8f0', drawBorder: false },
-          ticks: { color: '#64748b', font: { size: 12 } }
-        },
-        y: {
-          grid: { color: '#e2e8f0', drawBorder: false },
-          ticks: { color: '#64748b', font: { size: 12 } }
-        }
-      }
-    };
+// =============================================
+// INSUMOS
+// =============================================
 
-    // Sales Chart
-    function hasChartLibrary() {
-      return typeof Chart !== 'undefined';
-    }
+window.__insumos = [];
 
-    function initSalesChart() {
-      if (!hasChartLibrary()) return;
-      const canvas = document.getElementById('salesChart');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ['8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
-          datasets: [{
-            label: 'Vendas (R$)',
-            data: [120, 150, 280, 320, 240, 380, 410],
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#2563eb',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            pointHoverRadius: 6
-          }]
-        },
-        options: chartOptions
-      });
-    }
+function buildLinhaInsumo(i) {
+  const qtd    = Number(i.quantidadeAtual || 0);
+  const minima = Number(i.quantidadeMinima || 0);
+  const status = qtd <= 0
+    ? '<span class="badge badge-danger">Zerado</span>'
+    : qtd <= minima
+      ? '<span class="badge badge-warning">Estoque baixo</span>'
+      : '<span class="badge badge-active">Normal</span>';
 
-    // Dishes Distribution Chart
-    function initDishesChart() {
-      if (!hasChartLibrary()) return;
-      const canvas = document.getElementById('dishesChart');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Hambúrguer', 'Pasta', 'Salada', 'Outros'],
-          datasets: [{
-            data: [42, 38, 28, 18],
-            backgroundColor: [
-              '#2563eb',
-              '#7c3aed',
-              '#f85b15',
-              '#06b6d4'
-            ],
-            borderColor: '#fff',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          ...chartOptions,
-          plugins: {
-            ...chartOptions.plugins,
-            legend: {
-              position: 'bottom',
-              labels: {
-                font: { family: '"Inter", sans-serif', size: 12 },
-                color: '#64748b',
-                padding: 20,
-                usePointStyle: true
-              }
-            }
-          }
-        }
-      });
-    }
+  return `<tr>
+    <td><strong>${escapeHtml(i.nome)}</strong></td>
+    <td>${escapeHtml(i.unidade)}</td>
+    <td>${Number(i.quantidadeAtual).toFixed(3)}</td>
+    <td>${Number(i.quantidadeMinima).toFixed(3)}</td>
+    <td>${formatCurrency(i.custoUnitario)}</td>
+    <td>${status}</td>
+    <td>
+      <button class="btn-icon btn-icon-edit" title="Editar" onclick="editarInsumo(${i.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirInsumo(${i.id}, '${escapeHtml(i.nome)}')"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
+    </td>
+  </tr>`;
+}
 
-    // Orders Status Chart
-    function initOrdersChart() {
-      if (!hasChartLibrary()) return;
-      const ctx = document.getElementById('ordersChart');
-      if (!ctx) return;
-      
-      new Chart(ctx.getContext('2d'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Entregues', 'Em Preparo', 'Cancelados'],
-          datasets: [{
-            data: [24, 3, 1],
-            backgroundColor: [
-              '#10b981',
-              '#f59e0b',
-              '#ef4444'
-            ],
-            borderColor: '#fff',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          ...chartOptions,
-          plugins: {
-            ...chartOptions.plugins,
-            legend: {
-              position: 'bottom',
-              labels: {
-                font: { family: '"Inter", sans-serif', size: 12 },
-                color: '#64748b',
-                padding: 20,
-                usePointStyle: true
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // Top Dishes Chart
-    function initTopDishesChart() {
-      if (!hasChartLibrary()) return;
-      const ctx = document.getElementById('topDishesChart');
-      if (!ctx) return;
-      
-      new Chart(ctx.getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: ['Hambúrguer', 'Pasta', 'Salada', 'Salmão', 'Tiramisu'],
-          datasets: [{
-            label: 'Quantidade Vendida',
-            data: [42, 38, 28, 25, 18],
-            backgroundColor: '#2563eb',
-            borderRadius: 8,
-            borderSkipped: false
-          }]
-        },
-        options: chartOptions
-      });
-    }
-
-    // Profit Chart
-    function initProfitChart() {
-      if (!hasChartLibrary()) return;
-      const ctx = document.getElementById('profitChart');
-      if (!ctx) return;
-      
-      new Chart(ctx.getContext('2d'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Lucro', 'Custo'],
-          datasets: [{
-            data: [65, 35],
-            backgroundColor: [
-              '#10b981',
-              '#f3f4f6'
-            ],
-            borderColor: '#fff',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          ...chartOptions,
-          plugins: {
-            ...chartOptions.plugins,
-            legend: {
-              position: 'bottom'
-            }
-          }
-        }
-      });
-    }
-
-    // Initialize charts on page load
-    window.addEventListener('load', () => {
-      initSalesChart();
-      initDishesChart();
-      initOrdersChart();
+function carregarInsumos() {
+  showTableSkeleton('insumos');
+  getJson('/insumos')
+    .then((list) => {
+      window.__insumos = list || [];
+      setTableBody('insumos', window.__insumos.map(buildLinhaInsumo));
+      applyToolbarFilters('insumos');
+    })
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar insumos.';
+      setTableBody('insumos', [], msg);
+      console.error('[insumos]', err);
     });
+}
+
+window.editarInsumo = function(id) {
+  const insumo = (window.__insumos || []).find((item) => item.id === id);
+  const form = document.getElementById('addInsumoForm');
+  if (!insumo || !form) return;
+
+  form.querySelector('[name="id"]').value = insumo.id;
+  form.querySelector('[name="nome"]').value = insumo.nome || '';
+  form.querySelector('[name="unidade"]').value = insumo.unidade || 'kg';
+  form.querySelector('[name="quantidadeAtual"]').value = insumo.quantidadeAtual || '';
+  form.querySelector('[name="quantidadeMinima"]').value = insumo.quantidadeMinima || '';
+  form.querySelector('[name="custoUnitario"]').value = insumo.custoUnitario
+    ? formatCurrencyInput(floatToInputDigits(insumo.custoUnitario)) : '';
+  const header = document.querySelector('#addInsumoModal .modal-header');
+  if (header) header.textContent = 'Editar Insumo';
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.textContent = 'Atualizar';
+  window.openModal('addInsumoModal');
+};
+
+window.excluirInsumo = async function(id, nome) {
+  const ok = await showConfirmModal('Excluir insumo?', `Deseja excluir <strong>${nome}</strong>?`);
+  if (!ok) return;
+  deleteJson(`/insumos/${id}`)
+    .then(() => { showToast('Insumo excluído.', 'success'); carregarInsumos(); })
+    .catch((err) => showToast(err.message || 'Erro ao excluir insumo.'));
+};
+
+(function initInsumoForm() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('addInsumoForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateForm(form)) return;
+
+      const fd = new FormData(form);
+      const id = fd.get('id') ? Number(fd.get('id')) : null;
+      const payload = {
+        nome: fd.get('nome'),
+        unidade: fd.get('unidade'),
+        quantidadeAtual: Number(fd.get('quantidadeAtual')),
+        quantidadeMinima: Number(fd.get('quantidadeMinima')),
+        custoUnitario: parseCurrencyValue(fd.get('custoUnitario')) ?? Number(fd.get('custoUnitario'))
+      };
+
+      try {
+        if (id) {
+          await putJson(`/insumos/${id}`, payload);
+          showToast('Insumo atualizado!', 'success');
+        } else {
+          await postJson('/insumos', payload);
+          showToast('Insumo cadastrado!', 'success');
+        }
+        closeModal('addInsumoModal');
+        form.reset();
+        form.querySelector('[name="id"]').value = '';
+        const header = document.querySelector('#addInsumoModal .modal-header');
+        if (header) header.textContent = 'Novo Insumo';
+        const submit = form.querySelector('button[type="submit"]');
+        if (submit) submit.textContent = 'Cadastrar';
+        carregarInsumos();
+      } catch (err) {
+        showToast(err.message || 'Erro ao salvar insumo.');
+      }
+    }, true);
+  });
+})();
+
+// =============================================
+// CHARTS — dados reais da API
+// =============================================
+
+const CHART_COLORS = ['#2563eb', '#7c3aed', '#f85b15', '#06b6d4', '#10b981', '#f59e0b'];
+
+const chartBaseOptions = {
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: {
+      labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 20, usePointStyle: true }
+    }
+  },
+  scales: {
+    x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { size: 12 } } },
+    y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { size: 12 } } }
+  }
+};
+
+function hasChartLibrary() { return typeof Chart !== 'undefined'; }
+
+// Instâncias dos charts (para destruir antes de recriar)
+const _charts = {};
+
+function destroyChart(id) {
+  if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
+}
+
+function renderSalesChart(timeline) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('salesChart');
+  if (!canvas) return;
+  destroyChart('salesChart');
+
+  const labels = timeline.map((t) => t.label);
+  const data   = timeline.map((t) => Number(t.valor || 0));
+
+  _charts['salesChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Vendas (R$)',
+        data,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37,99,235,.1)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#2563eb',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: chartBaseOptions
+  });
+}
+
+function renderDishesChart(topProdutos) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('dishesChart');
+  if (!canvas) return;
+  destroyChart('dishesChart');
+
+  const top5 = topProdutos.slice(0, 5);
+  _charts['dishesChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: top5.map((p) => p.nome),
+      datasets: [{
+        data: top5.map((p) => Number(p.quantidadeVendida || 0)),
+        backgroundColor: CHART_COLORS,
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: { ...chartBaseOptions, plugins: { ...chartBaseOptions.plugins, legend: { position: 'bottom', labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 20, usePointStyle: true } } } }
+  });
+}
+
+function renderOrdersChart(statusData) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('ordersChart');
+  if (!canvas) return;
+  destroyChart('ordersChart');
+
+  _charts['ordersChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Entregues', 'Em andamento', 'Cancelados'],
+      datasets: [{
+        data: [Number(statusData.entregues || 0), Number(statusData.emPreparo || 0), Number(statusData.cancelados || 0)],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: { ...chartBaseOptions, plugins: { ...chartBaseOptions.plugins, legend: { position: 'bottom', labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 20, usePointStyle: true } } } }
+  });
+}
+
+function renderTopDishesChart(topProdutos) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('topDishesChart');
+  if (!canvas) return;
+  destroyChart('topDishesChart');
+
+  const top5 = topProdutos.slice(0, 5);
+  _charts['topDishesChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: top5.map((p) => p.nome),
+      datasets: [{
+        label: 'Quantidade Vendida',
+        data: top5.map((p) => Number(p.quantidadeVendida || 0)),
+        backgroundColor: '#2563eb',
+        borderRadius: 8,
+        borderSkipped: false
+      }]
+    },
+    options: chartBaseOptions
+  });
+}
+
+function renderProfitChart(faturamento, custo) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('profitChart');
+  if (!canvas) return;
+  destroyChart('profitChart');
+
+  const fat    = Number(faturamento || 0);
+  const cst    = Number(custo || 0);
+  const lucro  = Math.max(0, fat - cst);
+
+  _charts['profitChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Lucro', 'Custo estimado'],
+      datasets: [{
+        data: cst > 0 ? [lucro, cst] : [fat, 0],
+        backgroundColor: ['#10b981', '#f85b15'],
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      ...chartBaseOptions,
+      plugins: { ...chartBaseOptions.plugins, legend: { position: 'bottom', labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 16, usePointStyle: true } } }
+    }
+  });
+}
+
+// Inicializa charts vazios — serão preenchidos pelas chamadas de API
+window.addEventListener('load', () => {
+  if (!hasChartLibrary()) return;
+  // não renderiza placeholder; aguarda dados reais
+});
+
+// =============================================
+// CONFIG INTEGRAÇÃO — localStorage
+// =============================================
+const INTEGRACAO_KEY    = 'dataplate:integracao';
+const NOTIFICACOES_KEY  = 'dataplate:notificacoes';
+
+function carregarIntegracao() {
+  const saved = JSON.parse(localStorage.getItem(INTEGRACAO_KEY) || '{}');
+  const form  = document.getElementById('formIntegracao');
+  if (!form) return;
+  Object.entries(saved).forEach(([k, v]) => {
+    const el = form.querySelector(`[name="${k}"]`);
+    if (el) el.value = v;
+  });
+}
+
+function carregarNotificacoes() {
+  const saved = JSON.parse(localStorage.getItem(NOTIFICACOES_KEY) || '{}');
+  const form  = document.getElementById('formNotificacoes');
+  if (!form) return;
+  form.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    if (cb.name in saved) cb.checked = saved[cb.name];
+  });
+}
+
+(function initPreferencias() {
+  document.addEventListener('DOMContentLoaded', () => {
+    carregarIntegracao();
+    carregarNotificacoes();
+
+    document.getElementById('formIntegracao')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const data = {};
+      fd.forEach((v, k) => { if (v) data[k] = v; });
+      localStorage.setItem(INTEGRACAO_KEY, JSON.stringify(data));
+      showSuccessModal('Integrações salvas!', 'As configurações foram salvas localmente.');
+    });
+
+    document.getElementById('formNotificacoes')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = {};
+      e.target.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+        data[cb.name] = cb.checked;
+      });
+      localStorage.setItem(NOTIFICACOES_KEY, JSON.stringify(data));
+      showSuccessModal('Preferências salvas!', 'Suas configurações de notificação foram atualizadas.');
+    });
+  });
+})();
+
+// Alerta de estoque baixo no dashboard
+function verificarEstoqueBaixo() {
+  const prefs = JSON.parse(localStorage.getItem(NOTIFICACOES_KEY) || '{}');
+  if (prefs.alertaEstoqueBaixo === false) return;
+
+  getJson('/insumos')
+    .then((insumos) => {
+      const criticos = (insumos || []).filter((i) => Number(i.quantidadeAtual) <= Number(i.quantidadeMinima));
+      if (!criticos.length) return;
+      showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+    })
+    .catch(() => {});
+}
+
+// =============================================
+// CONFIG RESTAURANTE
+// =============================================
+
+function carregarConfiguracaoRestaurante() {
+  getJson('/restaurante')
+    .then((data) => {
+      const form = document.getElementById('formConfigRestaurante');
+      if (!form) return;
+      const set = (name, val) => { const el = form.querySelector(`[name="${name}"]`); if (el && val != null) el.value = val; };
+      set('nomeRestaurante', data.nome);
+      set('cnpjRestaurante', data.cnpj);
+      set('telefoneRestaurante', data.telefone);
+      set('enderecoRestaurante', data.endereco);
+      set('emailRestaurante', data.email);
+    })
+    .catch((err) => console.error('[config-restaurante load]', err));
+}
+
+(function initConfigRestaurante() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('formConfigRestaurante');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const payload = {
+        nome: fd.get('nomeRestaurante') || '',
+        cnpj: fd.get('cnpjRestaurante') || '',
+        telefone: fd.get('telefoneRestaurante') || '',
+        endereco: fd.get('enderecoRestaurante') || '',
+        email: fd.get('emailRestaurante') || ''
+      };
+      try {
+        await putJson('/restaurante', payload);
+        showSuccessModal('Configurações salvas!', 'As informações do restaurante foram atualizadas com sucesso.');
+      } catch (err) {
+        showToast(err.message || 'Erro ao salvar configurações.', 'error');
+      }
+    });
+  });
+})();
+
+// =============================================
+// CONFIG USUÁRIOS — CRUD completo
+// =============================================
+
+function buildLinhaUsuario(u) {
+  const roleLabel = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional', COZINHA: 'Cozinha' };
+  const roleClass = { ADMIN: 'badge-info', FUNCIONARIO: 'badge-active', COZINHA: 'badge-warning' };
+  return `<tr>
+    <td><strong>${escapeHtml(u.nome)}</strong></td>
+    <td>${escapeHtml(u.cpf || '-')}</td>
+    <td><span class="badge ${roleClass[u.role] || 'badge-active'}">${roleLabel[u.role] || u.role || '-'}</span></td>
+    <td>${u.role === 'ADMIN' ? 'Todos os módulos' : u.role === 'COZINHA' ? 'Cozinha' : 'Operações'}</td>
+    <td><span class="badge badge-active">Ativo</span></td>
+    <td>-</td>
+    <td>
+      <button class="btn-icon btn-icon-edit" title="Editar" onclick="editarUsuario(${u.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirUsuario(${u.id}, '${escapeHtml(u.nome)}')"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
+    </td>
+  </tr>`;
+}
+
+function carregarUsuarios() {
+  showTableSkeleton('config-usuarios');
+  getJson('/usuarios')
+    .then((list) => setTableBody('config-usuarios', (list || []).map(buildLinhaUsuario)))
+    .catch((err) => {
+      const msg = err.message || 'Erro ao carregar usuários.';
+      setTableBody('config-usuarios', [], msg);
+      console.error('[usuarios]', err);
+    });
+}
+
+window.__usuarioEditando = null;
+
+window.editarUsuario = function(id) {
+  getJson('/usuarios')
+    .then((list) => {
+      const u = (list || []).find((item) => item.id === id);
+      if (!u) return;
+      window.__usuarioEditando = u;
+      const form = document.getElementById('addUserForm');
+      if (!form) return;
+      form.querySelector('[name="id"]')?.setAttribute('value', u.id);
+      form.querySelector('[name="name"]').value = u.nome || '';
+      form.querySelector('[name="cpf"]').value = u.cpf || '';
+      const accessTypeMap = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional', COZINHA: 'Cozinha' };
+      const sel = form.querySelector('[name="accessType"]');
+      if (sel) sel.value = accessTypeMap[u.role] || 'Operacional';
+      const pwField = form.querySelector('[name="temporaryPassword"]');
+      if (pwField) { pwField.required = false; pwField.placeholder = 'Deixe em branco para manter'; }
+      const header = document.querySelector('#addUserModal .modal-header');
+      if (header) header.textContent = 'Editar Usuário';
+      const submit = form.querySelector('button[type="submit"]');
+      if (submit) submit.textContent = 'Atualizar';
+      window.openModal('addUserModal');
+    })
+    .catch((err) => showToast(err.message || 'Erro ao carregar usuário.'));
+};
+
+window.excluirUsuario = async function(id, nome) {
+  const ok = await showConfirmModal('Excluir usuário?', `Deseja excluir o usuário <strong>${nome}</strong>?`);
+  if (!ok) return;
+  deleteJson(`/usuarios/${id}`)
+    .then(() => { showToast('Usuário excluído.', 'success'); carregarUsuarios(); })
+    .catch((err) => showToast(err.message || 'Erro ao excluir usuário.'));
+};
+
+// Sobrescreve o submit do addUserForm para suportar edição
+(function patchUserForm() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const originalHandler = document.getElementById('addUserForm')?._submitHandler;
+    const form = document.getElementById('addUserForm');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (!validateForm(e.target)) return;
+
+      const fd = new FormData(form);
+      const idField = form.querySelector('[name="id"]');
+      const editingId = idField?.value ? Number(idField.value) : null;
+      const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Cozinha': 'COZINHA', 'Visualização': 'FUNCIONARIO' };
+      const role = accessTypeMap[fd.get('accessType')] || 'FUNCIONARIO';
+
+      if (editingId) {
+        // PUT — editar
+        const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), role };
+        putJson(`/usuarios/${editingId}`, payload)
+          .then(() => {
+            showToast('Usuário atualizado!', 'success');
+            closeModal('addUserModal');
+            form.reset();
+            if (idField) idField.value = '';
+            window.__usuarioEditando = null;
+            const pwField = form.querySelector('[name="temporaryPassword"]');
+            if (pwField) { pwField.required = true; pwField.placeholder = 'Senha temporária'; }
+            const header = document.querySelector('#addUserModal .modal-header');
+            if (header) header.textContent = 'Novo Usuário';
+            const submit = form.querySelector('button[type="submit"]');
+            if (submit) submit.textContent = 'Cadastrar';
+            carregarUsuarios();
+          })
+          .catch((err) => showToast(err.message || 'Erro ao atualizar usuário.'));
+      } else {
+        // POST — criar
+        const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), senha: fd.get('temporaryPassword'), role };
+        postJson('/auth/register', payload)
+          .then(() => {
+            showToast('Usuário criado!', 'success');
+            closeModal('addUserModal');
+            form.reset();
+            carregarUsuarios();
+          })
+          .catch((err) => showToast(err.message || 'Erro ao criar usuário.'));
+      }
+    }, true); // captura antes do handler original
+  });
+})();

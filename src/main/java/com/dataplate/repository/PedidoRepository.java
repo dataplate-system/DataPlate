@@ -17,9 +17,15 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     @Query("select coalesce(sum(p.valorTotal), 0) from Pedido p where p.idStatus <> 5 and p.dataHora between :inicio and :fim")
     BigDecimal faturamentoEntre(LocalDateTime inicio, LocalDateTime fim);
 
+    List<Pedido> findTop5ByOrderByDataHoraDesc();
+
     List<Pedido> findTop10ByOrderByDataHoraDesc();
 
     List<Pedido> findAllByOrderByDataHoraDesc();
+
+    org.springframework.data.domain.Page<Pedido> findAllByOrderByDataHoraDesc(org.springframework.data.domain.Pageable pageable);
+
+    List<Pedido> findByIdMesaOrderByDataHoraDesc(Integer idMesa);
 
     List<Pedido> findByDataHoraBetweenOrderByDataHoraDesc(LocalDateTime inicio, LocalDateTime fim);
 

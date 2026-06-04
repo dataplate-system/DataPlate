@@ -32,6 +32,23 @@ public class InsumoService {
         return toResponse(repo.save(i));
     }
 
+    @Transactional
+    public InsumoResponse atualizar(Long id, InsumoRequest req) {
+        Insumo i = repo.findById(id)
+                .orElseThrow(() -> new com.dataplate.exception.ResourceNotFoundException("Insumo nao encontrado: " + id));
+        i.setNome(req.nome());
+        i.setUnidade(req.unidade());
+        i.setQuantidadeAtual(req.quantidadeAtual());
+        i.setQuantidadeMinima(req.quantidadeMinima());
+        i.setCustoUnitario(req.custoUnitario());
+        return toResponse(repo.save(i));
+    }
+
+    @Transactional
+    public void excluir(Long id) {
+        repo.deleteById(id);
+    }
+
     private InsumoResponse toResponse(Insumo i) {
         return new InsumoResponse(i.getId(), i.getNome(), i.getUnidade(),
                 i.getQuantidadeAtual(), i.getQuantidadeMinima(), i.getCustoUnitario());

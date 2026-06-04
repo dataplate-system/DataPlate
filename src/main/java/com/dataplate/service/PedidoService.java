@@ -6,11 +6,13 @@ import com.dataplate.dto.PedidoResponse;
 import com.dataplate.entity.Pedido;
 import com.dataplate.entity.PedidoItem;
 import com.dataplate.entity.PedidoStatus;
+import com.dataplate.entity.PedidoStatusHistorico;
 import com.dataplate.entity.Produto;
 import com.dataplate.entity.Mesa;
 import com.dataplate.exception.ResourceNotFoundException;
 import com.dataplate.repository.MesaRepository;
 import com.dataplate.repository.PedidoRepository;
+import com.dataplate.repository.PedidoStatusHistoricoRepository;
 import com.dataplate.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -31,6 +33,7 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ProdutoRepository produtoRepository;
     private final MesaRepository mesaRepository;
+    private final PedidoStatusHistoricoRepository historicoRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
@@ -57,7 +60,10 @@ public class PedidoService {
         pedido.getItens().addAll(itens);
         pedido.setValorTotal(total);
 
-        PedidoResponse response = toResponse(pedidoRepository.save(pedido));
+        Pedido salvo = pedidoRepository.save(pedido);
+        registrarHistorico(salvo.getId(), PedidoStatus.RECEBIDO);
+
+        PedidoResponse response = toResponse(salvo);
         publicarEvento("NOVO_PEDIDO", response);
         return response;
     }
@@ -67,17 +73,46 @@ public class PedidoService {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido nao encontrado: " + id));
         pedido.setIdStatus(toStatusId(novoStatus));
-        PedidoResponse response = toResponse(pedidoRepository.save(pedido));
+        Pedido salvo = pedidoRepository.save(pedido);
+        registrarHistorico(salvo.getId(), novoStatus);
+        PedidoResponse response = toResponse(salvo);
         publicarEvento("PEDIDO_ATUALIZADO", response);
         return response;
+    }
+
+    private void registrarHistorico(Long idPedido, PedidoStatus status) {
+        historicoRepository.save(PedidoStatusHistorico.builder()
+                .idPedido(idPedido)
+                .status(status.name())
+                .build());
     }
 
     @Transactional(readOnly = true)
     public List<PedidoResponse> listar() {
         return pedidoRepository.findAllByOrderByDataHoraDesc()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public com.dataplate.dto.PaginatedResponse<PedidoResponse> listar(int page, int size) {
+        int safeSize = Math.min(Math.max(size, 1), 200);
+        var pageable = org.springframework.data.domain.PageRequest.of(Math.max(page, 0), safeSize);
+        var pageResult = pedidoRepository.findAllByOrderByDataHoraDesc(pageable);
+        return new com.dataplate.dto.PaginatedResponse<>(
+                pageResult.getContent().stream().map(this::toResponse).toList(),
+                pageResult.getNumber(),
+                pageResult.getSize(),
+                pageResult.getTotalElements(),
+                pageResult.getTotalPages()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<PedidoResponse> listarPorMesa(Integer numeroMesa) {
+        return mesaRepository.findByNumeroAndAtivoTrue(numeroMesa)
+                .map(mesa -> pedidoRepository.findByIdMesaOrderByDataHoraDesc(mesa.getId().intValue())
+                        .stream().map(this::toResponse).toList())
+                .orElse(List.of());
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +126,7 @@ public class PedidoService {
         Produto produto = produtoRepository.findById(produtoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Produto nao encontrado: " + produtoId));
 
-        BigDecimal precoUnitario = BigDecimal.valueOf(produto.getPreco());
+        BigDecimal precoUnitario = produto.getPreco();
         BigDecimal quantidadeDecimal = BigDecimal.valueOf(quantidade);
         BigDecimal subtotal = precoUnitario.multiply(quantidadeDecimal);
 

@@ -1,10 +1,10 @@
 package com.dataplate.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,14 +19,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dataplate.entity.Produto;
 import com.dataplate.exception.ErrorResponse;
 import com.dataplate.service.ProdutoService;
+import org.springframework.dao.DataIntegrityViolationException;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/produtos")
+@RequiredArgsConstructor
 public class ProdutosController {
     private static final Logger logger = LoggerFactory.getLogger(ProdutosController.class);
+    private static final BigDecimal PRECO_MAXIMO = new BigDecimal("999999.99");
 
-    @Autowired
-    private ProdutoService produtoService;
+    private final ProdutoService produtoService;
 
     @GetMapping
     public ResponseEntity<List<Produto>> listar() {
@@ -66,7 +70,6 @@ public class ProdutosController {
     public ResponseEntity<?> criar(@RequestBody Produto produto) {
         try {
             logger.info("Criando novo produto: {}", produto != null ? produto.getNome() : null);
-            logger.info("Payload recebido: {}", produto);
 
             String erro = validarProduto(produto);
             if (erro != null) {
@@ -78,13 +81,13 @@ public class ProdutosController {
             logger.info("Produto criado com sucesso. ID: {}", salvo.getId());
 
             return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Violacao de integridade ao criar produto", e);
+            return ResponseEntity.badRequest()
+                    .body(new ErrorResponse("Categoria nao encontrada no banco. Verifique se as migrations do Flyway foram executadas corretamente."));
         } catch (Exception e) {
             logger.error("Erro ao criar produto: ", e);
-            // Retorna o erro REAL para debug
             String mensagemErro = e.getMessage() != null ? e.getMessage() : "Erro desconhecido";
-            logger.error("Mensagem de erro: {}", mensagemErro);
-            logger.error("Tipo de exceção: {}", e.getClass().getName());
-            
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Erro ao criar produto: " + mensagemErro));
         }
@@ -109,7 +112,7 @@ public class ProdutosController {
             if (produtoAtualizado.getNome() != null && !produtoAtualizado.getNome().isEmpty()) {
                 produtoExistente.setNome(produtoAtualizado.getNome().trim());
             }
-            if (produtoAtualizado.getPreco() != null && produtoAtualizado.getPreco() > 0) {
+            if (produtoAtualizado.getPreco() != null && produtoAtualizado.getPreco().compareTo(BigDecimal.ZERO) > 0) {
                 produtoExistente.setPreco(produtoAtualizado.getPreco());
             }
             if (produtoAtualizado.getDescricao() != null) {
@@ -187,10 +190,10 @@ public class ProdutosController {
         if (produto.getIdCategoria() == null || produto.getIdCategoria() <= 0) {
             return "Categoria do produto e obrigatoria";
         }
-        if (produto.getPreco() == null || produto.getPreco() <= 0) {
+        if (produto.getPreco() == null || produto.getPreco().compareTo(BigDecimal.ZERO) <= 0) {
             return "Preco deve ser maior que zero";
         }
-        if (produto.getPreco() > 999999.99) {
+        if (produto.getPreco().compareTo(PRECO_MAXIMO) > 0) {
             return "Preco nao pode ser maior que 999999.99";
         }
         return null;

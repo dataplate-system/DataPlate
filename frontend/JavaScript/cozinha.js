@@ -652,7 +652,9 @@ async function loadOrders({ silent = false } = {}) {
   if (!silent) setLoadingState();
 
   try {
-    kitchenOrders = normalizeOrders(await getJson('/pedidos'));
+    const novos = normalizeOrders(await getJson('/pedidos'));
+    verificarNovosPedidosAudio(novos);
+    kitchenOrders = novos;
     fallbackMode = false;
     fallbackNoticeShown = false;
     setConnectionStatus('Conectado', 'online');
@@ -696,6 +698,43 @@ async function changeOrderStatus(orderId, nextStatus) {
   }
 }
 
+// ── Som de notificação ──────────────────────────────────────────
+let _audioCtx = null;
+let _pedidosConhecidos = new Set();
+
+function getAudioCtx() {
+  if (!_audioCtx) {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return _audioCtx;
+}
+
+function tocarNotificacaoNovoPedido() {
+  try {
+    const ctx = getAudioCtx();
+    [[880, 0, 0.15], [1100, 0.18, 0.15], [880, 0.36, 0.2]].forEach(([freq, delay, dur]) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + dur + 0.05);
+    });
+  } catch (_) {}
+}
+
+function verificarNovosPedidosAudio(pedidos) {
+  const ids = new Set((pedidos || []).filter((p) => p.status === 'RECEBIDO').map((p) => p.id));
+  let temNovo = false;
+  ids.forEach((id) => { if (!_pedidosConhecidos.has(id)) temNovo = true; });
+  _pedidosConhecidos = ids;
+  if (temNovo && _pedidosConhecidos.size > 0) tocarNotificacaoNovoPedido();
+}
+
 function startAutoRefresh() {
   window.clearInterval(autoRefreshTimer);
   if (!document.getElementById('autoRefresh')?.checked) return;
@@ -725,7 +764,10 @@ function connectKitchenWebSocket() {
       } catch (_) {
         payload = { type: event.data };
       }
-      if (payload?.type === 'PEDIDO_ATUALIZADO' || payload?.type === 'NOVO_PEDIDO') {
+      if (payload?.type === 'NOVO_PEDIDO') {
+        tocarNotificacaoNovoPedido();
+        loadOrders({ silent: true });
+      } else if (payload?.type === 'PEDIDO_ATUALIZADO') {
         loadOrders({ silent: true });
       }
     });

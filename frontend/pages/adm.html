@@ -20,13 +20,14 @@
       </div>
       <nav class="main-nav">
         <!-- Cadastros -->
-        <div class="nav-item dropdown">
+        <div class="nav-item dropdown" data-role="admin">
           <button type="button" class="nav-button">Cadastros</button>
           <div class="dropdown-menu">
             <a href="#clientes" class="dropdown-link" onclick="navigateTo('clientes')">Clientes</a>
             <a href="#fornecedores" class="dropdown-link" onclick="navigateTo('fornecedores')">Fornecedores</a>
             <a href="#funcionarios" class="dropdown-link" onclick="navigateTo('funcionarios')">Funcionários</a>
             <a href="#cardapio" class="dropdown-link" onclick="navigateTo('cardapio')">Cardápio</a>
+            <a href="#insumos" class="dropdown-link" onclick="navigateTo('insumos')">Insumos</a>
           </div>
         </div>
 
@@ -34,6 +35,7 @@
         <div class="nav-item dropdown">
           <button type="button" class="nav-button">Operações</button>
           <div class="dropdown-menu">
+            <a href="pdv.html" class="dropdown-link">PDV Caixa</a>
             <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
             <a href="#mesas" class="dropdown-link" onclick="navigateTo('mesas')">Mesas</a>
             <a href="#cozinha" class="dropdown-link" onclick="navigateTo('cozinha')">Cozinha</a>
@@ -41,7 +43,7 @@
         </div>
 
         <!-- Relatórios -->
-        <div class="nav-item dropdown">
+        <div class="nav-item dropdown" data-role="admin">
           <button type="button" class="nav-button">Relatórios</button>
           <div class="dropdown-menu">
             <a href="#rel-vendas" class="dropdown-link" onclick="navigateTo('rel-vendas')">Vendas</a>
@@ -52,7 +54,7 @@
         </div>
 
         <!-- Configurações -->
-        <div class="nav-item dropdown">
+        <div class="nav-item dropdown" data-role="admin">
           <button type="button" class="nav-button">Configurações</button>
           <div class="dropdown-menu">
             <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
@@ -110,6 +112,13 @@
                 <small>Preparo em tempo real</small>
               </span>
             </button>
+            <a href="pdv.html" class="home-shortcut" style="text-decoration:none">
+              <span class="shortcut-icon">🖥️</span>
+              <span>
+                <strong>PDV</strong>
+                <small>Caixa e venda direta</small>
+              </span>
+            </a>
           </aside>
 
           <div class="home-center">
@@ -199,41 +208,43 @@
           <div class="dashboard-layout">
             <section class="report-section dashboard-panel">
               <div class="panel-heading">
-                <h3>Movimento do dia</h3>
-                <span>Atualizado agora</span>
+                <h3>Vendas por hora — hoje</h3>
+                <span id="dashSalesLabel">Carregando…</span>
               </div>
-              <div class="dashboard-chart" aria-label="Gráfico de movimento do dia">
-                <span style="height: 42%"><strong>10h</strong></span>
-                <span style="height: 58%"><strong>12h</strong></span>
-                <span style="height: 76%"><strong>14h</strong></span>
-                <span style="height: 48%"><strong>16h</strong></span>
-                <span style="height: 84%"><strong>18h</strong></span>
-                <span style="height: 92%"><strong>20h</strong></span>
+              <div style="position:relative;height:180px">
+                <canvas id="salesChart"></canvas>
               </div>
             </section>
 
             <section class="report-section dashboard-panel">
               <div class="panel-heading">
-                <h3>Status da operação</h3>
-                <span>Tempo médio: 18 min</span>
+                <h3>Pedidos por status</h3>
+                <span id="dashOrdersLabel">Hoje</span>
               </div>
-              <div class="operation-list">
-                <div>
-                  <strong>Cozinha</strong>
-                  <span class="badge badge-warning">7 preparando</span>
-                </div>
-                <div>
-                  <strong>Pedidos</strong>
-                  <span class="badge badge-info">18 ativos</span>
-                </div>
-                <div>
-                  <strong>Mesas</strong>
-                  <span class="badge badge-success">8 livres</span>
-                </div>
-                <div>
-                  <strong>Cardápio</strong>
-                  <span class="badge badge-active">32 itens</span>
-                </div>
+              <div style="position:relative;height:180px">
+                <canvas id="ordersChart"></canvas>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-layout">
+            <section class="report-section dashboard-panel">
+              <div class="panel-heading">
+                <h3>Top produtos vendidos</h3>
+                <span>Acumulado</span>
+              </div>
+              <div style="position:relative;height:180px">
+                <canvas id="topDishesChart"></canvas>
+              </div>
+            </section>
+
+            <section class="report-section dashboard-panel">
+              <div class="panel-heading">
+                <h3>Distribuição do cardápio</h3>
+                <span>Por quantidade vendida</span>
+              </div>
+              <div style="position:relative;height:180px">
+                <canvas id="dishesChart"></canvas>
               </div>
             </section>
           </div>
@@ -280,24 +291,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>#1028</td>
-                      <td>07</td>
-                      <td>R$ 86,90</td>
-                      <td><span class="badge badge-warning">Preparando</span></td>
-                    </tr>
-                    <tr>
-                      <td>#1027</td>
-                      <td>12</td>
-                      <td>R$ 124,50</td>
-                      <td><span class="badge badge-success">Pronto</span></td>
-                    </tr>
-                    <tr>
-                      <td>#1026</td>
-                      <td>04</td>
-                      <td>R$ 52,00</td>
-                      <td><span class="badge badge-info">Recebido</span></td>
-                    </tr>
+                    <tr><td colspan="4" style="text-align:center;color:#94a3b8">Carregando…</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -326,7 +320,8 @@
                 <option value="bloqueado" data-filter-column="7" data-filter-match="exact">Bloqueados</option>
               </select>
             </div>
-            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="table-container">
@@ -373,6 +368,8 @@
                 <option value="atendente" data-filter-column="2">Atendente</option>
               </select>
             </div>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="table-container">
@@ -413,6 +410,8 @@
                 <option value="inativo" data-filter-column="5" data-filter-match="exact">Inativos</option>
               </select>
             </div>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="table-container">
@@ -458,6 +457,8 @@
                 <option value="sobremesas" data-filter-column="2">Sobremesas</option>
               </select>
             </div>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="table-container">
@@ -501,7 +502,8 @@
               </select>
               <input type="date" class="filter-input" data-table-date data-section="pedidos" />
             </div>
-            <button class="btn-secondary" onclick="exportTable()">📥 Exportar</button>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="table-container">
@@ -651,25 +653,15 @@
 
           <div class="report-filters">
             <div class="filter-group">
-              <label>Período</label>
-              <select>
-                <option>Hoje</option>
-                <option>Últimos 7 dias</option>
-                <option>Este mês</option>
-                <option>Personalizado</option>
-              </select>
-            </div>
-            <div class="filter-group">
               <label>Data Inicial</label>
-              <input type="date" />
+              <input type="date" id="relVendasInicio" onchange="carregarRelVendas(this.value||null, document.getElementById('relVendasFim').value||null)" />
             </div>
             <div class="filter-group">
               <label>Data Final</label>
-              <input type="date" />
+              <input type="date" id="relVendasFim" onchange="carregarRelVendas(document.getElementById('relVendasInicio').value||null, this.value||null)" />
             </div>
-            <button class="btn-primary" type="button">Gerar Relatório</button>
-            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
-            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="stats-grid">
@@ -696,6 +688,13 @@
           </div>
 
           <div class="report-section">
+            <h3>Evolução de vendas no período</h3>
+            <div style="position:relative;height:220px;margin-bottom:24px">
+              <canvas id="salesChart"></canvas>
+            </div>
+          </div>
+
+          <div class="report-section">
             <h3>Vendas por Período</h3>
             <div class="table-container">
               <table class="data-table">
@@ -705,17 +704,11 @@
                     <th>Pedidos</th>
                     <th>Valor Total</th>
                     <th>Ticket Médio</th>
-                    <th>Items Top</th>
+                    <th>Item Top</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>02/05/2026</td>
-                    <td>28</td>
-                    <td>R$ 850,00</td>
-                    <td>R$ 30,36</td>
-                    <td>Hambúrguer (12)</td>
-                  </tr>
+                  <tr><td colspan="5" style="text-align:center;color:#94a3b8">Selecione o período e as datas serão carregadas automaticamente</td></tr>
                 </tbody>
               </table>
             </div>
@@ -731,24 +724,22 @@
 
           <div class="report-filters">
             <div class="filter-group">
-              <label>Período</label>
-              <select>
-                <option>Este mês</option>
-                <option>Mês passado</option>
-                <option>Últimos 3 meses</option>
-                <option>Este ano</option>
-              </select>
+              <label>Data Inicial</label>
+              <input type="date" id="relFinanceiroInicio" onchange="carregarRelFinanceiro(this.value||null, document.getElementById('relFinanceiroFim').value||null)" />
             </div>
-            <button class="btn-primary" type="button">Gerar Relatório</button>
-            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
-            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" id="relFinanceiroFim" onchange="carregarRelFinanceiro(document.getElementById('relFinanceiroInicio').value||null, this.value||null)" />
+            </div>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-label">Receita Bruta</div>
-              <div class="stat-value">R$ 28.500,00</div>
-              <div class="stat-change positive">↑ 12% vs mês anterior</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Clique em Gerar</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Despesas Totais</div>
@@ -768,6 +759,13 @@
           </div>
 
           <div class="report-section">
+            <h3>Receita x Custo</h3>
+            <div style="position:relative;height:200px;max-width:300px;margin-bottom:24px">
+              <canvas id="profitChart"></canvas>
+            </div>
+          </div>
+
+          <div class="report-section">
             <h3>Composição de Despesas</h3>
             <div class="table-container">
               <table class="data-table">
@@ -780,24 +778,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>Compras operacionais</td>
-                    <td>R$ 8.500,00</td>
-                    <td>69%</td>
-                    <td>Aumento esperado</td>
-                  </tr>
-                  <tr>
-                    <td>Folha de Pagamento</td>
-                    <td>R$ 3.200,00</td>
-                    <td>26%</td>
-                    <td>Normal</td>
-                  </tr>
-                  <tr>
-                    <td>Utilidades</td>
-                    <td>R$ 500,00</td>
-                    <td>5%</td>
-                    <td>Normal</td>
-                  </tr>
+                  <tr><td colspan="4" style="text-align:center;color:#94a3b8">Selecione o período e clique em Gerar Relatório</td></tr>
                 </tbody>
               </table>
             </div>
@@ -813,17 +794,15 @@
 
           <div class="report-filters">
             <div class="filter-group">
-              <label>Período</label>
-              <select>
-                <option>Últimos 30 dias</option>
-                <option>Este mês</option>
-                <option>Últimos 3 meses</option>
-                <option>Este ano</option>
-              </select>
+              <label>Data Inicial</label>
+              <input type="date" id="relCardapioInicio" onchange="carregarRelCardapio(this.value||null, document.getElementById('relCardapioFim').value||null)" />
             </div>
-            <button class="btn-primary" type="button">Gerar Relatório</button>
-            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
-            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" id="relCardapioFim" onchange="carregarRelCardapio(document.getElementById('relCardapioInicio').value||null, this.value||null)" />
+            </div>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="report-section">
@@ -842,23 +821,15 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td><strong>Hambúrguer Artesanal</strong></td>
-                    <td>Sanduíches</td>
-                    <td>42</td>
-                    <td>R$ 1.214,00</td>
-                    <td>27%</td>
-                    <td>R$ 8,50</td>
-                    <td>R$ 855,00</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Pasta Carbonara</strong></td>
-                    <td>Massas</td>
-                    <td>38</td>
-                    <td>R$ 1.615,00</td>
-                    <td>26%</td>
-                    <td>R$ 15,00</td>
-                    <td>R$ 1.045,00</td>
+                  <tr><td colspan="7" style="text-align:center;color:#94a3b8">Selecione o período e clique em Gerar Relatório</td></tr>
+                  <tr style="display:none">
+                    <td><strong>placeholder</strong></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                   </tr>
                 </tbody>
               </table>
@@ -875,39 +846,67 @@
 
           <div class="report-filters">
             <div class="filter-group">
-              <label>Período</label>
-              <select>
-                <option>Últimos 30 dias</option>
-                <option>Este mês</option>
-                <option>Últimos 3 meses</option>
-              </select>
+              <label>Data Inicial</label>
+              <input type="date" id="relOperacionalInicio" onchange="carregarRelOperacional(this.value||null, document.getElementById('relOperacionalFim').value||null)" />
             </div>
-            <button class="btn-primary" type="button">Gerar Relatório</button>
-            <button class="btn-secondary" type="button" data-export-format="pdf">📥 Exportar PDF</button>
-            <button class="btn-secondary" type="button" data-export-format="excel">📊 Exportar Excel</button>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" id="relOperacionalFim" onchange="carregarRelOperacional(document.getElementById('relOperacionalInicio').value||null, this.value||null)" />
+            </div>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
           </div>
 
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-label">Tempo Médio de Preparo</div>
-              <div class="stat-value">16.5 min</div>
-              <div class="stat-change positive">↓ 1.5 min a menos</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Não rastreado</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Taxa de Rejeição</div>
-              <div class="stat-value">1.2%</div>
-              <div class="stat-change positive">Excelente</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Clique em Gerar</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Ocupação Cozinha</div>
-              <div class="stat-value">82%</div>
-              <div class="stat-change">Ótima capacidade</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Clique em Gerar</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Pedidos Entregues no Prazo</div>
-              <div class="stat-value">96%</div>
-              <div class="stat-change positive">Acima do esperado</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Clique em Gerar</div>
             </div>
+          </div>
+        </section>
+
+        <!-- INSUMOS -->
+        <section id="insumos" class="content-section">
+          <div class="section-header">
+            <h1>Insumos e Estoque</h1>
+            <p>Controle de ingredientes e matérias-primas</p>
+          </div>
+          <div class="section-toolbar">
+            <button type="button" class="btn-primary" data-open-modal="addInsumoModal">+ Novo Insumo</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Unidade</th>
+                  <th>Qtd. Atual</th>
+                  <th>Qtd. Mínima</th>
+                  <th>Custo Unitário</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
         </section>
 
@@ -918,37 +917,23 @@
             <p>Informações gerais e operacionais</p>
           </div>
 
-          <div class="config-form">
+          <form id="formConfigRestaurante" class="config-form">
             <div class="form-section">
               <h3>Informações Básicas</h3>
               <div class="form-row">
                 <div class="form-group">
                   <label>Nome do Restaurante</label>
-                  <input type="text" value="Seu Restaurante" />
+                  <input type="text" name="nomeRestaurante" placeholder="Nome do restaurante" required />
                 </div>
                 <div class="form-group">
                   <label>CNPJ</label>
-                  <input type="text" value="12.345.678/0001-90" />
+                  <input type="text" name="cnpjRestaurante" placeholder="00.000.000/0001-00" />
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
                   <label>Endereço</label>
-                  <input type="text" value="Rua das Flores, 123" />
-                </div>
-                <div class="form-group">
-                  <label>Complemento</label>
-                  <input type="text" value="Apto 456" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Cidade</label>
-                  <input type="text" value="São Paulo" />
-                </div>
-                <div class="form-group">
-                  <label>CEP</label>
-                  <input type="text" value="01234-567" />
+                  <input type="text" name="enderecoRestaurante" placeholder="Rua, número, bairro, cidade" />
                 </div>
               </div>
             </div>
@@ -958,54 +943,20 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Telefone Principal</label>
-                  <input type="tel" value="(11) 3000-0000" />
+                  <input type="tel" name="telefoneRestaurante" placeholder="(11) 99999-9999" />
                 </div>
                 <div class="form-group">
                   <label>Email</label>
-                  <input type="email" value="contato@restaurante.com" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Whatsapp para Pedidos</label>
-                  <input type="tel" value="(11) 99999-9999" />
-                </div>
-                <div class="form-group">
-                  <label>Redes Sociais</label>
-                  <input type="text" placeholder="@usuario" />
-                </div>
-              </div>
-            </div>
-
-            <div class="form-section">
-              <h3>Horário de Funcionamento</h3>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Abertura</label>
-                  <input type="time" value="11:00" />
-                </div>
-                <div class="form-group">
-                  <label>Fechamento</label>
-                  <input type="time" value="23:00" />
-                </div>
-              </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Dias de Funcionamento</label>
-                  <div class="checkbox-group">
-                    <label><input type="checkbox" checked /> Seg-Sex</label>
-                    <label><input type="checkbox" checked /> Sábado</label>
-                    <label><input type="checkbox" /> Domingo</label>
-                  </div>
+                  <input type="email" name="emailRestaurante" placeholder="contato@restaurante.com" />
                 </div>
               </div>
             </div>
 
             <div class="form-actions">
-              <button class="btn-primary">Salvar Alterações</button>
-              <button class="btn-secondary">Cancelar</button>
+              <button type="submit" class="btn-primary">Salvar Alterações</button>
+              <button type="button" class="btn-secondary" onclick="carregarConfiguracaoRestaurante()">Recarregar</button>
             </div>
-          </div>
+          </form>
         </section>
 
         <!-- CONFIGURAÇÃO USUÁRIOS -->
@@ -1044,32 +995,54 @@
             <p>Conecte seu restaurante com plataformas externas</p>
           </div>
 
-          <div class="integrations-grid">
-            <div class="integration-card">
-              <div class="integration-icon">🛵</div>
-              <h4>Ifood</h4>
-              <p>Integração com plataforma de delivery</p>
-              <button class="btn-small">Configurar</button>
+          <form id="formIntegracao" class="config-form">
+            <div class="form-section">
+              <h3>iFood / Delivery</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Token de Integração iFood</label>
+                  <input type="text" name="ifoodToken" placeholder="Token fornecido pelo iFood" autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label>ID do Restaurante (iFood)</label>
+                  <input type="text" name="ifoodRestauranteId" placeholder="Ex: abc123" autocomplete="off" />
+                </div>
+              </div>
             </div>
-            <div class="integration-card">
-              <div class="integration-icon">💳</div>
-              <h4>PagSeguro</h4>
-              <p>Processamento de pagamentos online</p>
-              <button class="btn-small">Configurar</button>
+
+            <div class="form-section">
+              <h3>Pagamentos</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Chave PIX</label>
+                  <input type="text" name="chavePix" placeholder="CPF, CNPJ, email ou chave aleatória" />
+                </div>
+                <div class="form-group">
+                  <label>Token PagSeguro</label>
+                  <input type="text" name="pagseguroToken" placeholder="Token da conta PagSeguro" autocomplete="off" />
+                </div>
+              </div>
             </div>
-            <div class="integration-card">
-              <div class="integration-icon">📍</div>
-              <h4>Google Maps</h4>
-              <p>Mapa de localização</p>
-              <button class="btn-small">Configurar</button>
+
+            <div class="form-section">
+              <h3>Localização e Marketing</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Chave Google Maps API</label>
+                  <input type="text" name="googleMapsKey" placeholder="AIza..." autocomplete="off" />
+                </div>
+                <div class="form-group">
+                  <label>Email de marketing (remetente)</label>
+                  <input type="email" name="emailMarketing" placeholder="marketing@seurestaurante.com" />
+                </div>
+              </div>
             </div>
-            <div class="integration-card">
-              <div class="integration-icon">📧</div>
-              <h4>Email Marketing</h4>
-              <p>Disparos de promoções e notícias</p>
-              <button class="btn-small">Configurar</button>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">Salvar Integrações</button>
+              <button type="button" class="btn-secondary" onclick="carregarIntegracao()">Recarregar</button>
             </div>
-          </div>
+          </form>
         </section>
 
         <!-- CONFIGURAÇÃO NOTIFICAÇÕES -->
@@ -1079,19 +1052,19 @@
             <p>Personalize seus alertas e notificações</p>
           </div>
 
-          <div class="config-form">
+          <form id="formNotificacoes" class="config-form">
             <div class="form-section">
               <h3>Notificações por Email</h3>
               <div class="form-row">
                 <div class="form-group">
                   <label class="checkbox-label">
-                    <input type="checkbox" checked />
-                    <span>Pedidos novos</span>
+                    <input type="checkbox" name="emailPedidosNovos" />
+                    <span>Novos pedidos</span>
                   </label>
                 </div>
                 <div class="form-group">
                   <label class="checkbox-label">
-                    <input type="checkbox" checked />
+                    <input type="checkbox" name="emailReservas" />
                     <span>Reservas próximas</span>
                   </label>
                 </div>
@@ -1099,14 +1072,14 @@
               <div class="form-row">
                 <div class="form-group">
                   <label class="checkbox-label">
-                    <input type="checkbox" checked />
-                    <span>Relatório diário</span>
+                    <input type="checkbox" name="emailRelDiario" />
+                    <span>Relatório diário automático</span>
                   </label>
                 </div>
                 <div class="form-group">
                   <label class="checkbox-label">
-                    <input type="checkbox" />
-                    <span>Manutenção do sistema</span>
+                    <input type="checkbox" name="emailManutencao" />
+                    <span>Avisos de manutenção</span>
                   </label>
                 </div>
               </div>
@@ -1117,18 +1090,42 @@
               <div class="form-row">
                 <div class="form-group">
                   <label class="checkbox-label">
-                    <input type="checkbox" checked />
+                    <input type="checkbox" name="smsMesaEspera" />
                     <span>Mesa aguardando atendimento</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="smsPedidoPronto" />
+                    <span>Pedido pronto para entrega</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Notificações do Sistema</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="somNovoPedido" checked />
+                    <span>Som ao receber novo pedido (cozinha)</span>
+                  </label>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="alertaEstoqueBaixo" checked />
+                    <span>Alerta de estoque baixo no dashboard</span>
                   </label>
                 </div>
               </div>
             </div>
 
             <div class="form-actions">
-              <button class="btn-primary">Salvar Preferências</button>
-              <button class="btn-secondary">Cancelar</button>
+              <button type="submit" class="btn-primary">Salvar Preferências</button>
+              <button type="button" class="btn-secondary" onclick="carregarNotificacoes()">Recarregar</button>
             </div>
-          </div>
+          </form>
         </section>
       </div>
     </div>
@@ -1518,18 +1515,34 @@
           </div>
         </div>
         <div class="form-actions">
-          <button
-           type="button"
-           class="btn-secondary"
-           onclick="closeModal('addDishModal')"
-         >
-            Cancelar
-         </button>
-         <button type="submit" class="btn-primary">
-            Cadastrar
-          </button>
-       </div>
-     </form>
+          <button type="button" class="btn-secondary" onclick="closeModal('addDishModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
+        </div>
+      </form>
+
+      <!-- Ficha Técnica (insumos do produto) — visível só ao editar -->
+      <div id="fichaTecnicaSection" style="display:none;border-top:1px solid #e2e8f0;padding-top:16px;margin-top:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <strong style="font-size:14px">Ficha Técnica</strong>
+          <button type="button" class="btn-small" onclick="abrirAdicionarInsumo()">+ Insumo</button>
+        </div>
+        <div id="fichaTecnicaLista" style="font-size:13px;color:#64748b">Carregando…</div>
+        <!-- Form inline para adicionar insumo -->
+        <div id="fichaTecnicaForm" style="display:none;margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-group" style="flex:2;min-width:140px">
+              <label style="font-size:12px">Insumo</label>
+              <select id="ftInsumoSelect" style="width:100%;height:34px;border:1px solid #e2e8f0;border-radius:6px;padding:0 8px;font-size:13px"></select>
+            </div>
+            <div class="form-group" style="flex:1;min-width:80px">
+              <label style="font-size:12px">Quantidade</label>
+              <input type="number" id="ftQuantidade" placeholder="0.000" min="0.001" step="0.001" style="width:100%;height:34px;border:1px solid #e2e8f0;border-radius:6px;padding:0 8px;font-size:13px" />
+            </div>
+            <button type="button" class="btn-primary" style="height:34px;padding:0 12px;font-size:13px" onclick="salvarVinculoInsumo()">Adicionar</button>
+            <button type="button" class="btn-secondary" style="height:34px;padding:0 12px;font-size:13px" onclick="document.getElementById('fichaTecnicaForm').style.display='none'">Cancelar</button>
+          </div>
+        </div>
+      </div>
    </div>
   </div>
 
@@ -1538,6 +1551,7 @@
       <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
       <div class="modal-header">Novo Usuário</div>
       <form id="addUserForm">
+        <input type="hidden" name="id" value="" />
         <div class="form-row">
           <div class="form-group">
             <label>Nome</label>
@@ -1553,9 +1567,8 @@
             <label>Tipo de Acesso</label>
             <select name="accessType" required>
               <option>Administrador</option>
-              <option>Gerente</option>
               <option>Operacional</option>
-              <option>Visualização</option>
+              <option>Cozinha</option>
             </select>
           </div>
           <div class="form-group">
@@ -1566,6 +1579,55 @@
         <div class="form-actions">
           <button type="button" class="btn-secondary" onclick="closeModal('addUserModal')">Cancelar</button>
           <button type="submit" class="btn-primary">Criar Usuário</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL INSUMO -->
+  <div class="modal" id="addInsumoModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('addInsumoModal')">✕</button>
+      <div class="modal-header">Novo Insumo</div>
+      <form id="addInsumoForm">
+        <input type="hidden" name="id" value="" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" name="nome" placeholder="Ex: Farinha de trigo" required />
+          </div>
+          <div class="form-group">
+            <label>Unidade</label>
+            <select name="unidade" required>
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="L">L</option>
+              <option value="ml">ml</option>
+              <option value="un">un</option>
+              <option value="cx">cx</option>
+              <option value="pct">pct</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantidade Atual</label>
+            <input type="number" name="quantidadeAtual" placeholder="0.000" min="0" step="0.001" required />
+          </div>
+          <div class="form-group">
+            <label>Quantidade Mínima</label>
+            <input type="number" name="quantidadeMinima" placeholder="0.000" min="0" step="0.001" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Custo Unitário (R$)</label>
+            <input type="text" name="custoUnitario" placeholder="R$ 0,00" required />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" onclick="closeModal('addInsumoModal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Cadastrar</button>
         </div>
       </form>
     </div>
@@ -1777,6 +1839,9 @@
       });
     })();
   </script>
-  <script src="../JavaScript/adm.js?v=9" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="../JavaScript/adm.js?v=11" defer></script>
 </body>
 </html>

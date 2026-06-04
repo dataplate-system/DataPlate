@@ -31,7 +31,7 @@ public class ProdutoService {
 
         Produto salvo = produtoRepository.save(produto);
         if (salvo.getCodigo() == null) {
-            salvo.setCodigo("PRO-" + String.format("%03d", salvo.getId()));
+            salvo.setCodigo(String.format("%03d", salvo.getId()));
             salvo = produtoRepository.save(salvo);
         }
         return salvo;

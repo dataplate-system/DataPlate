@@ -11,6 +11,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -39,8 +40,8 @@ public class Produto {
     @Column(name = "descricao", length = 1000)
     private String descricao;
 
-    @Column(name = "preco", nullable = false)
-    private Double preco;
+    @Column(name = "preco", nullable = false, precision = 10, scale = 2)
+    private BigDecimal preco;
 
     @Column(name = "imagem")
     private String imagem;

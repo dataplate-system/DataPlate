@@ -31,16 +31,25 @@ public class PedidosController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PedidoResponse>> listar(Authentication authentication, HttpServletRequest request) {
+    public ResponseEntity<?> listar(
+            Authentication authentication,
+            HttpServletRequest request,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0")  int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "50") int size) {
         if (request.getHeader("Authorization") != null && authentication == null) {
             logger.warn("Listagem de pedidos chamada com token invalido ou expirado");
         }
-        return ResponseEntity.ok(pedidoService.listar());
+        return ResponseEntity.ok(pedidoService.listar(page, size));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PedidoResponse> obter(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.obter(id));
+    }
+
+    @GetMapping("/mesa/{numeroMesa}")
+    public ResponseEntity<List<PedidoResponse>> listarPorMesa(@PathVariable Integer numeroMesa) {
+        return ResponseEntity.ok(pedidoService.listarPorMesa(numeroMesa));
     }
 
     @PutMapping("/{id}/status")
