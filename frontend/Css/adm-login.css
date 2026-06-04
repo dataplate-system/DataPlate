@@ -8,26 +8,28 @@
   --color-primary: #f85b15;
   --color-secondary: #2563eb;
   --color-secondary-dark: #1d4ed8;
-  --color-bg: #f5f7fb;
+  --color-bg: #f6f8fc;
   --color-white: #ffffff;
   --color-text: #111827;
   --color-border: #e2e8f0;
   --color-gray-light: #64748b;
   --color-soft-blue: #eff6ff;
-  --shadow-card: 0 18px 48px rgba(15, 23, 42, 0.1);
+  --shadow-card: 0 12px 30px rgba(15, 23, 42, 0.08);
 }
 
 body {
   min-height: 100vh;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--color-bg);
+  background:
+    linear-gradient(180deg, #ffffff 0%, var(--color-bg) 100%);
   color: var(--color-text);
 }
 
 .login-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.05fr);
+  grid-template-columns: minmax(380px, 0.92fr) minmax(420px, 1.08fr);
+  gap: 0;
 }
 
 .login-visual {
@@ -37,7 +39,7 @@ body {
   justify-content: space-between;
   padding: 42px;
   background:
-    linear-gradient(135deg, rgba(15, 23, 42, 0.86), rgba(30, 64, 175, 0.42)),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.80), rgba(248, 91, 21, 0.30)),
     url("../images/landing/restaurante-cardapio.jpg") center/cover;
   color: var(--color-white);
 }
@@ -49,8 +51,8 @@ body {
 }
 
 .brand-lockup img {
-  width: 58px;
-  height: 58px;
+  width: 54px;
+  height: 54px;
   object-fit: contain;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.92);
@@ -63,7 +65,7 @@ body {
 }
 
 .brand-lockup strong {
-  font-size: 24px;
+  font-size: 23px;
   line-height: 1.1;
 }
 
@@ -78,7 +80,7 @@ body {
   padding: 22px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
-  background: rgba(15, 23, 42, 0.24);
+  background: rgba(15, 23, 42, 0.34);
   backdrop-filter: blur(12px);
 }
 
@@ -104,7 +106,8 @@ body {
 .preview-grid > div {
   padding: 16px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  border-left: 3px solid rgba(248, 91, 21, 0.88);
 }
 
 .preview-grid > div > strong,
@@ -201,7 +204,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 40px 32px;
   background: var(--color-bg);
 }
 
@@ -220,11 +223,11 @@ body {
 
 .login-card-header p {
   margin-bottom: 8px;
-  color: var(--color-secondary);
+  color: var(--color-primary);
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
 }
 
 .login-card-header h1 {
@@ -363,7 +366,7 @@ body {
   min-height: 46px;
   border: none;
   border-radius: 6px;
-  background: var(--color-secondary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: var(--color-white);
   cursor: pointer;
   font-size: 15px;
@@ -373,9 +376,9 @@ body {
 
 .login-button:hover,
 .login-button:focus-visible {
-  background: var(--color-secondary-dark);
+  background: linear-gradient(135deg, #e04e10, var(--color-secondary-dark));
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.24);
+  box-shadow: 0 8px 20px rgba(248, 91, 21, 0.28);
 }
 
 .demo-users {

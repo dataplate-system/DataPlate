@@ -16,8 +16,44 @@
       Painel
     </a>
     <span class="pdv-brand">PDV Caixa</span>
-    <span id="operatorLabel" class="pdv-operator"></span>
+    <div class="pdv-topbar-right">
+      <div class="pdv-session-info" id="pdvSessionInfo" style="display:none">
+        <div class="pdv-avatar" id="pdvAvatar">AT</div>
+        <span>
+          <strong id="pdvUserName">Atendente</strong>
+          <small id="pdvUserRole">Operacional</small>
+        </span>
+      </div>
+      <button class="pdv-logout-btn" id="pdvLogoutBtn" onclick="pdvLogout()">Sair</button>
+    </div>
   </header>
+
+  <!-- BANNER COBRANÇAS PENDENTES (visível ao caixa) -->
+  <div id="pdvCobrancasBanner" style="display:none;background:#fffbeb;border-bottom:2px solid #f59e0b;padding:10px 20px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:14px;font-weight:800;color:#92400e">&#x1F514; Cobranças pendentes:</span>
+      <div id="pdvCobrancasLista" style="display:flex;gap:8px;flex-wrap:wrap;flex:1"></div>
+      <button onclick="verificarCobrancas()" style="padding:5px 12px;border:1px solid #f59e0b;border-radius:6px;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#92400e">Atualizar</button>
+    </div>
+  </div>
+
+  <!-- MODAL PROCESSAR PAGAMENTO -->
+  <div id="pdvPgtoModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;width:min(100%,400px);padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.2)">
+      <h3 id="pdvPgtoTitulo" style="font-size:16px;font-weight:800;margin-bottom:4px">Mesa —</h3>
+      <p id="pdvPgtoTotal" style="color:#64748b;font-size:13px;margin-bottom:16px">Total: —</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px" id="pdvPgtoOpcoes">
+        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('PIX',this)">PIX</button>
+        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('CREDITO',this)">Cartão Crédito</button>
+        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('DEBITO',this)">Cartão Débito</button>
+        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('DINHEIRO',this)">Dinheiro</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="pdvPgtoConfirmar" disabled onclick="confirmarPagamentoMesa()" style="flex:1;padding:12px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;transition:opacity.15s">Confirmar Pagamento</button>
+        <button onclick="fecharPdvPgtoModal()" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-weight:700;cursor:pointer">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <!-- LAYOUT -->
   <div class="pdv-layout">
@@ -63,7 +99,12 @@
     <aside class="pdv-right">
 
       <!-- Seleção de mesa -->
-      <div class="mesa-selector">
+      <div class="pdv-mode-selector" aria-label="Tipo de venda">
+        <button class="mode-btn is-active" data-mode="caixa">Venda balcão</button>
+        <button class="mode-btn" data-mode="mesa">Mesa / comanda</button>
+      </div>
+
+      <div class="mesa-selector" id="mesaSelector" hidden>
         <label class="mesa-selector-label" for="mesaSelect">Mesa</label>
         <div class="mesa-select-row">
           <span class="mesa-status-dot" id="mesaStatusDot"></span>
@@ -86,7 +127,7 @@
         <div class="order-items" id="cartItems">
           <div class="order-empty">
             <span>🛒</span>
-            <p>Selecione uma mesa e adicione produtos</p>
+            <p>Adicione produtos para iniciar a venda</p>
           </div>
         </div>
         <div class="order-footer">
@@ -94,7 +135,23 @@
             <span>Total</span>
             <strong id="cartTotal">R$ 0,00</strong>
           </div>
-          <div class="section">
+          <div class="checkout-summary" id="checkoutSummary">
+            <label class="section-label" for="descontoInput">Desconto</label>
+            <input id="descontoInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" />
+            <div class="checkout-line">
+              <span>A pagar</span>
+              <strong id="totalPagar">R$ 0,00</strong>
+            </div>
+            <div class="cash-row" id="cashRow" hidden>
+              <label class="section-label" for="valorRecebidoInput">Recebido</label>
+              <input id="valorRecebidoInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" />
+              <div class="checkout-line">
+                <span>Troco</span>
+                <strong id="trocoValor">R$ 0,00</strong>
+              </div>
+            </div>
+          </div>
+          <div class="section" id="pagamentoVendaSection">
             <label class="section-label">Pagamento</label>
             <div class="pgto-grid">
               <button class="pgto-btn" data-pgto="PIX">PIX</button>
@@ -107,7 +164,7 @@
             <label class="section-label" for="pedidoObs">Observação</label>
             <textarea id="pedidoObs" rows="2" placeholder="Ex: sem cebola, alergia a glúten…"></textarea>
           </div>
-          <button id="finalizarBtn" class="btn-action btn-primary" disabled>Abrir Pedido</button>
+          <button id="finalizarBtn" class="btn-action btn-primary" disabled>Finalizar venda</button>
         </div>
       </div>
 

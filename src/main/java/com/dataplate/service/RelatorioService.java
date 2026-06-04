@@ -5,12 +5,14 @@ import com.dataplate.dto.RelatorioOperacionalResponse;
 import com.dataplate.dto.RelatorioResumoResponse;
 import com.dataplate.dto.RelatorioVendasResponse;
 import com.dataplate.dto.TopProdutoResponse;
+import com.dataplate.dto.VendaHistoricoItem;
 import com.dataplate.dto.VendasPorDiaItem;
 import com.dataplate.dto.VendasTimelineItem;
 import com.dataplate.entity.Pedido;
 import com.dataplate.repository.PedidoItemRepository;
 import com.dataplate.repository.PedidoRepository;
 import com.dataplate.repository.PedidoStatusHistoricoRepository;
+import com.dataplate.repository.MesaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ public class RelatorioService {
     private final PedidoRepository pedidoRepository;
     private final PedidoItemRepository pedidoItemRepository;
     private final PedidoStatusHistoricoRepository historicoRepository;
+    private final MesaRepository mesaRepository;
     private final com.dataplate.repository.ProdutoInsumoRepository produtoInsumoRepository;
 
     // ── RESUMO (dashboard) ─────────────────────────────────────────
@@ -90,11 +93,14 @@ public class RelatorioService {
                 .stream().limit(10).toList();
 
         BigDecimal custoTotal = produtoInsumoRepository.custoTotalEntre(inicioDia, fimDia);
+        List<VendaHistoricoItem> historico = pedidos.stream()
+                .map(this::toHistoricoItem)
+                .toList();
 
         return new RelatorioVendasResponse(
                 dataInicio, dataFim, faturamento, ticketMedio, custoTotal,
                 pedidos.size(), entregues, cancelados,
-                timeline, porDia, top
+                timeline, porDia, top, historico
         );
     }
 
@@ -159,6 +165,39 @@ public class RelatorioService {
     // ── HELPERS ────────────────────────────────────────────────────
     private long countByStatus(List<Pedido> pedidos, int statusId) {
         return pedidos.stream().filter(p -> p.getIdStatus() == statusId).count();
+    }
+
+    private VendaHistoricoItem toHistoricoItem(Pedido pedido) {
+        long itens = pedido.getItens() == null ? 0 : pedido.getItens().stream()
+                .mapToLong(item -> item.getQuantidade() == null ? 0 : item.getQuantidade().longValue())
+                .sum();
+        return new VendaHistoricoItem(
+                pedido.getId(),
+                pedido.getDataHora(),
+                pedido.getIdMesa() == null ? "CAIXA" : "MESA",
+                numeroMesa(pedido.getIdMesa()),
+                toStatusLabel(pedido.getIdStatus()),
+                itens,
+                pedido.getValorTotal()
+        );
+    }
+
+    private Integer numeroMesa(Integer idMesa) {
+        if (idMesa == null) return null;
+        return mesaRepository.findById(idMesa.longValue())
+                .map(mesa -> mesa.getNumero())
+                .orElse(idMesa);
+    }
+
+    private String toStatusLabel(Integer idStatus) {
+        return switch (idStatus) {
+            case STATUS_RECEBIDO_ID -> "RECEBIDO";
+            case STATUS_EM_PREPARO_ID -> "EM_PREPARO";
+            case STATUS_PRONTO_ID -> "PRONTO";
+            case STATUS_ENTREGUE_ID -> "ENTREGUE";
+            case STATUS_CANCELADO_ID -> "CANCELADO";
+            default -> "RECEBIDO";
+        };
     }
 
     private List<VendasTimelineItem> gerarTimeline(List<Pedido> pedidos, LocalDate inicio, LocalDate fim) {

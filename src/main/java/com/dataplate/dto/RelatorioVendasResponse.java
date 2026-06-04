@@ -15,6 +15,7 @@ public record RelatorioVendasResponse(
         long pedidosCancelados,
         List<VendasTimelineItem> timeline,
         List<VendasPorDiaItem> porDia,
-        List<TopProdutoResponse> topProdutos
+        List<TopProdutoResponse> topProdutos,
+        List<VendaHistoricoItem> historico
 ) {
 }

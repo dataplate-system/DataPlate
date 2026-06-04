@@ -1,0 +1,356 @@
+/* ================================================================
+   ATENDENTE.CSS  - identidade DataPlate, mesma base de cozinha.css
+   Diferencial: hero com tint laranja (primário) em vez de azul
+   ================================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --color-primary:   #f85b15;
+  --color-secondary: #2563eb;
+  --color-tertiary:  #7c3aed;
+  --color-bg:        #f6f8fc;
+  --color-panel:     #ffffff;
+  --color-text:      #111827;
+  --color-muted:     #64748b;
+  --color-border:    #e2e8f0;
+  --color-success:   #16a34a;
+  --color-warning:   #f59e0b;
+  --color-danger:    #dc2626;
+  --shadow-soft:     0 14px 34px rgba(15,23,42,.08);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+
+/* ── SHELL ───────────────────────────────────────────────────────── */
+.atendente-shell { min-height: 100vh; }
+
+/* ── HEADER (idêntico ao da cozinha) ────────────────────────────── */
+.atendente-header {
+  position: sticky; top: 0; z-index: 20;
+  min-height: 70px;
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(255,255,255,.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+
+.brand-button {
+  display: inline-flex; align-items: center; gap: 12px;
+  border: none; background: transparent; color: var(--color-text); text-align: left;
+}
+.brand-button img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #fff; }
+.brand-button strong, .brand-button small,
+.session-summary strong, .session-summary small { display: block; }
+.brand-button strong { color: var(--color-primary); font-size: 19px; line-height: 1; }
+.brand-button small, .session-summary small { margin-top: 3px; color: var(--color-muted); font-size: 12px; font-weight: 700; }
+
+.header-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+
+.connection-pill {
+  display: inline-flex; align-items: center; min-height: 28px;
+  padding: 6px 10px; border-radius: 999px;
+  background: #eff6ff; color: #1d4ed8;
+  font-size: 12px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.connection-pill.online  { background: #dcfce7; color: #166534; }
+.connection-pill.offline { background: #fef3c7; color: #92400e; }
+
+.session-summary {
+  display: flex; align-items: center; gap: 9px;
+  min-height: 42px; padding: 6px 10px;
+  border: 1px solid var(--color-border); border-radius: 8px; background: #f8fafc;
+}
+
+.user-avatar {
+  width: 30px; height: 30px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #fff; font-size: 12px; font-weight: 800;
+}
+
+.header-button, .action-button {
+  min-height: 38px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 8px 13px; border: 1px solid var(--color-border); border-radius: 6px;
+  background: #fff; color: var(--color-text);
+  font-size: 13px; font-weight: 800;
+  transition: transform .2s, border-color .2s, box-shadow .2s, background .2s;
+}
+.header-button:hover, .action-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-secondary);
+  box-shadow: 0 8px 18px rgba(37,99,235,.12);
+}
+.logout-button { color: var(--color-danger); border-color: #fecaca; }
+.logout-button:hover { border-color: var(--color-danger); background: #fef2f2; box-shadow: 0 8px 18px rgba(220,38,38,.12); }
+
+/* ── MAIN ───────────────────────────────────────────────────────── */
+.atendente-main {
+  width: min(100% - 40px, 1480px);
+  margin: 0 auto;
+  padding: 24px 0 34px;
+}
+
+/* ── HERO (mesma estrutura, tint laranja para diferenciar da cozinha) */
+.atendente-hero {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 24px;
+  min-height: 184px; padding: 28px; border-radius: 8px;
+  color: #fff;
+  background:
+    linear-gradient(135deg, rgba(17,24,39,.88), rgba(248,91,21,.60)),
+    url("../images/landing/restaurante-cardapio.jpg") center/cover;
+  box-shadow: var(--shadow-soft);
+}
+
+.hero-eyebrow {
+  display: inline-block; margin-bottom: 10px;
+  color: rgba(255,255,255,.82);
+  font-size: 12px; font-weight: 900; letter-spacing: .11em; text-transform: uppercase;
+}
+.atendente-hero h1 { margin-bottom: 10px; font-size: clamp(32px, 5vw, 52px); line-height: 1; }
+.atendente-hero p  { max-width: 680px; color: rgba(255,255,255,.88); font-size: 16px; line-height: 1.5; }
+
+.hero-clock {
+  min-width: 166px; padding: 16px;
+  border: 1px solid rgba(255,255,255,.24); border-radius: 8px;
+  background: rgba(255,255,255,.13); text-align: right;
+}
+.hero-clock strong, .hero-clock span { display: block; }
+.hero-clock strong { font-size: 32px; line-height: 1; }
+.hero-clock span   { margin-top: 7px; color: rgba(255,255,255,.78); font-size: 13px; font-weight: 700; }
+
+/* ── STATS (mesmo padrão da cozinha) ────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px; margin: 18px 0;
+}
+
+.stat-card {
+  min-height: 124px; padding: 18px;
+  border: 1px solid var(--color-border); border-radius: 8px;
+  background: var(--color-panel);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+  border-top: 4px solid var(--color-secondary);
+}
+.stat-card span, .stat-card small { display: block; }
+.stat-card span  { color: var(--color-muted); font-size: 12px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.stat-card strong { display: block; margin: 8px 0 7px; font-size: 34px; line-height: 1; }
+.stat-card small { color: var(--color-muted); font-size: 13px; font-weight: 600; }
+
+.stat-recebido { border-top-color: var(--color-secondary); }
+.stat-preparo  { border-top-color: var(--color-warning); }
+.stat-pronto   { border-top-color: var(--color-success); }
+.stat-mesas    { border-top-color: var(--color-primary); }
+.stat-tempo    { border-top-color: var(--color-tertiary); }
+
+/* ── NEXT ORDER STRIP ───────────────────────────────────────────── */
+.next-order-strip {
+  min-height: 76px;
+  display: grid; grid-template-columns: minmax(0,1fr) auto;
+  align-items: center; gap: 14px;
+  margin-bottom: 18px; padding: 16px;
+  border: 1px solid var(--color-border);
+  border-left: 5px solid var(--color-primary);
+  border-radius: 8px; background: #fff;
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+.next-order-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.next-order-main > span:first-child {
+  color: var(--color-muted); font-size: 12px; font-weight: 900;
+  letter-spacing: .05em; text-transform: uppercase;
+}
+.next-order-main strong { font-size: 17px; font-weight: 800; }
+.next-time { color: var(--color-muted); font-size: 13px; }
+.badge-pronto { background: #dcfce7; color: #166534; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 99px; }
+.badge-aguard { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 99px; }
+
+/* ── KITCHEN BOARD (idêntico ao cozinha) ────────────────────────── */
+.kitchen-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 16px; align-items: start;
+}
+
+.kitchen-column {
+  min-height: 360px; padding: 16px;
+  border: 1px solid var(--color-border); border-radius: 8px;
+  background: var(--color-panel);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+
+.column-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.column-header span  { font-size: 15px; font-weight: 900; }
+.column-header strong {
+  min-width: 32px; height: 32px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--color-bg); font-size: 14px; font-weight: 900;
+}
+.column-recebido .column-header strong { background: #dbeafe; color: #1e40af; }
+.column-preparo  .column-header strong { background: #fef3c7; color: #92400e; }
+.column-pronto   .column-header strong { background: #dcfce7; color: #166534; }
+
+.column-list { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── CARDS ──────────────────────────────────────────────────────── */
+.kitchen-card {
+  padding: 14px; border: 1px solid var(--color-border); border-radius: 8px;
+  background: var(--color-panel); transition: box-shadow .2s;
+}
+.kitchen-card.is-pronto {
+  border-left: 3px solid var(--color-success); background: #f0fdf4;
+}
+.kitchen-card.sla-late  {
+  border-left: 3px solid var(--color-danger); background: #fef2f2;
+}
+.kitchen-card:hover { box-shadow: 0 4px 14px rgba(15,23,42,.08); }
+
+.card-topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.card-topline strong { font-size: 14px; font-weight: 800; }
+
+.time-chip {
+  padding: 3px 9px; border-radius: 99px;
+  background: var(--color-bg); color: var(--color-muted);
+  font-size: 11px; font-weight: 800;
+}
+.time-chip.sla-late { background: #fee2e2; color: var(--color-danger); }
+
+.card-items-text { font-size: 12px; color: var(--color-muted); margin-bottom: 5px; line-height: 1.4; }
+.card-obs {
+  font-size: 12px; font-weight: 600; color: #92400e;
+  background: #fffbeb; border: 1px solid #fde68a;
+  border-radius: 6px; padding: 5px 8px; margin-bottom: 8px;
+}
+.card-time { font-size: 11px; color: var(--color-muted); }
+
+/* Botão de despacho - usa a cor primária da marca */
+.btn-despachar {
+  width: 100%; margin-top: 10px; min-height: 38px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--color-primary), #e04e10);
+  color: #fff; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: 800;
+  transition: opacity .15s, transform .15s;
+}
+.btn-despachar:hover { opacity: .9; transform: translateY(-1px); }
+
+/* ── MESAS SECTION ──────────────────────────────────────────────── */
+.mesas-section { margin-top: 24px; }
+.mesas-header  {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.mesas-header h2  { font-size: 16px; font-weight: 900; }
+.mesas-header span { color: var(--color-muted); font-size: 13px; }
+
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.mesa-card {
+  padding: 14px; border-radius: 8px;
+  border: 1px solid var(--color-border); background: var(--color-panel);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 1px 3px rgba(15,23,42,.04);
+}
+.mesa-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15,23,42,.09); }
+.mesa-card.has-pronto      { border-color: var(--color-success); background: #f0fdf4; }
+.mesa-card.status-livre    { border-style: dashed; background: #fafafa; color: var(--color-muted); }
+.mesa-card.status-manutencao { border-style: dashed; background: #fef2f2; color: #dc2626; }
+
+/* Formas de pagamento no modal */
+.pgto-opcoes { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin: 12px 0; }
+.pgto-btn-modal {
+  padding: 10px 8px; border: 2px solid var(--color-border); border-radius: 8px;
+  background: var(--color-panel); font-size: 13px; font-weight: 700;
+  text-align: center; cursor: pointer; transition: all .15s;
+}
+.pgto-btn-modal.is-selected { border-color: var(--color-primary); background: #fff5f0; color: var(--color-primary); }
+.pgto-btn-modal:hover { border-color: var(--color-secondary); }
+
+.btn-fechar-comanda {
+  width: 100%; padding: 12px; margin-top: 4px;
+  background: linear-gradient(135deg, var(--color-primary), #e04e10);
+  color: #fff; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 800;
+  transition: opacity .15s, transform .15s;
+}
+.btn-fechar-comanda:hover { opacity: .9; transform: translateY(-1px); }
+.btn-fechar-comanda:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.mesa-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.mesa-num  { font-size: 15px; font-weight: 900; }
+.pronto-badge {
+  font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em;
+  background: var(--color-success); color: #fff; padding: 2px 7px; border-radius: 99px;
+}
+.mesa-status-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--color-muted); }
+.mesa-total   { font-size: 13px; font-weight: 700; margin-top: 6px; color: var(--color-text); }
+.mesa-pedidos { font-size: 11px; color: var(--color-muted); }
+
+/* ── MODAL MESA ─────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-box {
+  background: var(--color-panel); border-radius: 12px;
+  width: min(100%, 460px); max-height: 85vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(15,23,42,.22); overflow: hidden;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--color-border);
+}
+.modal-header h3  { font-size: 16px; font-weight: 900; }
+.modal-close { border: none; background: transparent; font-size: 18px; color: var(--color-muted); padding: 4px 8px; border-radius: 6px; }
+.modal-close:hover { background: var(--color-bg); }
+#mesaModalContent { overflow-y: auto; padding: 16px 20px 20px; flex: 1; }
+
+/* ── EMPTY ──────────────────────────────────────────────────────── */
+.empty-state {
+  padding: 22px; text-align: center;
+  color: var(--color-muted); font-size: 13px;
+  border: 1.5px dashed var(--color-border); border-radius: 8px;
+}
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
+.toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.18); animation: slideUp .25s ease; }
+.toast.success { background: var(--color-success); }
+.toast.error   { background: var(--color-danger); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .kitchen-board { grid-template-columns: 1fr 1fr; }
+  .column-pronto { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .kitchen-board { grid-template-columns: 1fr; }
+  .atendente-hero { padding: 20px 16px; }
+  .atendente-hero h1 { font-size: 28px; }
+  .atendente-main { width: calc(100% - 28px); }
+}

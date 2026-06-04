@@ -38,6 +38,14 @@ const fallbackDemoAdmins = {
     password: 'cozinha123',
     role: 'Pedidos e preparo',
     userKey: 'cozinha'
+  },
+  caixa: {
+    name: 'Caixa',
+    initials: 'CX',
+    cpf: '333.333.333-33',
+    password: 'caixa123',
+    role: 'PDV e vendas',
+    userKey: 'caixa'
   }
 };
 
@@ -73,7 +81,8 @@ function startSession(admin, remember, auth = {}) {
   };
 
   sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-  window.location.href = admin.userKey === 'cozinha' ? 'cozinha.html' : 'adm.html';
+  const redirectMap = { cozinha: 'cozinha.html', atendente: 'atendente.html', caixa: 'pdv.html' };
+  window.location.href = redirectMap[admin.userKey] || 'adm.html';
 }
 
 function findAdmin(cpf, password) {
@@ -223,7 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (existingSession) {
     try {
       const session = JSON.parse(existingSession);
-      window.location.replace(session?.userKey === 'cozinha' ? 'cozinha.html' : 'adm.html');
+      const redirectMap = { cozinha: 'cozinha.html', atendente: 'atendente.html', caixa: 'pdv.html' };
+      window.location.replace(redirectMap[session?.userKey] || 'adm.html');
     } catch (_) {
       window.location.replace('adm.html');
     }

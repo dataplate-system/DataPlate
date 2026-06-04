@@ -32,6 +32,15 @@
       role: 'Pedidos e preparo',
       userKey: 'cozinha',
       recoveryContact: 'SMS final 2222'
+    },
+    caixa: {
+      name: 'Caixa',
+      initials: 'CX',
+      cpf: '333.333.333-33',
+      password: 'caixa123',
+      role: 'PDV e vendas',
+      userKey: 'caixa',
+      recoveryContact: 'SMS final 3333'
     }
   };
 

@@ -1,4 +1,4 @@
-const API_BASE_URL = window.DATAPLATE_API_BASE_URL
+﻿const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   || localStorage.getItem('DATAPLATE_API_BASE_URL')
   || (() => {
     const h = window.location.hostname;
@@ -43,8 +43,8 @@ const STATUS_META = {
     listId: 'listPronto',
     countId: 'countPronto',
     statId: 'statPronto',
-    nextStatus: 'ENTREGUE',
-    actionLabel: 'Entregar',
+    nextStatus: null,
+    actionLabel: null,
     actionClass: 'deliver'
   }
 };
@@ -193,7 +193,7 @@ async function putJson(endpoint, payload) {
   });
   if (!response.ok) {
     const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Nao foi possivel atualizar o pedido.'));
+    throw new Error(extractErrorMessage(body, 'Não foi possível atualizar o pedido.'));
   }
   return readResponseBody(response);
 }
@@ -301,7 +301,9 @@ function itemText(item) {
 }
 
 function normalizeOrders(orders) {
-  return (Array.isArray(orders) ? orders : [])
+  // API retorna paginado {content:[...]} ou array simples
+  const list = Array.isArray(orders) ? orders : (orders?.content || []);
+  return list
     .map((order) => ({
       ...order,
       status: String(order.status || '').toUpperCase(),
@@ -439,6 +441,7 @@ function buildCard(order) {
           }
           ${hiddenCount ? `<div class="card-item"><strong>+ ${hiddenCount} item(ns)</strong></div>` : ''}
         </div>
+        ${order.observacoes ? `<div class="card-obs">&#x1F4DD; ${escapeHtml(order.observacoes)}</div>` : ''}
         <div class="card-meta">
           ${isUrgent ? '<span class="priority-chip">Urgente</span>' : ''}
           <span class="sla-chip ${sla.level}">${escapeHtml(sla.label)}</span>
@@ -508,9 +511,6 @@ function renderNextOrder(filteredOrders) {
     </div>
     <div class="next-order-actions">
       <button class="secondary-button" type="button" data-order-select="${nextOrder.id}">Detalhes</button>
-      <button class="secondary-button warning-action" type="button" data-toggle-urgent="${nextOrder.id}">
-        ${isUrgent ? 'Remover urgência' : 'Marcar urgente'}
-      </button>
       ${getAction(nextOrder)}
     </div>
   `;
@@ -619,9 +619,6 @@ function renderDetail() {
     </div>
     <div class="detail-actions">
       ${getAction(order)}
-      <button class="action-button warning-action" type="button" data-toggle-urgent="${order.id}">
-        ${isUrgent ? 'Remover urgência' : 'Marcar urgente'}
-      </button>
       <button class="action-button secondary-action" type="button" data-notify-service="${order.id}">Chamar atendimento</button>
       <button class="action-button secondary-action" type="button" data-print-order="${order.id}">Imprimir ficha</button>
     </div>
@@ -664,7 +661,7 @@ async function loadOrders({ silent = false } = {}) {
     fallbackMode = true;
     setConnectionStatus('Demonstração', 'offline');
     if (!fallbackNoticeShown) {
-      showToast('API indisponivel. Exibindo pedidos de demonstracao.', 'warning');
+      showToast('API indisponível. Exibindo pedidos de demonstração.', 'warning');
       fallbackNoticeShown = true;
     }
   }
@@ -694,11 +691,11 @@ async function changeOrderStatus(orderId, nextStatus) {
     if (!fallbackMode) await loadOrders({ silent: true });
   } catch (error) {
     console.error('[cozinha-status]', error);
-    showToast(error.message || 'Nao foi possivel atualizar o pedido.');
+    showToast(error.message || 'Não foi possível atualizar o pedido.');
   }
 }
 
-// ── Som de notificação ──────────────────────────────────────────
+// -- Som de notificação ------------------------------------------
 let _audioCtx = null;
 let _pedidosConhecidos = new Set();
 
@@ -712,20 +709,34 @@ function getAudioCtx() {
 function tocarNotificacaoNovoPedido() {
   try {
     const ctx = getAudioCtx();
-    [[880, 0, 0.15], [1100, 0.18, 0.15], [880, 0.36, 0.2]].forEach(([freq, delay, dur]) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.25, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + dur + 0.05);
-    });
+    const play = () => {
+      [[880, 0, 0.15], [1100, 0.18, 0.15], [880, 0.36, 0.2]].forEach(([freq, delay, dur]) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + dur + 0.05);
+      });
+    };
+    // AudioContext fica suspended ate primeiro clique do usuario (politica do browser)
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(play);
+    } else {
+      play();
+    }
   } catch (_) {}
 }
+
+// Desbloqueia AudioContext no primeiro clique para garantir que o som funcione
+document.addEventListener('click', function unlockAudio() {
+  try { getAudioCtx().resume(); } catch (_) {}
+  document.removeEventListener('click', unlockAudio);
+}, { once: true });
 
 function verificarNovosPedidosAudio(pedidos) {
   const ids = new Set((pedidos || []).filter((p) => p.status === 'RECEBIDO').map((p) => p.id));

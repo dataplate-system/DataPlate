@@ -66,7 +66,16 @@
         </div>
       </nav>
 
-      <div class="header-right"></div>
+      <div class="header-right">
+        <div class="header-session-info">
+          <div class="user-avatar-small" id="headerUserAvatar">GP</div>
+          <span>
+            <strong id="headerUserName">Gerente Principal</strong>
+            <small id="headerUserRole">Administrador</small>
+          </span>
+        </div>
+        <button type="button" class="header-logout-btn" onclick="openModal('logoutModal')">Sair</button>
+      </div>
     </header>
 
     <!-- MAIN CONTENT -->
@@ -185,23 +194,23 @@
           <div class="stats-grid dashboard-stats">
             <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Faturamento de hoje</div>
-              <div class="stat-value">R$ 4.250,00</div>
-              <div class="stat-change positive">15% acima do período anterior</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Dados reais do banco</div>
             </div>
             <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Pedidos ativos</div>
-              <div class="stat-value">18</div>
-              <div class="stat-change">7 em preparo e 3 prontos</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Pedidos em andamento</div>
             </div>
             <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Mesas ocupadas</div>
-              <div class="stat-value">12/20</div>
-              <div class="stat-change positive">8 mesas disponíveis</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Status atual do salão</div>
             </div>
             <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Ticket médio</div>
-              <div class="stat-value">R$ 27,24</div>
-              <div class="stat-change">Sem variação relevante</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Calculado com pedidos pagos</div>
             </div>
           </div>
 
@@ -211,8 +220,8 @@
                 <h3>Vendas por hora — hoje</h3>
                 <span id="dashSalesLabel">Carregando…</span>
               </div>
-              <div style="position:relative;height:180px">
-                <canvas id="salesChart"></canvas>
+              <div class="dashboard-chart-frame">
+                <canvas id="dashboardSalesChart"></canvas>
               </div>
             </section>
 
@@ -221,7 +230,7 @@
                 <h3>Pedidos por status</h3>
                 <span id="dashOrdersLabel">Hoje</span>
               </div>
-              <div style="position:relative;height:180px">
+              <div class="dashboard-chart-frame">
                 <canvas id="ordersChart"></canvas>
               </div>
             </section>
@@ -233,18 +242,18 @@
                 <h3>Top produtos vendidos</h3>
                 <span>Acumulado</span>
               </div>
-              <div style="position:relative;height:180px">
+              <div class="dashboard-chart-frame">
                 <canvas id="topDishesChart"></canvas>
               </div>
             </section>
 
             <section class="report-section dashboard-panel">
               <div class="panel-heading">
-                <h3>Distribuição do cardápio</h3>
-                <span>Por quantidade vendida</span>
+                <h3>Ocupação das mesas</h3>
+                <span>Status do salão</span>
               </div>
-              <div style="position:relative;height:180px">
-                <canvas id="dishesChart"></canvas>
+              <div class="dashboard-chart-frame">
+                <canvas id="tablesOccupancyChart"></canvas>
               </div>
             </section>
           </div>
@@ -285,12 +294,12 @@
                   <thead>
                     <tr>
                       <th>Pedido</th>
-                      <th>Mesa</th>
+                      <th>Origem</th>
                       <th>Total</th>
                       <th>Status</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody id="dashUltimosPedidosTbody">
                     <tr><td colspan="4" style="text-align:center;color:#94a3b8">Carregando…</td></tr>
                   </tbody>
                 </table>
@@ -511,7 +520,7 @@
               <thead>
                 <tr>
                   <th>ID Pedido</th>
-                  <th>Cliente</th>
+                  <th>Origem</th>
                   <th>Data/Hora</th>
                   <th>Itens</th>
                   <th>Total</th>
@@ -527,6 +536,17 @@
 
         <!-- MESAS -->
         <section id="mesas" class="content-section">
+          <div id="mesasProntosBanner" style="display:none;margin-bottom:16px;padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:20px">&#x1F514;</span>
+              <div>
+                <strong style="font-size:14px;color:#15803d" id="mesasProntosTexto">Pedidos prontos para entrega</strong>
+                <div id="mesasProntosLista" style="font-size:13px;color:#166534;margin-top:2px"></div>
+              </div>
+            </div>
+            <button class="btn-small" onclick="carregarPedidosProntos()" style="white-space:nowrap">Atualizar</button>
+          </div>
+
           <div class="section-header">
             <h1>Controle de Mesas</h1>
             <p>Gerencie disponibilidade, reservas, capacidade e localização das mesas</p>
@@ -667,23 +687,23 @@
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-label">Total de Vendas</div>
-              <div class="stat-value">R$ 4.250,00</div>
-              <div class="stat-change positive">↑ 15% vs período anterior</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Dados reais do período</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Quantidade de Pedidos</div>
-              <div class="stat-value">156</div>
-              <div class="stat-change positive">↑ 8 pedidos a mais</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Pedidos registrados</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Ticket Médio</div>
-              <div class="stat-value">R$ 27,24</div>
-              <div class="stat-change">→ Sem variação</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Calculado do banco</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Produto Mais Vendido</div>
-              <div class="stat-value">Hambúrguer</div>
-              <div class="stat-change">42 unidades</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Ranking do período</div>
             </div>
           </div>
 
@@ -709,6 +729,27 @@
                 </thead>
                 <tbody>
                   <tr><td colspan="5" style="text-align:center;color:#94a3b8">Selecione o período e as datas serão carregadas automaticamente</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Vendas efetuadas</h3>
+            <div class="table-container">
+              <table class="data-table" id="relVendasHistoricoTable">
+                <thead>
+                  <tr>
+                    <th>Pedido</th>
+                    <th>Data/Hora</th>
+                    <th>Origem</th>
+                    <th>Itens</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="6" style="text-align:center;color:#94a3b8">Selecione o período para carregar o histórico</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1130,19 +1171,6 @@
       </div>
     </div>
 
-    <footer class="admin-footer-user">
-      <div class="footer-user-main">
-        <div class="user-avatar-small footer-user-avatar">GP</div>
-        <span>Usuário:</span>
-        <strong class="footer-user-name">Gerente Principal</strong>
-        <small class="footer-user-role">Administrador</small>
-      </div>
-      <div class="footer-user-actions">
-        <button type="button" data-open-modal="profileModal">Meu Perfil</button>
-        <button type="button" data-open-modal="switchUserModal">Trocar Usuário</button>
-        <button type="button" class="logout-link" data-open-modal="logoutModal">Sair</button>
-      </div>
-    </footer>
   </div>
 
   <!-- MODALS -->
@@ -1544,6 +1572,16 @@
         </div>
       </div>
    </div>
+  </div>
+
+  <div class="modal" id="orderDetailsModal">
+    <div class="modal-content modal-content-small order-details-modal">
+      <button type="button" class="modal-close" onclick="closeModal('orderDetailsModal')">✕</button>
+      <div class="modal-header">Detalhes do pedido</div>
+      <div id="orderDetailsContent" class="order-details-content">
+        <div class="modal-description">Carregando pedido...</div>
+      </div>
+    </div>
   </div>
 
   <div class="modal" id="addUserModal">

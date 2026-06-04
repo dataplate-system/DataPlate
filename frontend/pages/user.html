@@ -227,7 +227,7 @@
 <div id="telaStatus" style="display:none; padding:20px;">
 
   <h1 style="text-align:center;">Status do Pedido</h1>
-  <p style="text-align:center;">Pedido #12345</p>
+  <p id="pedidoNumero" style="text-align:center;">Pedido #—</p>
 
   <div class="card-status">
     <div class="icone">✔</div>
@@ -273,10 +273,13 @@
   </header>
    <div id="listaCarrinho"></div>
 
-   
-
    <div id="total"></div>
-   
+
+   <div style="width:97%;max-width:450px;margin:12px auto 0">
+     <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Observações para a cozinha</label>
+     <textarea id="observacaoPedido" rows="2" placeholder="Ex: sem cebola, ponto bem passado, alergia a glúten..."
+       style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;resize:none;font-family:inherit;background:#f9fafb;box-sizing:border-box"></textarea>
+   </div>
 
    <button class="btn" onclick="confirmarPedido()">Confirmar pedido</button>
 

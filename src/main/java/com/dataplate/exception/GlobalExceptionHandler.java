@@ -2,6 +2,8 @@ package com.dataplate.exception;
 
 import com.dataplate.dto.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,8 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> notFound(ResourceNotFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request, null);
@@ -48,11 +52,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest request) {
+        String detail = ex.getMostSpecificCause() == null ? ex.getMessage() : ex.getMostSpecificCause().getMessage();
+        log.warn("Falha de integridade na requisicao. path={}, erro={}", request.getRequestURI(), detail);
+        if (detail != null && detail.contains("id_mesa") && detail.contains("pedido")) {
+            return build(HttpStatus.BAD_REQUEST, "Nao foi possivel finalizar a venda. Chame um administrador.", request, null);
+        }
         return build(HttpStatus.BAD_REQUEST, "Registro ja cadastrado ou dados invalidos.", request, null);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> generic(Exception ex, HttpServletRequest request) {
+        log.error("Erro interno na requisicao. path={}", request.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor", request, null);
     }
 

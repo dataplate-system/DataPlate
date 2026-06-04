@@ -9,12 +9,16 @@ import com.dataplate.entity.PedidoStatus;
 import com.dataplate.entity.PedidoStatusHistorico;
 import com.dataplate.entity.Produto;
 import com.dataplate.entity.Mesa;
+import com.dataplate.exception.BusinessException;
 import com.dataplate.exception.ResourceNotFoundException;
 import com.dataplate.repository.MesaRepository;
 import com.dataplate.repository.PedidoRepository;
 import com.dataplate.repository.PedidoStatusHistoricoRepository;
 import com.dataplate.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +31,9 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class PedidoService {
+    private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
     private static final int STATUS_RECEBIDO_ID = 1;
+    private static final int STATUS_ENTREGUE_ID = 4;
     private static final int STATUS_CANCELADO_ID = 5;
 
     private final PedidoRepository pedidoRepository;
@@ -39,12 +45,25 @@ public class PedidoService {
     @Transactional
     public PedidoResponse criar(PedidoCreateRequest request) {
         LocalDateTime now = LocalDateTime.now();
-        Mesa mesa = resolverMesa(request);
+        boolean vendaCaixa = Boolean.TRUE.equals(request.vendaCaixa());
+        log.info(
+                "Recebida solicitacao para criar pedido. venda_caixa={}, numero_mesa={}, mesa_id={}, forma_pagamento='{}', desconto={}, qtd_itens={}",
+                vendaCaixa,
+                request.numeroMesa(),
+                request.mesaId(),
+                request.formaPagamento(),
+                request.desconto(),
+                request.itens() == null ? 0 : request.itens().size()
+        );
+
+        validarCriacao(request, vendaCaixa);
+        Mesa mesa = resolverMesa(request, vendaCaixa);
         Pedido pedido = Pedido.builder()
-                .idMesa(mesa.getId().intValue())
-                .idStatus(STATUS_RECEBIDO_ID)
+                .idMesa(mesa == null ? null : mesa.getId().intValue())
+                .idStatus(vendaCaixa ? STATUS_ENTREGUE_ID : STATUS_RECEBIDO_ID)
                 .numeroPedido(gerarNumeroPedido())
                 .dataHora(now)
+                .observacoes(observacoesPedido(request, vendaCaixa))
                 .atualizadoEm(now)
                 .valorTotal(BigDecimal.ZERO)
                 .build();
@@ -58,13 +77,30 @@ public class PedidoService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         pedido.getItens().addAll(itens);
-        pedido.setValorTotal(total);
+        pedido.setValorTotal(totalPedido(total, request, vendaCaixa));
 
-        Pedido salvo = pedidoRepository.save(pedido);
-        registrarHistorico(salvo.getId(), PedidoStatus.RECEBIDO);
+        Pedido salvo;
+        try {
+            salvo = pedidoRepository.save(pedido);
+        } catch (DataIntegrityViolationException ex) {
+            log.error(
+                    "Falha de integridade ao persistir pedido. venda_caixa={}, id_mesa_resolvido={}, numero_mesa={}, mesa_id={}, valor_total={}, erro={}",
+                    vendaCaixa,
+                    pedido.getIdMesa(),
+                    request.numeroMesa(),
+                    request.mesaId(),
+                    pedido.getValorTotal(),
+                    ex.getMostSpecificCause().getMessage(),
+                    ex
+            );
+            throw ex;
+        }
+        registrarHistorico(salvo.getId(), vendaCaixa ? PedidoStatus.ENTREGUE : PedidoStatus.RECEBIDO);
 
         PedidoResponse response = toResponse(salvo);
-        publicarEvento("NOVO_PEDIDO", response);
+        publicarEvento(vendaCaixa ? "VENDA_CAIXA" : "NOVO_PEDIDO", response);
+        log.info("Pedido criado com sucesso. id_pedido={}, venda_caixa={}, id_mesa={}, valor_total={}",
+                salvo.getId(), vendaCaixa, salvo.getIdMesa(), salvo.getValorTotal());
         return response;
     }
 
@@ -158,9 +194,11 @@ public class PedidoService {
         return new PedidoResponse(
                 pedido.getId(),
                 numeroMesa(pedido.getIdMesa()),
+                pedido.getIdMesa() == null ? "CAIXA" : "MESA",
                 toStatus(pedido.getIdStatus()),
                 pedido.getDataHora(),
                 pedido.getValorTotal(),
+                pedido.getObservacoes(),
                 itens
         );
     }
@@ -186,14 +224,56 @@ public class PedidoService {
         };
     }
 
-    private Mesa resolverMesa(PedidoCreateRequest request) {
+    private void validarCriacao(PedidoCreateRequest request, boolean vendaCaixa) {
+        if (vendaCaixa) {
+            if (request.formaPagamento() == null || request.formaPagamento().isBlank()) {
+                throw new BusinessException("Forma de pagamento obrigatoria para venda no caixa.");
+            }
+            return;
+        }
+
+        if (request.mesaId() == null && request.numeroMesa() == null) {
+            log.warn("Criacao de pedido abortada. Motivo=Mesa nao informada para pedido de salao.");
+            throw new BusinessException("Mesa obrigatoria para pedidos de salao.");
+        }
+    }
+
+    private Mesa resolverMesa(PedidoCreateRequest request, boolean vendaCaixa) {
+        if (vendaCaixa) {
+            return null;
+        }
+
         if (request.mesaId() != null) {
             return mesaRepository.findById(request.mesaId())
                     .orElseThrow(() -> new ResourceNotFoundException("Mesa nao encontrada: " + request.mesaId()));
         }
 
+        if (request.numeroMesa() == null) {
+            throw new ResourceNotFoundException("Mesa nao informada");
+        }
+
         return mesaRepository.findByNumeroAndAtivoTrue(request.numeroMesa())
                 .orElseThrow(() -> new ResourceNotFoundException("Mesa nao encontrada: " + request.numeroMesa()));
+    }
+
+    private String observacoesPedido(PedidoCreateRequest request, boolean vendaCaixa) {
+        String obs = request.observacoes() == null ? "" : request.observacoes().trim();
+        if (!vendaCaixa) {
+            return obs.isBlank() ? null : obs;
+        }
+
+        String formaPagamento = request.formaPagamento() == null ? "NAO_INFORMADO" : request.formaPagamento().trim();
+        String prefixo = "Venda no caixa - pagamento: " + formaPagamento;
+        return obs.isBlank() ? prefixo : prefixo + " - " + obs;
+    }
+
+    private BigDecimal totalPedido(BigDecimal totalItens, PedidoCreateRequest request, boolean vendaCaixa) {
+        if (!vendaCaixa || request.desconto() == null || request.desconto().compareTo(BigDecimal.ZERO) <= 0) {
+            return totalItens;
+        }
+
+        BigDecimal desconto = request.desconto().min(totalItens);
+        return totalItens.subtract(desconto);
     }
 
     private BigDecimal subtotalDoItem(PedidoItem item) {

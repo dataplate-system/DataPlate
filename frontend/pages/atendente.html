@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Painel do Atendente</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/atendente.css" />
+</head>
+<body>
+  <div class="atendente-shell">
+
+    <header class="atendente-header">
+      <button class="brand-button" type="button" id="reloadPanel">
+        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
+        <span>
+          <strong>DataPlate</strong>
+          <small>Painel do Atendente</small>
+        </span>
+      </button>
+
+      <div class="header-actions">
+        <span class="connection-pill" id="connectionStatus">Conectando</span>
+        <div class="session-summary">
+          <span class="user-avatar" id="sessionInitials">AT</span>
+          <span>
+            <strong id="sessionName">Atendente</strong>
+            <small id="sessionRole">Operacional</small>
+          </span>
+        </div>
+        <button class="header-button" type="button" id="refreshButton">Atualizar</button>
+        <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
+      </div>
+    </header>
+
+    <main class="atendente-main">
+
+      <!-- HERO -->
+      <section class="atendente-hero">
+        <div>
+          <span class="hero-eyebrow">Serviço do salão</span>
+          <h1>Acompanhamento e despacho</h1>
+          <p>Visão em tempo real da cozinha, status das mesas e despacho de pedidos prontos.</p>
+        </div>
+        <div class="hero-clock">
+          <strong id="currentTime">--:--</strong>
+          <span id="currentDate">--</span>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats-grid">
+        <article class="stat-card stat-recebido">
+          <span>Aguardando cozinha</span>
+          <strong id="statRecebido">0</strong>
+          <small>Recebidos</small>
+        </article>
+        <article class="stat-card stat-preparo">
+          <span>Em preparo</span>
+          <strong id="statPreparo">0</strong>
+          <small>Produção ativa</small>
+        </article>
+        <article class="stat-card stat-pronto">
+          <span>Prontos p/ despacho</span>
+          <strong id="statPronto">0</strong>
+          <small>Aguardando garçom</small>
+        </article>
+        <article class="stat-card stat-mesas">
+          <span>Mesas ocupadas</span>
+          <strong id="statMesas">0</strong>
+          <small>Com pedidos ativos</small>
+        </article>
+        <article class="stat-card stat-tempo">
+          <span>Tempo médio</span>
+          <strong id="statTempo">--</strong>
+          <small>Pedidos ativos</small>
+        </article>
+      </section>
+
+      <!-- PRIORIDADE DA VEZ -->
+      <section class="next-order-strip" id="nextOrderStrip" aria-live="polite"></section>
+
+      <!-- BOARD: VISÃO DA COZINHA -->
+      <section class="kitchen-board">
+
+        <article class="kitchen-column column-recebido">
+          <div class="column-header">
+            <span>Aguardando preparo</span>
+            <strong id="countRecebido">0</strong>
+          </div>
+          <div class="column-list" id="listRecebido"></div>
+        </article>
+
+        <article class="kitchen-column column-preparo">
+          <div class="column-header">
+            <span>Em preparação</span>
+            <strong id="countPreparo">0</strong>
+          </div>
+          <div class="column-list" id="listPreparo"></div>
+        </article>
+
+        <article class="kitchen-column column-pronto">
+          <div class="column-header">
+            <span>Pronto — aguardando despacho</span>
+            <strong id="countPronto">0</strong>
+          </div>
+          <div class="column-list" id="listPronto"></div>
+        </article>
+
+      </section>
+
+      <!-- MESAS -->
+      <section class="mesas-section">
+        <div class="mesas-header">
+          <h2>Mesas do salão</h2>
+          <span id="mesasResumo">Carregando...</span>
+        </div>
+        <div class="mesas-grid" id="mesasGrid"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- MODAL: CONSUMO DA MESA -->
+  <div class="modal-overlay" id="mesaModal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="mesaModalTitle">Mesa —</h3>
+        <button class="modal-close" onclick="fecharMesaModal()">&#x2715;</button>
+      </div>
+      <div id="mesaModalContent"></div>
+    </div>
+  </div>
+
+  <script src="../JavaScript/atendente.js" defer></script>
+</body>
+</html>

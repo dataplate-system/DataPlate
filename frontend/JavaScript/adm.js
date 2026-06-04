@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ADMIN PANEL - Navigation and Modal Management
  */
 
@@ -34,11 +34,27 @@ const ADMIN_PANEL_USERS = {
     initials: 'CZ',
     cpf: '222.222.222-22',
     role: 'Pedidos e preparo'
+  },
+  caixa: {
+    name: 'Caixa',
+    initials: 'CX',
+    cpf: '333.333.333-33',
+    role: 'PDV e vendas'
   }
 };
 
-if (isAdminPanelPage && !sessionStorage.getItem(ADMIN_SESSION_KEY)) {
-  window.location.replace('adm-login.html');
+if (isAdminPanelPage) {
+  const _rawSession = sessionStorage.getItem(ADMIN_SESSION_KEY);
+  if (!_rawSession) {
+    window.location.replace('adm-login.html');
+  } else {
+    try {
+      const _s = JSON.parse(_rawSession);
+      if (_s?.userKey === 'atendente') window.location.replace('atendente.html');
+      if (_s?.userKey === 'cozinha')   window.location.replace('cozinha.html');
+      if (_s?.userKey === 'caixa')     window.location.replace('pdv.html');
+    } catch (_) {}
+  }
 }
 
 const WS_BASE_URL = (() => {
@@ -96,7 +112,7 @@ function showSuccessModal(title, message, duration = 4000) {
 
   overlay.innerHTML = `
     <div class="success-box">
-      <button class="success-close-btn" aria-label="Fechar">✕</button>
+      <button class="success-close-btn" aria-label="Fechar">&#x2715;</button>
       <div class="success-icon-wrap">
         <svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 7"/></svg>
       </div>
@@ -131,7 +147,7 @@ function showConfirmModal(title, message) {
 
     overlay.innerHTML = `
       <div class="confirm-box">
-        <button class="confirm-close-btn" aria-label="Fechar">✕</button>
+        <button class="confirm-close-btn" aria-label="Fechar">&#x2715;</button>
         <div class="confirm-icon-wrap">
           <svg viewBox="0 0 24 24">
             <polyline points="3 6 5 6 21 6"/>
@@ -224,8 +240,9 @@ function applyAdminSession() {
     ...(ADMIN_PANEL_USERS[userKey] || {}),
     userKey
   };
-  const headerName = document.querySelector('.user-button span');
-  const headerAvatar = document.querySelector('.user-button .user-avatar-small');
+  const headerName = document.getElementById('headerUserName');
+  const headerAvatar = document.getElementById('headerUserAvatar');
+  const headerRole = document.getElementById('headerUserRole');
   const footerName = document.querySelector('.footer-user-name');
   const footerRole = document.querySelector('.footer-user-role');
   const footerAvatar = document.querySelector('.footer-user-avatar');
@@ -235,10 +252,10 @@ function applyAdminSession() {
   const profileSummaryName = document.querySelector('#profileModal .profile-summary strong');
   const profileSummaryCpf = document.querySelector('#profileModal .profile-summary span');
   const profileAvatar = document.querySelector('#profileModal .user-avatar-large');
-  const switchUserOption = document.querySelector(`#switchUserForm input[name="user"][value="${userKey}"]`);
 
   if (headerName) headerName.textContent = normalizedSession.name || 'Gerente Principal';
   if (headerAvatar) headerAvatar.textContent = normalizedSession.initials || 'AD';
+  if (headerRole) headerRole.textContent = normalizedSession.role || 'Administrador';
   if (footerName) footerName.textContent = normalizedSession.name || 'Gerente Principal';
   if (footerRole) footerRole.textContent = normalizedSession.role || 'Administrador';
   if (footerAvatar) footerAvatar.textContent = normalizedSession.initials || 'AD';
@@ -248,7 +265,6 @@ function applyAdminSession() {
   if (profileSummaryName) profileSummaryName.textContent = normalizedSession.name || 'Administrador';
   if (profileSummaryCpf) profileSummaryCpf.textContent = normalizedSession.cpf || '';
   if (profileAvatar) profileAvatar.textContent = normalizedSession.initials || 'AD';
-  if (switchUserOption) switchUserOption.checked = true;
   if (isLegacyCashier || session.userKey !== userKey) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(normalizedSession));
   }
@@ -383,7 +399,7 @@ function navigateTo(sectionId) {
     fornecedores:   carregarFornecedores,
     cardapio:       carregarProdutos,
     pedidos:        carregarPedidos,
-    mesas:          carregarMesas,
+    mesas:          () => { carregarMesas(); carregarPedidosProntos(); },
     cozinha:        carregarCozinha,
     'rel-vendas':      () => { preencherDatasRelatorio('rel-vendas', 30);    const r = getRelDateRange('rel-vendas');      carregarRelVendas(r.inicio, r.fim); },
     'rel-financeiro':  () => { preencherDatasRelatorio('rel-financeiro', 30); const r = getRelDateRange('rel-financeiro');  carregarRelFinanceiro(r.inicio, r.fim); },
@@ -581,7 +597,7 @@ function formatCep(value) {
   return onlyDigits(value).slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
 }
 
-// Máscara de moeda BRL (estilo ATM): digitar "800000" → "R$ 8.000,00"
+// Máscara de moeda BRL (estilo ATM): digitar "800000" -> "R$ 8.000,00"
 function formatCurrencyInput(value) {
   const digits = onlyDigits(value).slice(0, 13);
   if (!digits) return '';
@@ -592,14 +608,14 @@ function formatCurrencyInput(value) {
   return `R$ ${withDots},${decPart}`;
 }
 
-// Converte "R$ 8.000,00" → 8000.00 (float para enviar à API)
+// Converte "R$ 8.000,00" -> 8000.00 (float para enviar Ã  API)
 function parseCurrencyValue(value) {
   const digits = onlyDigits(value);
   if (!digits) return null;
   return Number(digits) / 100;
 }
 
-// Converte float da API → string de dígitos para formatCurrencyInput
+// Converte float da API -> string de dígitos para formatCurrencyInput
 function floatToInputDigits(value) {
   const num = Number(value) || 0;
   return String(Math.round(num * 100));
@@ -1006,7 +1022,7 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   const documento = fd.get('cpf') || fd.get('cnpj');
   const endereco = [
     fd.get('address'),
-    fd.get('num') && `Nº ${fd.get('num')}`,
+    fd.get('num') && `NÂº ${fd.get('num')}`,
     fd.get('complemento'),
     fd.get('bairro') && `Bairro ${fd.get('bairro')}`,
     [fd.get('cidade'), fd.get('uf')].filter(Boolean).join(' - '),
@@ -1025,7 +1041,7 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
       showSuccessModal(
         id ? 'Cliente atualizado!' : 'Cliente cadastrado!',
         id ? `Os dados de <strong>${cliente.nome}</strong> foram salvos com sucesso.`
-           : `<strong>${cliente.nome}</strong> foi adicionado à lista de clientes.`
+           : `<strong>${cliente.nome}</strong> foi adicionado Ã  lista de clientes.`
       );
     })
     .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao salvar cliente.'));
@@ -1048,7 +1064,7 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
       showSuccessModal(
         id ? 'Funcionário atualizado!' : 'Funcionário cadastrado!',
         id ? `Os dados de <strong>${func.nome}</strong> foram salvos com sucesso.`
-           : `<strong>${func.nome}</strong> foi adicionado à equipe.`
+           : `<strong>${func.nome}</strong> foi adicionado Ã  equipe.`
       );
     })
     .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao salvar funcionário.'));
@@ -1072,7 +1088,7 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
       showSuccessModal(
         id ? 'Fornecedor atualizado!' : 'Fornecedor cadastrado!',
         id ? `Os dados de <strong>${forn.razaoSocial}</strong> foram salvos com sucesso.`
-           : `<strong>${forn.razaoSocial}</strong> foi adicionado à lista de fornecedores.`
+           : `<strong>${forn.razaoSocial}</strong> foi adicionado Ã  lista de fornecedores.`
       );
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
@@ -1301,7 +1317,7 @@ function defaultTables() {
     { id: 5, number: 5, seats: 8, area: 'Espaço família', reference: 'Canto reservado', status: 'reservada', reservationName: 'Rafael Souza', reservationPhone: '(11) 97777-1444', reservationDate: dateFromToday(1, '19:30'), notes: 'Cadeira infantil' },
     { id: 6, number: 6, seats: 2, area: 'Bar', reference: 'Balcão lateral', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: '' },
     { id: 7, number: 7, seats: 4, area: 'Mezanino', reference: 'Escada esquerda', status: 'manutencao', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Aguardando reparo no apoio' },
-    { id: 8, number: 8, seats: 4, area: 'Área externa', reference: 'Guarda-sol 2', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pet friendly' },
+    { id: 8, number: 8, seats: 4, area: 'Ãrea externa', reference: 'Guarda-sol 2', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pet friendly' },
     { id: 9, number: 9, seats: 6, area: 'Mezanino', reference: 'Parede de quadros', status: 'ocupada', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Conta aberta' },
     { id: 10, number: 10, seats: 10, area: 'Espaço família', reference: 'Mesa grande', status: 'reservada', reservationName: 'Fernanda Lima', reservationPhone: '(11) 96666-8800', reservationDate: dateFromToday(2, '21:00'), notes: 'Grupo corporativo' }
   ];
@@ -1501,8 +1517,97 @@ function renderTableDetail(table) {
         <button type="button" class="btn-secondary" onclick="openTableModal(${table.id})">Editar</button>
         <button type="button" class="btn-primary" onclick="reserveTable(${table.id})">Reservar</button>
       </div>
+      <div id="mesaConsumoPanel" style="margin-top:16px;border-top:1px solid var(--color-border);padding-top:14px">
+        <div style="color:#94a3b8;font-size:13px">Carregando consumo...</div>
+      </div>
+      <div style="margin-top:12px">
+        <a href="pdv.html?modo=mesa&mesa=${escapeHtml(table.number)}" class="btn-primary" style="display:block;text-align:center;text-decoration:none;padding:10px;border-radius:6px;font-size:13px;font-weight:700">
+          + Novo Pedido nesta Mesa (PDV)
+        </a>
+      </div>
     </div>
   `;
+
+  carregarConsumoMesa(table.number);
+}
+
+async function carregarPedidosProntos() {
+  const banner = document.getElementById('mesasProntosBanner');
+  const texto = document.getElementById('mesasProntosTexto');
+  const lista = document.getElementById('mesasProntosLista');
+  if (!banner) return;
+  try {
+    const data = await getJson('/pedidos?page=0&size=100');
+    const todos = Array.isArray(data) ? data : (data.content || []);
+    const prontos = todos.filter(p => p.status === 'PRONTO');
+    if (!prontos.length) {
+      banner.style.display = 'none';
+      return;
+    }
+    banner.style.display = 'flex';
+    texto.textContent = `${prontos.length} pedido(s) pronto(s) para entrega`;
+    lista.innerHTML = prontos.map(p =>
+      `<span style="margin-right:12px">
+        <strong>#${p.id}</strong> - ${pedidoOrigemLabel(p)}
+        <button class="btn-small" style="margin-left:6px;background:#16a34a;color:#fff;border:none" onclick="alterarStatusPedido(${p.id},'ENTREGUE');carregarPedidosProntos()">
+          Entregar
+        </button>
+      </span>`
+    ).join('');
+  } catch (_) {
+    banner.style.display = 'none';
+  }
+}
+
+window.carregarPedidosProntos = carregarPedidosProntos;
+
+async function carregarConsumoMesa(numeroMesa) {
+  const panel = document.getElementById('mesaConsumoPanel');
+  if (!panel) return;
+  try {
+    const pedidos = await getJson(`/pedidos/mesa/${numeroMesa}`);
+    const ativos = (pedidos || []).filter(p => !['CANCELADO', 'ENTREGUE'].includes(p.status));
+    const historico = (pedidos || []).filter(p => ['ENTREGUE'].includes(p.status));
+
+    if (!ativos.length && !historico.length) {
+      panel.innerHTML = '<div style="color:#94a3b8;font-size:13px">Nenhum pedido nesta mesa.</div>';
+      return;
+    }
+
+    const totalAtivo = ativos.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+    const totalGasto = (pedidos || []).filter(p => p.status !== 'CANCELADO')
+      .reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+
+    const renderItens = (pedido) => (pedido.itens || [])
+      .map(i => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">
+        <span>${escapeHtml(i.nomeProduto)} x${i.quantidade}</span>
+        <span>${formatCurrency(i.subtotal ?? i.precoUnitario * i.quantidade)}</span>
+      </div>`).join('');
+
+    const renderPedido = (p) => `
+      <div style="margin-bottom:10px;padding:10px;background:#f8fafc;border-radius:8px;border-left:3px solid ${
+        p.status === 'PRONTO' ? '#10b981' : p.status === 'EM_PREPARO' ? '#f59e0b' : '#2563eb'
+      }">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:6px">
+          <span>#${p.id} - ${pedidoStatusBadge(p.status)}</span>
+          <strong>${formatCurrency(p.valorTotal)}</strong>
+        </div>
+        ${renderItens(p)}
+        ${p.status === 'PRONTO' ? `<button class="btn-small" style="margin-top:8px;width:100%" onclick="alterarStatusPedido(${p.id},'ENTREGUE');carregarConsumoMesa(${numeroMesa})">Confirmar Entrega</button>` : ''}
+      </div>`;
+
+    panel.innerHTML = `
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between">
+        <span>Consumo da Mesa ${escapeHtml(numeroMesa)}</span>
+        <span style="color:var(--color-primary)">${formatCurrency(totalAtivo)} em aberto</span>
+      </div>
+      ${ativos.length ? ativos.map(renderPedido).join('') : '<div style="color:#94a3b8;font-size:12px;margin-bottom:8px">Nenhum pedido ativo.</div>'}
+      ${historico.length ? `<div style="font-size:12px;color:#64748b;margin-top:8px">Total consumido (entregue): <strong>${formatCurrency(totalGasto)}</strong></div>` : ''}
+    `;
+  } catch (_) {
+    const panel2 = document.getElementById('mesaConsumoPanel');
+    if (panel2) panel2.innerHTML = '<div style="color:#94a3b8;font-size:13px">Erro ao carregar consumo.</div>';
+  }
 }
 
 function renderTables() {
@@ -1806,11 +1911,32 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
 // KITCHEN BOARD STATUS UPDATES
 // =============================================
 
+// TODO backend: adicionar campo "urgente BOOLEAN DEFAULT FALSE" na tabela pedido
+// e endpoint PUT /pedidos/{id}/urgente para sincronizar entre dispositivos.
+// Por ora a urgência é propagada via localStorage (funciona no mesmo browser).
+window.marcarUrgente = function(pedidoId) {
+  const key = 'dataplate:kitchenUrgentOrders';
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) {}
+  const str = String(pedidoId);
+  const jaUrgente = ids.includes(str);
+  if (jaUrgente) {
+    ids = ids.filter(id => id !== str);
+    showToast('Urgência removida do pedido #' + pedidoId, 'success');
+  } else {
+    ids.push(str);
+    showToast('Pedido #' + pedidoId + ' marcado como URGENTE', 'success');
+  }
+  localStorage.setItem(key, JSON.stringify(ids));
+  closeModal('orderDetailsModal');
+};
+
 window.alterarStatusPedido = function(pedidoId, novoStatus) {
   putJson(`/pedidos/${pedidoId}/status`, { status: novoStatus })
     .then(() => {
       showToast('Status atualizado com sucesso!', 'success');
       carregarCozinha();
+      carregarPedidos(_pedidosPage);
     })
     .catch((err) => showToast(err.message || 'Erro ao atualizar status.'));
 };
@@ -2089,12 +2215,9 @@ function asciiBytes(value) {
 
 function normalizePdfText(value) {
   return String(value ?? '')
-    .replace(/↑/g, '+')
-    .replace(/↓/g, '-')
-    .replace(/→/g, '->')
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .replace(/[–—]/g, '-');
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    .replace(/[--]/g, '-');
 }
 
 function toWinAnsiByte(char) {
@@ -2232,7 +2355,7 @@ function exportReportToPdfJsPDF(data) {
   const LIGHT   = [241, 245, 249]; // #f1f5f9
   const WHITE   = [255, 255, 255];
 
-  // ── Cabeçalho ──────────────────────────────────────────────────
+  // â"â" Cabeçalho â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
   doc.setFillColor(...PRIMARY);
   doc.rect(0, 0, W, 22, 'F');
 
@@ -2246,7 +2369,7 @@ function exportReportToPdfJsPDF(data) {
   doc.setFont('helvetica', 'normal');
   doc.text('Sistema de Gestao Gastronomica', 46, 14);
 
-  // ── Título e data ───────────────────────────────────────────────
+  // â"â" Título e data â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
   doc.setTextColor(...DARK);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -2259,7 +2382,7 @@ function exportReportToPdfJsPDF(data) {
 
   let y = 50;
 
-  // ── Indicadores (stat cards) ────────────────────────────────────
+  // â"â" Indicadores (stat cards) â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
   if (data.summary.length > 0) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -2290,14 +2413,14 @@ function exportReportToPdfJsPDF(data) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...DARK);
-      doc.text(String(item.value || '—'), x + 3, cy + 13);
+      doc.text(String(item.value || '-'), x + 3, cy + 13);
     });
 
     const rows = Math.ceil(data.summary.length / cols);
     y += rows * (cardH + gap) + 8;
   }
 
-  // ── Tabela ──────────────────────────────────────────────────────
+  // â"â" Tabela â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
   if (data.table.headers.length > 0 && data.table.rows.length > 0) {
     doc.autoTable({
       head: [data.table.headers],
@@ -2507,9 +2630,13 @@ function connectAdminWebSocket() {
         // Mantem payload como texto quando nao for JSON.
       }
 
-      if (payload?.type === 'PEDIDO_ATUALIZADO' || payload?.type === 'NOVO_PEDIDO') {
+      if (payload?.type === 'PEDIDO_ATUALIZADO' || payload?.type === 'NOVO_PEDIDO' || payload?.type === 'VENDA_CAIXA') {
         carregarPedidos();
         carregarCozinha();
+        carregarUltimosPedidosDashboard();
+        if (document.getElementById('dashboard')?.classList.contains('active')) {
+          carregarRelatorios();
+        }
       }
     });
 
@@ -2538,10 +2665,13 @@ window.connectAdminWebSocket = connectAdminWebSocket;
 // =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore last section from URL hash (F5 persistence)
   const initialSection = window.location.hash.slice(1);
-  navigateTo(initialSection || 'home');
   applyAdminSession();
+
+  // Atendente começa direto nas mesas (visão operacional do salão)
+  const _sess = readAdminSession();
+  const _defaultSection = (_sess?.userKey === 'atendente' && !initialSection) ? 'mesas' : (initialSection || 'home');
+  navigateTo(_defaultSection);
   initAdminHomeSearch();
   initClientForm();
   initCepAutocomplete();
@@ -2644,6 +2774,31 @@ function formatCurrency(v) {
   return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
 }
 
+function pedidoOrigemLabel(pedido) {
+  if (pedido?.origem === 'CAIXA' || pedido?.numeroMesa == null) return 'Caixa';
+  return `Mesa ${pedido.numeroMesa}`;
+}
+
+const pedidoStatusLabel = {
+  RECEBIDO: 'Recebido',
+  EM_PREPARO: 'Preparando',
+  PRONTO: 'Pronto',
+  ENTREGUE: 'Entregue',
+  CANCELADO: 'Cancelado'
+};
+
+const pedidoBadgeClass = {
+  RECEBIDO: 'badge-info',
+  EM_PREPARO: 'badge-warning',
+  PRONTO: 'badge-success',
+  ENTREGUE: 'badge-active',
+  CANCELADO: 'badge-danger'
+};
+
+function pedidoStatusBadge(status) {
+  return `<span class="badge ${pedidoBadgeClass[status] || ''}">${pedidoStatusLabel[status] || escapeHtml(status || '-')}</span>`;
+}
+
 function setStatByLabel(sectionId, label, value, change) {
   const section = document.getElementById(sectionId);
   if (!section) return;
@@ -2666,7 +2821,6 @@ function updateDashboardResumo(resumo) {
 
   // Gráficos do dashboard com dados reais
   if (resumo.topProdutos?.length) {
-    renderDishesChart(resumo.topProdutos);
     renderTopDishesChart(resumo.topProdutos);
   }
   renderOrdersChart({
@@ -2684,7 +2838,7 @@ function updateDashboardResumo(resumo) {
 function carregarSalesChartDashboard() {
   getJson('/relatorios/vendas')
     .then((data) => {
-      if (data.timeline?.length) renderSalesChart(data.timeline);
+      if (data.timeline?.length) renderSalesChart(data.timeline, 'dashboardSalesChart');
     })
     .catch(() => {});
 }
@@ -2703,7 +2857,10 @@ function carregarRelatorios() {
     .catch((err) => console.error('[relatorios]', err));
 
   getJson('/mesas')
-    .then(updateDashboardMesas)
+    .then((mesas) => {
+      updateDashboardMesas(mesas);
+      renderTableOccupancyChart(mesas);
+    })
     .catch((err) => console.error('[relatorios-mesas]', err));
 
   // Últimos pedidos no dashboard
@@ -2717,28 +2874,31 @@ function carregarRelatorios() {
 }
 
 function carregarUltimosPedidosDashboard() {
-  getJson('/pedidos')
-    .then((pedidos) => {
-      const tbody = document.querySelector('#dashboard .dashboard-panel .data-table tbody');
-      if (!tbody) return;
-      const ultimos = (pedidos || []).slice(0, 5);
+  const tbody = document.getElementById('dashUltimosPedidosTbody');
+  if (!tbody) return;
+
+  getJson('/pedidos?page=0&size=5')
+    .then((raw) => {
+      const pedidos = Array.isArray(raw) ? raw : (raw.content || []);
+      const ultimos = pedidos.slice(0, 5);
       if (!ultimos.length) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Nenhum pedido registrado</td></tr>';
         return;
       }
-      const badgeClass = { RECEBIDO: 'badge-info', EM_PREPARO: 'badge-warning', PRONTO: 'badge-success', ENTREGUE: 'badge-active', CANCELADO: 'badge-danger' };
-      const badgeLabel = { RECEBIDO: 'Recebido', EM_PREPARO: 'Preparando', PRONTO: 'Pronto', ENTREGUE: 'Entregue', CANCELADO: 'Cancelado' };
       tbody.innerHTML = ultimos.map((p) => `<tr>
-        <td>#${p.id}</td>
-        <td>${p.numeroMesa || '-'}</td>
+        <td><strong>#${p.id}</strong></td>
+        <td>${pedidoOrigemLabel(p)}</td>
         <td>${formatCurrency(p.valorTotal)}</td>
-        <td><span class="badge ${badgeClass[p.status] || ''}">${badgeLabel[p.status] || p.status}</span></td>
+        <td><span class="badge ${pedidoBadgeClass[p.status] || ''}">${pedidoStatusLabel[p.status] || p.status}</span></td>
       </tr>`).join('');
     })
-    .catch((err) => console.error('[dashboard-pedidos]', err));
+    .catch((err) => {
+      console.error('[dashboard-pedidos]', err);
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Erro ao carregar pedidos</td></tr>';
+    });
 }
 
-// ── Relatório de Vendas ────────────────────────────────────────
+// â"â" Relatório de Vendas â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
 function carregarRelVendas(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   showTableSkeleton('rel-vendas');
@@ -2749,6 +2909,7 @@ function carregarRelVendas(inicio, fim) {
       setStatByLabel('rel-vendas', 'Ticket Médio', formatCurrency(data.ticketMedio), 'Calculado do banco');
       const top = data.topProdutos?.[0];
       if (top) setStatByLabel('rel-vendas', 'Produto Mais Vendido', top.nome, `${Number(top.quantidadeVendida || 0)} unidades`);
+      else setStatByLabel('rel-vendas', 'Produto Mais Vendido', '-', 'Sem vendas no período');
 
       // Tabela de vendas por dia
       const tbody = document.querySelector('#rel-vendas .data-table tbody');
@@ -2770,7 +2931,8 @@ function carregarRelVendas(inicio, fim) {
       }
 
       // Gráfico de vendas
-      if (data.timeline?.length) renderSalesChart(data.timeline);
+      renderHistoricoVendas(data.historico || []);
+      if (data.timeline?.length) renderSalesChart(data.timeline, 'salesChart');
     })
     .catch((err) => {
       console.error('[rel-vendas]', err);
@@ -2778,7 +2940,27 @@ function carregarRelVendas(inicio, fim) {
     });
 }
 
-// ── Relatório Financeiro ───────────────────────────────────────
+function renderHistoricoVendas(historico) {
+  const tbody = document.querySelector('#relVendasHistoricoTable tbody');
+  if (!tbody) return;
+  if (!historico.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8">Nenhuma venda no período selecionado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = historico.map(v => {
+    const origem = v.origem === 'CAIXA' || v.numeroMesa == null ? 'Caixa' : `Mesa ${v.numeroMesa}`;
+    return `<tr>
+      <td><strong>#${v.id}</strong></td>
+      <td>${v.dataHora ? new Date(v.dataHora).toLocaleString('pt-BR') : '-'}</td>
+      <td>${origem}</td>
+      <td>${v.itens}</td>
+      <td>${formatCurrency(v.valorTotal)}</td>
+      <td>${pedidoStatusBadge(v.status)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// â"â" Relatório Financeiro â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
 function carregarRelFinanceiro(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   getJson(`/relatorios/vendas${params}`)
@@ -2787,8 +2969,8 @@ function carregarRelFinanceiro(inicio, fim) {
       setStatByLabel('rel-financeiro', 'Despesas Totais', data.custoTotal ? formatCurrency(data.custoTotal) : 'Não integrado', data.custoTotal ? 'Calculado via insumos' : 'Vincule insumos aos produtos');
       const lucro = data.custoTotal ? Number(data.faturamento) - Number(data.custoTotal) : null;
       setStatByLabel('rel-financeiro', 'Lucro Líquido', lucro != null ? formatCurrency(lucro) : formatCurrency(data.faturamento), lucro != null ? 'Receita menos custos' : 'Sem dedução de custos');
-      const margem = (data.faturamento > 0 && lucro != null) ? ((lucro / Number(data.faturamento)) * 100).toFixed(1) + '%' : '—';
-      setStatByLabel('rel-financeiro', 'Margem de Lucro', margem, margem !== '—' ? 'Calculada' : 'Depende dos insumos cadastrados');
+      const margem = (data.faturamento > 0 && lucro != null) ? ((lucro / Number(data.faturamento)) * 100).toFixed(1) + '%' : '-';
+      setStatByLabel('rel-financeiro', 'Margem de Lucro', margem, margem !== '-' ? 'Calculada' : 'Depende dos insumos cadastrados');
 
       renderProfitChart(data.faturamento, data.custoTotal || 0);
 
@@ -2796,14 +2978,14 @@ function carregarRelFinanceiro(inicio, fim) {
       if (tbody) {
         tbody.innerHTML = `
           <tr><td>Receita de pedidos</td><td>${formatCurrency(data.faturamento)}</td><td>100%</td><td>${data.totalPedidos} pedidos</td></tr>
-          <tr><td>Pedidos cancelados</td><td>${data.pedidosCancelados || 0}</td><td>—</td><td>Não geram receita</td></tr>
+          <tr><td>Pedidos cancelados</td><td>${data.pedidosCancelados || 0}</td><td>"</td><td>Não geram receita</td></tr>
           ${data.custoTotal ? `<tr><td>Custos operacionais</td><td>${formatCurrency(data.custoTotal)}</td><td>${((Number(data.custoTotal)/Number(data.faturamento))*100).toFixed(1)}%</td><td>Calculado via insumos</td></tr>` : `<tr><td>Custos operacionais</td><td colspan="3" style="color:#94a3b8">Vincule insumos aos produtos para calcular custos</td></tr>`}`;
       }
     })
     .catch((err) => console.error('[rel-financeiro]', err));
 }
 
-// ── Relatório de Cardápio ──────────────────────────────────────
+// â"â" Relatório de Cardápio â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
 function carregarRelCardapio(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   showTableSkeleton('rel-cardapio');
@@ -2821,12 +3003,12 @@ function carregarRelCardapio(inicio, fim) {
         const pct = totalQtd > 0 ? ((Number(p.quantidadeVendida || 0) / totalQtd) * 100).toFixed(1) : '0.0';
         return `<tr>
           <td><strong>${escapeHtml(p.nome)}</strong></td>
-          <td>—</td>
+          <td>"</td>
           <td>${Number(p.quantidadeVendida || 0)}</td>
           <td>${formatCurrency(p.faturamento)}</td>
           <td>${pct}%</td>
-          <td>—</td>
-          <td>—</td>
+          <td>"</td>
+          <td>"</td>
         </tr>`;
       }).join('');
     })
@@ -2836,14 +3018,14 @@ function carregarRelCardapio(inicio, fim) {
     });
 }
 
-// ── Relatório Operacional ──────────────────────────────────────
+// â"â" Relatório Operacional â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
 function carregarRelOperacional(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   getJson(`/relatorios/operacional${params}`)
     .then((data) => {
       const tempoMedio = data.tempoMedioPreparoMin > 0
         ? `${data.tempoMedioPreparoMin.toFixed(1)} min`
-        : '—';
+        : '-';
       const tempoChange = data.tempoMedioPreparoMin > 0
         ? 'Calculado via histórico de status'
         : 'Novos pedidos registrarão o tempo automaticamente';
@@ -3215,7 +3397,7 @@ window.__produtoAtivoId = null;
 function carregarFichaTecnica(produtoId) {
   const lista = document.getElementById('fichaTecnicaLista');
   if (!lista) return;
-  lista.textContent = 'Carregando…';
+  lista.textContent = 'Carregando...';
   getJson(`/produtos/${produtoId}/insumos`)
     .then((vinculosList) => renderFichaTecnica(vinculosList || []))
     .catch(() => { lista.textContent = 'Erro ao carregar ficha técnica.'; });
@@ -3253,7 +3435,7 @@ window.abrirAdicionarInsumo = function() {
   if (window.__insumos && window.__insumos.length) {
     populate(window.__insumos);
   } else {
-    select.innerHTML = '<option value="">Carregando…</option>';
+    select.innerHTML = '<option value="">Carregando...</option>';
     getJson('/insumos')
       .then((list) => { window.__insumos = list || []; populate(window.__insumos); })
       .catch(() => { select.innerHTML = '<option value="">Erro ao carregar insumos</option>'; });
@@ -3303,20 +3485,58 @@ function carregarMesas() {
 }
 
 function buildLinhaPedido(p) {
-  const statusLabel = { RECEBIDO: 'Recebido', EM_PREPARO: 'Preparando', PRONTO: 'Pronto', ENTREGUE: 'Entregue', CANCELADO: 'Cancelado' };
-  const badgeClass = { RECEBIDO: 'badge-info', EM_PREPARO: 'badge-warning', PRONTO: 'badge-success', ENTREGUE: 'badge-active', CANCELADO: 'badge-danger' };
   const qtd = p.itens ? p.itens.reduce((s, i) => s + (i.quantidade || 0), 0) : '-';
   return `<tr>
     <td><strong>#${p.id}</strong></td>
-    <td>Mesa ${p.numeroMesa || '-'}</td>
+    <td>${pedidoOrigemLabel(p)}</td>
     <td>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</td>
     <td>${qtd} item(s)</td>
     <td>${formatCurrency(p.valorTotal)}</td>
-    <td><span class="badge ${badgeClass[p.status] || ''}">${statusLabel[p.status] || p.status}</span></td>
+    <td>${pedidoStatusBadge(p.status)}</td>
     <td>-</td>
-    <td><button class="btn-icon" title="Detalhes">👁️</button></td>
+    <td><button class="btn-small" type="button" onclick="abrirDetalhesPedido(${p.id})">Ver</button></td>
   </tr>`;
 }
+
+window.abrirDetalhesPedido = function(id) {
+  openModal('orderDetailsModal');
+  const content = document.getElementById('orderDetailsContent');
+  content.innerHTML = '<div class="modal-description">Carregando pedido...</div>';
+
+  getJson(`/pedidos/${id}`)
+    .then(p => {
+      const itens = (p.itens || []).map(i => `
+        <tr>
+          <td>${escapeHtml(i.nomeProduto || '-')}</td>
+          <td style="text-align:center">${i.quantidade}</td>
+          <td style="text-align:right">${formatCurrency(i.precoUnitario)}</td>
+          <td style="text-align:right"><strong>${formatCurrency(i.subtotal)}</strong></td>
+        </tr>`).join('');
+
+      content.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:16px;font-size:13px">
+          <div><span style="color:#64748b;font-weight:600">ID</span><br/><strong>#${p.id}</strong></div>
+          <div><span style="color:#64748b;font-weight:600">Origem</span><br/>${pedidoOrigemLabel(p)}</div>
+          <div><span style="color:#64748b;font-weight:600">Status</span><br/>${pedidoStatusBadge(p.status)}</div>
+          <div><span style="color:#64748b;font-weight:600">Data/Hora</span><br/>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</div>
+        </div>
+        <table class="data-table" style="font-size:13px">
+          <thead><tr><th>Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unitário</th><th style="text-align:right">Subtotal</th></tr></thead>
+          <tbody>${itens || '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Sem itens</td></tr>'}</tbody>
+        </table>
+        <div style="text-align:right;margin-top:12px;font-size:15px;font-weight:700">
+          Total: ${formatCurrency(p.valorTotal)}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">
+          ${p.status === 'PRONTO' ? `<button class="btn-primary" type="button" onclick="alterarStatusPedido(${p.id},'ENTREGUE');closeModal('orderDetailsModal')">Confirmar Entrega</button>` : ''}
+          ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#f59e0b;border-color:#fde68a" type="button" onclick="marcarUrgente(${p.id})">Urgente</button>` : ''}
+          ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#dc2626;border-color:#fecaca" type="button" onclick="alterarStatusPedido(${p.id},'CANCELADO');closeModal('orderDetailsModal')">Cancelar Pedido</button>` : ''}
+        </div>`;
+    })
+    .catch(err => {
+      content.innerHTML = `<div class="modal-description" style="color:#dc2626">Erro ao carregar pedido: ${escapeHtml(err.message || 'tente novamente.')}</div>`;
+    });
+};
 
 let _pedidosPage = 0;
 
@@ -3353,13 +3573,13 @@ function renderPedidosPaginacao(page, totalPages) {
     section.querySelector('.table-container')?.after(bar);
   }
   bar.innerHTML = `
-    <button class="btn-secondary" style="padding:4px 10px" ${page === 0 ? 'disabled' : ''} onclick="carregarPedidos(${page - 1})">← Anterior</button>
+    <button class="btn-secondary" style="padding:4px 10px" ${page === 0 ? 'disabled' : ''} onclick="carregarPedidos(${page - 1})"><- Anterior</button>
     <span style="color:#64748b">Página ${page + 1} de ${totalPages}</span>
-    <button class="btn-secondary" style="padding:4px 10px" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="carregarPedidos(${page + 1})">Próxima →</button>
+    <button class="btn-secondary" style="padding:4px 10px" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="carregarPedidos(${page + 1})">Próxima -></button>
   `;
 }
 
-function buildLinhaUsuario(u) {
+function buildLinhaUsuarioResumo(u) {
   const roleLabel = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional' };
   const roleClass = u.role === 'ADMIN' ? 'badge-info' : 'badge-active';
   return `<tr>
@@ -3370,17 +3590,17 @@ function buildLinhaUsuario(u) {
     <td><span class="badge badge-active">Ativo</span></td>
     <td>-</td>
     <td>
-      <button class="btn-icon" title="Editar">✏️</button>
-      <button class="btn-icon" title="Permissões">🔑</button>
-      <button class="btn-icon" title="Resetar Senha">🔑</button>
+      <button class="btn-icon" title="Editar">&#9998;</button>
+      <button class="btn-icon" title="Permissoes">Perm.</button>
+      <button class="btn-icon" title="Resetar Senha">Senha</button>
     </td>
   </tr>`;
 }
 
-function carregarUsuarios() {
+function carregarUsuariosResumo() {
   showTableSkeleton('config-usuarios');
   getJson('/usuarios')
-    .then(list => setTableBody('config-usuarios', list.map(buildLinhaUsuario)))
+    .then(list => setTableBody('config-usuarios', list.map(buildLinhaUsuarioResumo)))
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar usuários.';
       setTableBody('config-usuarios', [], msg);
@@ -3420,7 +3640,7 @@ function carregarCozinha() {
       const card = document.createElement('div');
       card.className = 'kitchen-card';
       card.innerHTML = `
-        <div class="card-id">Pedido #${p.id} — Mesa ${p.numeroMesa || '-'}</div>
+        <div class="card-id">Pedido #${p.id} &bull; ${pedidoOrigemLabel(p)}</div>
         <div class="card-items">${itensTexto}</div>
         <div class="card-time">${p.dataHora ? new Date(p.dataHora).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : ''}</div>
         <button class="btn-small" onclick="alterarStatusPedido(${p.id}, '${proximoStatus}')">${labelBotao}</button>
@@ -3560,24 +3780,79 @@ window.excluirInsumo = async function(id, nome) {
 })();
 
 // =============================================
-// CHARTS — dados reais da API
+// CHARTS - dados reais da API
 // =============================================
 
-const CHART_COLORS = ['#2563eb', '#7c3aed', '#f85b15', '#06b6d4', '#10b981', '#f59e0b'];
+const CHART_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#7c3aed'];
 
 const chartBaseOptions = {
   responsive: true,
-  maintainAspectRatio: true,
+  maintainAspectRatio: false,
   plugins: {
     legend: {
+      display: false,
       labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 20, usePointStyle: true }
+    },
+    tooltip: {
+      backgroundColor: '#0f172a',
+      padding: 10,
+      titleFont: { family: '"Inter", sans-serif', size: 12, weight: '700' },
+      bodyFont: { family: '"Inter", sans-serif', size: 12 },
+      callbacks: {
+        label: (context) => {
+          const label = context.dataset.label ? `${context.dataset.label}: ` : '';
+          return `${label}${context.formattedValue}`;
+        }
+      }
     }
   },
   scales: {
-    x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { size: 12 } } },
-    y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { size: 12 } } }
+    x: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { size: 12 }, maxRotation: 0 } },
+    y: { grid: { color: '#e2e8f0' }, ticks: { color: '#64748b', font: { size: 12 }, precision: 0 } }
   }
 };
+
+function currencyTooltipOptions() {
+  return {
+    ...chartBaseOptions,
+    plugins: {
+      ...chartBaseOptions.plugins,
+      tooltip: {
+        ...chartBaseOptions.plugins.tooltip,
+        callbacks: {
+          label: (context) => `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`
+        }
+      }
+    }
+  };
+}
+
+function horizontalBarOptions(unitLabel) {
+  return {
+    ...chartBaseOptions,
+    indexAxis: 'y',
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: { color: '#e2e8f0' },
+        ticks: { color: '#64748b', font: { size: 12 }, precision: 0 }
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#334155', font: { size: 12, weight: '600' } }
+      }
+    },
+    plugins: {
+      ...chartBaseOptions.plugins,
+      tooltip: {
+        ...chartBaseOptions.plugins.tooltip,
+        callbacks: {
+          label: (context) => `${context.parsed.x} ${unitLabel}`
+        }
+      }
+    }
+  };
+}
 
 function hasChartLibrary() { return typeof Chart !== 'undefined'; }
 
@@ -3588,56 +3863,58 @@ function destroyChart(id) {
   if (_charts[id]) { _charts[id].destroy(); delete _charts[id]; }
 }
 
-function renderSalesChart(timeline) {
+function renderSalesChart(timeline, canvasId = 'salesChart') {
   if (!hasChartLibrary()) return;
-  const canvas = document.getElementById('salesChart');
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  destroyChart('salesChart');
+  destroyChart(canvasId);
 
   const labels = timeline.map((t) => t.label);
   const data   = timeline.map((t) => Number(t.valor || 0));
 
-  _charts['salesChart'] = new Chart(canvas.getContext('2d'), {
-    type: 'line',
+  _charts[canvasId] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
     data: {
       labels,
       datasets: [{
         label: 'Vendas (R$)',
         data,
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37,99,235,.1)',
-        tension: 0.4,
-        fill: true,
-        pointBackgroundColor: '#2563eb',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 26
       }]
     },
-    options: chartBaseOptions
+    options: currencyTooltipOptions()
   });
 }
 
-function renderDishesChart(topProdutos) {
+function renderTableOccupancyChart(mesas) {
   if (!hasChartLibrary()) return;
-  const canvas = document.getElementById('dishesChart');
+  const canvas = document.getElementById('tablesOccupancyChart');
   if (!canvas) return;
-  destroyChart('dishesChart');
+  destroyChart('tablesOccupancyChart');
 
-  const top5 = topProdutos.slice(0, 5);
-  _charts['dishesChart'] = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
+  const counts = (mesas || []).reduce((acc, mesa) => {
+    const status = apiStatusToUiStatus(mesa.status);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, { disponivel: 0, reservada: 0, ocupada: 0, manutencao: 0 });
+
+  _charts['tablesOccupancyChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
     data: {
-      labels: top5.map((p) => p.nome),
+      labels: ['Disponíveis', 'Reservadas', 'Ocupadas', 'Manutenção'],
       datasets: [{
-        data: top5.map((p) => Number(p.quantidadeVendida || 0)),
-        backgroundColor: CHART_COLORS,
-        borderColor: '#fff',
-        borderWidth: 2
+        label: 'Mesas',
+        data: [counts.disponivel, counts.reservada, counts.ocupada, counts.manutencao],
+        backgroundColor: ['#10b981', '#f59e0b', '#2563eb', '#ef4444'],
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 28
       }]
     },
-    options: { ...chartBaseOptions, plugins: { ...chartBaseOptions.plugins, legend: { position: 'bottom', labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 20, usePointStyle: true } } } }
+    options: horizontalBarOptions('mesas')
   });
 }
 
@@ -3648,17 +3925,19 @@ function renderOrdersChart(statusData) {
   destroyChart('ordersChart');
 
   _charts['ordersChart'] = new Chart(canvas.getContext('2d'), {
-    type: 'doughnut',
+    type: 'bar',
     data: {
       labels: ['Entregues', 'Em andamento', 'Cancelados'],
       datasets: [{
+        label: 'Pedidos',
         data: [Number(statusData.entregues || 0), Number(statusData.emPreparo || 0), Number(statusData.cancelados || 0)],
         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-        borderColor: '#fff',
-        borderWidth: 2
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 30
       }]
     },
-    options: { ...chartBaseOptions, plugins: { ...chartBaseOptions.plugins, legend: { position: 'bottom', labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 20, usePointStyle: true } } } }
+    options: horizontalBarOptions('pedidos')
   });
 }
 
@@ -3676,12 +3955,13 @@ function renderTopDishesChart(topProdutos) {
       datasets: [{
         label: 'Quantidade Vendida',
         data: top5.map((p) => Number(p.quantidadeVendida || 0)),
-        backgroundColor: '#2563eb',
-        borderRadius: 8,
-        borderSkipped: false
+        backgroundColor: CHART_COLORS,
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 28
       }]
     },
-    options: chartBaseOptions
+    options: horizontalBarOptions('vendidos')
   });
 }
 
@@ -3713,14 +3993,14 @@ function renderProfitChart(faturamento, custo) {
   });
 }
 
-// Inicializa charts vazios — serão preenchidos pelas chamadas de API
+// Inicializa charts vazios - serão preenchidos pelas chamadas de API
 window.addEventListener('load', () => {
   if (!hasChartLibrary()) return;
   // não renderiza placeholder; aguarda dados reais
 });
 
 // =============================================
-// CONFIG INTEGRAÇÃO — localStorage
+// CONFIG INTEGRACAO - localStorage
 // =============================================
 const INTEGRACAO_KEY    = 'dataplate:integracao';
 const NOTIFICACOES_KEY  = 'dataplate:notificacoes';
@@ -3829,7 +4109,7 @@ function carregarConfiguracaoRestaurante() {
 })();
 
 // =============================================
-// CONFIG USUÁRIOS — CRUD completo
+// CONFIG USUARIOS - CRUD completo
 // =============================================
 
 function buildLinhaUsuario(u) {
@@ -3914,7 +4194,7 @@ window.excluirUsuario = async function(id, nome) {
       const role = accessTypeMap[fd.get('accessType')] || 'FUNCIONARIO';
 
       if (editingId) {
-        // PUT — editar
+        // PUT - editar
         const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), role };
         putJson(`/usuarios/${editingId}`, payload)
           .then(() => {
@@ -3933,7 +4213,7 @@ window.excluirUsuario = async function(id, nome) {
           })
           .catch((err) => showToast(err.message || 'Erro ao atualizar usuário.'));
       } else {
-        // POST — criar
+        // POST - criar
         const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), senha: fd.get('temporaryPassword'), role };
         postJson('/auth/register', payload)
           .then(() => {

@@ -2246,6 +2246,9 @@ h2 {
 /* TEXTO */
 .notificacao .conteudo{
   flex:1;
+  background:transparent;
+  margin-left:0;
+  width:auto;
 }
 
 .notificacao .titulo{

@@ -32,7 +32,7 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "id_mesa", nullable = false)
+    @Column(name = "id_mesa")
     private Integer idMesa;
 
     @Column(name = "id_status", nullable = false)

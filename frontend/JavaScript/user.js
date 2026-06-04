@@ -57,11 +57,14 @@ function formatarPreco(valor) {
 
 function getMesaDoPedido() {
   const params = new URLSearchParams(window.location.search);
-  const mesaId = Number(params.get("mesaId") || localStorage.getItem("mesaId") || 0);
-  const numeroMesa = Number(params.get("mesa") || params.get("numeroMesa") || localStorage.getItem("numeroMesa") || 1);
+  const mesaIdRaw     = params.get("mesaId")     || localStorage.getItem("mesaId")     || null;
+  const numeroMesaRaw = params.get("mesa")        || params.get("numeroMesa")
+                     || localStorage.getItem("numeroMesa") || null;
+  const mesaId     = mesaIdRaw     ? Number(mesaIdRaw)     : null;
+  const numeroMesa = numeroMesaRaw ? Number(numeroMesaRaw) : null;
   return {
-    mesaId: mesaId > 0 ? mesaId : null,
-    numeroMesa: numeroMesa > 0 ? numeroMesa : 1
+    mesaId:     mesaId     > 0 ? mesaId     : null,
+    numeroMesa: numeroMesa > 0 ? numeroMesa : null
   };
 }
 
@@ -388,7 +391,7 @@ function abrirProdutoDinamico(produtoId) {
   const descricao = escaparHtml(produto.descricao || "Sem descrição cadastrada.");
   tela.innerHTML = `
     <header class="topo">
-      <button class="voltar" onclick="voltarListaDinamica()">←</button>
+      <button class="voltar" onclick="voltarListaDinamica()"><-</button>
       <img src="../images/brand/logo-emp.png" class="logo-topo">
       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
     </header>
@@ -484,18 +487,20 @@ async function pagamentoAprovado() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
   if (!carrinho.length) {
     mostrarNotificacao(
-     "aviso",
-     "Carrinho vazio",
-     "Adicione produtos antes de continuar."
-     
-   );    
-   return;
+      "aviso",
+      "Carrinho vazio",
+      "Adicione produtos antes de continuar."
+    );
+    return;
   }
 
   const mesa = getMesaDoPedido();
+  const obs = document.getElementById('observacaoPedido')?.value.trim() || null;
   const pedido = {
     numeroMesa: mesa.numeroMesa,
     mesaId: mesa.mesaId,
+    formaPagamento: pagamentoSelecionado || null,
+    ...(obs && { observacoes: obs }),
     itens: carrinho.map(item => ({
       produtoId: item.produtoId,
       quantidade: item.quantidade
@@ -517,13 +522,17 @@ async function pagamentoAprovado() {
     }
     const pedidoCriado = await response.json();
     pedidoAtivoId = String(pedidoCriado.id || "");
-    if (pedidoAtivoId) localStorage.setItem("pedidoAtivoId", pedidoAtivoId);
+    if (pedidoAtivoId) {
+      localStorage.setItem("pedidoAtivoId", pedidoAtivoId);
+      const numEl = document.getElementById("pedidoNumero");
+      if (numEl) numEl.textContent = `Pedido #${pedidoAtivoId}`;
+    }
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     mostrarNotificacao(
-     "erro",
-     "Erro",
-     error.message
+      "erro",
+      "Erro",
+      error.message
     );
     return;
   }
@@ -533,11 +542,10 @@ async function pagamentoAprovado() {
   localStorage.removeItem("carrinho");
   atualizarBadge();
 
-  document.getElementById("telaPix").style.display = "block";
-  gerarPixAutomatico();
-  document.getElementById("telaCredito").style.display = "none";
-  document.getElementById("telaDebito").style.display = "none";
-  document.getElementById("telaDinheiro").style.display = "none";
+  ["telaPagamento", "telaPix", "telaDinheiro"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
   document.getElementById("telaStatus").style.display = "block";
 
   iniciarAcompanhamentoPedidoReal();
@@ -795,6 +803,18 @@ function atualizarBotaoPedido() {
     btn.style.display = "none";
   }
 }
+
+// Avisa se não há mesa identificada (QR code não foi usado)
+(function verificarMesa() {
+  const { numeroMesa } = getMesaDoPedido();
+  if (!numeroMesa) {
+    mostrarNotificacao(
+      "aviso",
+      "Mesa não identificada",
+      "Escaneie o QR Code da sua mesa para vincular o pedido corretamente."
+    );
+  }
+})();
 
 // roda ao abrir app
 carregarCardapio();
