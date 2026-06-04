@@ -9,7 +9,7 @@
 
 ## Descrição
 
-DataPlate é uma plataforma web responsiva para gestão de restaurantes, com cardápio digital, pedidos em tempo real, painel de cozinha, controle de mesas, relatórios e administração do estabelecimento.
+DataPlate é uma plataforma web responsiva para gestão de restaurantes, com cardápio digital, pedidos em tempo real, painel de cozinha, controle de mesas, relatórios e administração do estabelecimento!
 
 O sistema elimina a necessidade de aplicativos instaláveis para o cliente, permitindo acesso ao cardápio pelo navegador via QR Code. A cozinha e a administração trabalham de forma integrada para acompanhar pedidos, mesas, clientes, funcionários, cardápio e indicadores.
 
