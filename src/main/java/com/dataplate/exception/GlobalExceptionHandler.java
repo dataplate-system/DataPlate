@@ -22,7 +22,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler({BusinessException.class, BadCredentialsException.class})
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> badCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiError> business(RuntimeException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }

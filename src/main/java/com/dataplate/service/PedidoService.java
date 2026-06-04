@@ -7,16 +7,20 @@ import com.dataplate.entity.Pedido;
 import com.dataplate.entity.PedidoItem;
 import com.dataplate.entity.PedidoStatus;
 import com.dataplate.entity.Produto;
+import com.dataplate.entity.Mesa;
 import com.dataplate.exception.ResourceNotFoundException;
+import com.dataplate.repository.MesaRepository;
 import com.dataplate.repository.PedidoRepository;
 import com.dataplate.repository.ProdutoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,12 +30,15 @@ public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
     private final ProdutoRepository produtoRepository;
+    private final MesaRepository mesaRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public PedidoResponse criar(PedidoCreateRequest request) {
         LocalDateTime now = LocalDateTime.now();
+        Mesa mesa = resolverMesa(request);
         Pedido pedido = Pedido.builder()
-                .idMesa(request.numeroMesa())
+                .idMesa(mesa.getId().intValue())
                 .idStatus(STATUS_RECEBIDO_ID)
                 .numeroPedido(gerarNumeroPedido())
                 .dataHora(now)
@@ -44,13 +51,15 @@ public class PedidoService {
                 .toList();
 
         BigDecimal total = itens.stream()
-                .map(PedidoItem::getSubtotal)
+                .map(this::subtotalDoItem)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         pedido.getItens().addAll(itens);
         pedido.setValorTotal(total);
 
-        return toResponse(pedidoRepository.save(pedido));
+        PedidoResponse response = toResponse(pedidoRepository.save(pedido));
+        publicarEvento("NOVO_PEDIDO", response);
+        return response;
     }
 
     @Transactional
@@ -58,15 +67,24 @@ public class PedidoService {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido nao encontrado: " + id));
         pedido.setIdStatus(toStatusId(novoStatus));
-        return toResponse(pedidoRepository.save(pedido));
+        PedidoResponse response = toResponse(pedidoRepository.save(pedido));
+        publicarEvento("PEDIDO_ATUALIZADO", response);
+        return response;
     }
 
     @Transactional(readOnly = true)
     public List<PedidoResponse> listar() {
-        return pedidoRepository.findTop10ByOrderByDataHoraDesc()
+        return pedidoRepository.findAllByOrderByDataHoraDesc()
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PedidoResponse obter(Long id) {
+        return pedidoRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido nao encontrado: " + id));
     }
 
     private PedidoItem criarItem(Pedido pedido, Long produtoId, Integer quantidade) {
@@ -98,13 +116,13 @@ public class PedidoService {
                         item.getProduto().getNome(),
                         item.getQuantidade().intValue(),
                         item.getPrecoUnitario(),
-                        item.getSubtotal()
+                        subtotalDoItem(item)
                 ))
                 .toList();
 
         return new PedidoResponse(
                 pedido.getId(),
-                pedido.getIdMesa(),
+                numeroMesa(pedido.getIdMesa()),
                 toStatus(pedido.getIdStatus()),
                 pedido.getDataHora(),
                 pedido.getValorTotal(),
@@ -131,5 +149,37 @@ public class PedidoService {
             case STATUS_CANCELADO_ID -> PedidoStatus.CANCELADO;
             default -> PedidoStatus.RECEBIDO;
         };
+    }
+
+    private Mesa resolverMesa(PedidoCreateRequest request) {
+        if (request.mesaId() != null) {
+            return mesaRepository.findById(request.mesaId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Mesa nao encontrada: " + request.mesaId()));
+        }
+
+        return mesaRepository.findByNumeroAndAtivoTrue(request.numeroMesa())
+                .orElseThrow(() -> new ResourceNotFoundException("Mesa nao encontrada: " + request.numeroMesa()));
+    }
+
+    private BigDecimal subtotalDoItem(PedidoItem item) {
+        if (item.getSubtotal() != null) {
+            return item.getSubtotal();
+        }
+        return item.getPrecoUnitario().multiply(item.getQuantidade());
+    }
+
+    private Integer numeroMesa(Integer idMesa) {
+        if (idMesa == null) return null;
+        return mesaRepository.findById(idMesa.longValue())
+                .map(Mesa::getNumero)
+                .orElse(idMesa);
+    }
+
+    private void publicarEvento(String type, PedidoResponse pedido) {
+        Map<String, Object> payload = Map.of(
+                "type", type,
+                "pedido", pedido
+        );
+        messagingTemplate.convertAndSend("/topic/pedidos", (Object) payload);
     }
 }

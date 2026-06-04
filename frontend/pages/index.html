@@ -21,20 +21,20 @@
         </ul> 
       </div>
 
-      <div class="card-nav" id="demonstracao">
+      <form class="card-nav" id="demonstracao" novalidate>
         <h2 class="demonst">Solicite uma demonstração</h2>
 
-        <label>Nome: </label>
-        <input type="text">
+        <label for="leadNome">Nome: </label>
+        <input type="text" id="leadNome" name="nome" autocomplete="name" required>
 
-        <label>Telefone: </label>
-        <input type="tel">
+        <label for="telefone">Telefone: </label>
+        <input type="tel" id="telefone" name="telefone" placeholder="(00) 00000-0000" autocomplete="tel" required>
 
-        <label>Email: </label>
-        <input type="email">
+        <label for="leadEmail">Email: </label>
+        <input type="email" id="leadEmail" name="email" placeholder="seuemail@gmail.com" autocomplete="email" required>
 
-        <label>Empresa: </label>
-        <input type="text">
+        <label for="cnpj">CNPJ: </label>
+        <input type="text" id="cnpj" name="cnpj" placeholder="00.000.000/0000-00" autocomplete="off" required>
 
         <label>
           <input type="checkbox"> Eu concordo em receber comunicações
@@ -44,8 +44,9 @@
           <a href="#">Politica de Privacidade.</a>
         </p>
 
-        <button class="cont">Quero saber mais</button>
-      </div>
+        <p class="lead-form-message" id="leadFormMessage" aria-live="polite"></p>
+        <button class="cont" type="submit">Quero saber mais</button>
+      </form>
     </section>
 
     <section class="container2" aria-label="Depoimentos de clientes">

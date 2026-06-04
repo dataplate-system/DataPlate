@@ -18,4 +18,10 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     BigDecimal faturamentoEntre(LocalDateTime inicio, LocalDateTime fim);
 
     List<Pedido> findTop10ByOrderByDataHoraDesc();
+
+    List<Pedido> findAllByOrderByDataHoraDesc();
+
+    List<Pedido> findByDataHoraBetweenOrderByDataHoraDesc(LocalDateTime inicio, LocalDateTime fim);
+
+    List<Pedido> findByIdStatusAndDataHoraBetweenOrderByDataHoraDesc(Integer idStatus, LocalDateTime inicio, LocalDateTime fim);
 }

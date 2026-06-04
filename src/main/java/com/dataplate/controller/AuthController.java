@@ -1,6 +1,7 @@
 package com.dataplate.controller;
 
 import com.dataplate.dto.AuthLoginRequest;
+import com.dataplate.dto.AuthPasswordResetRequest;
 import com.dataplate.dto.AuthRefreshRequest;
 import com.dataplate.dto.AuthRegisterRequest;
 import com.dataplate.dto.AuthResponse;
@@ -30,5 +31,11 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody AuthRegisterRequest request) {
         return service.registrar(request);
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody AuthPasswordResetRequest request) {
+        service.redefinirSenha(request);
     }
 }

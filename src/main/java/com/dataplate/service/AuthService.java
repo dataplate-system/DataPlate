@@ -1,6 +1,7 @@
 package com.dataplate.service;
 
 import com.dataplate.dto.AuthLoginRequest;
+import com.dataplate.dto.AuthPasswordResetRequest;
 import com.dataplate.dto.AuthRefreshRequest;
 import com.dataplate.dto.AuthRegisterRequest;
 import com.dataplate.dto.AuthResponse;
@@ -60,6 +61,14 @@ public class AuthService {
         }
 
         return toAuthResponse(user);
+    }
+
+    @Transactional
+    public void redefinirSenha(AuthPasswordResetRequest req) {
+        User user = userRepository.findByCpf(req.cpf())
+                .orElseThrow(() -> new BadCredentialsException("CPF nao encontrado"));
+        user.setSenha(passwordEncoder.encode(req.novaSenha()));
+        userRepository.save(user);
     }
 
     private AuthResponse toAuthResponse(User user) {

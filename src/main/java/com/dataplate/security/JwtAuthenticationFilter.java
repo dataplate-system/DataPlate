@@ -29,10 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         
         // Pula validação JWT para rotas públicas
-        if (path.startsWith("/api/produtos") ||
-            path.startsWith("/api/menu") ||
-            path.startsWith("/api/pedidos") ||
-            path.startsWith("/api/auth") ||
+        if (path.startsWith("/api/auth/login") ||
+            path.startsWith("/api/auth/refresh") ||
+            path.startsWith("/api/auth/reset-password") ||
             path.startsWith("/api/cep") ||
             path.equals("/favicon.ico") ||
             path.equals("/") ||
