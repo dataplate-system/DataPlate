@@ -400,7 +400,10 @@ h2 {
   width:100%;
   max-width:900px;
 
+  
+
   margin:0 auto;
+
 
   padding:20px;
 
@@ -415,12 +418,16 @@ h2 {
   width:100%;
 
   display:flex;
+  
+  
   flex-direction:column;
 
   gap:16px;
 
   margin-top:20px;
 }
+
+
 
 /* CARD ITEM */
 #listaCarrinho .item{
@@ -445,6 +452,7 @@ h2 {
 /* IMAGEM */
 #listaCarrinho .item img{
   width:90px;
+
   height:90px;
 
   border-radius:14px;
@@ -499,12 +507,12 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 13px;
   width: 100%;
   overflow: hidden;
 }
 
-/* ÁREA DA LIXEIRA */
+
 /* ÁREA DA LIXEIRA */
 .acoes{
   display:flex;
@@ -562,19 +570,37 @@ h2 {
   box-shadow:0 3px 10px rgba(0,0,0,0.08);
 }
 
+/* Produtos */
+#listaCarrinho{
+  margin-top: 20px !important;
+  width: 97%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+/* Total */
+#total{
+  width: 97%;
+  max-width: 450px;
+  margin: 15px auto;
+}
+
+
 /* BOTÃO CONFIRMAR */
 #telaCarrinho .btn{
-  width:100%;
+  display:block;
 
-  margin-top:20px;
+
+  width:300px; /* tamanho do botão */
+
+  margin:20px auto 0; /* centraliza */
 
   padding:16px;
 
   border:none;
-
   border-radius:16px;
 
-  background:#4aad19;;
+  background:#4aad19;
 
   color:#ffffff;
 
@@ -1020,7 +1046,7 @@ h2 {
   margin-top:10px;
 }
 
-/* TEXO TOTAL */
+/* TEXTO TOTAL */
 .total-unico span:first-child{
   font-size:16px;
   font-weight:600;
@@ -1076,7 +1102,7 @@ h2 {
 @media(max-width:768px){
 
   #telaPagamento{
-    padding:16px;
+    padding:9px;
   }
 
   .total-unico{
@@ -1088,8 +1114,8 @@ h2 {
   }
 
   .btn-finalizar{
-    height:54px;
-    font-size:16px;
+    height:56px;
+    font-size:23px;
   }
 
 }
@@ -1238,7 +1264,7 @@ h2 {
 
   width:100%;
 
-  padding:20px 18px; /* AUMENTA O BALÃO */
+  padding:18px 12px; /* AUMENTA O BALÃO */
 
   border-radius:22px; /* DEIXA MAIS ARREDONDADO */
 
@@ -1398,9 +1424,9 @@ h2 {
   cursor:pointer;
 
 }
-/* ================================================= */
+
 /* TABLET RESPONSIVO */
-/* ================================================= */
+
 
 @media screen and (min-width:769px) and (max-width:1024px){
 
@@ -1580,11 +1606,11 @@ h2 {
 
   /* CARRINHO */
   #listaCarrinho{
-    padding:10px 20px;
+    padding:10px 29px;
   }
 
   .item{
-    gap:16px;
+    gap:12px;
   }
 
   .item > img{
@@ -1672,7 +1698,7 @@ h2 {
 
   
 
-  /* MENU VERTICAL */
+  
 /* MENU MOBILE */
 .menu-categorias{
   width:100%;
@@ -1739,7 +1765,7 @@ h2 {
  .conteudo{
   margin-left:105px;  
   width:calc(100% - 125px);
-  flex:1;
+  flex:2; 
 
   overflow:hidden;
 
@@ -1748,7 +1774,7 @@ h2 {
 
   /* BANNER */
   .banner-topo{
-    height:175px;
+    height:145px;
     border-radius:0;
   }
 
@@ -1765,7 +1791,6 @@ h2 {
     height:36px;
     font-size:15px;
     border-radius:50%;
-    
     
     
   }
@@ -1785,11 +1810,11 @@ h2 {
 
   grid-template-columns:repeat(2, 1fr);
 
-  gap:5px;
+  gap:4px;
 
-  padding:5px;
+  padding:2px;
 
-  width:92%;
+  width:91%;
 }
 
   /* CARD */
@@ -1823,11 +1848,11 @@ h2 {
 
   /* INFO */
   .lista-grid .info{
-    padding:8px;
+    padding:9px;
   }
 
   .lista-grid .info h3{
-    font-size:11px;
+    font-size:12px;
     line-height:1.3;
 
     margin-bottom:4px;
