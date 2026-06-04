@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     codeInput.focus();
   });
 
-  passwordForm?.addEventListener('submit', (event) => {
+  passwordForm?.addEventListener('submit', async(event) => {
     event.preventDefault();
     setResetMessage('');
 
