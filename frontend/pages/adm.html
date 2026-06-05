@@ -37,6 +37,8 @@
           <div class="dropdown-menu">
             <a href="pdv.html" class="dropdown-link">PDV Caixa</a>
             <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
+            <a href="#cancelamentos" class="dropdown-link" onclick="navigateTo('cancelamentos')">Cancelamentos</a>
+            <a href="#pagamentos" class="dropdown-link" onclick="navigateTo('pagamentos')">Pagamentos</a>
             <a href="#mesas" class="dropdown-link" onclick="navigateTo('mesas')">Mesas</a>
             <a href="#cozinha" class="dropdown-link" onclick="navigateTo('cozinha')">Cozinha</a>
           </div>
@@ -46,7 +48,6 @@
         <div class="nav-item dropdown" data-role="admin">
           <button type="button" class="nav-button">Relatórios</button>
           <div class="dropdown-menu">
-            <a href="#rel-vendas" class="dropdown-link" onclick="navigateTo('rel-vendas')">Vendas</a>
             <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
             <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
             <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
@@ -67,13 +68,16 @@
       </nav>
 
       <div class="header-right">
+        <span class="header-breadcrumb" id="headerBreadcrumb" aria-live="polite"></span>
+        <span class="adm-connection-pill" id="admConnectionStatus">Conectado</span>
         <div class="header-session-info">
           <div class="user-avatar-small" id="headerUserAvatar">GP</div>
           <span>
-            <strong id="headerUserName">Gerente Principal</strong>
+            <strong id="headerUserName">Gerente</strong>
             <small id="headerUserRole">Administrador</small>
           </span>
         </div>
+        <button type="button" class="header-action-btn" onclick="location.reload()">Atualizar</button>
         <button type="button" class="header-logout-btn" onclick="openModal('logoutModal')">Sair</button>
       </div>
     </header>
@@ -86,48 +90,107 @@
         <!-- HOME -->
         <section id="home" class="content-section admin-home">
           <aside class="home-shortcuts home-shortcuts-left" aria-label="Atalhos do sistema">
-            <button type="button" class="home-shortcut" onclick="navigateTo('dashboard')">
-              <span class="shortcut-icon">▦</span>
-              <span>
-                <strong>Dashboard</strong>
-                <small>Indicadores gerais</small>
-              </span>
-            </button>
-            <button type="button" class="home-shortcut" onclick="navigateTo('clientes')">
-              <span class="shortcut-icon">👥</span>
-              <span>
-                <strong>Clientes</strong>
-                <small>Cadastros e histórico</small>
-              </span>
-            </button>
-            <button type="button" class="home-shortcut" onclick="navigateTo('cardapio')">
-              <span class="shortcut-icon">☰</span>
-              <span>
-                <strong>Cardápio</strong>
-                <small>Itens, preço e destaque</small>
-              </span>
-            </button>
-            <button type="button" class="home-shortcut" onclick="navigateTo('mesas')">
-              <span class="shortcut-icon">◫</span>
-              <span>
-                <strong>Mesas</strong>
-                <small>Mapa do salão</small>
-              </span>
-            </button>
-            <button type="button" class="home-shortcut" onclick="navigateTo('cozinha')">
-              <span class="shortcut-icon">◴</span>
-              <span>
-                <strong>Cozinha</strong>
-                <small>Preparo em tempo real</small>
-              </span>
-            </button>
-            <a href="pdv.html" class="home-shortcut" style="text-decoration:none">
-              <span class="shortcut-icon">🖥️</span>
-              <span>
-                <strong>PDV</strong>
-                <small>Caixa e venda direta</small>
-              </span>
-            </a>
+
+            <div class="shortcut-group" data-group="operacoes">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('operacoes')">
+                <span>Operações</span><span class="group-chevron">▾</span>
+              </button>
+              <a href="pdv.html" class="home-shortcut" style="text-decoration:none">
+                <span class="shortcut-icon">🖥️</span>
+                <span><strong>PDV Caixa</strong><small>Venda direta no balcão</small></span>
+              </a>
+              <button type="button" class="home-shortcut" onclick="navigateTo('pedidos')">
+                <span class="shortcut-icon">◉</span>
+                <span><strong>Pedidos</strong><small>Histórico e status</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('cancelamentos')">
+                <span class="shortcut-icon">✕</span>
+                <span><strong>Cancelamentos</strong><small>Pedidos cancelados</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('pagamentos')">
+                <span class="shortcut-icon">$</span>
+                <span><strong>Pagamentos</strong><small>Transações e recebimentos</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('mesas')">
+                <span class="shortcut-icon">◫</span>
+                <span><strong>Mesas</strong><small>Mapa do salão</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('cozinha')">
+                <span class="shortcut-icon">◴</span>
+                <span><strong>Cozinha</strong><small>Preparo em tempo real</small></span>
+              </button>
+            </div>
+
+            <div class="shortcut-group" data-group="cadastros">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('cadastros')">
+                <span>Cadastros</span><span class="group-chevron">▾</span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('clientes')">
+                <span class="shortcut-icon">👥</span>
+                <span><strong>Clientes</strong><small>Cadastros e histórico</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('cardapio')">
+                <span class="shortcut-icon">☰</span>
+                <span><strong>Cardápio</strong><small>Itens, preço e destaque</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('funcionarios')">
+                <span class="shortcut-icon">👤</span>
+                <span><strong>Funcionários</strong><small>Pessoal e permissões</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('fornecedores')">
+                <span class="shortcut-icon">◈</span>
+                <span><strong>Fornecedores</strong><small>Parceiros e compras</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('insumos')">
+                <span class="shortcut-icon">◧</span>
+                <span><strong>Insumos</strong><small>Estoque e ingredientes</small></span>
+              </button>
+            </div>
+
+            <div class="shortcut-group" data-group="relatorios">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('relatorios')">
+                <span>Relatórios</span><span class="group-chevron">▾</span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('dashboard')">
+                <span class="shortcut-icon">▦</span>
+                <span><strong>Dashboard</strong><small>Indicadores gerais</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('rel-financeiro')">
+                <span class="shortcut-icon">◈</span>
+                <span><strong>Financeiro</strong><small>Receitas e despesas</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('rel-cardapio')">
+                <span class="shortcut-icon">◬</span>
+                <span><strong>Desempenho</strong><small>Itens mais vendidos</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('rel-operacional')">
+                <span class="shortcut-icon">◱</span>
+                <span><strong>Operacional</strong><small>Eficiência e tempos</small></span>
+              </button>
+            </div>
+
+            <div class="shortcut-group" data-group="configuracoes">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('configuracoes')">
+                <span>Configurações</span><span class="group-chevron">▾</span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-restaurante')">
+                <span class="shortcut-icon">◎</span>
+                <span><strong>Restaurante</strong><small>Dados e horários</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-usuarios')">
+                <span class="shortcut-icon">⊙</span>
+                <span><strong>Usuários</strong><small>Acessos e permissões</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-integracao')">
+                <span class="shortcut-icon">⊕</span>
+                <span><strong>Integrações</strong><small>iFood, PIX, APIs</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-notificacoes')">
+                <span class="shortcut-icon">◌</span>
+                <span><strong>Notificações</strong><small>Alertas do sistema</small></span>
+              </button>
+            </div>
+
           </aside>
 
           <div class="home-center">
@@ -145,7 +208,7 @@
                   <option value="Pedidos"></option>
                   <option value="Mesas"></option>
                   <option value="Cozinha"></option>
-                  <option value="Relatório de Vendas"></option>
+                  <option value="Cancelamentos"></option>
                   <option value="Relatório Financeiro"></option>
                   <option value="Desempenho do Cardápio"></option>
                   <option value="Relatório Operacional"></option>
@@ -165,15 +228,49 @@
             </div>
           </div>
 
-          <aside class="home-shortcuts home-shortcuts-right" aria-label="Suporte e avisos">
-            <article class="home-status-card">
-              <strong>Suporte Técnico Disponível</strong>
-              <span>Atendimento liberado para sua operação.</span>
+          <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
+            <div class="home-panel-label">Hoje — tempo real</div>
+
+            <article class="home-stat-item">
+              <span>Faturamento</span>
+              <strong id="homeFaturamento">—</strong>
+              <small id="homeFaturamentoDetalhe"></small>
             </article>
-            <article class="home-status-card">
-              <strong>Avisos</strong>
-              <span>Nenhuma pendência crítica no momento.</span>
+
+            <article class="home-stat-item">
+              <span>Ticket médio</span>
+              <strong id="homeTicketMedio">—</strong>
             </article>
+
+            <article class="home-stat-item">
+              <span>Entregues hoje</span>
+              <strong id="homeEntregues">—</strong>
+              <small id="homeEntreguesDetalhe"></small>
+            </article>
+
+            <article class="home-stat-item home-stat-pronto" id="homeStatProntos">
+              <span>Prontos p/ despacho</span>
+              <strong id="homeProntos">—</strong>
+            </article>
+
+            <article class="home-stat-item">
+              <span>Em andamento</span>
+              <strong id="homePedidosAtivos">—</strong>
+              <small id="homePedidosDetalhe"></small>
+            </article>
+
+            <article class="home-stat-item">
+              <span>Mesas ocupadas</span>
+              <strong id="homeMesas">—</strong>
+              <small id="homeMesasDetalhe"></small>
+            </article>
+
+            <article class="home-stat-item home-stat-cancel" id="homeStatCancelamentos">
+              <span>Cancelamentos hoje</span>
+              <strong id="homeCancelamentos">—</strong>
+            </article>
+
+            <button class="home-stat-refresh" type="button" onclick="carregarHomeStats()">Atualizar</button>
           </aside>
         </section>
 
@@ -187,7 +284,7 @@
             </div>
             <div class="dashboard-actions">
               <button type="button" id="verdash" onclick="navigateTo('pedidos')">Ver Pedidos</button>
-              <button type="button" class="btn-secondary" onclick="navigateTo('rel-vendas')">Relatório de Vendas</button>
+              <button type="button" class="btn-secondary" onclick="navigateTo('pagamentos')">Pagamentos</button>
             </div>
           </div>
 
@@ -490,6 +587,145 @@
           </div>
         </section>
 
+        <!-- CANCELAMENTOS -->
+        <section id="cancelamentos" class="content-section">
+          <div class="section-header">
+            <h1>Cancelamentos</h1>
+            <p>Histórico completo de pedidos cancelados</p>
+          </div>
+
+          <div class="stats-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:20px">
+            <div class="stat-card">
+              <div class="stat-label">Total cancelados</div>
+              <div class="stat-value" id="cancelTotalQtd">—</div>
+              <div class="stat-change">Todos os tempos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Valor perdido</div>
+              <div class="stat-value" id="cancelTotalValor">—</div>
+              <div class="stat-change">Soma dos pedidos cancelados</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Últimos 30 dias</div>
+              <div class="stat-value" id="cancelUltimos30">—</div>
+              <div class="stat-change">Cancelamentos recentes</div>
+            </div>
+          </div>
+
+          <div class="section-toolbar">
+            <div class="toolbar-filters">
+              <input type="text" id="cancelSearchInput" placeholder="Buscar por pedido ou mesa..." class="filter-input" />
+              <input type="date" id="cancelDataInicio" class="filter-input" style="max-width:160px" />
+              <input type="date" id="cancelDataFim" class="filter-input" style="max-width:160px" />
+              <button class="btn-small" type="button" onclick="filtrarCancelamentos()">Filtrar</button>
+              <button class="btn-secondary" type="button" onclick="carregarCancelamentos()">Limpar</button>
+            </div>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table" id="cancelTable">
+              <thead>
+                <tr>
+                  <th>ID Pedido</th>
+                  <th>Origem</th>
+                  <th>Data/Hora</th>
+                  <th>Itens</th>
+                  <th>Total</th>
+                  <th>Observações</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="cancelTbody">
+                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- PAGAMENTOS -->
+        <section id="pagamentos" class="content-section">
+          <div class="section-header">
+            <h1>Pagamentos</h1>
+            <p>Visao completa de todas as transacoes — balcao, mesas e formas de pagamento</p>
+          </div>
+
+          <!-- Filtros de data -->
+          <div class="pgto-adm-toolbar">
+            <label class="pgto-adm-date-label">
+              De: <input type="date" id="pgtoDataInicio" class="pgto-adm-date-input">
+            </label>
+            <label class="pgto-adm-date-label">
+              Ate: <input type="date" id="pgtoDataFim" class="pgto-adm-date-input">
+            </label>
+            <button class="btn-small" onclick="carregarPagamentos()">Filtrar</button>
+            <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
+            <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
+          </div>
+
+          <!-- Resumo por metodo -->
+          <div class="pgto-adm-resumo" id="pgtoResumo">
+            <div class="pgto-adm-card pgto-pix">
+              <img src="../images/menu/pix.png" class="pgto-adm-icon" alt="PIX">
+              <div>
+                <span>PIX</span>
+                <strong id="pgtoTotalPix">R$ 0,00</strong>
+                <small id="pgtoQtdPix">0 vendas</small>
+              </div>
+            </div>
+            <div class="pgto-adm-card pgto-credito">
+              <img src="../images/menu/Credito.png" class="pgto-adm-icon" alt="Credito">
+              <div>
+                <span>Credito</span>
+                <strong id="pgtoTotalCredito">R$ 0,00</strong>
+                <small id="pgtoQtdCredito">0 vendas</small>
+              </div>
+            </div>
+            <div class="pgto-adm-card pgto-debito">
+              <img src="../images/menu/Debito.png" class="pgto-adm-icon" alt="Debito">
+              <div>
+                <span>Debito</span>
+                <strong id="pgtoTotalDebito">R$ 0,00</strong>
+                <small id="pgtoQtdDebito">0 vendas</small>
+              </div>
+            </div>
+            <div class="pgto-adm-card pgto-dinheiro">
+              <img src="../images/menu/dinheiro.png" class="pgto-adm-icon" alt="Dinheiro">
+              <div>
+                <span>Dinheiro</span>
+                <strong id="pgtoTotalDinheiro">R$ 0,00</strong>
+                <small id="pgtoQtdDinheiro">0 vendas</small>
+              </div>
+            </div>
+            <div class="pgto-adm-card pgto-total">
+              <div>
+                <span>Total Geral</span>
+                <strong id="pgtoTotalGeral">R$ 0,00</strong>
+                <small id="pgtoQtdTotal">0 transacoes</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de transacoes -->
+          <div class="table-responsive" style="margin-top:20px">
+            <table class="data-table" id="pgtoTabela">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Hora</th>
+                  <th>Origem</th>
+                  <th>Itens</th>
+                  <th>Pagamento</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="pgtoTabelaBody">
+                <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- PEDIDOS -->
         <section id="pedidos" class="content-section">
           <div class="section-header">
@@ -784,18 +1020,18 @@
             </div>
             <div class="stat-card">
               <div class="stat-label">Despesas Totais</div>
-              <div class="stat-value">R$ 12.200,00</div>
-              <div class="stat-change negative">↑ 5% vs mês anterior</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Lucro Líquido</div>
-              <div class="stat-value">R$ 16.300,00</div>
-              <div class="stat-change positive">↑ 18% vs mês anterior</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Margem de Lucro</div>
-              <div class="stat-value">57%</div>
-              <div class="stat-change">Saudável</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
             </div>
           </div>
 

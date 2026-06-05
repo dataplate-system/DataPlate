@@ -4,6 +4,7 @@ public enum PedidoStatus {
     RECEBIDO,
     EM_PREPARO,
     PRONTO,
+    SERVIDO,
     ENTREGUE,
     CANCELADO
 }

@@ -141,42 +141,38 @@
           </div>
           <div class="column-list" id="listPronto"></div>
         </article>
+
+        <article class="kitchen-column column-cancelados">
+          <div class="column-header">
+            <span>Cancelados hoje</span>
+            <strong id="countCancelados">0</strong>
+          </div>
+          <div class="column-list" id="listCancelados"></div>
+        </article>
       </section>
 
-      <section class="kitchen-bottom-grid">
-        <article class="panel">
-          <div class="panel-heading">
-            <h2>Fila completa</h2>
-            <span id="queueSummary">0 pedidos ativos</span>
-          </div>
-          <div class="table-shell">
-            <table class="orders-table">
-              <thead>
-                <tr>
-                  <th>Pedido</th>
-                  <th>Mesa</th>
-                  <th>Itens</th>
-                  <th>Tempo</th>
-                  <th>Prioridade</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Ação</th>
-                </tr>
-              </thead>
-              <tbody id="ordersTableBody"></tbody>
-            </table>
-          </div>
-        </article>
-
-        <aside class="panel order-detail-panel">
-          <div class="panel-heading">
-            <h2>Detalhe</h2>
-            <span id="detailStatus">--</span>
-          </div>
-          <div id="orderDetail" class="order-detail-empty">
-            Nenhum pedido selecionado.
-          </div>
-        </aside>
+      <section class="panel" style="margin-top:18px">
+        <div class="panel-heading">
+          <h2>Fila completa</h2>
+          <span id="queueSummary">0 pedidos ativos</span>
+        </div>
+        <div class="table-shell">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Pedido</th>
+                <th>Origem</th>
+                <th>Itens</th>
+                <th>Tempo</th>
+                <th>Prioridade</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Acao</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>

@@ -11,46 +11,71 @@
 
   <!-- TOPBAR -->
   <header class="pdv-topbar">
-    <a href="adm.html" class="pdv-back">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 3 5 8 10 13"/></svg>
-      Painel
+    <a href="adm.html" class="pdv-brand-link">
+      <img src="../images/brand/logo-dataplate.png" alt="DataPlate" class="pdv-logo" />
+      <span>
+        <strong>DataPlate</strong>
+        <small>PDV Caixa</small>
+      </span>
     </a>
-    <span class="pdv-brand">PDV Caixa</span>
+
     <div class="pdv-topbar-right">
-      <div class="pdv-session-info" id="pdvSessionInfo" style="display:none">
+      <span class="pdv-connection-pill" id="pdvConnectionStatus">Conectado</span>
+      <div class="pdv-session-info" id="pdvSessionInfo">
         <div class="pdv-avatar" id="pdvAvatar">AT</div>
         <span>
-          <strong id="pdvUserName">Atendente</strong>
+          <strong id="pdvUserName">Caixa</strong>
           <small id="pdvUserRole">Operacional</small>
         </span>
       </div>
+      <button class="pdv-action-btn" onclick="carregarMesas();carregarProdutos();verificarCobrancas()">Atualizar</button>
       <button class="pdv-logout-btn" id="pdvLogoutBtn" onclick="pdvLogout()">Sair</button>
     </div>
   </header>
 
-  <!-- BANNER COBRANÇAS PENDENTES (visível ao caixa) -->
-  <div id="pdvCobrancasBanner" style="display:none;background:#fffbeb;border-bottom:2px solid #f59e0b;padding:10px 20px">
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span style="font-size:14px;font-weight:800;color:#92400e">&#x1F514; Cobranças pendentes:</span>
-      <div id="pdvCobrancasLista" style="display:flex;gap:8px;flex-wrap:wrap;flex:1"></div>
-      <button onclick="verificarCobrancas()" style="padding:5px 12px;border:1px solid #f59e0b;border-radius:6px;background:#fff;font-size:12px;font-weight:700;cursor:pointer;color:#92400e">Atualizar</button>
-    </div>
-  </div>
+  <!-- Seção de contas pendentes — integrada no painel direito via JS -->
+  <div id="pdvCobrancasBanner" hidden></div>
 
   <!-- MODAL PROCESSAR PAGAMENTO -->
-  <div id="pdvPgtoModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:14px;width:min(100%,400px);padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.2)">
-      <h3 id="pdvPgtoTitulo" style="font-size:16px;font-weight:800;margin-bottom:4px">Mesa —</h3>
-      <p id="pdvPgtoTotal" style="color:#64748b;font-size:13px;margin-bottom:16px">Total: —</p>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px" id="pdvPgtoOpcoes">
-        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('PIX',this)">PIX</button>
-        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('CREDITO',this)">Cartão Crédito</button>
-        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('DEBITO',this)">Cartão Débito</button>
-        <button class="pdv-pgto-opt" onclick="selecionarPdvPgto('DINHEIRO',this)">Dinheiro</button>
+  <div id="pdvPgtoModal" class="pgto-modal-overlay" hidden>
+    <div class="pgto-modal-box">
+      <div class="pgto-modal-header">
+        <div>
+          <h3 id="pdvPgtoTitulo" class="pgto-modal-title">Mesa —</h3>
+          <p id="pdvPgtoTotal" class="pgto-modal-sub">Total: —</p>
+        </div>
+        <button class="pgto-modal-close" onclick="fecharPdvPgtoModal()">&#x2715;</button>
       </div>
-      <div style="display:flex;gap:8px">
-        <button id="pdvPgtoConfirmar" disabled onclick="confirmarPagamentoMesa()" style="flex:1;padding:12px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;transition:opacity.15s">Confirmar Pagamento</button>
-        <button onclick="fecharPdvPgtoModal()" style="padding:12px 16px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-weight:700;cursor:pointer">Cancelar</button>
+
+      <p class="pgto-modal-label">Forma de pagamento</p>
+      <div class="pgto-modal-opcoes" id="pdvPgtoOpcoes">
+        <button class="pdv-pgto-opt" data-pgto="PIX" onclick="selecionarPdvPgto('PIX',this)">
+          <img src="../images/menu/pix.png" class="pgto-icon" alt="PIX">
+          <span class="pgto-opt-info"><strong>PIX</strong><small>Pagamento instantaneo</small></span>
+          <span class="pgto-opt-arrow">›</span>
+        </button>
+        <button class="pdv-pgto-opt" data-pgto="CREDITO" onclick="selecionarPdvPgto('CREDITO',this)">
+          <img src="../images/menu/Credito.png" class="pgto-icon" alt="Credito">
+          <span class="pgto-opt-info"><strong>Cartao Credito</strong><small>Parcelamento disponivel</small></span>
+          <span class="pgto-opt-arrow">›</span>
+        </button>
+        <button class="pdv-pgto-opt" data-pgto="DEBITO" onclick="selecionarPdvPgto('DEBITO',this)">
+          <img src="../images/menu/Debito.png" class="pgto-icon" alt="Debito">
+          <span class="pgto-opt-info"><strong>Cartao Debito</strong><small>Debito na hora</small></span>
+          <span class="pgto-opt-arrow">›</span>
+        </button>
+        <button class="pdv-pgto-opt" data-pgto="DINHEIRO" onclick="selecionarPdvPgto('DINHEIRO',this)">
+          <img src="../images/menu/dinheiro.png" class="pgto-icon" alt="Dinheiro">
+          <span class="pgto-opt-info"><strong>Dinheiro</strong><small>Troco disponivel</small></span>
+          <span class="pgto-opt-arrow">›</span>
+        </button>
+      </div>
+
+      <div class="pgto-modal-actions">
+        <button id="pdvPgtoConfirmar" class="btn-action btn-success pgto-confirm-btn" disabled onclick="confirmarPagamentoMesa()">
+          Confirmar Pagamento
+        </button>
+        <button class="pgto-cancel-btn" onclick="fecharPdvPgtoModal()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -97,6 +122,24 @@
 
     <!-- DIREITA: pedido -->
     <aside class="pdv-right">
+
+      <!-- Abas de alto nível -->
+      <div class="pdv-top-tabs">
+        <button class="pdv-top-tab is-active" data-top="pdv">Venda</button>
+        <button class="pdv-top-tab" data-top="historico">Historico</button>
+      </div>
+
+      <!-- Contas aguardando pagamento -->
+      <div id="pendentesSection" hidden>
+        <div class="pendentes-header">
+          <span class="pendentes-title">Aguardando pagamento</span>
+          <button class="pendentes-refresh" onclick="verificarCobrancas()">Atualizar</button>
+        </div>
+        <div id="pendentesGrid" class="pendentes-grid"></div>
+      </div>
+
+      <!-- Vista PDV -->
+      <div id="vistaPdv">
 
       <!-- Seleção de mesa -->
       <div class="pdv-mode-selector" aria-label="Tipo de venda">
@@ -153,11 +196,23 @@
           </div>
           <div class="section" id="pagamentoVendaSection">
             <label class="section-label">Pagamento</label>
-            <div class="pgto-grid">
-              <button class="pgto-btn" data-pgto="PIX">PIX</button>
-              <button class="pgto-btn" data-pgto="CREDITO">Crédito</button>
-              <button class="pgto-btn" data-pgto="DEBITO">Débito</button>
-              <button class="pgto-btn" data-pgto="DINHEIRO">Dinheiro</button>
+            <div class="pgto-card-grid">
+              <button class="pgto-btn pgto-card-btn" data-pgto="PIX">
+                <img src="../images/menu/pix.png" class="pgto-icon-sm" alt="PIX">
+                <span>PIX</span>
+              </button>
+              <button class="pgto-btn pgto-card-btn" data-pgto="CREDITO">
+                <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="Credito">
+                <span>Credito</span>
+              </button>
+              <button class="pgto-btn pgto-card-btn" data-pgto="DEBITO">
+                <img src="../images/menu/Debito.png" class="pgto-icon-sm" alt="Debito">
+                <span>Debito</span>
+              </button>
+              <button class="pgto-btn pgto-card-btn" data-pgto="DINHEIRO">
+                <img src="../images/menu/dinheiro.png" class="pgto-icon-sm" alt="Dinheiro">
+                <span>Dinheiro</span>
+              </button>
             </div>
           </div>
           <div class="section">
@@ -187,14 +242,38 @@
           </div>
           <div class="section">
             <label class="section-label">Pagamento</label>
-            <div class="pgto-grid">
-              <button class="pgto-btn pgto-conta" data-pgto="PIX">PIX</button>
-              <button class="pgto-btn pgto-conta" data-pgto="CREDITO">Crédito</button>
-              <button class="pgto-btn pgto-conta" data-pgto="DEBITO">Débito</button>
-              <button class="pgto-btn pgto-conta" data-pgto="DINHEIRO">Dinheiro</button>
+            <div class="pgto-card-grid">
+              <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="PIX">
+                <img src="../images/menu/pix.png" class="pgto-icon-sm" alt="PIX">
+                <span>PIX</span>
+              </button>
+              <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="CREDITO">
+                <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="Credito">
+                <span>Credito</span>
+              </button>
+              <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="DEBITO">
+                <img src="../images/menu/Debito.png" class="pgto-icon-sm" alt="Debito">
+                <span>Debito</span>
+              </button>
+              <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="DINHEIRO">
+                <img src="../images/menu/dinheiro.png" class="pgto-icon-sm" alt="Dinheiro">
+                <span>Dinheiro</span>
+              </button>
             </div>
           </div>
           <button id="fecharContaBtn" class="btn-action btn-success" disabled>Fechar Conta</button>
+        </div>
+      </div>
+
+      </div><!-- /vistaPdv -->
+
+      <!-- Vista Histórico -->
+      <div id="vistaHistorico" hidden>
+        <div class="historico-toolbar">
+          <button class="historico-refresh-btn" onclick="carregarHistorico()">Atualizar</button>
+        </div>
+        <div id="historicoLista" class="historico-lista">
+          <div class="order-empty"><p>Carregando historico...</p></div>
         </div>
       </div>
 
@@ -209,7 +288,28 @@
       </div>
       <h3 id="successTitle">Pedido criado!</h3>
       <p id="successMsg" class="success-detail"></p>
+      <div class="recibo-nome-wrap">
+        <label class="section-label" for="nomeClienteInput">Nome do cliente (opcional)</label>
+        <input id="nomeClienteInput" type="text" placeholder="Ex: Maria Silva" autocomplete="off" />
+      </div>
+      <button id="gerarReciboBtn" class="btn-action btn-recibo" style="display:none;width:100%">Gerar Recibo</button>
       <button id="novoBtn" class="btn-action btn-primary" style="width:100%">Novo atendimento</button>
+    </div>
+  </div>
+
+  <!-- MODAL RECIBO HISTORICO -->
+  <div id="reciboHistoricoModal" class="pdv-overlay" hidden>
+    <div class="success-box" style="max-width:320px">
+      <h3 style="font-size:15px;font-weight:800">Gerar Recibo</h3>
+      <p id="reciboHistoricoInfo" class="success-detail"></p>
+      <div class="recibo-nome-wrap">
+        <label class="section-label" for="nomeClienteHistoricoInput">Nome do cliente (opcional)</label>
+        <input id="nomeClienteHistoricoInput" type="text" placeholder="Ex: Maria Silva" autocomplete="off" />
+      </div>
+      <div style="display:flex;gap:8px;width:100%">
+        <button id="reciboHistoricoImprimir" class="btn-action btn-recibo" style="flex:1">Imprimir</button>
+        <button onclick="document.getElementById('reciboHistoricoModal').hidden=true" style="padding:0 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;font-weight:700;cursor:pointer">Cancelar</button>
+      </div>
     </div>
   </div>
 

@@ -11,6 +11,10 @@
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
+
+function origemPedido(order) {
+  return order.numeroMesa ? `Mesa ${order.numeroMesa}` : `Balcao #${order.id}`;
+}
 const ACTIVE_STATUSES = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'];
 const AUTO_REFRESH_MS = 15000;
 const KITCHEN_URGENT_KEY = 'dataplate:kitchenUrgentOrders';
@@ -93,7 +97,6 @@ const fallbackOrders = [
 ];
 
 let kitchenOrders = [];
-let selectedOrderId = null;
 let autoRefreshTimer = null;
 let kitchenSocket = null;
 let websocketRetryTimer = null;
@@ -197,6 +200,7 @@ async function putJson(endpoint, payload) {
   }
   return readResponseBody(response);
 }
+
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -421,11 +425,16 @@ function buildCard(order) {
   const sla = getSlaState(order);
   const isUrgent = isUrgentOrder(order);
 
+  const chips = [
+    isUrgent ? '<span class="priority-chip">Urgente</span>' : '',
+    sla.level !== 'ok' ? `<span class="sla-chip ${sla.level}">${escapeHtml(sla.label)}</span>` : ''
+  ].filter(Boolean).join('');
+
   return `
-    <article class="kitchen-card ${selectedOrderId === order.id ? 'is-selected' : ''} ${isUrgent ? 'is-urgent' : ''} sla-${sla.level}" data-order-id="${order.id}">
-      <button class="card-main" type="button" data-order-select="${order.id}">
+    <article class="kitchen-card ${isUrgent ? 'is-urgent' : ''} sla-${sla.level}" data-order-id="${order.id}">
+      <div class="card-main">
         <div class="card-topline">
-          <strong>Pedido #${escapeHtml(order.id)} - Mesa ${escapeHtml(order.numeroMesa || '-')}</strong>
+          <strong>Pedido #${escapeHtml(order.id)} - ${escapeHtml(origemPedido(order))}</strong>
           <span class="time-chip sla-${sla.level}">${formatElapsed(order.dataHora)}</span>
         </div>
         <div class="card-items">
@@ -434,23 +443,20 @@ function buildCard(order) {
               ? visibleItems.map((item) => `
                 <div class="card-item">
                   <span>${escapeHtml(item.quantidade || 0)}x</span>
-                  <strong>${escapeHtml(item.nomeProduto || 'Item')}</strong>
+                  ${escapeHtml(item.nomeProduto || 'Item')}
                 </div>
               `).join('')
-              : '<div class="card-item"><strong>Sem itens</strong></div>'
+              : '<div class="card-item">Sem itens</div>'
           }
-          ${hiddenCount ? `<div class="card-item"><strong>+ ${hiddenCount} item(ns)</strong></div>` : ''}
+          ${hiddenCount ? `<div class="card-item card-item-more">+${hiddenCount} item(ns)</div>` : ''}
         </div>
-        ${order.observacoes ? `<div class="card-obs">&#x1F4DD; ${escapeHtml(order.observacoes)}</div>` : ''}
-        <div class="card-meta">
-          ${isUrgent ? '<span class="priority-chip">Urgente</span>' : ''}
-          <span class="sla-chip ${sla.level}">${escapeHtml(sla.label)}</span>
-          <span>${escapeHtml(meta.label || order.status)}</span>
-          <span>${formatTime(order.dataHora)}</span>
-          <span>${formatCurrency(order.valorTotal)}</span>
-        </div>
-        ${buildProgress(order)}
-      </button>
+        ${order.observacoes ? `<div class="card-obs">Obs: ${escapeHtml(order.observacoes)}</div>` : ''}
+        ${chips || formatTime(order.dataHora) ? `
+        <div class="card-footer">
+          <div class="card-chips">${chips}</div>
+          <span class="card-time-label">${formatTime(order.dataHora)} &bull; ${formatCurrency(order.valorTotal)}</span>
+        </div>` : ''}
+      </div>
       <div class="card-actions">${getAction(order)}</div>
     </article>
   `;
@@ -501,7 +507,7 @@ function renderNextOrder(filteredOrders) {
   strip.innerHTML = `
     <div class="next-order-main">
       <span>Pedido da vez</span>
-      <strong>#${escapeHtml(nextOrder.id)} - Mesa ${escapeHtml(nextOrder.numeroMesa || '-')}</strong>
+      <strong>#${escapeHtml(nextOrder.id)} - ${escapeHtml(origemPedido(nextOrder))}</strong>
       <div class="next-order-meta">
         ${isUrgent ? '<span class="priority-chip">Urgente</span>' : ''}
         <span class="sla-chip ${sla.level}">${escapeHtml(sla.label)}</span>
@@ -510,7 +516,6 @@ function renderNextOrder(filteredOrders) {
       </div>
     </div>
     <div class="next-order-actions">
-      <button class="secondary-button" type="button" data-order-select="${nextOrder.id}">Detalhes</button>
       ${getAction(nextOrder)}
     </div>
   `;
@@ -541,9 +546,9 @@ function renderTable(filteredOrders) {
     const sla = getSlaState(order);
     const isUrgent = isUrgentOrder(order);
     return `
-      <tr data-order-row="${order.id}">
+      <tr>
         <td><strong>#${escapeHtml(order.id)}</strong></td>
-        <td>Mesa ${escapeHtml(order.numeroMesa || '-')}</td>
+        <td>${escapeHtml(origemPedido(order))}</td>
         <td>${escapeHtml(label)}</td>
         <td><span class="sla-chip ${sla.level}">${formatElapsed(order.dataHora)}</span></td>
         <td>${isUrgent ? '<span class="priority-chip">Urgente</span>' : '<span class="sla-chip">Normal</span>'}</td>
@@ -555,90 +560,53 @@ function renderTable(filteredOrders) {
   }).join('');
 }
 
-function renderDetail() {
-  const detail = document.getElementById('orderDetail');
-  const statusLabel = document.getElementById('detailStatus');
-  const order = kitchenOrders.find((item) => item.id === selectedOrderId && ACTIVE_STATUSES.includes(item.status));
-  if (!order) {
-    detail.className = 'order-detail-empty';
-    detail.textContent = 'Nenhum pedido selecionado.';
-    statusLabel.textContent = '--';
-    return;
-  }
 
-  const meta = STATUS_META[order.status] || {};
-  const sla = getSlaState(order);
-  const isUrgent = isUrgentOrder(order);
-  const progress = getChecklistStats(order);
-  const items = getItems(order);
-  const checklist = getChecklistForOrder(order);
 
-  statusLabel.textContent = meta.label || order.status;
-  detail.className = 'order-detail';
-  detail.innerHTML = `
-    <div class="detail-title">
-      <strong>Pedido #${escapeHtml(order.id)}</strong>
-      <span class="status-badge ${meta.badgeClass || ''}">${escapeHtml(meta.label || order.status)}</span>
-    </div>
-    <div class="detail-list">
-      <div><span>Mesa</span><strong>${escapeHtml(order.numeroMesa || '-')}</strong></div>
-      <div><span>Entrada</span><strong>${formatTime(order.dataHora)}</strong></div>
-      <div><span>Espera</span><strong>${formatElapsed(order.dataHora)}</strong></div>
-      <div><span>Prazo</span><strong>${escapeHtml(sla.label)}</strong></div>
-      <div><span>Prioridade</span><strong>${isUrgent ? 'Urgente' : 'Normal'}</strong></div>
-      <div><span>Total</span><strong>${formatCurrency(order.valorTotal)}</strong></div>
-    </div>
-    <div>
-      <div class="detail-progress-row">
-        <span class="progress-label">Itens preparados</span>
-        <strong>${progress.done}/${progress.total}</strong>
+function buildCanceladoCard(order) {
+  const hora  = formatTime(order.dataHora);
+  const itens = (order.itens || []).slice(0, 4).map(i =>
+    `<div class="card-item"><span>${escapeHtml(i.quantidade || 0)}x</span>${escapeHtml(i.nomeProduto || 'Item')}</div>`
+  ).join('');
+  const motivo = order.observacoes
+    ? `<div class="card-obs">Motivo: ${escapeHtml(order.observacoes)}</div>`
+    : '';
+  return `
+    <article class="kitchen-card cancelado-card">
+      <div class="card-main">
+        <div class="card-topline">
+          <strong>Pedido #${escapeHtml(order.id)} - ${escapeHtml(origemPedido(order))}</strong>
+          <span class="cancelado-hora">${hora}</span>
+        </div>
+        <div class="card-items">${itens || '<div class="card-item">Sem itens</div>'}</div>
       </div>
-      <div class="progress-track"><span style="width:${progress.percent}%"></span></div>
-    </div>
-    <div class="detail-items">
-      ${
-        items.length
-          ? items.map((item, index) => {
-            const key = itemKey(item, index);
-            return `
-              <label>
-                <input
-                  type="checkbox"
-                  data-check-item
-                  data-order-id="${order.id}"
-                  data-item-key="${escapeHtml(key)}"
-                  ${checklist[key] ? 'checked' : ''}
-                />
-                <span>${escapeHtml(itemText(item))}</span>
-                <strong>${formatCurrency(item.subtotal ?? (Number(item.quantidade || 0) * Number(item.precoUnitario || 0)))}</strong>
-              </label>
-            `;
-          }).join('')
-          : '<label><span>Sem itens</span><strong>-</strong></label>'
-      }
-    </div>
-    <div class="detail-actions">
-      ${getAction(order)}
-      <button class="action-button secondary-action" type="button" data-notify-service="${order.id}">Chamar atendimento</button>
-      <button class="action-button secondary-action" type="button" data-print-order="${order.id}">Imprimir ficha</button>
-    </div>
-  `;
+      ${motivo}
+    </article>`;
 }
 
-function maintainSelection(filteredOrders) {
-  const selectedStillVisible = filteredOrders.some((order) => order.id === selectedOrderId);
-  if (!selectedStillVisible) selectedOrderId = filteredOrders[0]?.id || null;
+function renderCancelados() {
+  const hoje = new Date().toDateString();
+  const cancelados = kitchenOrders
+    .filter(o => o.status === 'CANCELADO' && new Date(o.dataHora).toDateString() === hoje)
+    .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+
+  const countEl = document.getElementById('countCancelados');
+  const listEl  = document.getElementById('listCancelados');
+  if (countEl) countEl.textContent = cancelados.length;
+  if (listEl) {
+    listEl.innerHTML = cancelados.length
+      ? cancelados.map(buildCanceladoCard).join('')
+      : '<div class="empty-state">Nenhum cancelamento hoje</div>';
+  }
 }
 
 function renderKitchen() {
   const activeOrders = kitchenOrders.filter((order) => ACTIVE_STATUSES.includes(order.status));
   const filteredOrders = getFilteredOrders();
-  maintainSelection(filteredOrders);
   renderStats(activeOrders);
   renderNextOrder(filteredOrders);
   renderColumns(filteredOrders);
+  renderCancelados();
   renderTable(filteredOrders);
-  renderDetail();
 }
 
 function getFallbackOrders() {
@@ -651,6 +619,7 @@ async function loadOrders({ silent = false } = {}) {
   try {
     const novos = normalizeOrders(await getJson('/pedidos'));
     verificarNovosPedidosAudio(novos);
+    verificarCancelamentos(novos);
     kitchenOrders = novos;
     fallbackMode = false;
     fallbackNoticeShown = false;
@@ -683,7 +652,6 @@ async function changeOrderStatus(orderId, nextStatus) {
 
     if (!ACTIVE_STATUSES.includes(nextStatus)) {
       cleanupOrderState(id);
-      selectedOrderId = null;
     }
 
     showToast('Status atualizado com sucesso!', 'success');
@@ -744,6 +712,27 @@ function verificarNovosPedidosAudio(pedidos) {
   ids.forEach((id) => { if (!_pedidosConhecidos.has(id)) temNovo = true; });
   _pedidosConhecidos = ids;
   if (temNovo && _pedidosConhecidos.size > 0) tocarNotificacaoNovoPedido();
+}
+
+let _canceladosAlertados = new Set();
+
+function verificarCancelamentos(novos) {
+  const canceladosAgora = novos.filter(p => p.status === 'CANCELADO');
+  canceladosAgora.forEach(p => {
+    if (_canceladosAlertados.has(p.id)) return;
+    _canceladosAlertados.add(p.id);
+
+    // Verifica se estava ativo antes (estava em kitchenOrders com status diferente)
+    const anterior = kitchenOrders.find(k => k.id === p.id);
+    if (anterior && anterior.status === 'EM_PREPARO') {
+      showToast(
+        `RETIRAR DO PREPARO — Pedido #${p.id} (${origemPedido(p)}) foi CANCELADO`,
+        'error'
+      );
+    } else if (anterior && ACTIVE_STATUSES.includes(anterior.status)) {
+      showToast(`Pedido #${p.id} (${origemPedido(p)}) foi cancelado.`, 'error');
+    }
+  });
 }
 
 function startAutoRefresh() {
@@ -831,12 +820,6 @@ function bindEvents() {
       return;
     }
 
-    const print = event.target.closest('[data-print-order]');
-    if (print) {
-      event.preventDefault();
-      window.print();
-      return;
-    }
 
     const action = event.target.closest('[data-order-action]');
     if (action) {
@@ -845,11 +828,6 @@ function bindEvents() {
       return;
     }
 
-    const select = event.target.closest('[data-order-select], [data-order-row]');
-    if (select) {
-      selectedOrderId = Number(select.dataset.orderSelect || select.dataset.orderRow);
-      renderKitchen();
-    }
   });
 
   document.addEventListener('change', (event) => {

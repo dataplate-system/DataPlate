@@ -804,16 +804,48 @@ function atualizarBotaoPedido() {
   }
 }
 
-// Avisa se não há mesa identificada (QR code não foi usado)
+// Seletor de mesa (substitui QR code para demonstrações)
+async function mostrarSeletorMesa() {
+  const overlay = document.getElementById('mesaSelectorOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+
+  const select = document.getElementById('mesaSelectorPicklist');
+  try {
+    const resp  = await fetch(`${API_BASE_URL}/mesas`);
+    const mesas = resp.ok ? await resp.json() : [];
+    const ativas = (mesas || [])
+      .filter(m => m.ativo !== false && ['livre', 'disponivel'].includes((m.status || '').toLowerCase()))
+      .sort((a, b) => a.numero - b.numero);
+
+    select.innerHTML = '<option value="">Selecione sua mesa...</option>' +
+      ativas.map(m => {
+        const local = m.localizacao ? ` — ${m.localizacao}` : '';
+        return `<option value="${m.numero}|${m.id || ''}">Mesa ${m.numero}${local}</option>`;
+      }).join('');
+  } catch (_) {
+    // fallback sem API
+    select.innerHTML = '<option value="">Selecione sua mesa...</option>' +
+      Array.from({ length: 15 }, (_, i) =>
+        `<option value="${i + 1}|">Mesa ${i + 1}</option>`
+      ).join('');
+  }
+}
+
+window.confirmarMesaSelecionada = function() {
+  const select = document.getElementById('mesaSelectorPicklist');
+  const val    = (select?.value || '').trim();
+  if (!val) { select?.focus(); return; }
+  const [numero, id] = val.split('|');
+  localStorage.setItem('numeroMesa', numero);
+  if (id) localStorage.setItem('mesaId', id);
+  const overlay = document.getElementById('mesaSelectorOverlay');
+  if (overlay) overlay.style.display = 'none';
+};
+
 (function verificarMesa() {
   const { numeroMesa } = getMesaDoPedido();
-  if (!numeroMesa) {
-    mostrarNotificacao(
-      "aviso",
-      "Mesa não identificada",
-      "Escaneie o QR Code da sua mesa para vincular o pedido corretamente."
-    );
-  }
+  if (!numeroMesa) mostrarSeletorMesa();
 })();
 
 // roda ao abrir app

@@ -56,6 +56,6 @@ public class PedidosController {
     public ResponseEntity<PedidoResponse> atualizarStatus(
             @PathVariable Long id,
             @Valid @RequestBody PedidoStatusUpdateRequest request) {
-        return ResponseEntity.ok(pedidoService.atualizarStatus(id, request.status()));
+        return ResponseEntity.ok(pedidoService.atualizarStatus(id, request.status(), request.formaPagamento()));
     }
 }

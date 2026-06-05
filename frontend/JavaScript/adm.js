@@ -374,15 +374,45 @@ function navigateTo(sectionId) {
     if (searchBox) searchBox.style.display = 'flex';
   }
 
-  // Update active nav buttons
-  document.querySelectorAll('.nav-button').forEach(btn => {
-    btn.classList.remove('active');
-  });
+  // Mapa: seção → [grupo pai, nome de exibição]
+  const NAV_MAP = {
+    pedidos:             ['Operações',    'Pedidos'],
+    cancelamentos:       ['Operações',    'Cancelamentos'],
+    pagamentos:          ['Operações',    'Pagamentos'],
+    mesas:               ['Operações',    'Mesas'],
+    cozinha:             ['Operações',    'Cozinha'],
+    clientes:            ['Cadastros',    'Clientes'],
+    fornecedores:        ['Cadastros',    'Fornecedores'],
+    funcionarios:        ['Cadastros',    'Funcionários'],
+    cardapio:            ['Cadastros',    'Cardápio'],
+    insumos:             ['Cadastros',    'Insumos'],
+    dashboard:           ['Relatórios',   'Dashboard'],
+    'rel-financeiro':    ['Relatórios',   'Financeiro'],
+    'rel-cardapio':      ['Relatórios',   'Desempenho do Cardápio'],
+    'rel-operacional':   ['Relatórios',   'Operacional'],
+    'config-restaurante':['Configurações','Restaurante'],
+    'config-usuarios':   ['Configurações','Usuários'],
+    'config-integracao': ['Configurações','Integrações'],
+    'config-notificacoes':['Configurações','Notificações'],
+  };
 
-  // Mark current button as active
-  const activeBtn = document.querySelector(`[onclick*="${sectionId}"]`);
-  if (activeBtn) {
-    activeBtn.classList.add('active');
+  // Destacar botão pai do top nav
+  document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+  const navInfo = NAV_MAP[sectionId];
+  if (navInfo) {
+    document.querySelectorAll('.nav-button').forEach(btn => {
+      if (btn.textContent.trim() === navInfo[0]) btn.classList.add('active');
+    });
+  }
+
+  // Atualizar breadcrumb no header
+  const bc = document.getElementById('headerBreadcrumb');
+  if (bc) {
+    if (navInfo) {
+      bc.innerHTML = `<span>${navInfo[0]}</span><span class="bc-sep">›</span><span class="bc-current">${navInfo[1]}</span>`;
+    } else {
+      bc.innerHTML = '';
+    }
   }
 
   // Persist section in URL hash so F5 restores it
@@ -393,12 +423,15 @@ function navigateTo(sectionId) {
 
   // Load data for the section being shown
   const sectionLoaders = {
+    home:           carregarHomeStats,
     dashboard:      carregarRelatorios,
     clientes:       carregarClientes,
     funcionarios:   carregarFuncionarios,
     fornecedores:   carregarFornecedores,
     cardapio:       carregarProdutos,
     pedidos:        carregarPedidos,
+    cancelamentos:  carregarCancelamentos,
+    pagamentos:     carregarPagamentos,
     mesas:          () => { carregarMesas(); carregarPedidosProntos(); },
     cozinha:        carregarCozinha,
     'rel-vendas':      () => { preencherDatasRelatorio('rel-vendas', 30);    const r = getRelDateRange('rel-vendas');      carregarRelVendas(r.inicio, r.fim); },
@@ -420,6 +453,7 @@ const ADMIN_HOME_ROUTES = [
   { id: 'funcionarios', labels: ['funcionarios', 'funcionários', 'funcionario', 'funcionário', 'colaboradores'] },
   { id: 'cardapio', labels: ['cardapio', 'cardápio', 'menu', 'itens', 'produtos'] },
   { id: 'pedidos', labels: ['pedidos', 'pedido', 'vendas'] },
+  { id: 'cancelamentos', labels: ['cancelamentos', 'cancelado', 'cancelados', 'cancelamento'] },
   { id: 'mesas', labels: ['mesas', 'mesa', 'salao', 'salão'] },
   { id: 'cozinha', labels: ['cozinha', 'preparo'] },
   { id: 'rel-vendas', labels: ['relatorio de vendas', 'relatório de vendas', 'vendas'] },
@@ -1214,16 +1248,159 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
     .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao criar usuário.'));
 });
 
+// ── PAGAMENTOS ─────────────────────────────────────────────────────
+const PGTO_ICONS = {
+  PIX:      'PIX',
+  CREDITO:  'Cartao Credito',
+  DEBITO:   'Cartao Debito',
+  DINHEIRO: 'Dinheiro'
+};
+
+function extrairMetodoPagamento(observacoes) {
+  const obs = (observacoes || '').toUpperCase();
+  if (obs.includes('PAGAMENTO: PIX'))      return 'PIX';
+  if (obs.includes('PAGAMENTO: CREDITO'))  return 'CREDITO';
+  if (obs.includes('PAGAMENTO: DEBITO'))   return 'DEBITO';
+  if (obs.includes('PAGAMENTO: DINHEIRO')) return 'DINHEIRO';
+  return '';
+}
+
+function pgtoDataPadrao() {
+  const hoje = new Date();
+  const inicio = new Date(hoje);
+  inicio.setDate(inicio.getDate() - 30);
+  const fmt = d => d.toISOString().slice(0, 10);
+  return { inicio: fmt(inicio), fim: fmt(hoje) };
+}
+
+async function carregarPagamentos() {
+  const ini = document.getElementById('pgtoDataInicio');
+  const fim = document.getElementById('pgtoDataFim');
+  if (!ini.value || !fim.value) {
+    const def = pgtoDataPadrao();
+    ini.value = def.inicio;
+    fim.value = def.fim;
+  }
+
+  const tbody = document.getElementById('pgtoTabelaBody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
+
+  try {
+    const data = await getJson('/pedidos?page=0&size=500');
+    const todos = Array.isArray(data) ? data : (data?.content || []);
+
+    const iniDate = new Date(ini.value + 'T00:00:00');
+    const fimDate = new Date(fim.value + 'T23:59:59');
+
+    const transacoes = todos.filter(p => {
+      if (p.status !== 'ENTREGUE') return false;
+      const d = new Date(p.dataHora);
+      return d >= iniDate && d <= fimDate;
+    }).sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+
+    // Totais por método
+    const totais = { PIX: 0, CREDITO: 0, DEBITO: 0, DINHEIRO: 0, outros: 0 };
+    const qtds   = { PIX: 0, CREDITO: 0, DEBITO: 0, DINHEIRO: 0 };
+
+    transacoes.forEach(p => {
+      const metodo = extrairMetodoPagamento(p.observacoes);
+      const val = Number(p.valorTotal || 0);
+      if (metodo && totais[metodo] !== undefined) {
+        totais[metodo] += val;
+        qtds[metodo]++;
+      } else {
+        totais.outros += val;
+      }
+    });
+
+    const totalGeral = Object.values(totais).reduce((s, v) => s + v, 0);
+
+    const fmt = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+    setEl('pgtoTotalPix',     fmt(totais.PIX));
+    setEl('pgtoTotalCredito', fmt(totais.CREDITO));
+    setEl('pgtoTotalDebito',  fmt(totais.DEBITO));
+    setEl('pgtoTotalDinheiro',fmt(totais.DINHEIRO));
+    setEl('pgtoTotalGeral',   fmt(totalGeral));
+    setEl('pgtoQtdPix',      `${qtds.PIX} venda(s)`);
+    setEl('pgtoQtdCredito',  `${qtds.CREDITO} venda(s)`);
+    setEl('pgtoQtdDebito',   `${qtds.DEBITO} venda(s)`);
+    setEl('pgtoQtdDinheiro', `${qtds.DINHEIRO} venda(s)`);
+    setEl('pgtoQtdTotal',    `${transacoes.length} transacao(oes)`);
+
+    if (!tbody) return;
+    if (!transacoes.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">Nenhuma transacao encontrada.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = transacoes.map(p => {
+      const metodo = extrairMetodoPagamento(p.observacoes);
+      const origem = p.numeroMesa ? `Mesa ${p.numeroMesa}` : 'Balcao';
+      const hora   = new Date(p.dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const data   = new Date(p.dataHora).toLocaleDateString('pt-BR');
+      const itens  = (p.itens || []).slice(0, 2).map(i => `${i.quantidade}x ${escapeHtml(i.nomeProduto)}`).join(', ');
+      const extra  = (p.itens?.length || 0) > 2 ? ` +${p.itens.length - 2}` : '';
+      const pgtoLabel = PGTO_ICONS[metodo] || '<span style="color:#94a3b8">Nao registrado</span>';
+
+      return `<tr>
+        <td><strong>#${p.id}</strong></td>
+        <td style="white-space:nowrap">${data} ${hora}</td>
+        <td>${origem}</td>
+        <td style="font-size:12px;color:#64748b">${itens}${extra}</td>
+        <td><strong>${pgtoLabel}</strong></td>
+        <td><strong style="color:#16a34a">${fmt(p.valorTotal)}</strong></td>
+      </tr>`;
+    }).join('');
+
+    // Guarda para exportar
+    window._pgtoTransacoes = transacoes;
+
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#dc2626;padding:24px">Erro: ${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+
+window.carregarPagamentos = carregarPagamentos;
+
+window.exportarPagamentosCSV = function() {
+  const transacoes = window._pgtoTransacoes || [];
+  if (!transacoes.length) { alert('Nenhuma transacao para exportar.'); return; }
+
+  const header = 'ID,Data,Hora,Origem,Pagamento,Total\n';
+  const rows = transacoes.map(p => {
+    const d    = new Date(p.dataHora);
+    const data = d.toLocaleDateString('pt-BR');
+    const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const orig = p.numeroMesa ? `Mesa ${p.numeroMesa}` : 'Balcao';
+    const pgto = extrairMetodoPagamento(p.observacoes) || 'Nao registrado';
+    const val  = Number(p.valorTotal).toFixed(2).replace('.', ',');
+    return `${p.id},"${data}","${hora}","${orig}","${pgto}","R$ ${val}"`;
+  }).join('\n');
+
+  const blob = new Blob(['﻿' + header + rows], { type: 'text/csv;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `pagamentos-${new Date().toISOString().slice(0,10)}.csv` });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 // Table Control
 const TABLES_STORAGE_KEY = 'dataplate:adminTables';
 let selectedTableId = null;
 
 const tableStatusMeta = {
-  disponivel: { label: 'Disponível', badge: 'badge-active', cardClass: 'status-disponivel' },
-  reservada: { label: 'Reservada', badge: 'badge-warning', cardClass: 'status-reservada' },
-  ocupada: { label: 'Ocupada', badge: 'badge-info', cardClass: 'status-ocupada' },
-  manutencao: { label: 'Manutenção', badge: 'badge-danger', cardClass: 'status-manutencao' }
+  disponivel:            { label: 'Disponível',      badge: 'badge-active',   cardClass: 'status-disponivel' },
+  reservada:             { label: 'Reservada',        badge: 'badge-warning',  cardClass: 'status-reservada' },
+  ocupada:               { label: 'Ocupada',          badge: 'badge-info',     cardClass: 'status-ocupada' },
+  manutencao:            { label: 'Manutenção',       badge: 'badge-danger',   cardClass: 'status-manutencao' },
+  aguardando_pagamento:  { label: 'Conta Fechada',   badge: 'badge-pgto',     cardClass: 'status-aguardando' }
 };
+
+let admPedidosAtivos = [];
 
 function apiStatusToUiStatus(status) {
   const value = String(status || '').toLowerCase();
@@ -1464,6 +1641,20 @@ function buildTableRow(table) {
 function buildTableCard(table) {
   const meta = getStatusMeta(table.status);
   const activeClass = selectedTableId === table.id ? 'active' : '';
+  const fmtBRL = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
+
+  // Dados operacionais — pedidos ativos para esta mesa
+  const pedidosMesa = admPedidosAtivos.filter(p => p.numeroMesa === table.number);
+  const totalMesa   = pedidosMesa.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+  const temPronto   = pedidosMesa.some(p => String(p.status).toUpperCase() === 'PRONTO');
+
+  const operacionalHtml = pedidosMesa.length
+    ? `<span style="color:#111827;font-weight:700">${fmtBRL(totalMesa)}</span>
+       <span>${pedidosMesa.length} pedido(s) ativo(s)</span>
+       ${temPronto ? '<span style="color:#16a34a;font-weight:800">Pronto para entrega</span>' : ''}
+       ${table.status === 'aguardando_pagamento' ? '<span style="color:#f85b15;font-weight:800">Aguardando pagamento</span>' : ''}`
+    : `<span>${table.status === 'reservada' ? escapeHtml(table.reservationName || 'Reserva sem nome') : 'Sem pedidos ativos'}</span>`;
+
   return `
     <article class="table-card ${meta.cardClass} ${activeClass}" onclick="selectTable(${table.id})">
       <div class="table-card-header">
@@ -1473,8 +1664,7 @@ function buildTableCard(table) {
       <div class="table-card-meta">
         <span>${escapeHtml(table.seats)} lugares</span>
         <span>${escapeHtml(table.area || '-')}</span>
-        <span>${escapeHtml(table.reference || 'Sem referência')}</span>
-        <span>${table.status === 'reservada' ? escapeHtml(table.reservationName || 'Reserva sem nome') : '&nbsp;'}</span>
+        ${operacionalHtml}
       </div>
       <div class="table-card-actions" onclick="event.stopPropagation()">
         <button class="btn-small" onclick="reserveTable(${table.id})">Reservar</button>
@@ -1554,6 +1744,12 @@ async function carregarPedidosProntos() {
         </button>
       </span>`
     ).join('');
+
+    // Guarda todos os pedidos ativos para enriquecer os cards de mesa
+    admPedidosAtivos = (data?.content || data || []).filter(p =>
+      !['CANCELADO','ENTREGUE'].includes(String(p.status || '').toUpperCase())
+    );
+    renderTables();
   } catch (_) {
     banner.style.display = 'none';
   }
@@ -2675,6 +2871,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminHomeSearch();
   initClientForm();
   initCepAutocomplete();
+  applyCollapsedGroups();
 
   // Initialize dropdown toggles
   const dropdowns = document.querySelectorAll('.dropdown');
@@ -2849,6 +3046,84 @@ function updateDashboardMesas(mesas) {
   const disponiveis = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
   setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
 }
+
+// ── Grupos colapsáveis do sidebar ─────────────────────────────────
+const SHORTCUT_COLLAPSE_KEY = 'dataplate:shortcut_collapsed';
+
+function getCollapsedGroups() {
+  try { return JSON.parse(localStorage.getItem(SHORTCUT_COLLAPSE_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function applyCollapsedGroups() {
+  const collapsed = getCollapsedGroups();
+  document.querySelectorAll('.shortcut-group[data-group]').forEach(el => {
+    const id = el.dataset.group;
+    el.classList.toggle('collapsed', collapsed.includes(id));
+  });
+}
+
+window.toggleShortcutGroup = function(groupId) {
+  const el = document.querySelector(`.shortcut-group[data-group="${groupId}"]`);
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  const collapsed = Array.from(document.querySelectorAll('.shortcut-group.collapsed'))
+    .map(g => g.dataset.group).filter(Boolean);
+  localStorage.setItem(SHORTCUT_COLLAPSE_KEY, JSON.stringify(collapsed));
+};
+
+function carregarHomeStats() {
+  const el = (id) => document.getElementById(id);
+
+  getJson('/relatorios/resumo')
+    .then((resumo) => {
+      const ativos      = Number(resumo.pedidosRecebidos || 0) + Number(resumo.pedidosEmPreparo || 0) + Number(resumo.pedidosProntos || 0);
+      const prontos     = Number(resumo.pedidosProntos || 0);
+      const entregues   = Number(resumo.pedidosEntregues || 0);
+      const cancelados  = Number(resumo.pedidosCancelados || 0);
+      const totalPed    = ativos + entregues + cancelados;
+
+      // Faturamento
+      if (el('homeFaturamento'))       el('homeFaturamento').textContent       = formatCurrency(resumo.faturamento);
+      if (el('homeFaturamentoDetalhe'))el('homeFaturamentoDetalhe').textContent = `${totalPed} pedido(s) no dia`;
+
+      // Ticket médio
+      if (el('homeTicketMedio'))       el('homeTicketMedio').textContent       = formatCurrency(resumo.ticketMedio);
+
+      // Entregues
+      if (el('homeEntregues'))         el('homeEntregues').textContent         = String(entregues);
+      if (el('homeEntreguesDetalhe'))  el('homeEntreguesDetalhe').textContent  = entregues > 0
+        ? `${formatCurrency(resumo.faturamento)} faturado`
+        : 'Nenhum entregue ainda';
+
+      // Prontos p/ despacho
+      if (el('homeProntos'))           el('homeProntos').textContent           = String(prontos);
+      el('homeStatProntos')?.classList.toggle('has-alert', prontos > 0);
+
+      // Em andamento
+      if (el('homePedidosAtivos'))     el('homePedidosAtivos').textContent     = String(ativos);
+      if (el('homePedidosDetalhe'))    el('homePedidosDetalhe').textContent    =
+        `${resumo.pedidosRecebidos || 0} aguardando · ${resumo.pedidosEmPreparo || 0} em preparo`;
+
+      // Cancelamentos
+      if (el('homeCancelamentos'))     el('homeCancelamentos').textContent     = String(cancelados);
+      const cancelCard = el('homeStatCancelamentos');
+      if (cancelCard) cancelCard.classList.toggle('has-alert', cancelados > 0);
+    })
+    .catch(() => {});
+
+  getJson('/mesas')
+    .then((mesas) => {
+      const lista      = mesas || [];
+      const ocupadas   = lista.filter((m) => (m.status || '').toLowerCase() === 'ocupada').length;
+      const disponiveis= lista.filter((m) => (m.status || '').toLowerCase() === 'disponivel').length;
+      const total      = lista.length;
+      if (el('homeMesas'))       el('homeMesas').textContent       = `${ocupadas}/${total}`;
+      if (el('homeMesasDetalhe'))el('homeMesasDetalhe').textContent = `${disponiveis} disponíve${disponiveis === 1 ? 'l' : 'is'}`;
+    })
+    .catch(() => {});
+}
+window.carregarHomeStats = carregarHomeStats;
 
 function carregarRelatorios() {
   // Dashboard: resumo de hoje
@@ -3557,6 +3832,87 @@ function carregarPedidos(page = 0) {
       setTableBody('pedidos', [], msg);
       console.error('[pedidos]', err);
     });
+}
+
+// ── Cancelamentos ─────────────────────────────────────────────────
+let _todosCancelados = [];
+
+function carregarCancelamentos() {
+  const tbody = document.getElementById('cancelTbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
+
+  // Limpa filtros de data
+  const ini = document.getElementById('cancelDataInicio');
+  const fim = document.getElementById('cancelDataFim');
+  const busca = document.getElementById('cancelSearchInput');
+  if (ini) ini.value = '';
+  if (fim) fim.value = '';
+  if (busca) busca.value = '';
+
+  getJson('/pedidos?page=0&size=1000')
+    .then(raw => {
+      const todos = Array.isArray(raw) ? raw : (raw.content || []);
+      _todosCancelados = todos.filter(p => String(p.status).toUpperCase() === 'CANCELADO');
+      renderTabelaCancelamentos(_todosCancelados);
+    })
+    .catch(err => {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:24px">Erro: ${escapeHtml(err.message)}</td></tr>`;
+    });
+}
+window.carregarCancelamentos = carregarCancelamentos;
+
+window.filtrarCancelamentos = function() {
+  const busca = (document.getElementById('cancelSearchInput')?.value || '').toLowerCase().trim();
+  const ini   = document.getElementById('cancelDataInicio')?.value;
+  const fim   = document.getElementById('cancelDataFim')?.value;
+
+  const filtrado = _todosCancelados.filter(p => {
+    if (busca) {
+      const origem = pedidoOrigemLabel(p).toLowerCase();
+      if (!String(p.id).includes(busca) && !origem.includes(busca)) return false;
+    }
+    if (ini && p.dataHora && new Date(p.dataHora) < new Date(ini)) return false;
+    if (fim && p.dataHora && new Date(p.dataHora) > new Date(fim + 'T23:59:59')) return false;
+    return true;
+  });
+  renderTabelaCancelamentos(filtrado);
+};
+
+function renderTabelaCancelamentos(lista) {
+  const tbody = document.getElementById('cancelTbody');
+  if (!tbody) return;
+
+  const total30 = lista.filter(p => {
+    if (!p.dataHora) return false;
+    return (Date.now() - new Date(p.dataHora).getTime()) <= 30 * 24 * 60 * 60 * 1000;
+  }).length;
+  const valorTotal = lista.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+
+  const el = id => document.getElementById(id);
+  if (el('cancelTotalQtd'))   el('cancelTotalQtd').textContent   = String(lista.length);
+  if (el('cancelTotalValor')) el('cancelTotalValor').textContent = formatCurrency(valorTotal);
+  if (el('cancelUltimos30'))  el('cancelUltimos30').textContent  = String(total30);
+
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Nenhum cancelamento encontrado.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = lista
+    .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora))
+    .map(p => {
+      const qtd = (p.itens || []).reduce((s, i) => s + (i.quantidade || 0), 0);
+      const obs = escapeHtml(p.observacoes || '—');
+      return `<tr>
+        <td><strong>#${p.id}</strong></td>
+        <td>${pedidoOrigemLabel(p)}</td>
+        <td>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '—'}</td>
+        <td>${qtd} item(s)</td>
+        <td>${formatCurrency(p.valorTotal)}</td>
+        <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${obs}">${obs}</td>
+        <td><button class="btn-small" type="button" onclick="abrirDetalhesPedido(${p.id})">Ver</button></td>
+      </tr>`;
+    }).join('');
 }
 
 function renderPedidosPaginacao(page, totalPages) {

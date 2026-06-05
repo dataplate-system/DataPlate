@@ -32,8 +32,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PedidoService {
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
-    private static final int STATUS_RECEBIDO_ID = 1;
-    private static final int STATUS_ENTREGUE_ID = 4;
+    private static final int STATUS_RECEBIDO_ID  = 1;
+    private static final int STATUS_SERVIDO_ID   = 6;
+    private static final int STATUS_ENTREGUE_ID  = 4;
     private static final int STATUS_CANCELADO_ID = 5;
 
     private final PedidoRepository pedidoRepository;
@@ -58,9 +59,11 @@ public class PedidoService {
 
         validarCriacao(request, vendaCaixa);
         Mesa mesa = resolverMesa(request, vendaCaixa);
+
+        // Itens são criados antes do pedido para verificar tempoPreparo
         Pedido pedido = Pedido.builder()
                 .idMesa(mesa == null ? null : mesa.getId().intValue())
-                .idStatus(vendaCaixa ? STATUS_ENTREGUE_ID : STATUS_RECEBIDO_ID)
+                .idStatus(STATUS_RECEBIDO_ID) // ajustado abaixo após análise dos itens
                 .numeroPedido(gerarNumeroPedido())
                 .dataHora(now)
                 .observacoes(observacoesPedido(request, vendaCaixa))
@@ -71,6 +74,16 @@ public class PedidoService {
         List<PedidoItem> itens = request.itens().stream()
                 .map(itemRequest -> criarItem(pedido, itemRequest.produtoId(), itemRequest.quantidade()))
                 .toList();
+
+        // Venda balcão com itens que não precisam de preparo vai direto para ENTREGUE.
+        // Se qualquer item tiver tempoPreparo > 0 (ou nulo, assumindo preparo), vai para a cozinha como RECEBIDO.
+        boolean todosInstantaneos = vendaCaixa && itens.stream().allMatch(item -> {
+            Integer tp = item.getProduto().getTempoPreparo();
+            return tp != null && tp == 0;
+        });
+
+        int statusFinal = todosInstantaneos ? STATUS_ENTREGUE_ID : STATUS_RECEBIDO_ID;
+        pedido.setIdStatus(statusFinal);
 
         BigDecimal total = itens.stream()
                 .map(this::subtotalDoItem)
@@ -95,20 +108,35 @@ public class PedidoService {
             );
             throw ex;
         }
-        registrarHistorico(salvo.getId(), vendaCaixa ? PedidoStatus.ENTREGUE : PedidoStatus.RECEBIDO);
+
+        PedidoStatus statusHistorico = todosInstantaneos ? PedidoStatus.ENTREGUE : PedidoStatus.RECEBIDO;
+        registrarHistorico(salvo.getId(), statusHistorico);
 
         PedidoResponse response = toResponse(salvo);
-        publicarEvento(vendaCaixa ? "VENDA_CAIXA" : "NOVO_PEDIDO", response);
+        // VENDA_CAIXA só quando não precisa de preparo — do contrário notifica a cozinha normalmente
+        publicarEvento(todosInstantaneos ? "VENDA_CAIXA" : "NOVO_PEDIDO", response);
         log.info("Pedido criado com sucesso. id_pedido={}, venda_caixa={}, id_mesa={}, valor_total={}",
                 salvo.getId(), vendaCaixa, salvo.getIdMesa(), salvo.getValorTotal());
         return response;
     }
 
     @Transactional
-    public PedidoResponse atualizarStatus(Long id, PedidoStatus novoStatus) {
+    public PedidoResponse atualizarStatus(Long id, PedidoStatus novoStatus, String formaPagamento) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido nao encontrado: " + id));
         pedido.setIdStatus(toStatusId(novoStatus));
+
+        // Grava forma de pagamento nas observacoes ao marcar como ENTREGUE
+        if (novoStatus == PedidoStatus.ENTREGUE
+                && formaPagamento != null
+                && !formaPagamento.isBlank()) {
+            String obs = pedido.getObservacoes() == null ? "" : pedido.getObservacoes().trim();
+            String tag = "Pagamento: " + formaPagamento.trim().toUpperCase();
+            if (!obs.contains("Pagamento:")) {
+                pedido.setObservacoes(obs.isBlank() ? tag : obs + " | " + tag);
+            }
+        }
+
         Pedido salvo = pedidoRepository.save(pedido);
         registrarHistorico(salvo.getId(), novoStatus);
         PedidoResponse response = toResponse(salvo);
@@ -205,21 +233,23 @@ public class PedidoService {
 
     private int toStatusId(PedidoStatus status) {
         return switch (status) {
-            case RECEBIDO -> STATUS_RECEBIDO_ID;
+            case RECEBIDO   -> STATUS_RECEBIDO_ID;
             case EM_PREPARO -> 2;
-            case PRONTO -> 3;
-            case ENTREGUE -> 4;
-            case CANCELADO -> STATUS_CANCELADO_ID;
+            case PRONTO     -> 3;
+            case ENTREGUE   -> STATUS_ENTREGUE_ID;
+            case SERVIDO    -> STATUS_SERVIDO_ID;
+            case CANCELADO  -> STATUS_CANCELADO_ID;
         };
     }
 
     private PedidoStatus toStatus(Integer idStatus) {
         return switch (idStatus) {
-            case STATUS_RECEBIDO_ID -> PedidoStatus.RECEBIDO;
+            case 1 -> PedidoStatus.RECEBIDO;
             case 2 -> PedidoStatus.EM_PREPARO;
             case 3 -> PedidoStatus.PRONTO;
             case 4 -> PedidoStatus.ENTREGUE;
-            case STATUS_CANCELADO_ID -> PedidoStatus.CANCELADO;
+            case 5 -> PedidoStatus.CANCELADO;
+            case 6 -> PedidoStatus.SERVIDO;
             default -> PedidoStatus.RECEBIDO;
         };
     }

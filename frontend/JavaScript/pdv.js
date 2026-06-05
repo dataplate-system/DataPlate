@@ -4,7 +4,8 @@
 
 // -- CONFIG -------------------------------------------------------
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
-const ACTIVE_STATUSES   = new Set(['RECEBIDO', 'EM_PREPARO', 'PRONTO']);
+// SERVIDO = entregue na mesa mas conta ainda aberta (incluso no fechamento)
+const ACTIVE_STATUSES = new Set(['RECEBIDO', 'EM_PREPARO', 'PRONTO', 'SERVIDO']);
 
 const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   || localStorage.getItem('DATAPLATE_API_BASE_URL')
@@ -45,6 +46,50 @@ function pdvLogout() {
   window.location.href = 'adm-login.html';
 }
 
+// ── HISTÓRICO DE VENDAS ──────────────────────────────────────────
+const _historicoMap = new Map();
+
+async function carregarHistorico() {
+  const lista = document.getElementById('historicoLista');
+  if (!lista) return;
+  lista.innerHTML = '<div class="order-empty"><p>Carregando...</p></div>';
+  try {
+    const data = await apiGet('/pedidos?page=0&size=80');
+    const pedidos = (Array.isArray(data) ? data : data?.content || [])
+      .filter(p => p.status === 'ENTREGUE')
+      .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+
+    if (!pedidos.length) {
+      lista.innerHTML = '<div class="order-empty"><p>Nenhuma venda finalizada.</p></div>';
+      return;
+    }
+
+    _historicoMap.clear();
+    pedidos.forEach(p => _historicoMap.set(p.id, p));
+
+    lista.innerHTML = pedidos.map(p => {
+      const origem = p.numeroMesa ? `Mesa ${p.numeroMesa}` : 'Balcao';
+      const hora   = new Date(p.dataHora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const itens  = (p.itens || []).slice(0, 2).map(i => `${i.quantidade}x ${esc(i.nomeProduto)}`).join(', ');
+      const extra  = (p.itens?.length || 0) > 2 ? ` +${p.itens.length - 2}` : '';
+      return `
+        <div class="historico-item" data-pedido-id="${p.id}" style="cursor:pointer" title="Clique para gerar recibo">
+          <div class="historico-item-top">
+            <span class="historico-pedido">#${p.id} · ${origem}</span>
+            <span class="historico-hora">${hora}</span>
+          </div>
+          <div class="historico-itens">${esc(itens)}${extra}</div>
+          <div class="historico-total-row">
+            <span class="historico-total">${formatBRL(p.valorTotal)}</span>
+            <span class="historico-recibo-hint">Gerar recibo</span>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (_) {
+    lista.innerHTML = '<div class="order-empty"><p>Erro ao carregar historico.</p></div>';
+  }
+}
+
 // ── COBRANÇAS PENDENTES ──────────────────────────────────────────
 let _pdvPgtoMesa = null;
 let _pdvPgtoSelecionado = '';
@@ -57,25 +102,43 @@ async function verificarCobrancas() {
       (m.status || '').toLowerCase() === 'aguardando_pagamento'
     );
 
-    const banner = document.getElementById('pdvCobrancasBanner');
-    const lista  = document.getElementById('pdvCobrancasLista');
-    if (!banner || !lista) return;
+    const section = document.getElementById('pendentesSection');
+    const grid    = document.getElementById('pendentesGrid');
+    if (!section || !grid) return;
 
     if (!pendentes.length) {
-      banner.style.display = 'none';
+      section.hidden = true;
       return;
     }
 
-    banner.style.display = 'block';
-    lista.innerHTML = pendentes.map(m => {
-      const pendStore = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
+    const pendStore = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
+
+    // Busca totais das mesas pendentes
+    const cards = await Promise.all(pendentes.map(async m => {
+      let total = 0;
+      try {
+        const pedidos = await apiGet(`/pedidos/mesa/${m.numero}`);
+        const ativos  = (pedidos || []).filter(p => !['CANCELADO','ENTREGUE'].includes(p.status));
+        total = ativos.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+      } catch (_) {}
+
       const info = pendStore[String(m.numero)];
-      const pgtoLabel = info?.formaPagamento ? ` • ${info.formaPagamento}` : '';
-      return `<button onclick="abrirPagamentoMesa(${m.id},${m.numero},'${m.localizacao||''}')"
-        style="padding:6px 12px;border:1.5px solid #f59e0b;border-radius:6px;background:#fff;font-weight:700;font-size:12px;cursor:pointer;color:#92400e">
-        Mesa ${m.numero}${pgtoLabel} &#x25B6;
-      </button>`;
-    }).join('');
+      const pgto = info?.formaPagamento || '';
+      const pgtoLabel = { PIX: 'PIX', CREDITO: 'Cartao Credito', DEBITO: 'Cartao Debito', DINHEIRO: 'Dinheiro' }[pgto] || pgto;
+
+      return `
+        <div class="pendente-card" onclick="abrirPagamentoMesa(${m.id},${m.numero},'${esc(m.localizacao||'')}')">
+          <div class="pendente-card-header">
+            <span class="pendente-mesa">Mesa ${m.numero}</span>
+            <span class="pendente-total">${formatBRL(total)}</span>
+          </div>
+          ${pgtoLabel ? `<div class="pendente-pgto">${pgtoLabel}</div>` : ''}
+          <button class="pendente-btn">Processar pagamento</button>
+        </div>`;
+    }));
+
+    grid.innerHTML = cards.join('');
+    section.hidden = false;
   } catch (_) {}
 }
 
@@ -102,7 +165,7 @@ window.abrirPagamentoMesa = async function(mesaId, numeroMesa, localizacao) {
     }
 
     const modal = document.getElementById('pdvPgtoModal');
-    if (modal) { modal.style.display = 'flex'; }
+    if (modal) { modal.hidden = false; }
   } catch (e) {
     showToast(e.message || 'Erro ao carregar mesa.', 'error');
   }
@@ -118,7 +181,7 @@ window.selecionarPdvPgto = function(tipo, btn) {
 
 window.fecharPdvPgtoModal = function() {
   const modal = document.getElementById('pdvPgtoModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) modal.hidden = true;
   _pdvPgtoMesa = null;
   _pdvPgtoSelecionado = '';
 };
@@ -133,8 +196,11 @@ window.confirmarPagamentoMesa = async function() {
     const ativos  = (pedidos || []).filter(p => !['CANCELADO','ENTREGUE'].includes(p.status));
     const total   = ativos.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
 
-    // Marcar todos os pedidos como ENTREGUE
-    await Promise.all(ativos.map(p => apiPut(`/pedidos/${p.id}/status`, { status: 'ENTREGUE' })));
+    // Marcar todos os pedidos como ENTREGUE gravando a forma de pagamento
+    await Promise.all(ativos.map(p => apiPut(`/pedidos/${p.id}/status`, {
+      status: 'ENTREGUE',
+      formaPagamento: _pdvPgtoSelecionado
+    })));
 
     // Mesa volta a LIVRE
     await apiPut(`/mesas/${_pdvPgtoMesa.id}`, {
@@ -149,9 +215,22 @@ window.confirmarPagamentoMesa = async function() {
     delete pendStore[String(_pdvPgtoMesa.numero)];
     localStorage.setItem('dataplate:pgto_pendente', JSON.stringify(pendStore));
 
-    showToast(`Mesa ${_pdvPgtoMesa.numero} paga — ${formatBRL(total)} via ${_pdvPgtoSelecionado}`, 'success');
+    _reciboAtual = {
+      origem: `Mesa ${_pdvPgtoMesa.numero}`,
+      pedidos: ativos,
+      total,
+      formaPagamento: _pdvPgtoSelecionado
+    };
+
+    const numMesa = _pdvPgtoMesa.numero;
+    const pgtoStr = pgtoLabel(_pdvPgtoSelecionado);
     fecharPdvPgtoModal();
     verificarCobrancas();
+    mostrarSucesso({
+      titulo: `Mesa ${numMesa} — pagamento confirmado`,
+      mensagem: `Total cobrado: <strong>${formatBRL(total)}</strong> via ${pgtoStr}`,
+      temRecibo: true
+    });
   } catch (e) {
     showToast(e.message || 'Erro ao confirmar pagamento.', 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Confirmar Pagamento'; }
@@ -378,7 +457,7 @@ function calcularTotalConta() {
 }
 
 function statusPedidoLabel(s) {
-  return { RECEBIDO: 'Recebido', EM_PREPARO: 'Em preparo', PRONTO: 'Pronto' }[s] || s;
+  return { RECEBIDO: 'Recebido', EM_PREPARO: 'Em preparo', PRONTO: 'Pronto', SERVIDO: 'Servido' }[s] || s;
 }
 
 function renderContaMesa() {
@@ -657,6 +736,12 @@ async function finalizarPedido() {
 
   try {
     if (vendaCaixa) {
+      // Detecta se algum item precisa de preparo na cozinha
+      const precisaPreparo = cart.some(i => {
+        const p = todosOsProdutos.find(p => p.id === i.produtoId);
+        return !p || (p.tempoPreparo == null) || p.tempoPreparo > 0;
+      });
+
       const payload = {
         vendaCaixa: true,
         formaPagamento: pagamentoVenda,
@@ -666,10 +751,28 @@ async function finalizarPedido() {
       };
       const pedido = await apiPost('/pedidos', payload);
       const totalPagar = calcularTotalPagar();
+
+      _reciboAtual = {
+        origem: precisaPreparo ? `Balcao #${pedido?.id || ''}` : 'Balcao',
+        pedidos: [{ id: pedido?.id, itens: cart.map(i => ({
+          nomeProduto: i.nome,
+          quantidade: i.quantidade,
+          precoUnitario: i.preco,
+          subtotal: i.preco * i.quantidade
+        })) }],
+        total: totalPagar,
+        formaPagamento: pagamentoVenda,
+        desconto: calcularDesconto()
+      };
+
+      const mensagemCozinha = precisaPreparo
+        ? `Pedido enviado a cozinha como <strong>Balcao #${pedido?.id || ''}</strong>.<br>Chamar cliente quando estiver pronto.`
+        : `Itens entregues imediatamente.`;
+
       mostrarSucesso({
-        titulo: 'Venda finalizada!',
-        mensagem: `Venda <strong>#${pedido?.id || ''}</strong> registrada no caixa.<br>
-                   Total cobrado: <strong>${formatBRL(totalPagar)}</strong> - ${pgtoLabel(pagamentoVenda)}`
+        titulo: precisaPreparo ? `Balcao #${pedido?.id || ''} — aguardando preparo` : 'Venda finalizada!',
+        mensagem: `${mensagemCozinha}<br>Total: <strong>${formatBRL(totalPagar)}</strong> · ${pgtoLabel(pagamentoVenda)}`,
+        temRecibo: true
       });
       cart = [];
       pagamentoVenda = '';
@@ -755,13 +858,24 @@ async function fecharConta() {
 
   try {
     await Promise.all(
-      pedidosAbertos.map(p => apiPut(`/pedidos/${p.id}/status`, { status: 'ENTREGUE' }))
+      pedidosAbertos.map(p => apiPut(`/pedidos/${p.id}/status`, {
+        status: 'ENTREGUE',
+        formaPagamento: pagamentoConta
+      }))
     );
+
+    _reciboAtual = {
+      origem: `Mesa ${mesaSelecionada.numero}`,
+      pedidos: pedidosAbertos,
+      total,
+      formaPagamento: pagamentoConta
+    };
 
     mostrarSucesso({
       titulo: 'Conta fechada!',
-      mensagem: `Mesa <strong>${mesaSelecionada.numero}</strong> encerrada com sucesso.<br>
-                 Total cobrado: <strong>${formatBRL(total)}</strong> · ${pgtoLabel(pagamentoConta)}`
+      mensagem: `Mesa <strong>${mesaSelecionada.numero}</strong> encerrada.<br>
+                 Total: <strong>${formatBRL(total)}</strong> · ${pgtoLabel(pagamentoConta)}`,
+      temRecibo: true
     });
 
     pedidosAbertos = [];
@@ -779,10 +893,129 @@ function pgtoLabel(tipo) {
   return { PIX: 'PIX', CREDITO: 'Crédito', DEBITO: 'Débito', DINHEIRO: 'Dinheiro' }[tipo] || tipo;
 }
 
+// -- RECIBO --------------------------------------------------------
+let _reciboAtual = null;
+let _reciboHistoricoAtual = null;
+
+function extrairPagamentoObs(observacoes) {
+  const obs = (observacoes || '').toLowerCase();
+  if (obs.includes('pagamento: pix'))      return 'PIX';
+  if (obs.includes('pagamento: credito'))  return 'CREDITO';
+  if (obs.includes('pagamento: debito'))   return 'DEBITO';
+  if (obs.includes('pagamento: dinheiro')) return 'DINHEIRO';
+  return '';
+}
+
+const PGTO_LABELS = { PIX: 'PIX', CREDITO: 'Cartao Credito', DEBITO: 'Cartao Debito', DINHEIRO: 'Dinheiro' };
+
+function imprimirRecibo({ origem, pedidos, total, formaPagamento, desconto = 0, nomeCliente = '' }) {
+  const session  = readSession();
+  const operador = session?.name || 'Caixa';
+  const agora    = new Date();
+  const dataStr  = agora.toLocaleDateString('pt-BR');
+  const horaStr  = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // Tenta extrair método das observações se não foi passado diretamente
+  let pgto = formaPagamento;
+  if (!pgto && pedidos?.length) {
+    pgto = extrairPagamentoObs(pedidos[0]?.observacoes);
+  }
+  const pgtoLabel = PGTO_LABELS[pgto] || pgto || 'Nao informado';
+
+  const itensRows = pedidos.flatMap(p =>
+    (p.itens || []).map(i => {
+      const sub = i.subtotal ?? i.precoUnitario * i.quantidade;
+      return `<tr>
+        <td style="padding:3px 6px;text-align:left">${i.quantidade}x ${esc(i.nomeProduto)}</td>
+        <td style="padding:3px 6px;text-align:right;white-space:nowrap">${formatBRL(sub)}</td>
+      </tr>`;
+    })
+  ).join('');
+
+  const nomeRow = nomeCliente.trim()
+    ? `<tr><td colspan="2" style="padding:4px 6px;font-size:12px;color:#555">Cliente: <strong>${esc(nomeCliente.trim())}</strong></td></tr>`
+    : '';
+
+  const descontoRow = desconto > 0
+    ? `<tr><td style="padding:2px 6px;text-align:left;color:#555">Desconto</td><td style="padding:2px 6px;text-align:right;color:#555">- ${formatBRL(desconto)}</td></tr>`
+    : '';
+
+  const logoPath = '../images/brand/logo-emp.png';
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Recibo #${pedidos[0]?.id || ''}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Courier New',Courier,monospace; font-size:13px; background:#fff; color:#111; width:300px; margin:0 auto; padding:16px 8px; }
+    .sep  { border:none; border-top:1px dashed #999; margin:8px 0; }
+    .sep2 { border:none; border-top:2px solid #111; margin:8px 0; }
+    .center { text-align:center; }
+    table { width:100%; border-collapse:collapse; }
+    .total-row td { font-weight:900; font-size:14px; padding:4px 6px; }
+    @media print { body { padding:0; } }
+  </style>
+</head>
+<body>
+  <div class="center" style="margin-bottom:6px">
+    <img src="${logoPath}" alt="Logo" style="max-width:72px;max-height:72px;object-fit:contain;border-radius:8px" onerror="this.style.display='none'">
+  </div>
+  <p class="center" style="font-size:16px;font-weight:900;letter-spacing:1px">Raizes do Sabor</p>
+  <p class="center" style="font-size:10px;color:#555;margin-top:2px">Comprovante de Venda</p>
+  <hr class="sep2">
+  <table>
+    <tr><td style="padding:2px 6px">Data:</td><td style="padding:2px 6px;text-align:right">${dataStr}</td></tr>
+    <tr><td style="padding:2px 6px">Hora:</td><td style="padding:2px 6px;text-align:right">${horaStr}</td></tr>
+    <tr><td style="padding:2px 6px">Operador:</td><td style="padding:2px 6px;text-align:right">${esc(operador)}</td></tr>
+    <tr><td style="padding:2px 6px">Origem:</td><td style="padding:2px 6px;text-align:right">${esc(origem)}</td></tr>
+    ${nomeRow}
+  </table>
+  <hr class="sep">
+  <table>
+    <thead>
+      <tr>
+        <th style="padding:3px 6px;text-align:left;font-size:11px;color:#555">ITEM</th>
+        <th style="padding:3px 6px;text-align:right;font-size:11px;color:#555">VALOR</th>
+      </tr>
+    </thead>
+    <tbody>${itensRows}</tbody>
+  </table>
+  <hr class="sep">
+  <table>
+    ${descontoRow}
+    <tr class="total-row">
+      <td>TOTAL</td>
+      <td style="text-align:right">${formatBRL(total)}</td>
+    </tr>
+  </table>
+  <hr class="sep">
+  <table>
+    <tr><td style="padding:2px 6px">Pagamento:</td><td style="padding:2px 6px;text-align:right;font-weight:700">${esc(pgtoLabel)}</td></tr>
+  </table>
+  <hr class="sep2">
+  <p class="center" style="font-size:12px;margin-top:4px">Obrigado pela preferencia!</p>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=360,height=620,toolbar=0,menubar=0,location=0,scrollbars=0');
+  if (!win) { showToast('Permita popups para imprimir o recibo.', 'error'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); win.close(); }, 350);
+}
+
 // -- SUCESSO -------------------------------------------------------
-function mostrarSucesso({ titulo, mensagem }) {
+function mostrarSucesso({ titulo, mensagem, temRecibo = false }) {
   document.getElementById('successTitle').textContent = titulo;
   document.getElementById('successMsg').innerHTML = mensagem;
+  document.getElementById('nomeClienteInput').value = '';
+  const btnRecibo = document.getElementById('gerarReciboBtn');
+  const nomeWrap  = document.querySelector('.recibo-nome-wrap');
+  btnRecibo.style.display  = temRecibo ? 'block' : 'none';
+  if (nomeWrap) nomeWrap.style.display = temRecibo ? 'block' : 'none';
   document.getElementById('successOverlay').hidden = false;
 }
 
@@ -803,14 +1036,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (op && session.name) op.textContent = session.name;
 
   // Header session info
-  const sessionInfo = document.getElementById('pdvSessionInfo');
-  const avatar = document.getElementById('pdvAvatar');
+  const avatar   = document.getElementById('pdvAvatar');
   const userName = document.getElementById('pdvUserName');
   const userRole = document.getElementById('pdvUserRole');
-  if (sessionInfo) sessionInfo.style.display = 'flex';
-  if (avatar) avatar.textContent = session.initials || session.name?.slice(0, 2).toUpperCase() || 'AT';
-  if (userName) userName.textContent = session.name || 'Atendente';
-  if (userRole) userRole.textContent = session.role || 'Operacional';
+  if (avatar)    avatar.textContent    = session.initials || session.name?.slice(0, 2).toUpperCase() || 'CX';
+  if (userName)  userName.textContent  = session.name || 'Caixa';
+  if (userRole)  userRole.textContent  = session.role || 'Operacional';
 
   // Suporte a parâmetro de URL: pdv.html?modo=mesa&mesa=3
   const _urlParams = new URLSearchParams(window.location.search);
@@ -892,5 +1123,55 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('novoBtn').addEventListener('click', fecharSucesso);
   document.getElementById('successOverlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) fecharSucesso();
+  });
+
+  // Abas de alto nível (Venda / Histórico)
+  document.querySelectorAll('.pdv-top-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pdv-top-tab').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      const vista = btn.dataset.top;
+      document.getElementById('vistaPdv').hidden      = vista !== 'pdv';
+      document.getElementById('vistaHistorico').hidden = vista !== 'historico';
+      if (vista === 'historico') carregarHistorico();
+    });
+  });
+
+  // Botão gerar recibo no overlay de sucesso
+  document.getElementById('gerarReciboBtn').addEventListener('click', () => {
+    if (!_reciboAtual) return;
+    const nome = document.getElementById('nomeClienteInput').value.trim();
+    imprimirRecibo({ ..._reciboAtual, nomeCliente: nome });
+  });
+
+  // Click no histórico → abre modal de recibo
+  document.getElementById('historicoLista').addEventListener('click', e => {
+    const item = e.target.closest('[data-pedido-id]');
+    if (!item) return;
+    const pedidoId = Number(item.dataset.pedidoId);
+    const p = _historicoMap.get(pedidoId);
+    if (!p) return;
+    _reciboHistoricoAtual = {
+      origem: p.numeroMesa ? `Mesa ${p.numeroMesa}` : 'Balcao',
+      pedidos: [p],
+      total: p.valorTotal,
+      formaPagamento: ''
+    };
+    const info = document.getElementById('reciboHistoricoInfo');
+    const origem = p.numeroMesa ? `Mesa ${p.numeroMesa}` : 'Balcao';
+    info.textContent = `#${p.id} · ${origem} · ${formatBRL(p.valorTotal)}`;
+    document.getElementById('nomeClienteHistoricoInput').value = '';
+    document.getElementById('reciboHistoricoModal').hidden = false;
+  });
+
+  document.getElementById('reciboHistoricoImprimir').addEventListener('click', () => {
+    if (!_reciboHistoricoAtual) return;
+    const nome = document.getElementById('nomeClienteHistoricoInput').value.trim();
+    imprimirRecibo({ ..._reciboHistoricoAtual, nomeCliente: nome });
+    document.getElementById('reciboHistoricoModal').hidden = true;
+  });
+
+  document.getElementById('reciboHistoricoModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.hidden = true;
   });
 });
