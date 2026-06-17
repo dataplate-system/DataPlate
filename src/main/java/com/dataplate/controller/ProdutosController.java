@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dataplate.entity.Produto;
 import com.dataplate.exception.ErrorResponse;
 import com.dataplate.service.ProdutoService;
-import org.springframework.dao.DataIntegrityViolationException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -152,30 +152,27 @@ public class ProdutosController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletar(@PathVariable Long id) {
         try {
-            logger.info("Deletando produto com ID: {}", id);
+            logger.info("Inativando produto com ID: {}", id);
 
             if (id == null || id <= 0) {
-                logger.warn("ID invalido para deletar: {}", id);
-                return ResponseEntity.badRequest().body(new ErrorResponse("ID invalido"));
+                return ResponseEntity.badRequest().body(new ErrorResponse("ID inválido"));
             }
 
             Produto produto = produtoService.obterPorId(id);
-            if (produto == null) {
-                logger.warn("Produto nao encontrado para deletar. ID: {}", id);
+                if (produto == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            produtoService.deletar(id);
-            logger.info("Produto deletado com sucesso. ID: {}", id);
+            produtoService.inativar(id);  // <-- só isso muda
+            logger.info("Produto inativado com sucesso. ID: {}", id);
 
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
-            logger.error("Erro ao deletar produto com ID: " + id, e);
-            String mensagemErro = e.getMessage() != null ? e.getMessage() : "Erro desconhecido";
+            logger.error("Erro ao inativar produto com ID: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Erro ao deletar produto: " + mensagemErro));
-        }
+                .body(new ErrorResponse("Erro ao inativar produto: " + e.getMessage()));
     }
+}
 
     private String validarProduto(Produto produto) {
         if (produto == null) {
