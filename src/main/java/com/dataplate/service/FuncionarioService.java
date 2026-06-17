@@ -1,16 +1,18 @@
 package com.dataplate.service;
 
-import com.dataplate.dto.FuncionarioRequest;
-import com.dataplate.dto.FuncionarioResponse;
-import com.dataplate.entity.Funcionario;
-import com.dataplate.repository.FuncionarioRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import com.dataplate.dto.FuncionarioRequest;
+import com.dataplate.dto.FuncionarioResponse;
+import com.dataplate.entity.Funcionario;
+import com.dataplate.repository.FuncionarioRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +21,7 @@ public class FuncionarioService {
 
     @Transactional(readOnly = true)
     public List<FuncionarioResponse> listar() {
-        return repo.findAll().stream().map(this::toResponse).toList();
+        return repo.findByAtivoTrue().stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -44,10 +46,10 @@ public class FuncionarioService {
 
     @Transactional
     public void excluir(Long id) {
-        if (!repo.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionario nao encontrado");
-        }
-        repo.deleteById(id);
+        Funcionario f = repo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionario não encontrado"));
+        f.setAtivo(false);
+        repo.save(f);
     }
 
     private void applyRequest(Funcionario f, FuncionarioRequest req) {

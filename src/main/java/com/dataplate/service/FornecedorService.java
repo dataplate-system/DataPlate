@@ -1,16 +1,18 @@
 package com.dataplate.service;
 
-import com.dataplate.dto.FornecedorRequest;
-import com.dataplate.dto.FornecedorResponse;
-import com.dataplate.entity.Fornecedor;
-import com.dataplate.repository.FornecedorRepository;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import com.dataplate.dto.FornecedorRequest;
+import com.dataplate.dto.FornecedorResponse;
+import com.dataplate.entity.Fornecedor;
+import com.dataplate.repository.FornecedorRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +21,7 @@ public class FornecedorService {
 
     @Transactional(readOnly = true)
     public List<FornecedorResponse> listar() {
-        return repo.findAll().stream().map(this::toResponse).toList();
+        return repo.findByAtivoTrue().stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -44,10 +46,10 @@ public class FornecedorService {
 
     @Transactional
     public void excluir(Long id) {
-        if (!repo.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Fornecedor nao encontrado");
-        }
-        repo.deleteById(id);
+        Fornecedor f = repo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Fornecedor não encontrado"));
+        f.setAtivo(false);
+        repo.save(f);
     }
 
     private void applyRequest(Fornecedor f, FornecedorRequest req) {

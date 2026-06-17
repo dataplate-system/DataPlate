@@ -8,6 +8,7 @@ public record InsumoResponse(
         String unidade,
         BigDecimal quantidadeAtual,
         BigDecimal quantidadeMinima,
-        BigDecimal custoUnitario
+        BigDecimal custoUnitario,
+        boolean ativo
 ) {
 }
