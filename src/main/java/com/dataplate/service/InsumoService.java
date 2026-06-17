@@ -3,6 +3,7 @@ package com.dataplate.service;
 import com.dataplate.dto.InsumoRequest;
 import com.dataplate.dto.InsumoResponse;
 import com.dataplate.entity.Insumo;
+import com.dataplate.exception.ResourceNotFoundException;
 import com.dataplate.repository.InsumoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ public class InsumoService {
 
     @Transactional(readOnly = true)
     public List<InsumoResponse> listar() {
-        return repo.findAll().stream().map(this::toResponse).toList();
+        return repo.findByAtivoTrue().stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -35,7 +36,7 @@ public class InsumoService {
     @Transactional
     public InsumoResponse atualizar(Long id, InsumoRequest req) {
         Insumo i = repo.findById(id)
-                .orElseThrow(() -> new com.dataplate.exception.ResourceNotFoundException("Insumo nao encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Insumo nao encontrado: " + id));
         i.setNome(req.nome());
         i.setUnidade(req.unidade());
         i.setQuantidadeAtual(req.quantidadeAtual());
@@ -46,11 +47,14 @@ public class InsumoService {
 
     @Transactional
     public void excluir(Long id) {
-        repo.deleteById(id);
+        Insumo i = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Insumo nao encontrado: " + id));
+        i.setAtivo(false);
+        repo.save(i);
     }
 
     private InsumoResponse toResponse(Insumo i) {
         return new InsumoResponse(i.getId(), i.getNome(), i.getUnidade(),
-                i.getQuantidadeAtual(), i.getQuantidadeMinima(), i.getCustoUnitario());
+                i.getQuantidadeAtual(), i.getQuantidadeMinima(), i.getCustoUnitario(), i.getAtivo());
     }
 }

@@ -1,16 +1,18 @@
 package com.dataplate.service;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.dataplate.dto.ClienteRequest;
 import com.dataplate.dto.ClienteResponse;
 import com.dataplate.entity.Cliente;
 import com.dataplate.repository.ClienteRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -19,9 +21,8 @@ public class ClienteService {
 
     @Transactional(readOnly = true)
     public List<ClienteResponse> listar() {
-        return repo.findAll().stream().map(this::toResponse).toList();
+    return repo.findByAtivoTrue().stream().map(this::toResponse).toList(); // <-- era findAll()
     }
-
     @Transactional
     public ClienteResponse criar(ClienteRequest req) {
         Cliente c = new Cliente();
@@ -44,10 +45,10 @@ public class ClienteService {
 
     @Transactional
     public void excluir(Long id) {
-        if (!repo.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente nao encontrado");
-        }
-        repo.deleteById(id);
+        Cliente c = repo.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
+        c.setAtivo(false); // <-- era deleteById()
+        repo.save(c);
     }
 
     private void applyRequest(Cliente c, ClienteRequest req) {

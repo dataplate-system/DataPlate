@@ -1,6 +1,13 @@
 package com.dataplate.repository;
 
-import com.dataplate.entity.Funcionario;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> {}
+import com.dataplate.entity.Funcionario;
+
+public interface FuncionarioRepository extends JpaRepository<Funcionario, Long> {
+    List<Funcionario> findByAtivoTrue();
+    Optional<Funcionario> findByAtivoTrueAndId(Long id);
+}

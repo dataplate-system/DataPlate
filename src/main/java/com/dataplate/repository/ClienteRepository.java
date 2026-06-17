@@ -1,6 +1,13 @@
 package com.dataplate.repository;
 
-import com.dataplate.entity.Cliente;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ClienteRepository extends JpaRepository<Cliente, Long> {}
+import com.dataplate.entity.Cliente;
+
+public interface ClienteRepository extends JpaRepository<Cliente, Long> {
+    List<Cliente> findByAtivoTrue();
+    Optional<Cliente> findByAtivoTrueAndId(Long id);
+}
