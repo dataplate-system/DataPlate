@@ -5,8 +5,8 @@ primary_region = 'gru'
 
 [env]
   SPRING_PROFILES_ACTIVE = 'prod'
-  SPRING_DATASOURCE_URL = 'jdbc:postgresql://aws-1-sa-east-1.pooler.supabase.co:6543/postgres?prepareThreshold=0'
-  SPRING_DATASOURCE_USERNAME = 'postgres.zcdjzwnzapzvislInivh'
+  SPRING_DATASOURCE_URL = 'jdbc:postgresql://db.zcdjzwnzapzvisllnivh.supabase.co:5432/postgres'
+  SPRING_DATASOURCE_USERNAME = 'postgres.zcdjzwnzapzvisllnivh'
 
 [[services]]
   internal_port = 8080
@@ -20,7 +20,22 @@ primary_region = 'gru'
     port = 443
     handlers = ['tls', 'http']
 
+  [services.concurrency]
+    type = 'connections'
+    hard_limit = 25
+    soft_limit = 20
+
 [[vm]]
   memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
+
+[checks]
+  [checks.health]
+    type = 'http'
+    interval = '30s'
+    timeout = '60s'
+    grace_period = '120s'
+    method = 'GET'
+    path = '/actuator/health'
+    port = 8080
