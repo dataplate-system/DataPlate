@@ -5,15 +5,20 @@ primary_region = 'gru'
 
 [env]
   SPRING_PROFILES_ACTIVE = 'prod'
+  SPRING_DATASOURCE_URL = 'jdbc:postgresql://aws-1-sa-east-1.pooler.supabase.co:6543/postgres?prepareThreshold=0'
+  SPRING_DATASOURCE_USERNAME = 'postgres.zcdjzwnzapzvislInivh'
 
 [[services]]
   internal_port = 8080
   protocol = 'tcp'
 
-  [[services.http_checks]]
-    interval = '15s'
-    timeout = '10s'
-    path = '/actuator/health'
+  [[services.ports]]
+    port = 80
+    handlers = ['http']
+
+  [[services.ports]]
+    port = 443
+    handlers = ['tls', 'http']
 
 [[vm]]
   memory = '512mb'
