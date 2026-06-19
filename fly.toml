@@ -1,0 +1,21 @@
+app = 'dataplate'
+primary_region = 'gru'
+
+[build]
+
+[env]
+  SPRING_PROFILES_ACTIVE = 'prod'
+
+[[services]]
+  internal_port = 8080
+  protocol = 'tcp'
+
+  [[services.http_checks]]
+    interval = '15s'
+    timeout = '10s'
+    path = '/actuator/health'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

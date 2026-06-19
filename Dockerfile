@@ -17,4 +17,5 @@ COPY frontend /app/frontend
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# 👇 adiciona o limite de memória pro free tier
+ENTRYPOINT ["java", "-Xmx200m", "-Dspring.profiles.active=prod", "-jar", "/app/app.jar"]
