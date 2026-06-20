@@ -16,7 +16,7 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     if (isLocal && window.location.port === '8080') return '/api';
     if (isFile)  return 'http://localhost:8080/api';
     if (isLocal) return `http://${h}:8080/api`;
-    return 'https://dataplate.onrender.com/api';
+    return 'https://dataplate.fly.dev/api';
   })();
 
 const CATEGORIA_SLUG  = { 1:'hamburguer', 2:'massas', 3:'principais', 4:'entradas', 5:'sobremesas', 6:'bebidas' };

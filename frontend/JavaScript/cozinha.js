@@ -7,7 +7,7 @@
     if (isLocal && window.location.port === '8080') return '/api';
     if (isLocalFile) return 'http://localhost:8080/api';
     if (isLocal) return `http://${h}:8080/api`;
-    return 'https://dataplate.onrender.com/api';
+    return 'https://dataplate.fly.dev/api';
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
