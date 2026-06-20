@@ -32,10 +32,8 @@ primary_region = 'gru'
 
 [checks]
   [checks.health]
-    type = 'http'
+    type = 'tcp'
     interval = '30s'
-    timeout = '60s'
-    grace_period = '120s'
-    method = 'GET'
-    path = '/actuator/health'
+    timeout = '10s'
+    grace_period = '60s'
     port = 8080

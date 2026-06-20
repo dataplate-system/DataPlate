@@ -24,7 +24,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -50,7 +52,7 @@ public class RelatorioService {
         LocalDateTime inicioDia = dataInicio.atStartOfDay();
         LocalDateTime fimDia = dataFim.atTime(LocalTime.MAX);
 
-        List<Pedido> pedidos = pedidoRepository.findByDataHoraBetweenOrderByDataHoraDesc(inicioDia, fimDia);
+        List<Pedido> pedidos = pedidoRepository.findByDataHoraBetweenWithItensOrderByDataHoraDesc(inicioDia, fimDia);
         BigDecimal faturamento = pedidoRepository.faturamentoEntre(inicioDia, fimDia);
         long pedidosPagos = pedidos.stream().filter(p -> p.getIdStatus() != STATUS_CANCELADO_ID).count();
         BigDecimal ticketMedio = pedidosPagos == 0 ? BigDecimal.ZERO
@@ -78,7 +80,7 @@ public class RelatorioService {
         LocalDateTime inicioDia = dataInicio.atStartOfDay();
         LocalDateTime fimDia = dataFim.atTime(LocalTime.MAX);
 
-        List<Pedido> pedidos = pedidoRepository.findByDataHoraBetweenOrderByDataHoraDesc(inicioDia, fimDia);
+        List<Pedido> pedidos = pedidoRepository.findByDataHoraBetweenWithItensOrderByDataHoraDesc(inicioDia, fimDia);
         BigDecimal faturamento = pedidoRepository.faturamentoEntre(inicioDia, fimDia);
 
         long entregues  = countByStatus(pedidos, STATUS_ENTREGUE_ID);
@@ -93,8 +95,9 @@ public class RelatorioService {
                 .stream().limit(10).toList();
 
         BigDecimal custoTotal = produtoInsumoRepository.custoTotalEntre(inicioDia, fimDia);
+        Map<Long, Integer> mesaMap = carregarMesaMap();
         List<VendaHistoricoItem> historico = pedidos.stream()
-                .map(this::toHistoricoItem)
+                .map(p -> toHistoricoItem(p, mesaMap))
                 .toList();
 
         return new RelatorioVendasResponse(
@@ -133,7 +136,7 @@ public class RelatorioService {
         LocalDateTime inicioDia = dataInicio.atStartOfDay();
         LocalDateTime fimDia = dataFim.atTime(LocalTime.MAX);
 
-        List<Pedido> pedidos = pedidoRepository.findByDataHoraBetweenOrderByDataHoraDesc(inicioDia, fimDia);
+        List<Pedido> pedidos = pedidoRepository.findByDataHoraBetweenWithItensOrderByDataHoraDesc(inicioDia, fimDia);
         BigDecimal faturamento = pedidoRepository.faturamentoEntre(inicioDia, fimDia);
 
         long total      = pedidos.size();
@@ -167,7 +170,7 @@ public class RelatorioService {
         return pedidos.stream().filter(p -> p.getIdStatus() == statusId).count();
     }
 
-    private VendaHistoricoItem toHistoricoItem(Pedido pedido) {
+    private VendaHistoricoItem toHistoricoItem(Pedido pedido, Map<Long, Integer> mesaMap) {
         long itens = pedido.getItens() == null ? 0 : pedido.getItens().stream()
                 .mapToLong(item -> item.getQuantidade() == null ? 0 : item.getQuantidade().longValue())
                 .sum();
@@ -175,18 +178,21 @@ public class RelatorioService {
                 pedido.getId(),
                 pedido.getDataHora(),
                 pedido.getIdMesa() == null ? "CAIXA" : "MESA",
-                numeroMesa(pedido.getIdMesa()),
+                numeroMesa(pedido.getIdMesa(), mesaMap),
                 toStatusLabel(pedido.getIdStatus()),
                 itens,
                 pedido.getValorTotal()
         );
     }
 
-    private Integer numeroMesa(Integer idMesa) {
+    private Map<Long, Integer> carregarMesaMap() {
+        return mesaRepository.findAll().stream()
+                .collect(Collectors.toMap(com.dataplate.entity.Mesa::getId, com.dataplate.entity.Mesa::getNumero));
+    }
+
+    private Integer numeroMesa(Integer idMesa, Map<Long, Integer> mesaMap) {
         if (idMesa == null) return null;
-        return mesaRepository.findById(idMesa.longValue())
-                .map(mesa -> mesa.getNumero())
-                .orElse(idMesa);
+        return mesaMap.getOrDefault(idMesa.longValue(), idMesa);
     }
 
     private String toStatusLabel(Integer idStatus) {

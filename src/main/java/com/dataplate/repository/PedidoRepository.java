@@ -1,8 +1,11 @@
 package com.dataplate.repository;
 
 import com.dataplate.entity.Pedido;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,13 +24,22 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     List<Pedido> findTop10ByOrderByDataHoraDesc();
 
-    List<Pedido> findAllByOrderByDataHoraDesc();
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto ORDER BY p.dataHora DESC")
+    List<Pedido> findAllWithItensOrderByDataHoraDesc();
 
-    org.springframework.data.domain.Page<Pedido> findAllByOrderByDataHoraDesc(org.springframework.data.domain.Pageable pageable);
+    Page<Pedido> findAllByOrderByDataHoraDesc(Pageable pageable);
 
-    List<Pedido> findByIdMesaOrderByDataHoraDesc(Integer idMesa);
+    @Query("SELECT p.id FROM Pedido p ORDER BY p.dataHora DESC")
+    List<Long> findAllIdsPaged(Pageable pageable);
 
-    List<Pedido> findByDataHoraBetweenOrderByDataHoraDesc(LocalDateTime inicio, LocalDateTime fim);
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto WHERE p.id IN :ids ORDER BY p.dataHora DESC")
+    List<Pedido> findByIdsWithItens(@Param("ids") List<Long> ids);
+
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto WHERE p.idMesa = :idMesa ORDER BY p.dataHora DESC")
+    List<Pedido> findByIdMesaWithItensOrderByDataHoraDesc(@Param("idMesa") Integer idMesa);
+
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto WHERE p.dataHora BETWEEN :inicio AND :fim ORDER BY p.dataHora DESC")
+    List<Pedido> findByDataHoraBetweenWithItensOrderByDataHoraDesc(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
 
     List<Pedido> findByIdStatusAndDataHoraBetweenOrderByDataHoraDesc(Integer idStatus, LocalDateTime inicio, LocalDateTime fim);
 }
