@@ -6,10 +6,14 @@ import com.dataplate.entity.Mesa;
 import com.dataplate.exception.ResourceNotFoundException;
 import com.dataplate.repository.MesaRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +29,15 @@ public class MesaService {
                 .toList();
     }
 
+    @Cacheable("mesa-map")
+    @Transactional(readOnly = true)
+    public Map<Long, Integer> getMesaMap() {
+        return repository.findAll().stream()
+                .collect(Collectors.toMap(Mesa::getId, Mesa::getNumero));
+    }
+
     @Transactional
+    @CacheEvict(value = "mesa-map", allEntries = true)
     public MesaResponse criar(MesaRequest request) {
         Mesa mesa = new Mesa();
         mesa.setIdRestaurante(DEFAULT_RESTAURANTE_ID);
@@ -34,6 +46,7 @@ public class MesaService {
     }
 
     @Transactional
+    @CacheEvict(value = "mesa-map", allEntries = true)
     public MesaResponse atualizar(Long id, MesaRequest request) {
         Mesa mesa = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Mesa nao encontrada: " + id));
@@ -42,6 +55,7 @@ public class MesaService {
     }
 
     @Transactional
+    @CacheEvict(value = "mesa-map", allEntries = true)
     public void excluir(Long id) {
         Mesa mesa = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Mesa nao encontrada: " + id));

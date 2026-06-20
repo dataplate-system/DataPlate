@@ -42,4 +42,22 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByDataHoraBetweenWithItensOrderByDataHoraDesc(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
 
     List<Pedido> findByIdStatusAndDataHoraBetweenOrderByDataHoraDesc(Integer idStatus, LocalDateTime inicio, LocalDateTime fim);
+
+    @Query("SELECT p.idStatus, COUNT(p) FROM Pedido p WHERE p.dataHora BETWEEN :inicio AND :fim GROUP BY p.idStatus")
+    List<Object[]> countsByStatusBetween(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
+
+    @Query("SELECT COUNT(p) FROM Pedido p WHERE p.dataHora BETWEEN :inicio AND :fim")
+    long countTotalBetween(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
+
+    @Query(value = "SELECT EXTRACT(HOUR FROM data_hora)::int AS hora, COUNT(*) AS qtd, COALESCE(SUM(valor_total), 0) AS total FROM pedido WHERE data_hora BETWEEN :inicio AND :fim AND id_status <> 5 GROUP BY hora ORDER BY hora", nativeQuery = true)
+    List<Object[]> timelineByHour(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
+
+    @Query(value = "SELECT DATE(data_hora) AS dia, COUNT(*) AS qtd, COALESCE(SUM(valor_total), 0) AS total FROM pedido WHERE data_hora BETWEEN :inicio AND :fim AND id_status <> 5 GROUP BY dia ORDER BY dia", nativeQuery = true)
+    List<Object[]> timelineByDay(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
+
+    @Query(value = "SELECT DATE(data_hora) AS dia, COUNT(*) AS total_pedidos, COALESCE(SUM(CASE WHEN id_status <> 5 THEN valor_total ELSE 0 END), 0) AS faturamento, COUNT(CASE WHEN id_status <> 5 THEN 1 END) AS pagos FROM pedido WHERE data_hora BETWEEN :inicio AND :fim GROUP BY dia HAVING COUNT(*) > 0 ORDER BY dia", nativeQuery = true)
+    List<Object[]> porDia(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
+
+    @Query(value = "SELECT p.id, p.data_hora, p.id_mesa, p.id_status, p.valor_total, COALESCE(SUM(pi.quantidade), 0) AS total_itens FROM pedido p LEFT JOIN pedido_item pi ON pi.id_pedido = p.id WHERE p.data_hora BETWEEN :inicio AND :fim GROUP BY p.id, p.data_hora, p.id_mesa, p.id_status, p.valor_total ORDER BY p.data_hora DESC LIMIT 200", nativeQuery = true)
+    List<Object[]> historicoLimitado(@Param("inicio") LocalDateTime inicio, @Param("fim") LocalDateTime fim);
 }

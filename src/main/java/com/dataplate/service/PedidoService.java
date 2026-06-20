@@ -27,7 +27,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +40,7 @@ public class PedidoService {
     private final PedidoRepository pedidoRepository;
     private final ProdutoRepository produtoRepository;
     private final MesaRepository mesaRepository;
+    private final MesaService mesaService;
     private final PedidoStatusHistoricoRepository historicoRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -113,7 +113,7 @@ public class PedidoService {
         PedidoStatus statusHistorico = todosInstantaneos ? PedidoStatus.ENTREGUE : PedidoStatus.RECEBIDO;
         registrarHistorico(salvo.getId(), statusHistorico);
 
-        Map<Long, Integer> mesaMap = carregarMesaMap();
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         PedidoResponse response = toResponse(salvo, mesaMap);
         // VENDA_CAIXA só quando não precisa de preparo — do contrário notifica a cozinha normalmente
         publicarEvento(todosInstantaneos ? "VENDA_CAIXA" : "NOVO_PEDIDO", response);
@@ -141,7 +141,7 @@ public class PedidoService {
 
         Pedido salvo = pedidoRepository.save(pedido);
         registrarHistorico(salvo.getId(), novoStatus);
-        Map<Long, Integer> mesaMap = carregarMesaMap();
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         PedidoResponse response = toResponse(salvo, mesaMap);
         publicarEvento("PEDIDO_ATUALIZADO", response);
         return response;
@@ -156,7 +156,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public List<PedidoResponse> listar() {
-        Map<Long, Integer> mesaMap = carregarMesaMap();
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         return pedidoRepository.findAllWithItensOrderByDataHoraDesc()
                 .stream().map(p -> toResponse(p, mesaMap)).toList();
     }
@@ -168,7 +168,7 @@ public class PedidoService {
         var pageResult = pedidoRepository.findAllByOrderByDataHoraDesc(pageable);
         long total = pageResult.getTotalElements();
         List<Long> ids = pageResult.getContent().stream().map(Pedido::getId).toList();
-        Map<Long, Integer> mesaMap = carregarMesaMap();
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         List<PedidoResponse> content = pedidoRepository.findByIdsWithItens(ids)
                 .stream().map(p -> toResponse(p, mesaMap)).toList();
         return new com.dataplate.dto.PaginatedResponse<>(
@@ -182,7 +182,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public List<PedidoResponse> listarPorMesa(Integer numeroMesa) {
-        Map<Long, Integer> mesaMap = carregarMesaMap();
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         return mesaRepository.findByNumeroAndAtivoTrue(numeroMesa)
                 .map(mesa -> pedidoRepository.findByIdMesaWithItensOrderByDataHoraDesc(mesa.getId().intValue())
                         .stream().map(p -> toResponse(p, mesaMap)).toList())
@@ -191,7 +191,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public PedidoResponse obter(Long id) {
-        Map<Long, Integer> mesaMap = carregarMesaMap();
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         return pedidoRepository.findById(id)
                 .map(p -> toResponse(p, mesaMap))
                 .orElseThrow(() -> new ResourceNotFoundException("Pedido nao encontrado: " + id));
@@ -240,11 +240,6 @@ public class PedidoService {
                 pedido.getObservacoes(),
                 itens
         );
-    }
-
-    private Map<Long, Integer> carregarMesaMap() {
-        return mesaRepository.findAll().stream()
-                .collect(Collectors.toMap(Mesa::getId, Mesa::getNumero));
     }
 
     private int toStatusId(PedidoStatus status) {

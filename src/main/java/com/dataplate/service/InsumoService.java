@@ -6,6 +6,7 @@ import com.dataplate.entity.Insumo;
 import com.dataplate.exception.ResourceNotFoundException;
 import com.dataplate.repository.InsumoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +19,8 @@ public class InsumoService {
 
     @Transactional(readOnly = true)
     public List<InsumoResponse> listar() {
-        return repo.findByAtivoTrue().stream().map(this::toResponse).toList();
+        return repo.findByAtivoTrue(PageRequest.of(0, 500)).getContent()
+                .stream().map(this::toResponse).toList();
     }
 
     @Transactional
