@@ -42,8 +42,10 @@ function readSession() {
 }
 
 function pdvLogout() {
+  window.clearInterval(_cobrancasTimer);
+  _cobrancasTimer = null;
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  window.location.href = 'adm-login.html';
+  window.location.replace('adm-login.html');
 }
 
 // ── HISTÓRICO DE VENDAS ──────────────────────────────────────────
