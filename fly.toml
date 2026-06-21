@@ -26,7 +26,7 @@ primary_region = 'gru'
     soft_limit = 20
 
 [[vm]]
-  memory = '512mb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
 
