@@ -148,8 +148,13 @@ function applySession(session) {
 }
 
 function logout() {
+  window.clearTimeout(websocketRetryTimer);
+  window.clearTimeout(wsKitchenLoadTimer);
+  window.clearInterval(autoRefreshTimer);
+  websocketRetryTimer = null; wsKitchenLoadTimer = null; autoRefreshTimer = null;
+  if (kitchenSocket) { kitchenSocket.onclose = null; kitchenSocket.close(); kitchenSocket = null; }
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  window.location.href = 'adm-login.html';
+  window.location.replace('adm-login.html');
 }
 
 async function readResponseBody(response) {

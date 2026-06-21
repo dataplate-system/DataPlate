@@ -34,8 +34,13 @@ function ensureSession() {
   return s;
 }
 function logout() {
+  window.clearTimeout(wsTimer);
+  window.clearTimeout(wsLoadTimer);
+  window.clearInterval(refreshTimer);
+  wsTimer = null; wsLoadTimer = null; refreshTimer = null;
+  if (ws) { ws.onclose = null; ws.close(); ws = null; }
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  window.location.href = 'adm-login.html';
+  window.location.replace('adm-login.html');
 }
 
 // ── API ────────────────────────────────────────────────────────────

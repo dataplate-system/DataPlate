@@ -284,8 +284,12 @@ function applyAdminSession() {
 }
 
 window.logoutAdmin = function() {
+  window.clearTimeout(websocketRetryTimer);
+  window.clearTimeout(wsAdminLoadTimer);
+  websocketRetryTimer = null; wsAdminLoadTimer = null;
+  if (adminSocket) { adminSocket.onclose = null; adminSocket.close(); adminSocket = null; }
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  window.location.href = 'adm-login.html';
+  window.location.replace('adm-login.html');
 };
 
 async function postJson(endpoint, payload) {
