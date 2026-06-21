@@ -30,6 +30,11 @@ public class PedidosController {
         return ResponseEntity.status(HttpStatus.CREATED).body(pedido);
     }
 
+    @GetMapping("/ativos")
+    public ResponseEntity<List<PedidoResponse>> listarAtivos() {
+        return ResponseEntity.ok(pedidoService.listarAtivos());
+    }
+
     @GetMapping
     public ResponseEntity<?> listar(
             Authentication authentication,

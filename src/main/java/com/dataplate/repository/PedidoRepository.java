@@ -35,6 +35,9 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto WHERE p.id IN :ids ORDER BY p.dataHora DESC")
     List<Pedido> findByIdsWithItens(@Param("ids") List<Long> ids);
 
+    @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto WHERE p.idStatus IN (1,2,3,6) ORDER BY p.dataHora ASC")
+    List<Pedido> findAtivos();
+
     @Query("SELECT DISTINCT p FROM Pedido p LEFT JOIN FETCH p.itens i LEFT JOIN FETCH i.produto WHERE p.idMesa = :idMesa ORDER BY p.dataHora DESC")
     List<Pedido> findByIdMesaWithItensOrderByDataHoraDesc(@Param("idMesa") Integer idMesa);
 

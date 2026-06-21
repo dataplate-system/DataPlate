@@ -181,6 +181,13 @@ public class PedidoService {
     }
 
     @Transactional(readOnly = true)
+    public List<PedidoResponse> listarAtivos() {
+        Map<Long, Integer> mesaMap = mesaService.getMesaMap();
+        return pedidoRepository.findAtivos()
+                .stream().map(p -> toResponse(p, mesaMap)).toList();
+    }
+
+    @Transactional(readOnly = true)
     public List<PedidoResponse> listarPorMesa(Integer numeroMesa) {
         Map<Long, Integer> mesaMap = mesaService.getMesaMap();
         return mesaRepository.findByNumeroAndAtivoTrue(numeroMesa)

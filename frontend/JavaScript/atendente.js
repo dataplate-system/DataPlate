@@ -19,6 +19,9 @@ let wsRetryDelay = 1000;
 let wsTimer = null;
 let ws = null;
 let refreshTimer = null;
+let wsLoadTimer  = null;
+let _lastOrdersHash = '';
+let _lastMesasHash  = '';
 
 // ── Sessao ─────────────────────────────────────────────────────────
 function readSession() {
@@ -180,6 +183,12 @@ function buildMesaCard(mesa) {
 
 // ── Render ────────────────────────────────────────────────────────
 function render() {
+  const ordersHash = allOrders.map(o => `${o.id}:${o.status}`).join(',');
+  const mesasHash  = allMesas.map(m => `${m.id}:${m.status}`).join(',');
+  if (ordersHash === _lastOrdersHash && mesasHash === _lastMesasHash) return;
+  _lastOrdersHash = ordersHash;
+  _lastMesasHash  = mesasHash;
+
   const recebidos = allOrders.filter(p => p.status === 'RECEBIDO');
   const preparo   = allOrders.filter(p => p.status === 'EM_PREPARO');
   const prontos   = allOrders.filter(p => p.status === 'PRONTO');
@@ -523,10 +532,10 @@ window.fecharMesaModal = function() {
 async function loadData({ silent = false } = {}) {
   try {
     const [ordersRaw, mesasRaw] = await Promise.all([
-      getJson('/pedidos?page=0&size=200'),
+      getJson('/pedidos/ativos'),
       getJson('/mesas')
     ]);
-    const list = Array.isArray(ordersRaw) ? ordersRaw : (ordersRaw?.content || []);
+    const list = Array.isArray(ordersRaw) ? ordersRaw : [];
     allOrders = list.map(o => ({ ...o, status: String(o.status || '').toUpperCase() }));
     allMesas  = (mesasRaw || []).filter(m => m.ativo !== false).sort((a, b) => a.numero - b.numero);
     setStatus('Conectado', 'online');
@@ -544,17 +553,25 @@ function connectWS() {
   if (ws && [WebSocket.OPEN, WebSocket.CONNECTING].includes(ws.readyState)) return;
   try {
     ws = new WebSocket(wsUrl);
-    ws.addEventListener('open', () => { wsRetryDelay = 1000; });
+    ws.addEventListener('open', () => {
+      wsRetryDelay = 1000;
+      window.clearInterval(refreshTimer);
+      refreshTimer = null;
+    });
     ws.addEventListener('message', (e) => {
       try {
         const p = JSON.parse(e.data);
-        if (['NOVO_PEDIDO','PEDIDO_ATUALIZADO','VENDA_CAIXA'].includes(p?.type)) loadData({ silent: true });
+        if (['NOVO_PEDIDO','PEDIDO_ATUALIZADO','VENDA_CAIXA'].includes(p?.type)) {
+          window.clearTimeout(wsLoadTimer);
+          wsLoadTimer = window.setTimeout(() => loadData({ silent: true }), 300);
+        }
       } catch (_) {}
     });
     ws.addEventListener('close', () => {
       window.clearTimeout(wsTimer);
       wsTimer = window.setTimeout(connectWS, wsRetryDelay);
       wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
+      if (!refreshTimer) refreshTimer = window.setInterval(() => loadData({ silent: true }), AUTO_REFRESH_MS);
     });
     ws.addEventListener('error', () => ws.close());
   } catch (_) {
