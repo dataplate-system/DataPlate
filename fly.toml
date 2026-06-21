@@ -30,6 +30,10 @@ primary_region = 'gru'
   cpu_kind = 'shared'
   cpus = 1
 
+[machine]
+  auto_stop_machines = false
+  min_machines_running = 1
+
 [checks]
   [checks.health]
     type = 'http'
