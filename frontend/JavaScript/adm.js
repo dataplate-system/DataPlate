@@ -1286,7 +1286,7 @@ async function carregarPagamentos() {
   if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
 
   try {
-    const data = await getJson('/pedidos?page=0&size=500');
+    const data = await getJson('/pedidos?page=0&size=200');
     const todos = Array.isArray(data) ? data : (data?.content || []);
 
     const iniDate = new Date(ini.value + 'T00:00:00');
@@ -1727,7 +1727,7 @@ async function carregarPedidosProntos() {
   const lista = document.getElementById('mesasProntosLista');
   if (!banner) return;
   try {
-    const data = await getJson('/pedidos?page=0&size=100');
+    const data = await getJson('/pedidos/ativos');
     const todos = Array.isArray(data) ? data : (data.content || []);
     const prontos = todos.filter(p => p.status === 'PRONTO');
     if (!prontos.length) {
@@ -2806,6 +2806,7 @@ function exportTableToCSV(buttonSelector) {
 let adminSocket = null;
 let websocketRetryTimer = null;
 let websocketRetryDelay = 1000;
+let wsAdminLoadTimer = null;
 
 function connectAdminWebSocket() {
   if (adminSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(adminSocket.readyState)) return adminSocket;
@@ -2827,12 +2828,15 @@ function connectAdminWebSocket() {
       }
 
       if (payload?.type === 'PEDIDO_ATUALIZADO' || payload?.type === 'NOVO_PEDIDO' || payload?.type === 'VENDA_CAIXA') {
-        carregarPedidos();
-        carregarCozinha();
-        carregarUltimosPedidosDashboard();
-        if (document.getElementById('dashboard')?.classList.contains('active')) {
-          carregarRelatorios();
-        }
+        window.clearTimeout(wsAdminLoadTimer);
+        wsAdminLoadTimer = window.setTimeout(() => {
+          carregarPedidos();
+          carregarCozinha();
+          carregarUltimosPedidosDashboard();
+          if (document.getElementById('dashboard')?.classList.contains('active')) {
+            carregarRelatorios();
+          }
+        }, 500);
       }
     });
 
@@ -3849,7 +3853,7 @@ function carregarCancelamentos() {
   if (fim) fim.value = '';
   if (busca) busca.value = '';
 
-  getJson('/pedidos?page=0&size=1000')
+  getJson('/pedidos?page=0&size=200')
     .then(raw => {
       const todos = Array.isArray(raw) ? raw : (raw.content || []);
       _todosCancelados = todos.filter(p => String(p.status).toUpperCase() === 'CANCELADO');
@@ -3966,7 +3970,7 @@ function carregarUsuariosResumo() {
 
 function carregarCozinha() {
   showCozinhaSkeleton();
-  getJson('/pedidos?size=200').then(raw => {
+  getJson('/pedidos/ativos').then(raw => {
   const pedidos = Array.isArray(raw) ? raw : (raw.content || []);
     const cols = {
       RECEBIDO:   document.getElementById('col-recebido'),

@@ -101,6 +101,7 @@ let autoRefreshTimer = null;
 let kitchenSocket = null;
 let websocketRetryTimer = null;
 let websocketRetryDelay = 1000;
+let wsKitchenLoadTimer = null;
 let fallbackMode = false;
 let fallbackNoticeShown = false;
 let urgentOrderIds = new Set();
@@ -756,6 +757,8 @@ function connectKitchenWebSocket() {
     kitchenSocket.addEventListener('open', () => {
       websocketRetryDelay = 1000;
       if (!fallbackMode) setConnectionStatus('Conectado', 'online');
+      window.clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
     });
     kitchenSocket.addEventListener('message', (event) => {
       let payload = event.data;
@@ -766,15 +769,20 @@ function connectKitchenWebSocket() {
       }
       if (payload?.type === 'NOVO_PEDIDO') {
         tocarNotificacaoNovoPedido();
-        loadOrders({ silent: true });
+        window.clearTimeout(wsKitchenLoadTimer);
+        wsKitchenLoadTimer = window.setTimeout(() => loadOrders({ silent: true }), 300);
       } else if (payload?.type === 'PEDIDO_ATUALIZADO') {
-        loadOrders({ silent: true });
+        window.clearTimeout(wsKitchenLoadTimer);
+        wsKitchenLoadTimer = window.setTimeout(() => loadOrders({ silent: true }), 300);
       }
     });
     kitchenSocket.addEventListener('close', () => {
       window.clearTimeout(websocketRetryTimer);
       websocketRetryTimer = window.setTimeout(connectKitchenWebSocket, websocketRetryDelay);
       websocketRetryDelay = Math.min(websocketRetryDelay * 2, 30000);
+      if (!autoRefreshTimer && document.getElementById('autoRefresh')?.checked) {
+        autoRefreshTimer = window.setInterval(() => loadOrders({ silent: true }), AUTO_REFRESH_MS);
+      }
     });
     kitchenSocket.addEventListener('error', () => kitchenSocket.close());
   } catch (error) {
