@@ -403,22 +403,24 @@ function abrirProdutoDinamico(produtoId) {
       <img src="../images/brand/logo-emp.png" class="logo-topo">
       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
     </header>
-    <div class="topo-img">
-      <img src="${escaparHtml(imagem)}">
-    </div>
-    <div class="container">
-      <h2>${nome}</h2>
-      <p>${descricao}</p>
-      <span class="preco">${formatarPreco(produto.preco)}</span>
-      <h3>Quantidade</h3>
-      <div class="quantidade">
-        <button onclick="diminuirQtd(this)">-</button>
-        <span class="qtd">1</span>
-        <button onclick="aumentarQtd(this)">+</button>
+    <div class="detalhe-corpo">
+      <div class="topo-img">
+        <img src="${escaparHtml(imagem)}">
       </div>
-      <button class="btn-carrinho" onclick="adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', parseInt(this.parentElement.querySelector('.qtd').innerText))">
-        Adicionar ao carrinho
-      </button>
+      <div class="container">
+        <h2>${nome}</h2>
+        <p>${descricao}</p>
+        <span class="preco">${formatarPreco(produto.preco)}</span>
+        <h3>Quantidade</h3>
+        <div class="quantidade">
+          <button onclick="diminuirQtd(this)">-</button>
+          <span class="qtd">1</span>
+          <button onclick="aumentarQtd(this)">+</button>
+        </div>
+        <button class="btn-carrinho" onclick="adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', parseInt(this.closest('.container').querySelector('.qtd').innerText))">
+          Adicionar ao carrinho
+        </button>
+      </div>
     </div>
   `;
   tela.style.display = "block";

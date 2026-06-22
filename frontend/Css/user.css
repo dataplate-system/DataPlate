@@ -2443,12 +2443,16 @@ h2 {
   right:12px;
   width:40px;
   height:40px;
+  padding:0;
+  margin:0;
   border:none;
   border-radius:50%;
   background:#4aad19;
   color:#fff;
-  font-size:24px;
-  line-height:1;
+  font-size:26px;
+  font-weight:400;
+  line-height:40px;
+  text-align:center;
   cursor:pointer;
   display:flex;
   align-items:center;
@@ -2489,39 +2493,36 @@ h2 {
 
 /* Tela de detalhe do produto — desktop harmonico (2 colunas centralizadas) */
 @media screen and (min-width:769px){
-  #telaProdutoDinamico{
-    max-width:920px;
-    margin:0 auto;
+  #telaProdutoDinamico .detalhe-corpo{
     display:flex;
     flex-wrap:wrap;
     align-items:flex-start;
+    max-width:920px;
+    margin:0 auto;
     padding-bottom:48px;
   }
-  #telaProdutoDinamico .topo{
-    flex:0 0 100%;
-  }
-  #telaProdutoDinamico .topo-img{
-    flex:1 1 400px;
+  #telaProdutoDinamico .detalhe-corpo .topo-img{
+    flex:1 1 360px;
     padding:32px;
     box-sizing:border-box;
   }
-  #telaProdutoDinamico .topo-img img{
+  #telaProdutoDinamico .detalhe-corpo .topo-img img{
     width:100%;
     height:auto;
     aspect-ratio:1 / 1;
-    max-height:420px;
+    max-height:400px;
     border-radius:20px;
     box-shadow:0 8px 24px rgba(0,0,0,0.15);
   }
-  #telaProdutoDinamico .container{
-    flex:1 1 360px;
+  #telaProdutoDinamico .detalhe-corpo .container{
+    flex:1 1 340px;
     padding:40px 32px;
     box-sizing:border-box;
   }
-  #telaProdutoDinamico .container h2{
+  #telaProdutoDinamico .detalhe-corpo .container h2{
     font-size:30px;
   }
-  #telaProdutoDinamico .container .preco{
+  #telaProdutoDinamico .detalhe-corpo .container .preco{
     font-size:26px;
   }
 }
