@@ -287,6 +287,7 @@ function carregarCarrinho() {
   });
 
   document.getElementById("total").innerText = "Total: R$ " + total.toFixed(2);
+  atualizarBadge();
 }
 
 function aumentar(i) {
@@ -361,6 +362,7 @@ function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
   carregarCarrinho();
 
   atualizarBarraFlutuante();
+  atualizarBadge();
 }
 
 function voltarCarrinho() {
@@ -397,7 +399,7 @@ function abrirProdutoDinamico(produtoId) {
   const descricao = escaparHtml(produto.descricao || "Sem descrição cadastrada.");
   tela.innerHTML = `
     <header class="topo">
-      <button class="voltar" onclick="voltarListaDinamica()"><-</button>
+      <button class="voltar" onclick="voltarListaDinamica()">←</button>
       <img src="../images/brand/logo-emp.png" class="logo-topo">
       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
     </header>
@@ -442,16 +444,20 @@ async function carregarCardapio() {
       return;
     }
 
-    lista.innerHTML = produtosCardapio.map((produto) => `
+    lista.innerHTML = produtosCardapio.map((produto) => {
+      const imagem = getImagemProduto(produto);
+      return `
       <div class="item" data-categoria="${getCategoriaProduto(produto)}" onclick="abrirProdutoDinamico(${produto.id})">
-        <img src="${escaparHtml(getImagemProduto(produto))}">
+        <img src="${escaparHtml(imagem)}">
         <div class="info">
           <h3>${escaparHtml(produto.nome)}</h3>
           <p>${escaparHtml(produto.descricao || "Sem descrição cadastrada.")}</p>
           <span class="preco">${formatarPreco(produto.preco)}</span>
         </div>
-      </div>
-    `).join("");
+        <button class="add-rapido" title="Adicionar ao carrinho"
+          onclick="event.stopPropagation(); adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', 1)">+</button>
+      </div>`;
+    }).join("");
     filtrar();
   } catch (error) {
     console.error("Erro ao carregar cardapio:", error);
@@ -868,12 +874,14 @@ atualizarBotaoPedido();
 
 function atualizarBadge() {
   const badge = document.getElementById("badgePedido");
-
   if (!badge) return;
 
-  if (pedidoEmAndamento) {
-    badge.style.display = "block";
-    badge.innerText = "1";
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  const total = carrinho.reduce((soma, item) => soma + (Number(item.quantidade) || 0), 0);
+
+  if (total > 0) {
+    badge.style.display = "flex";
+    badge.innerText = String(total);
   } else {
     badge.style.display = "none";
   }

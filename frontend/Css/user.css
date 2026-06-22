@@ -385,7 +385,8 @@ h2 {
 
   color:#111827;
 
-  font-size:10px;
+  font-size:18px;
+  line-height:1;
 
   cursor:pointer;
 
@@ -2426,4 +2427,101 @@ h2 {
 /* CASO USE hidden */
 #telaLista[style*="display: block"] ~ #barraFlutuante{
   display:flex !important;
+}
+
+/* ============================================= */
+/* Melhorias cardapio: + rapido, badge, detalhe  */
+/* ============================================= */
+
+/* Botao + para adicionar direto pelo card */
+.lista-grid .item{
+  position:relative;
+}
+.lista-grid .add-rapido{
+  position:absolute;
+  bottom:12px;
+  right:12px;
+  width:40px;
+  height:40px;
+  border:none;
+  border-radius:50%;
+  background:#4aad19;
+  color:#fff;
+  font-size:24px;
+  line-height:1;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 3px 8px rgba(0,0,0,0.25);
+  transition:background .2s, transform .2s;
+}
+.lista-grid .add-rapido:hover{
+  background:#3d9416;
+  transform:scale(1.08);
+}
+/* espaco pro botao nao cobrir o preco */
+.lista-grid .info{
+  padding-right:60px;
+}
+
+/* Badge do carrinho */
+.carrinho{
+  position:relative;
+}
+.cart-badge{
+  position:absolute;
+  top:-6px;
+  right:-6px;
+  min-width:20px;
+  height:20px;
+  padding:0 5px;
+  box-sizing:border-box;
+  border-radius:10px;
+  background:#e11d48;
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  line-height:20px;
+  text-align:center;
+  box-shadow:0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* Tela de detalhe do produto — desktop harmonico (2 colunas centralizadas) */
+@media screen and (min-width:769px){
+  #telaProdutoDinamico{
+    max-width:920px;
+    margin:0 auto;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    padding-bottom:48px;
+  }
+  #telaProdutoDinamico .topo{
+    flex:0 0 100%;
+  }
+  #telaProdutoDinamico .topo-img{
+    flex:1 1 400px;
+    padding:32px;
+    box-sizing:border-box;
+  }
+  #telaProdutoDinamico .topo-img img{
+    width:100%;
+    height:auto;
+    aspect-ratio:1 / 1;
+    max-height:420px;
+    border-radius:20px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.15);
+  }
+  #telaProdutoDinamico .container{
+    flex:1 1 360px;
+    padding:40px 32px;
+    box-sizing:border-box;
+  }
+  #telaProdutoDinamico .container h2{
+    font-size:30px;
+  }
+  #telaProdutoDinamico .container .preco{
+    font-size:26px;
+  }
 }
