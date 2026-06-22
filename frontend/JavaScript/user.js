@@ -40,15 +40,23 @@ function getImagemProduto(produto) {
 }
 
 function getCategoriaProduto(produto) {
-  const categorias = {
-    1: "hamburguer",
-    2: "massas",
-    3: "principais",
-    4: "entradas",
-    5: "sobremesas",
-    6: "bebidas"
-  };
-  return categorias[Number(produto.idCategoria)] || "principais";
+  return produto.idCategoria != null ? String(produto.idCategoria) : "";
+}
+
+async function carregarCategoriasCardapio() {
+  const container = document.querySelector(".categorias");
+  if (!container) return;
+  let cats = [];
+  try {
+    const resp = await fetch(`${API_BASE_URL}/categorias`);
+    if (resp.ok) cats = await resp.json();
+  } catch (e) {
+    console.error("Erro ao carregar categorias:", e);
+  }
+  container.innerHTML = [`<button class="ativo" data-categoria="todos">Todos</button>`]
+    .concat((cats || []).map(c => `<button data-categoria="${c.id}">${escaparHtml(c.nome)}</button>`))
+    .join("");
+  categoriaAtual = "todos";
 }
 
 function formatarPreco(valor) {
@@ -223,22 +231,20 @@ function diminuirQtd(btn) {
     qtd.innerText = parseInt(qtd.innerText) - 1;
 }
 
-// CLIQUE NOS BOTÕES
-botoes.forEach(botao => {
-  botao.addEventListener("click", () => {
+// CLIQUE NOS BOTÕES (delegação — botões são renderizados dinamicamente)
+const categoriasContainer = document.querySelector(".categorias");
+if (categoriasContainer) {
+  categoriasContainer.addEventListener("click", (e) => {
+    const botao = e.target.closest("button[data-categoria]");
+    if (!botao) return;
 
-    // remove ativo
-    botoes.forEach(b => b.classList.remove("ativo"));
-
-    // ativa botão
+    categoriasContainer.querySelectorAll("button").forEach(b => b.classList.remove("ativo"));
     botao.classList.add("ativo");
 
-    // atualiza categoria
     categoriaAtual = botao.getAttribute("data-categoria");
-
     filtrar();
   });
-});
+}
 
 // DIGITAÇÃO NA BUSCA
 if (searchInput) {
@@ -855,6 +861,7 @@ window.confirmarMesaSelecionada = function() {
 })();
 
 // roda ao abrir app
+carregarCategoriasCardapio();
 carregarCardapio();
 atualizarBotaoPedido();
 

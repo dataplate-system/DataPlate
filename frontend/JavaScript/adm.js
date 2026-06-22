@@ -1013,28 +1013,42 @@ async function uploadImagemCloudinary(file) {
   return data.secure_url;
 }
 
-function getCategoryLabel(idCategoria) {
-  const labels = {
-    1: 'Sanduíches',
-    2: 'Massas',
-    3: 'Itens Principais',
-    4: 'Saladas',
-    5: 'Sobremesas',
-    6: 'Bebidas'
-  };
-  return labels[Number(idCategoria)] || idCategoria || '-';
+// Categorias carregadas do backend (fonte única da verdade)
+window.__categorias = window.__categorias || [];
+let __categoriasPromise = null;
+
+async function carregarCategorias(forcar = false) {
+  if (!forcar && __categoriasPromise) return __categoriasPromise;
+  __categoriasPromise = (async () => {
+    try {
+      const cats = await getJson('/categorias');
+      window.__categorias = Array.isArray(cats) ? cats : [];
+    } catch (e) {
+      console.error('Erro ao carregar categorias:', e);
+      window.__categorias = [];
+    }
+    preencherSelectCategorias();
+    return window.__categorias;
+  })();
+  return __categoriasPromise;
 }
 
-function getCategorySlug(idCategoria) {
-  const slugs = {
-    1: 'hamburguer',
-    2: 'massas',
-    3: 'principais',
-    4: 'entradas',
-    5: 'sobremesas',
-    6: 'bebidas'
-  };
-  return slugs[Number(idCategoria)] || 'principais';
+function preencherSelectCategorias() {
+  const select = document.querySelector('#addDishForm [name="category"]');
+  if (!select) return;
+  const atual = select.value;
+  select.innerHTML = (window.__categorias || [])
+    .map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`)
+    .join('');
+  if (atual && Array.from(select.options).some(o => o.value === atual)) {
+    select.value = atual;
+  }
+}
+
+function getCategoryLabel(idCategoria) {
+  const cat = (window.__categorias || []).find(c => Number(c.id) === Number(idCategoria));
+  if (cat) return cat.nome;
+  return idCategoria != null ? `#${idCategoria}` : '-';
 }
 
 // Close modal when clicking outside
@@ -1161,8 +1175,8 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
     .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
 });
 
-// Add Dish Modal
-document.querySelector('.category-create-button')?.addEventListener('click', () => {
+// Add Dish Modal — criar categoria (persiste no banco)
+document.querySelector('.category-create-button')?.addEventListener('click', async () => {
   const form = document.getElementById('addDishForm');
   const categoryInput = form?.querySelector('[name="newCategory"]');
   const categorySelect = form?.querySelector('[name="category"]');
@@ -1170,23 +1184,15 @@ document.querySelector('.category-create-button')?.addEventListener('click', () 
 
   if (!categoryName || !categorySelect) return;
 
-  const alreadyExists = Array.from(categorySelect.options).some(
-    option => option.textContent.trim().toLowerCase() === categoryName.toLowerCase()
-  );
-
-  if (alreadyExists) {
-    showToast('Essa categoria já existe.');
-    return;
+  try {
+    const nova = await postJson('/categorias', { nome: categoryName });
+    await carregarCategorias(true);
+    categorySelect.value = String(nova.id);
+    categoryInput.value = '';
+    showToast('Categoria criada!', 'success');
+  } catch (err) {
+    showToast(err.message || 'Erro ao criar categoria.');
   }
-
-  const categoryIds = Array.from(categorySelect.options)
-    .map(option => Number(option.value))
-    .filter(Number.isFinite);
-  const nextCategoryId = Math.max(...categoryIds, 0) + 1;
-  const option = new Option(categoryName, String(nextCategoryId), true, true);
-
-  categorySelect.add(option);
-  categoryInput.value = '';
 });
 
 document.querySelector('.category-remove-button')?.addEventListener('click', async () => {
@@ -1197,15 +1203,21 @@ document.querySelector('.category-remove-button')?.addEventListener('click', asy
   if (!categorySelect || !selectedOption) return;
 
   const categoryName = selectedOption.textContent.trim();
-  const ok = await showConfirmModal('Remover categoria?', `Deseja remover a categoria <strong>${categoryName}</strong> desta lista?`);
+  const categoryId = selectedOption.value;
+  const ok = await showConfirmModal('Remover categoria?', `Deseja remover a categoria <strong>${categoryName}</strong>?`);
   if (!ok) return;
 
-  selectedOption.remove();
-
-  if (categorySelect.options.length > 0) {
-    categorySelect.selectedIndex = 0;
+  try {
+    await deleteJson(`/categorias/${categoryId}`);
+    await carregarCategorias(true);
+    showToast('Categoria removida.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Não foi possível remover. Pode haver produtos usando essa categoria.');
   }
 });
+
+// Carrega categorias do backend ao iniciar o painel
+carregarCategorias();
 
 document.getElementById('addDishForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -3301,7 +3313,8 @@ function carregarRelFinanceiro(inicio, fim) {
 function carregarRelCardapio(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   showTableSkeleton('rel-cardapio');
-  getJson(`/relatorios/cardapio${params}`)
+  carregarCategorias()
+    .then(() => getJson(`/relatorios/cardapio${params}`))
     .then((data) => {
       const tbody = document.querySelector('#rel-cardapio .data-table tbody');
       if (!tbody) return;
@@ -3566,19 +3579,19 @@ function buildLinhaProduto(p) {
   </tr>`;
 }
 
-function carregarProdutos() {
+async function carregarProdutos() {
   showTableSkeleton('cardapio');
-  getJson('/produtos')
-    .then(list => {
-      window.__produtos = list || [];
-      setTableBody('cardapio', window.__produtos.map(buildLinhaProduto));
-      applyToolbarFilters('cardapio');
-    })
-    .catch((err) => {
-      const msg = err.message || 'Erro ao carregar produtos.';
-      setTableBody('cardapio', [], msg);
-      console.error('[cardapio]', err);
-    });
+  try {
+    await carregarCategorias();
+    const list = await getJson('/produtos');
+    window.__produtos = list || [];
+    setTableBody('cardapio', window.__produtos.map(buildLinhaProduto));
+    applyToolbarFilters('cardapio');
+  } catch (err) {
+    const msg = err.message || 'Erro ao carregar produtos.';
+    setTableBody('cardapio', [], msg);
+    console.error('[cardapio]', err);
+  }
 }
 
 window.editarCliente = function(id) {
