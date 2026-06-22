@@ -401,7 +401,6 @@ function abrirProdutoDinamico(produtoId) {
     <header class="topo">
       <button class="voltar" onclick="voltarListaDinamica()">←</button>
       <img src="../images/brand/logo-emp.png" class="logo-topo">
-      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
     </header>
     <div class="detalhe-corpo">
       <div class="topo-img">

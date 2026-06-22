@@ -369,8 +369,8 @@ h2 {
 .voltar {
  background:#ffffff !important;
 
-  width:38px;
-  height:38px;
+  width:46px;
+  height:46px;
 
   padding:0;
   margin:0;
@@ -2471,10 +2471,57 @@ h2 {
   padding-right:60px;
 }
 
-/* Badge do carrinho */
-.carrinho{
-  position:relative;
+/* Carrinho flutuante global (sempre visivel ao rolar) */
+.cart-float{
+  position:fixed;
+  top:16px;
+  right:18px;
+  width:46px;
+  height:46px;
+  padding:0;
+  border:none;
+  border-radius:50%;
+  background:#ffffff;
+  box-shadow:0 3px 12px rgba(0,0,0,0.25);
+  display:grid;
+  place-items:center;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+  z-index:1001;
 }
+.cart-float:hover{
+  transform:scale(1.05);
+}
+
+/* Setas de voltar nas telas full (detalhe/carrinho) alinhadas com o carrinho */
+#telaProdutoDinamico .voltar,
+#telaCarrinho .voltar{
+  position:fixed;
+  top:16px;
+  left:18px;
+  z-index:1001;
+}
+
+/* Rodape */
+.rodape-user{
+  text-align:center;
+  padding:28px 16px 90px;
+  color:#6b7280;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.rodape-user strong{
+  color:#111827;
+  font-size:18px;
+  font-weight:800;
+}
+.rodape-user span{
+  font-size:13px;
+}
+
+/* Badge do carrinho */
 .cart-badge{
   position:absolute;
   top:-6px;

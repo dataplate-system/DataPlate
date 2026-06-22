@@ -9,6 +9,12 @@
 </head>
 <body>
 
+<!-- CARRINHO FLUTUANTE (sempre visivel) -->
+<button id="cartFloat" class="cart-float" onclick="abrirCarrinho()" title="Carrinho">
+  🛒
+  <span id="badgePedido" class="cart-badge" style="display:none"></span>
+</button>
+
 <!-- SELETOR DE MESA (demo) -->
 <div id="mesaSelectorOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
   <div style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
@@ -328,13 +334,6 @@
 
       <header class="topo novo-topo">
         <button class="voltar" onclick="voltarPagina()">←</button>
-
-        <div class="acoes-topo">
-          <button class="carrinho" onclick="abrirCarrinho()">
-            🛒
-            <span id="badgePedido" class="cart-badge" style="display:none"></span>
-          </button>
-        </div>
       </header>
 
       <div class="overlay-banner"></div>
@@ -350,6 +349,12 @@
     <div class="lista-grid" id="listaPratos">
       <p id="cardapioLoading" style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Carregando cardápio...</p>
     </div>
+
+    <!-- RODAPE -->
+    <footer class="rodape-user">
+      <strong>Raízes do Sabor</strong>
+      <span>Restaurante</span>
+    </footer>
 
   </main>
 
