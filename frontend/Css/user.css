@@ -2494,15 +2494,6 @@ h2 {
   transform:scale(1.05);
 }
 
-/* Setas de voltar nas telas full (detalhe/carrinho) alinhadas com o carrinho */
-#telaProdutoDinamico .voltar,
-#telaCarrinho .voltar{
-  position:fixed;
-  top:16px;
-  left:18px;
-  z-index:1001;
-}
-
 /* Rodape */
 .rodape-user{
   text-align:center;
