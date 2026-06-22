@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -24,9 +26,11 @@ public class Categoria {
     @Id
     @Column(name = "id_categoria")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @JdbcTypeCode(SqlTypes.INTEGER)
     private Long id;
 
     @Column(name = "id_restaurante", nullable = false)
+    @JdbcTypeCode(SqlTypes.INTEGER)
     private Long idRestaurante;
 
     @Column(name = "nome", nullable = false, length = 100)
