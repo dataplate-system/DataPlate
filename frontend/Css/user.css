@@ -10,10 +10,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: rgba(173, 166, 157, 0.181);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #ffffff;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: none;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -145,8 +144,8 @@ body{
 .carrinho {
   background:#ffffff !important;
 
-  width:44px;
-  height:44px;
+  width:46px;
+  height:46px;
 
   border:none;
 
@@ -160,15 +159,16 @@ body{
 
   position:fixed;
   top:14px;
-  right:18px;
+  right:16px;
   z-index:1000;
 
   color:#111827;
 
-  font-size:10px;
+  font-size:20px;
+  line-height:1;
 
   cursor:pointer;
-  
+
 }
 
 /* BUSCA */
@@ -1411,8 +1411,8 @@ h2 {
 .voltar{
   background:#ffffff !important;
 
-  width:35px;
-  height:35px;
+  width:46px;
+  height:46px;
 
   border:none;
 
@@ -1429,7 +1429,8 @@ h2 {
 
   color:#111827;
 
-  font-size:10px;
+  font-size:20px;
+  line-height:1;
 
   cursor:pointer;
 
@@ -2202,11 +2203,11 @@ h2 {
 /* ÁREA DAS NOTIFICAÇÕES */
 #notificacoes{
   position:fixed;
-  top:20px;
+  bottom:20px;
   right:20px;
   z-index:99999;
   display:flex;
-  flex-direction:column;
+  flex-direction:column-reverse;
   gap:12px;
 }
 
@@ -2474,8 +2475,8 @@ h2 {
 /* Carrinho flutuante global (sempre visivel ao rolar) */
 .cart-float{
   position:fixed;
-  top:16px;
-  right:18px;
+  top:14px;
+  right:16px;
   width:46px;
   height:46px;
   padding:0;

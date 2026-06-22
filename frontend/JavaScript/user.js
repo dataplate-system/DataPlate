@@ -421,6 +421,10 @@ function abrirProdutoDinamico(produtoId) {
         </button>
       </div>
     </div>
+    <footer class="rodape-user">
+      <strong>Raízes do Sabor</strong>
+      <span>Restaurante</span>
+    </footer>
   `;
   tela.style.display = "block";
 }
