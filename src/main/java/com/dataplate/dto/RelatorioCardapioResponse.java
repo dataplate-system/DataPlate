@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record RelatorioCardapioResponse(
-        List<TopProdutoResponse> topProdutos,
+        List<RelatorioCardapioItem> topProdutos,
         long totalItensVendidos,
         BigDecimal faturamentoTotal
 ) {

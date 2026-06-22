@@ -48,3 +48,7 @@ target/
 
 # Claude Code (configuração local, não vai pro repositório)
 .claude/
+
+# Backups de migração de imagens (base64 grande, não vai pro repositório)
+backup-imagens-*.json
+backup/

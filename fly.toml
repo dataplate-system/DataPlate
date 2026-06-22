@@ -5,8 +5,8 @@ primary_region = 'gru'
 
 [env]
   SPRING_PROFILES_ACTIVE = 'prod'
-  SPRING_DATASOURCE_URL = 'jdbc:postgresql://db.zcdjzwnzapzvisllnivh.supabase.co:5432/postgres'
-  SPRING_DATASOURCE_USERNAME = 'postgres.zcdjzwnzapzvisllnivh'
+  SPRING_DATASOURCE_URL = 'jdbc:postgresql://dataplate-db.flycast:5432/dataplate?sslmode=disable'
+  SPRING_DATASOURCE_USERNAME = 'postgres'
 
 [[services]]
   internal_port = 8080

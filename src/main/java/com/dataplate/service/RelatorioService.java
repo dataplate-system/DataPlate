@@ -1,5 +1,6 @@
 package com.dataplate.service;
 
+import com.dataplate.dto.RelatorioCardapioItem;
 import com.dataplate.dto.RelatorioCardapioResponse;
 import com.dataplate.dto.RelatorioOperacionalResponse;
 import com.dataplate.dto.RelatorioResumoResponse;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,17 +123,41 @@ public class RelatorioService {
         LocalDateTime inicioDia = dataInicio.atStartOfDay();
         LocalDateTime fimDia    = dataFim.atTime(LocalTime.MAX);
 
-        List<TopProdutoResponse> top = pedidoItemRepository.topProdutosEntre(inicioDia, fimDia);
+        Map<Long, BigDecimal> custoPorProduto = new HashMap<>();
+        for (Object[] row : produtoInsumoRepository.custoPorProdutoEntre(inicioDia, fimDia)) {
+            Long produtoId = toLong(row[0]);
+            if (produtoId != null) {
+                custoPorProduto.put(produtoId, toBigDecimal(row[1]));
+            }
+        }
 
-        long totalItens = top.stream()
-                .mapToLong(t -> t.quantidadeVendida() == null ? 0 : t.quantidadeVendida().longValue())
-                .sum();
-        BigDecimal faturamentoTotal = top.stream()
-                .map(TopProdutoResponse::faturamento)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        List<RelatorioCardapioItem> top = new ArrayList<>();
+        long totalItens = 0;
+        BigDecimal faturamentoTotal = BigDecimal.ZERO;
+
+        for (Object[] row : pedidoItemRepository.vendasPorProdutoEntre(inicioDia, fimDia)) {
+            Long produtoId = toLong(row[0]);
+            String nome = (String) row[1];
+            Long idCategoria = toLong(row[2]);
+            BigDecimal precoVenda = toBigDecimal(row[3]);
+            BigDecimal quantidade = toBigDecimal(row[4]);
+            BigDecimal faturamento = toBigDecimal(row[5]);
+            BigDecimal custoTotal = custoPorProduto.getOrDefault(produtoId, BigDecimal.ZERO);
+            BigDecimal lucro = faturamento.subtract(custoTotal);
+
+            top.add(new RelatorioCardapioItem(
+                    produtoId, nome, idCategoria, precoVenda,
+                    quantidade, faturamento, custoTotal, lucro));
+
+            totalItens += quantidade.longValue();
+            faturamentoTotal = faturamentoTotal.add(faturamento);
+        }
 
         return new RelatorioCardapioResponse(top, totalItens, faturamentoTotal);
+    }
+
+    private static Long toLong(Object value) {
+        return value == null ? null : ((Number) value).longValue();
     }
 
     // ── OPERACIONAL ────────────────────────────────────────────────

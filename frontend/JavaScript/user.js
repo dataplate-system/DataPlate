@@ -420,6 +420,8 @@ async function carregarCardapio() {
   const lista = document.getElementById("listaPratos");
   if (!lista) return;
 
+  lista.innerHTML = '<p id="cardapioLoading" style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Carregando cardápio...</p>';
+
   try {
     const response = await fetch(`${API_BASE_URL}/produtos`);
     if (!response.ok) {
@@ -429,7 +431,10 @@ async function carregarCardapio() {
 
     const produtos = await response.json();
     produtosCardapio = produtos.filter((produto) => produto.ativo !== false);
-    if (!produtosCardapio.length) return;
+    if (!produtosCardapio.length) {
+      lista.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Nenhum produto cadastrado no cardápio.</p>';
+      return;
+    }
 
     lista.innerHTML = produtosCardapio.map((produto) => `
       <div class="item" data-categoria="${getCategoriaProduto(produto)}" onclick="abrirProdutoDinamico(${produto.id})">
@@ -444,6 +449,7 @@ async function carregarCardapio() {
     filtrar();
   } catch (error) {
     console.error("Erro ao carregar cardapio:", error);
+    lista.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#ef4444;padding:32px">Não foi possível carregar o cardápio. Tente novamente.</p>';
   }
 }
 

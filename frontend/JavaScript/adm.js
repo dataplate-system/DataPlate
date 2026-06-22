@@ -984,6 +984,35 @@ function fileToDataUrl(file) {
   });
 }
 
+// ── Cloudinary (upload unsigned de imagens) ────────────────────────
+const CLOUDINARY_CLOUD_NAME = 'dufufat0a';
+const CLOUDINARY_UPLOAD_PRESET = 'fotospadrao';
+
+// Sobe a imagem para o Cloudinary e devolve a secure_url.
+// Retorna null se nenhum arquivo for fornecido.
+async function uploadImagemCloudinary(file) {
+  if (!file || !(file instanceof File) || file.size === 0) return null;
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  form.append('folder', 'produtos');
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+    { method: 'POST', body: form }
+  );
+
+  if (!response.ok) {
+    let detalhe = '';
+    try { detalhe = (await response.json())?.error?.message || ''; } catch (_) {}
+    throw new Error(detalhe || 'Falha ao enviar a imagem para o Cloudinary.');
+  }
+
+  const data = await response.json();
+  return data.secure_url;
+}
+
 function getCategoryLabel(idCategoria) {
   const labels = {
     1: 'Sanduíches',
@@ -1187,10 +1216,10 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
   let imagem = previous?.imagem || null;
 
   try {
-    const imageData = await fileToDataUrl(formData.get('image'));
-    if (imageData) imagem = imageData;
+    const imageUrl = await uploadImagemCloudinary(formData.get('image'));
+    if (imageUrl) imagem = imageUrl;
   } catch (error) {
-    showToast(error.message || 'Erro ao ler imagem.');
+    showToast(error.message || 'Erro ao enviar imagem.');
     return;
   }
 
@@ -1235,7 +1264,7 @@ document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
   if (!validateForm(e.target)) return;
   const fd = new FormData(e.target);
-  const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Visualização': 'FUNCIONARIO' };
+  const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Visualização': 'FUNCIONARIO', 'Cozinha': 'COZINHA' };
   const payload = {
     nome: fd.get('name'),
     cpf: fd.get('cpf'),
@@ -3283,15 +3312,19 @@ function carregarRelCardapio(inicio, fim) {
       const totalQtd = Number(data.totalItensVendidos || 0);
       const totalFat = Number(data.faturamentoTotal || 0);
       tbody.innerHTML = data.topProdutos.map((p) => {
-        const pct = totalQtd > 0 ? ((Number(p.quantidadeVendida || 0) / totalQtd) * 100).toFixed(1) : '0.0';
+        const qtd = Number(p.quantidadeVendida || 0);
+        const pct = totalQtd > 0 ? ((qtd / totalQtd) * 100).toFixed(1) : '0.0';
+        const custoTotal = Number(p.custoTotal || 0);
+        const custoMedio = qtd > 0 ? custoTotal / qtd : 0;
+        const lucro = Number(p.lucro || 0);
         return `<tr>
           <td><strong>${escapeHtml(p.nome)}</strong></td>
-          <td>"</td>
-          <td>${Number(p.quantidadeVendida || 0)}</td>
+          <td>${escapeHtml(getCategoryLabel(p.idCategoria))}</td>
+          <td>${qtd}</td>
           <td>${formatCurrency(p.faturamento)}</td>
           <td>${pct}%</td>
-          <td>"</td>
-          <td>"</td>
+          <td>${custoTotal > 0 ? formatCurrency(custoMedio) : '-'}</td>
+          <td>${formatCurrency(lucro)}</td>
         </tr>`;
       }).join('');
     })

@@ -38,4 +38,17 @@ public interface PedidoItemRepository extends JpaRepository<PedidoItem, Long> {
     List<TopProdutoResponse> topProdutosEntre(
             @org.springframework.data.repository.query.Param("inicio") java.time.LocalDateTime inicio,
             @org.springframework.data.repository.query.Param("fim") java.time.LocalDateTime fim);
+
+    @Query("""
+            select i.produto.id, i.produto.nome, i.produto.idCategoria, i.produto.preco,
+                   sum(i.quantidade), sum(i.subtotal)
+            from PedidoItem i
+            where i.pedido.idStatus <> 5
+              and i.pedido.dataHora between :inicio and :fim
+            group by i.produto.id, i.produto.nome, i.produto.idCategoria, i.produto.preco
+            order by sum(i.quantidade) desc
+            """)
+    List<Object[]> vendasPorProdutoEntre(
+            @org.springframework.data.repository.query.Param("inicio") java.time.LocalDateTime inicio,
+            @org.springframework.data.repository.query.Param("fim") java.time.LocalDateTime fim);
 }
