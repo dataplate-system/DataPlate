@@ -8,6 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.venv/
+__pycache__/
+*.pyc
 dist
 dist-ssr
 *.local
@@ -52,3 +55,5 @@ target/
 # Backups de migração de imagens (base64 grande, não vai pro repositório)
 backup-imagens-*.json
 backup/
+
+.tmp/

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -6,6 +6,7 @@
   <title>DataPlate PDV</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
   <link rel="stylesheet" href="../Css/pdv.css" />
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
 </head>
 <body>
 
@@ -18,6 +19,19 @@
         <small>PDV Caixa</small>
       </span>
     </a>
+
+    <nav class="module-nav" aria-label="Modulos DataPlate">
+      <a href="adm.html">Admin</a>
+      <a href="atendente.html">Atendente</a>
+      <a href="cozinha.html">Cozinha</a>
+      <a href="pdv.html" class="is-active">PDV</a>
+      <a href="user.html">Cardapio</a>
+    </nav>
+
+    <form class="global-search" role="search">
+      <label for="pdvGlobalSearch" class="sr-only">Buscar no sistema</label>
+      <input id="pdvGlobalSearch" type="search" placeholder="Buscar no sistema" />
+    </form>
 
     <div class="pdv-topbar-right">
       <span class="pdv-connection-pill" id="pdvConnectionStatus">Conectado</span>
@@ -91,7 +105,7 @@
           <svg class="codigo-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 5h2M3 12h2M3 19h2M7 5v14M17 5v14M21 5h-2M21 12h-2M21 19h-2M11 5v14M13 5v3M13 11v3M13 17v2"/>
           </svg>
-          <input type="text" id="codigoInput" placeholder="Código do produto…" autocomplete="off" autocorrect="off" spellcheck="false" />
+          <input type="text" id="codigoInput" placeholder="Código do produto..." autocomplete="off" autocorrect="off" spellcheck="false" />
           <kbd class="codigo-hint">Enter</kbd>
         </div>
       </div>
@@ -99,7 +113,7 @@
       <div class="produtos-toolbar">
         <div class="search-wrap">
           <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" id="produtoSearch" placeholder="Buscar produto…" autocomplete="off" />
+          <input type="search" id="produtoSearch" placeholder="Buscar produto..." autocomplete="off" />
         </div>
         <nav class="categorias-bar" id="categoriasFiltro">
           <button class="cat-btn is-active" data-cat="todos">Todos</button>
@@ -115,7 +129,7 @@
       <div class="produtos-grid" id="produtosGrid">
         <div class="grid-loading" id="produtosLoading">
           <div class="spinner"></div>
-          <span>Carregando cardápio…</span>
+          <span>Carregando cardápio...</span>
         </div>
       </div>
     </div>
@@ -152,7 +166,7 @@
         <div class="mesa-select-row">
           <span class="mesa-status-dot" id="mesaStatusDot"></span>
           <select id="mesaSelect">
-            <option value="">Selecione a mesa…</option>
+            <option value="">Selecione a mesa...</option>
           </select>
           <div class="spinner mesa-loading" id="mesaLoading"></div>
         </div>
@@ -217,7 +231,7 @@
           </div>
           <div class="section">
             <label class="section-label" for="pedidoObs">Observação</label>
-            <textarea id="pedidoObs" rows="2" placeholder="Ex: sem cebola, alergia a glúten…"></textarea>
+            <textarea id="pedidoObs" rows="2" placeholder="Ex: sem cebola, alergia a glúten..."></textarea>
           </div>
           <button id="finalizarBtn" class="btn-action btn-primary" disabled>Finalizar venda</button>
         </div>
@@ -227,7 +241,7 @@
       <div id="panelConta" class="order-panel" hidden>
         <div class="conta-loading" id="contaLoading" hidden>
           <div class="spinner"></div>
-          <span>Buscando pedidos…</span>
+          <span>Buscando pedidos...</span>
         </div>
         <div class="order-items" id="contaItens">
           <div class="order-empty">
@@ -318,3 +332,4 @@
   <script src="../JavaScript/pdv.js"></script>
 </body>
 </html>
+

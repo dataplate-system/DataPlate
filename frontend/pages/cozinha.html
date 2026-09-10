@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -6,6 +6,7 @@
   <title>DataPlate - Cozinha</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
   <link rel="stylesheet" href="../Css/cozinha.css" />
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
 </head>
 <body>
   <div class="kitchen-shell">
@@ -17,6 +18,19 @@
           <small>Painel da Cozinha</small>
         </span>
       </button>
+
+      <nav class="module-nav" aria-label="Modulos DataPlate">
+        <a href="adm.html">Admin</a>
+        <a href="atendente.html">Atendente</a>
+        <a href="cozinha.html" class="is-active">Cozinha</a>
+        <a href="pdv.html">PDV</a>
+        <a href="user.html">Cardapio</a>
+      </nav>
+
+      <form class="global-search" role="search">
+        <label for="cozinhaGlobalSearch" class="sr-only">Buscar no sistema</label>
+        <input id="cozinhaGlobalSearch" type="search" placeholder="Buscar no sistema" />
+      </form>
 
       <div class="header-actions">
         <span class="connection-pill" id="connectionStatus">Conectando</span>
@@ -182,3 +196,4 @@
   <script src="../JavaScript/cozinha.js" defer></script>
 </body>
 </html>
+

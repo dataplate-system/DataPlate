@@ -154,10 +154,10 @@ O sistema analisa vendas e classifica pratos na Matriz BCG.
 ## 9. Tecnologias Previstas
 
 - Frontend: HTML, CSS e JavaScript
-- Backend: Java
+- Backend: Python e FastAPI
 - Banco de Dados: PostgreSQL
 - Comunicação em Tempo Real: WebSocket
-- Infraestrutura: API REST e hospedagem em nuvem
+- Infraestrutura: API REST local com Docker
 - Ferramentas de Desenvolvimento: Git, GitHub e Visual Studio Code
 
 ## 10. Benefícios Esperados

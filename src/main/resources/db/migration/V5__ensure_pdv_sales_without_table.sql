@@ -1,1 +1,0 @@
-ALTER TABLE pedido ALTER COLUMN id_mesa DROP NOT NULL;

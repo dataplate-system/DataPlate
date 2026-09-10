@@ -13,10 +13,10 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     const h = window.location.hostname;
     const isFile  = window.location.protocol === 'file:' || !h;
     const isLocal = isFile || h === 'localhost' || h === '127.0.0.1';
-    if (isLocal && window.location.port === '8080') return '/api';
-    if (isFile)  return 'http://localhost:8080/api';
-    if (isLocal) return `http://${h}:8080/api`;
-    return 'https://dataplate.fly.dev/api';
+    if (isLocal && window.location.port === '8081') return '/api';
+    if (isFile)  return 'http://localhost:8081/api';
+    if (isLocal) return `http://${h}:8081/api`;
+    return 'http://localhost:8081/api';
   })();
 
 const CATEGORIA_SLUG  = { 1:'hamburguer', 2:'massas', 3:'principais', 4:'entradas', 5:'sobremesas', 6:'bebidas' };

@@ -8,10 +8,10 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     const h = window.location.hostname;
     const isLocalFile = window.location.protocol === 'file:' || !h;
     const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
-    if (isLocal && window.location.port === '8080') return '/api';
-    if (isLocalFile) return 'http://localhost:8080/api';
-    if (isLocal) return `http://${h}:8080/api`;
-    return 'https://dataplate.fly.dev/api';
+    if (isLocal && window.location.port === '8081') return '/api';
+    if (isLocalFile) return 'http://localhost:8081/api';
+    if (isLocal) return `http://${h}:8081/api`;
+    return 'http://localhost:8081/api';
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
@@ -493,7 +493,8 @@ function initAdminHomeSearch() {
   const form = document.getElementById('adminHomeSearchForm');
   const input = document.getElementById('adminHomeSearch');
   const hint = document.getElementById('adminHomeSearchHint');
-  if (!form || !input) return;
+  const globalForm = document.getElementById('adminGlobalSearchForm');
+  const globalInput = document.getElementById('adminGlobalSearch');
 
   function clearHint() {
     if (!hint) return;
@@ -501,24 +502,31 @@ function initAdminHomeSearch() {
     hint.classList.remove('is-error');
   }
 
-  form.addEventListener('submit', (event) => {
+  function submitSearch(event, sourceInput, shouldShowHint) {
     event.preventDefault();
-    const route = findAdminRoute(input.value);
+    const route = findAdminRoute(sourceInput.value);
     if (!route) {
-      if (hint) {
+      if (shouldShowHint && hint) {
         hint.textContent = 'Tela não encontrada. Tente Clientes, Cardápio, Mesas, Cozinha ou Dashboard.';
         hint.classList.add('is-error');
       }
-      input.focus();
+      sourceInput.focus();
       return;
     }
 
     clearHint();
-    input.value = '';
+    sourceInput.value = '';
     navigateTo(route.id);
-  });
+  }
 
-  input.addEventListener('input', clearHint);
+  if (form && input) {
+    form.addEventListener('submit', (event) => submitSearch(event, input, true));
+    input.addEventListener('input', clearHint);
+  }
+
+  if (globalForm && globalInput) {
+    globalForm.addEventListener('submit', (event) => submitSearch(event, globalInput, false));
+  }
 }
 
 // =============================================
@@ -646,7 +654,7 @@ function formatCurrencyInput(value) {
   return `R$ ${withDots},${decPart}`;
 }
 
-// Converte "R$ 8.000,00" -> 8000.00 (float para enviar Ã  API)
+// Converte "R$ 8.000,00" -> 8000.00 (float para enviar à API)
 function parseCurrencyValue(value) {
   const digits = onlyDigits(value);
   if (!digits) return null;
@@ -1122,7 +1130,7 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
       showSuccessModal(
         id ? 'Cliente atualizado!' : 'Cliente cadastrado!',
         id ? `Os dados de <strong>${cliente.nome}</strong> foram salvos com sucesso.`
-           : `<strong>${cliente.nome}</strong> foi adicionado Ã  lista de clientes.`
+           : `<strong>${cliente.nome}</strong> foi adicionado à lista de clientes.`
       );
     })
     .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao salvar cliente.'));
@@ -1145,7 +1153,7 @@ document.getElementById('addFunctForm')?.addEventListener('submit', (e) => {
       showSuccessModal(
         id ? 'Funcionário atualizado!' : 'Funcionário cadastrado!',
         id ? `Os dados de <strong>${func.nome}</strong> foram salvos com sucesso.`
-           : `<strong>${func.nome}</strong> foi adicionado Ã  equipe.`
+           : `<strong>${func.nome}</strong> foi adicionado à equipe.`
       );
     })
     .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao salvar funcionário.'));
@@ -1169,7 +1177,7 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
       showSuccessModal(
         id ? 'Fornecedor atualizado!' : 'Fornecedor cadastrado!',
         id ? `Os dados de <strong>${forn.razaoSocial}</strong> foram salvos com sucesso.`
-           : `<strong>${forn.razaoSocial}</strong> foi adicionado Ã  lista de fornecedores.`
+           : `<strong>${forn.razaoSocial}</strong> foi adicionado à lista de fornecedores.`
       );
     })
     .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
@@ -1264,7 +1272,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
       const msg = error.message || '';
       // Mensagem amigável quando a categoria (FK) não existe no banco
       if (msg.includes('categoria') || msg.includes('id_categoria') || msg.includes('violates foreign key') || msg.includes('constraint')) {
-        showToast('Categoria não encontrada no banco. Verifique se as migrations do Flyway (V1) foram executadas corretamente.', 'error');
+        showToast('Categoria nao encontrada no banco. Verifique se o schema local foi carregado corretamente.', 'error');
       } else {
         showToast(msg || 'Erro ao salvar prato.');
       }
@@ -1539,7 +1547,7 @@ function defaultTables() {
     { id: 5, number: 5, seats: 8, area: 'Espaço família', reference: 'Canto reservado', status: 'reservada', reservationName: 'Rafael Souza', reservationPhone: '(11) 97777-1444', reservationDate: dateFromToday(1, '19:30'), notes: 'Cadeira infantil' },
     { id: 6, number: 6, seats: 2, area: 'Bar', reference: 'Balcão lateral', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: '' },
     { id: 7, number: 7, seats: 4, area: 'Mezanino', reference: 'Escada esquerda', status: 'manutencao', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Aguardando reparo no apoio' },
-    { id: 8, number: 8, seats: 4, area: 'Ãrea externa', reference: 'Guarda-sol 2', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pet friendly' },
+    { id: 8, number: 8, seats: 4, area: 'Área externa', reference: 'Guarda-sol 2', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pet friendly' },
     { id: 9, number: 9, seats: 6, area: 'Mezanino', reference: 'Parede de quadros', status: 'ocupada', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Conta aberta' },
     { id: 10, number: 10, seats: 10, area: 'Espaço família', reference: 'Mesa grande', status: 'reservada', reservationName: 'Fernanda Lima', reservationPhone: '(11) 96666-8800', reservationDate: dateFromToday(2, '21:00'), notes: 'Grupo corporativo' }
   ];
@@ -3134,6 +3142,7 @@ function carregarHomeStats() {
 
       // Faturamento
       if (el('homeFaturamento'))       el('homeFaturamento').textContent       = formatCurrency(resumo.faturamento);
+      if (el('homeFocusFaturamento'))  el('homeFocusFaturamento').textContent  = formatCurrency(resumo.faturamento);
       if (el('homeFaturamentoDetalhe'))el('homeFaturamentoDetalhe').textContent = `${totalPed} pedido(s) no dia`;
 
       // Ticket médio
@@ -3147,10 +3156,12 @@ function carregarHomeStats() {
 
       // Prontos p/ despacho
       if (el('homeProntos'))           el('homeProntos').textContent           = String(prontos);
+      if (el('homeFocusProntos'))      el('homeFocusProntos').textContent      = String(prontos);
       el('homeStatProntos')?.classList.toggle('has-alert', prontos > 0);
 
       // Em andamento
       if (el('homePedidosAtivos'))     el('homePedidosAtivos').textContent     = String(ativos);
+      if (el('homeFocusPedidos'))      el('homeFocusPedidos').textContent      = String(ativos);
       if (el('homePedidosDetalhe'))    el('homePedidosDetalhe').textContent    =
         `${resumo.pedidosRecebidos || 0} aguardando · ${resumo.pedidosEmPreparo || 0} em preparo`;
 
@@ -3168,6 +3179,7 @@ function carregarHomeStats() {
       const disponiveis= lista.filter((m) => (m.status || '').toLowerCase() === 'disponivel').length;
       const total      = lista.length;
       if (el('homeMesas'))       el('homeMesas').textContent       = `${ocupadas}/${total}`;
+      if (el('homeFocusMesas'))  el('homeFocusMesas').textContent  = `${ocupadas}/${total}`;
       if (el('homeMesasDetalhe'))el('homeMesasDetalhe').textContent = `${disponiveis} disponíve${disponiveis === 1 ? 'l' : 'is'}`;
     })
     .catch(() => {});

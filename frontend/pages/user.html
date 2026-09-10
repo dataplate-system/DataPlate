@@ -6,6 +6,7 @@
   <title>DataPlate</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png">
   <link rel="stylesheet" href="../Css/user.css">
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified">
 </head>
 <body>
 
@@ -16,8 +17,15 @@
 </button>
 
 <!-- SELETOR DE MESA (demo) -->
-<div id="mesaSelectorOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
-  <div style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+<div id="mesaSelectorOverlay" class="dp-mesa-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
+  <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div class="client-app-brand selector-brand">
+      <img src="../images/brand/logo-dataplate.png" alt="DataPlate">
+      <span>
+        <strong>DataPlate</strong>
+        <small>Cardapio Digital</small>
+      </span>
+    </div>
     <img src="../images/brand/logo-emp.png" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:12px;margin-bottom:16px">
     <h2 style="font-size:22px;font-weight:900;margin-bottom:4px;color:#111">Raizes do Sabor</h2>
     <p style="font-size:14px;color:#64748b;margin-bottom:24px">Selecione sua mesa para acessar o cardapio</p>
@@ -314,7 +322,13 @@
   <!-- MENU LATERAL -->
   <aside class="sidebar">
 
-    
+    <div class="client-app-brand">
+      <img src="../images/brand/logo-dataplate.png" alt="DataPlate">
+      <span>
+        <strong>DataPlate</strong>
+        <small>Cardapio Digital</small>
+      </span>
+    </div>
 
     <img src="../images/brand/logo-emp.png" class="logo-sidebar">
 
@@ -765,3 +779,4 @@
 <script src="../JavaScript/user.js?v=3"></script>
 </body>
 </html>
+

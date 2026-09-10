@@ -6,6 +6,7 @@
   <title>DataPlate - Painel Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
   <link rel="stylesheet" href="../Css/adm.css?v=2" />
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
 </head>
 <body>
   <div class="admin-container">
@@ -18,7 +19,14 @@
           </button>
         </div>
       </div>
-      <nav class="main-nav">
+      <nav class="module-nav app-module-nav" aria-label="Modulos DataPlate">
+        <a href="adm.html" class="is-active">Admin</a>
+        <a href="atendente.html">Atendente</a>
+        <a href="cozinha.html">Cozinha</a>
+        <a href="pdv.html">PDV</a>
+        <a href="user.html">Cardapio</a>
+      </nav>
+      <nav class="main-nav admin-section-nav" aria-label="Areas administrativas">
         <!-- Cadastros -->
         <div class="nav-item dropdown" data-role="admin">
           <button type="button" class="nav-button">Cadastros</button>
@@ -66,6 +74,11 @@
           </div>
         </div>
       </nav>
+
+      <form class="global-search" id="adminGlobalSearchForm" autocomplete="off" role="search">
+        <label for="adminGlobalSearch" class="sr-only">Buscar no sistema</label>
+        <input id="adminGlobalSearch" type="search" placeholder="Buscar no sistema" list="adminHomeSearchOptions" />
+      </form>
 
       <div class="header-right">
         <span class="header-breadcrumb" id="headerBreadcrumb" aria-live="polite"></span>
@@ -221,11 +234,43 @@
               <p id="adminHomeSearchHint">Digite o nome de uma tela e pressione Enter.</p>
             </form>
 
-            <div class="home-brand">
-              <img src="../images/brand/logo-dataplate.png" alt="Logo DataPlate" class="home-logo">
-              <h1>DataPlate</h1>
-              <p>Software de gestão inteligente para restaurantes</p>
-            </div>
+            <section class="dashboard-focus" aria-label="Resumo operacional">
+              <div class="focus-header">
+                <span>Visão geral</span>
+                <h1>Operação do restaurante</h1>
+                <p>Atalhos principais e indicadores essenciais para acompanhar o salão, caixa e cozinha.</p>
+              </div>
+
+              <div class="focus-actions">
+                <a href="pdv.html">Abrir PDV</a>
+                <button type="button" onclick="navigateTo('mesas')">Ver mesas</button>
+                <button type="button" onclick="navigateTo('pedidos')">Pedidos</button>
+                <button type="button" onclick="navigateTo('dashboard')">Relatórios</button>
+              </div>
+
+              <div class="focus-grid">
+                <article>
+                  <span>Caixa</span>
+                  <strong id="homeFocusFaturamento">R$ 0,00</strong>
+                  <small>Faturamento de hoje</small>
+                </article>
+                <article>
+                  <span>Pedidos</span>
+                  <strong id="homeFocusPedidos">0</strong>
+                  <small>Em andamento</small>
+                </article>
+                <article>
+                  <span>Salão</span>
+                  <strong id="homeFocusMesas">0/0</strong>
+                  <small>Mesas ocupadas</small>
+                </article>
+                <article>
+                  <span>Cozinha</span>
+                  <strong id="homeFocusProntos">0</strong>
+                  <small>Prontos para despacho</small>
+                </article>
+              </div>
+            </section>
           </div>
 
           <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
@@ -2119,3 +2164,4 @@
   <script src="../JavaScript/adm.js?v=11" defer></script>
 </body>
 </html>
+

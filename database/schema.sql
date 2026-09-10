@@ -121,9 +121,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     role VARCHAR(50) NOT NULL
 );
 
--- Removed PostgreSQL DO block from schema initialization because Spring Boot schema.sql parsing
--- does not safely support dollar-quoted DO blocks with nested semicolons.
--- Use a proper migration tool (Flyway/Liquibase) for schema evolution and data migrations.
+-- O schema local deve ser idempotente para poder ser carregado pelo Docker
+-- sempre que o volume do PostgreSQL for criado pela primeira vez.
 
 CREATE TABLE IF NOT EXISTS insumos (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -131,7 +130,8 @@ CREATE TABLE IF NOT EXISTS insumos (
     unidade VARCHAR(255) NOT NULL,
     quantidade_atual NUMERIC(12, 3) NOT NULL,
     quantidade_minima NUMERIC(12, 3) NOT NULL,
-    custo_unitario NUMERIC(12, 2) NOT NULL
+    custo_unitario NUMERIC(12, 2) NOT NULL,
+    ativo BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE TABLE IF NOT EXISTS produto_insumos (
@@ -147,9 +147,19 @@ SELECT * FROM (VALUES
     ('EM_PREPARO', 'Pedido em preparo', '#F59E0B', 2),
     ('PRONTO', 'Pedido pronto', '#10B981', 3),
     ('ENTREGUE', 'Pedido entregue', '#16A34A', 4),
-    ('CANCELADO', 'Pedido cancelado', '#EF4444', 5)
+    ('CANCELADO', 'Pedido cancelado', '#EF4444', 5),
+    ('SERVIDO', 'Pedido entregue na mesa, aguardando pagamento', '#7C3AED', 6)
 ) AS v(nome, descricao, cor, ordem)
 WHERE NOT EXISTS (SELECT 1 FROM status_pedido);
+
+CREATE TABLE IF NOT EXISTS pedido_status_historico (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_pedido BIGINT NOT NULL REFERENCES pedido(id_pedido) ON DELETE CASCADE,
+    status VARCHAR(30) NOT NULL,
+    registrado_em TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_psh_pedido ON pedido_status_historico (id_pedido);
 
 INSERT INTO restaurante (nome, cnpj, telefone, endereco, email)
 SELECT 'DataPlate Restaurante', '00.000.000/0001-00', '(11) 99999-9999', 'Rua Principal, 1', 'contato@dataplate.com'
