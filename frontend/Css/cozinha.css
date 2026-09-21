@@ -521,8 +521,8 @@ button {
 }
 
 .kitchen-card.sla-late {
-  border-color: #fecaca;
-  background: linear-gradient(180deg, #fff, #fff7f7);
+  border: 2px solid #dc2626;
+  background:  #fff7f7;
 }
 
 .kitchen-card:hover,
@@ -586,7 +586,9 @@ button {
 .time-chip.sla-late,
 .sla-chip.late {
   background: #fee2e2;
-  color: #991b1b;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-weight: 700;
 }
 
 .priority-chip {

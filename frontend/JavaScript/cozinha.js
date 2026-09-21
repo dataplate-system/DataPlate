@@ -858,8 +858,14 @@ document.addEventListener('DOMContentLoaded', () => {
   loadOperationalState();
   applySession(session);
   bindEvents();
+
   updateClock();
   window.setInterval(updateClock, 1000);
+
+   window.setInterval(() => {
+    renderKitchen();
+  }, 30000);
+
   loadOrders();
   startAutoRefresh();
   connectKitchenWebSocket();

@@ -250,7 +250,7 @@ class PedidoItemResponse(BaseModel):
     quantidade: int
     precoUnitario: float
     subtotal: float
-
+    tempoPreparo: int | None = None
 
 class PedidoResponse(BaseModel):
     id: int

@@ -4037,7 +4037,7 @@ function carregarCozinha() {
     const cols = {
       RECEBIDO:   document.getElementById('col-recebido'),
       EM_PREPARO: document.getElementById('col-em_preparo'),
-      PRONTO:     document.getElementById('col-pronto')
+      PRONTO:     document.getElementById('col-pronto'),
     };
 
     Object.values(cols).forEach(col => {
@@ -4059,18 +4059,70 @@ function carregarCozinha() {
       const proximoStatus = { RECEBIDO: 'EM_PREPARO', EM_PREPARO: 'PRONTO', PRONTO: 'ENTREGUE' }[p.status];
       const labelBotao   = { RECEBIDO: 'Iniciar Preparo', EM_PREPARO: 'Marcar Pronto', PRONTO: 'Entregar' }[p.status];
 
-      const card = document.createElement('div');
-      card.className = 'kitchen-card';
-      card.innerHTML = `
-        <div class="card-id">Pedido #${p.id} &bull; ${pedidoOrigemLabel(p)}</div>
-        <div class="card-items">${itensTexto}</div>
-        <div class="card-time">${p.dataHora ? new Date(p.dataHora).toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) : ''}</div>
-        <button class="btn-small" onclick="alterarStatusPedido(${p.id}, '${proximoStatus}')">${labelBotao}</button>
-      `;
-      col.appendChild(card);
-      col.querySelector('.col-count').textContent =
-        String(col.querySelectorAll('.kitchen-card').length);
-    });
+      // Calcula há quantos minutos o pedido foi criado
+  const dataPedido = p.dataHora
+    ? new Date(p.dataHora.endsWith('Z') ? p.dataHora : `${p.dataHora}Z`)
+    : null;
+
+  const minutosDecorridos = dataPedido
+    ? Math.max(0, Math.floor((Date.now() - dataPedido.getTime()) / 60000))
+    : 0;
+
+  // Pega o maior tempo de preparo entre os itens do pedido
+  const temposPreparo = (p.itens || [])
+    .map(item => Number(item.tempoPreparo))
+    .filter(tempo => Number.isFinite(tempo) && tempo > 0);
+
+  const tempoLimite = temposPreparo.length
+    ? Math.max(...temposPreparo)
+    : null;
+      
+  // Pedido está atrasado quando ultrapassa o tempo de preparo
+  const atrasado =
+    p.status === 'EM_PREPARO' &&
+    tempoLimite !== null &&
+    minutosDecorridos > tempoLimite;
+      
+  const minutosAtraso = atrasado
+  ? minutosDecorridos - tempoLimite
+  : 0;
+
+  const card = document.createElement('div');
+      
+  card.className = atrasado
+    ? 'kitchen-card pedido-atrasado'
+    : 'kitchen-card';
+      
+  card.innerHTML = `
+    <div class="card-id">
+      Pedido #${p.id} &bull; ${pedidoOrigemLabel(p)}
+      ${atrasado ? `<span class="badge-atrasado">ATRASADO • ${minutosAtraso} min</span>`: ''}
+    </div>
+      
+  <div class="card-items">${itensTexto}</div>
+
+  <div class="card-time">
+    ${dataPedido
+  ? dataPedido.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  : ''}
+  </div>
+
+  <button
+    class="btn-small"
+    onclick="alterarStatusPedido(${p.id}, '${proximoStatus}')"
+  >
+    ${labelBotao}
+  </button>
+`;
+
+col.appendChild(card);
+
+col.querySelector('.col-count').textContent =
+  String(col.querySelectorAll('.kitchen-card').length);
+});
 
     if (ativos.length === 0) {
       Object.values(cols).forEach(col => {
