@@ -3024,8 +3024,9 @@ function formatDate(iso) {
 }
 
 function formatCurrency(v) {
-  if (v == null) return '-';
-  return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+  const number = Number(v);
+  if (v == null || !Number.isFinite(number)) return 'R$ 0,00';
+  return 'R$ ' + number.toFixed(2).replace('.', ',');
 }
 
 function pedidoOrigemLabel(pedido) {
@@ -3065,13 +3066,58 @@ function setStatByLabel(sectionId, label, value, change) {
   if (changeEl && change != null) changeEl.textContent = change;
 }
 
+function setDashboardSummaryCard(valueId, detailId, value, detail, state = 'ready') {
+  const valueEl = document.getElementById(valueId);
+  const detailEl = document.getElementById(detailId);
+  const card = valueEl?.closest('.dashboard-stat-card');
+  if (valueEl) valueEl.textContent = value;
+  if (detailEl) detailEl.textContent = detail;
+  if (card) {
+    card.classList.toggle('is-loading', state === 'loading');
+    card.classList.toggle('has-error', state === 'error');
+  }
+}
+
+function setDashboardSummaryLoading() {
+  setDashboardSummaryCard('dashboardFaturamento', 'dashboardFaturamentoDetalhe', 'Carregando...', 'Buscando /api/relatorios/resumo', 'loading');
+  setDashboardSummaryCard('dashboardPedidosAtivos', 'dashboardPedidosDetalhe', 'Carregando...', 'Recebidos, em preparo e prontos', 'loading');
+  setDashboardSummaryCard('dashboardMesasOcupadas', 'dashboardMesasDetalhe', 'Carregando...', 'Buscando /api/mesas', 'loading');
+  setDashboardSummaryCard('dashboardTicketMedio', 'dashboardTicketDetalhe', 'Carregando...', 'Calculado com pedidos nao cancelados', 'loading');
+}
+
+function setDashboardResumoError() {
+  setDashboardSummaryCard('dashboardFaturamento', 'dashboardFaturamentoDetalhe', 'Indisponivel', 'Nao foi possivel carregar o resumo', 'error');
+  setDashboardSummaryCard('dashboardPedidosAtivos', 'dashboardPedidosDetalhe', 'Indisponivel', 'Nao foi possivel carregar pedidos ativos', 'error');
+  setDashboardSummaryCard('dashboardTicketMedio', 'dashboardTicketDetalhe', 'Indisponivel', 'Nao foi possivel calcular ticket medio', 'error');
+}
+
 function updateDashboardResumo(resumo) {
   const ativos = Number(resumo.pedidosRecebidos || 0)
     + Number(resumo.pedidosEmPreparo || 0)
     + Number(resumo.pedidosProntos || 0);
-  setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), 'Dados reais do banco');
-  setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
-  setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
+  const entregues = Number(resumo.pedidosEntregues || 0);
+  const cancelados = Number(resumo.pedidosCancelados || 0);
+  const pedidosValidos = ativos + entregues;
+  const totalPedidos = pedidosValidos + cancelados;
+
+  setDashboardSummaryCard(
+    'dashboardFaturamento',
+    'dashboardFaturamentoDetalhe',
+    formatCurrency(resumo.faturamento),
+    totalPedidos ? `${pedidosValidos} pedido(s) validos hoje` : 'Nenhum pedido registrado hoje'
+  );
+  setDashboardSummaryCard(
+    'dashboardPedidosAtivos',
+    'dashboardPedidosDetalhe',
+    String(ativos),
+    `${Number(resumo.pedidosRecebidos || 0)} recebidos, ${Number(resumo.pedidosEmPreparo || 0)} em preparo, ${Number(resumo.pedidosProntos || 0)} prontos`
+  );
+  setDashboardSummaryCard(
+    'dashboardTicketMedio',
+    'dashboardTicketDetalhe',
+    formatCurrency(resumo.ticketMedio),
+    pedidosValidos ? `Base: ${pedidosValidos} pedido(s) nao cancelados` : 'Sem pedidos validos para media'
+  );
 
   // Gráficos do dashboard com dados reais
   if (resumo.topProdutos?.length) {
@@ -3098,10 +3144,20 @@ function carregarSalesChartDashboard() {
 }
 
 function updateDashboardMesas(mesas) {
-  const total = mesas.length;
-  const ocupadas = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'ocupada').length;
-  const disponiveis = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
-  setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
+  const lista = Array.isArray(mesas) ? mesas : [];
+  const total = lista.length;
+  const ocupadas = lista.filter((mesa) => {
+    const status = apiStatusToUiStatus(mesa.status);
+    return status === 'ocupada' || status === 'aguardando_pagamento';
+  }).length;
+  const disponiveis = lista.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
+  const reservadas = lista.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'reservada').length;
+  const mesasLivresLabel = disponiveis === 1 ? 'mesa livre' : 'mesas livres';
+  const reservasLabel = reservadas === 1 ? '1 reservada' : `${reservadas} reservadas`;
+  const detalhe = total
+    ? `${disponiveis} ${mesasLivresLabel} - ${reservasLabel}`
+    : 'Nenhuma mesa cadastrada';
+  setDashboardSummaryCard('dashboardMesasOcupadas', 'dashboardMesasDetalhe', `${ocupadas}/${total}`, detalhe);
 }
 
 // ── Grupos colapsáveis do sidebar ─────────────────────────────────
@@ -3147,6 +3203,7 @@ function carregarHomeStats() {
 
       // Ticket médio
       if (el('homeTicketMedio'))       el('homeTicketMedio').textContent       = formatCurrency(resumo.ticketMedio);
+      if (el('homeFocusTicketMedio'))  el('homeFocusTicketMedio').textContent  = formatCurrency(resumo.ticketMedio);
 
       // Entregues
       if (el('homeEntregues'))         el('homeEntregues').textContent         = String(entregues);
@@ -3156,7 +3213,6 @@ function carregarHomeStats() {
 
       // Prontos p/ despacho
       if (el('homeProntos'))           el('homeProntos').textContent           = String(prontos);
-      if (el('homeFocusProntos'))      el('homeFocusProntos').textContent      = String(prontos);
       el('homeStatProntos')?.classList.toggle('has-alert', prontos > 0);
 
       // Em andamento
@@ -3175,8 +3231,8 @@ function carregarHomeStats() {
   getJson('/mesas')
     .then((mesas) => {
       const lista      = mesas || [];
-      const ocupadas   = lista.filter((m) => (m.status || '').toLowerCase() === 'ocupada').length;
-      const disponiveis= lista.filter((m) => (m.status || '').toLowerCase() === 'disponivel').length;
+      const ocupadas   = lista.filter((m) => apiStatusToUiStatus(m.status) === 'ocupada').length;
+      const disponiveis= lista.filter((m) => apiStatusToUiStatus(m.status) === 'disponivel').length;
       const total      = lista.length;
       if (el('homeMesas'))       el('homeMesas').textContent       = `${ocupadas}/${total}`;
       if (el('homeFocusMesas'))  el('homeFocusMesas').textContent  = `${ocupadas}/${total}`;
@@ -3187,17 +3243,25 @@ function carregarHomeStats() {
 window.carregarHomeStats = carregarHomeStats;
 
 function carregarRelatorios() {
+  setDashboardSummaryLoading();
+
   // Dashboard: resumo de hoje
   getJson('/relatorios/resumo')
     .then(updateDashboardResumo)
-    .catch((err) => console.error('[relatorios]', err));
+    .catch((err) => {
+      setDashboardResumoError();
+      console.error('[relatorios]', err);
+    });
 
   getJson('/mesas')
     .then((mesas) => {
       updateDashboardMesas(mesas);
       renderTableOccupancyChart(mesas);
     })
-    .catch((err) => console.error('[relatorios-mesas]', err));
+    .catch((err) => {
+      setDashboardSummaryCard('dashboardMesasOcupadas', 'dashboardMesasDetalhe', 'Indisponivel', 'Nao foi possivel carregar mesas', 'error');
+      console.error('[relatorios-mesas]', err);
+    });
 
   // Últimos pedidos no dashboard
   carregarUltimosPedidosDashboard();

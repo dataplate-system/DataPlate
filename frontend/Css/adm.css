@@ -840,7 +840,69 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
 }
 
 .dashboard-stat-card {
-  border-top: 3px solid var(--color-secondary);
+  position: relative;
+  overflow: hidden;
+  min-height: 154px;
+  padding: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-top: 0;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--dashboard-accent, var(--color-secondary));
+}
+
+.dashboard-stat-card::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dashboard-accent, var(--color-secondary)) 14%, transparent);
+}
+
+.dashboard-stat-revenue { --dashboard-accent: #16a34a; }
+.dashboard-stat-orders { --dashboard-accent: #f85b15; }
+.dashboard-stat-tables { --dashboard-accent: #2563eb; }
+.dashboard-stat-ticket { --dashboard-accent: #7c3aed; }
+
+.dashboard-stat-card .stat-label,
+.dashboard-stat-card .stat-value,
+.dashboard-stat-card .stat-change {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-stat-card .stat-label {
+  padding-right: 54px;
+}
+
+.dashboard-stat-card .stat-value {
+  margin-top: 10px;
+  font-size: 32px;
+  color: var(--dashboard-accent, var(--color-secondary));
+}
+
+.dashboard-stat-card .stat-change {
+  min-height: 18px;
+  line-height: 1.35;
+}
+
+.dashboard-stat-card.is-loading .stat-value {
+  color: var(--color-gray-light);
+  font-size: 20px;
+}
+
+.dashboard-stat-card.has-error {
+  --dashboard-accent: #ef4444;
+  background: #fff7f7;
 }
 
 .dashboard-layout {
