@@ -1,0 +1,59 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+.venv/
+__pycache__/
+*.pyc
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+# Frontend build/dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Java build output
+target/
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local browser test profiles
+.edge-*-profile/
+.edge-home-profile-*/
+.edge-*-profile-*/
+
+# Variáveis de ambiente (nunca commitar senhas)
+.env
+.env.local
+.env.production
+
+# Claude Code (configuração local, não vai pro repositório)
+.claude/
+
+# Backups de migração de imagens (base64 grande, não vai pro repositório)
+backup-imagens-*.json
+backup/
+
+.tmp/

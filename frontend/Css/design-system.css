@@ -1,0 +1,2204 @@
+/* DataPlate Design System - minimalista, alto contraste e geometria limpa.
+   Este arquivo deve ser carregado por ultimo em todas as paginas. */
+
+:root {
+  --ds-bg: #f5f5f5;
+  --ds-surface: #ffffff;
+  --ds-surface-2: #eeeeee;
+  --ds-text: #0f0f0f;
+  --ds-muted: #666666;
+  --ds-border: #e0e0e0;
+  --ds-border-strong: #0f0f0f;
+  --ds-primary: #0f0f0f;
+  --ds-primary-hover: #000000;
+  --ds-success: #0f0f0f;
+  --ds-warning: #0f0f0f;
+  --ds-danger: #0f0f0f;
+  --ds-radius: 6px;
+  --ds-space-1: 4px;
+  --ds-space-2: 8px;
+  --ds-space-3: 12px;
+  --ds-space-4: 16px;
+  --ds-space-5: 24px;
+  --ds-space-6: 32px;
+  --ds-page-width: 1440px;
+
+  --dp-primary: var(--ds-primary);
+  --dp-primary-dark: var(--ds-primary-hover);
+  --dp-secondary: var(--ds-primary);
+  --dp-accent: var(--ds-primary);
+  --dp-bg: var(--ds-bg);
+  --dp-surface: var(--ds-surface);
+  --dp-surface-muted: var(--ds-surface-2);
+  --dp-text: var(--ds-text);
+  --dp-muted: var(--ds-muted);
+  --dp-border: var(--ds-border);
+  --dp-success: var(--ds-success);
+  --dp-warning: var(--ds-warning);
+  --dp-danger: var(--ds-danger);
+  --dp-radius: var(--ds-radius);
+  --dp-shadow: none;
+  --dp-shadow-sm: none;
+
+  --color-primary: var(--ds-primary);
+  --color-secondary: var(--ds-primary);
+  --color-tertiary: var(--ds-primary);
+  --color-bg: var(--ds-bg);
+  --color-panel: var(--ds-surface);
+  --color-white: var(--ds-surface);
+  --color-text: var(--ds-text);
+  --color-muted: var(--ds-muted);
+  --color-gray-light: var(--ds-muted);
+  --color-border: var(--ds-border);
+  --color-success: var(--ds-success);
+  --color-warning: var(--ds-warning);
+  --color-danger: var(--ds-danger);
+  --primary: var(--ds-primary);
+  --primary-dark: var(--ds-primary-hover);
+  --secondary: var(--ds-primary);
+  --accent: var(--ds-primary);
+  --bg: var(--ds-bg);
+  --panel: var(--ds-surface);
+  --text: var(--ds-text);
+  --muted: var(--ds-muted);
+  --border: var(--ds-border);
+  --success: var(--ds-success);
+  --warning: var(--ds-warning);
+  --danger: var(--ds-danger);
+}
+
+* {
+  box-sizing: border-box;
+  box-shadow: none !important;
+}
+
+html,
+body {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+  font-family: Inter, "Segoe UI", Arial, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+body {
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+h1,
+.section-header h1,
+.kitchen-hero h1,
+.atendente-hero h1 {
+  font-size: 28px !important;
+  line-height: 1.15 !important;
+  font-weight: 700 !important;
+  color: var(--ds-text) !important;
+  margin: 0 0 var(--ds-space-2) !important;
+}
+
+.titulo,
+.dashboard-title,
+.home-brand h1,
+.mesa-card h3,
+.table-card-header strong {
+  color: var(--ds-text) !important;
+}
+
+h2,
+.modal-header,
+.login-card-header h1 {
+  font-size: 22px !important;
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+  color: var(--ds-text) !important;
+}
+
+h3,
+.pgto-modal-title,
+.table-card-header strong,
+.column-header strong {
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+  color: var(--ds-text) !important;
+}
+
+p,
+small,
+label,
+input,
+select,
+textarea,
+button {
+  letter-spacing: 0 !important;
+}
+
+label,
+.section-label,
+.control-field span,
+.hero-eyebrow,
+.pgto-modal-label {
+  color: var(--ds-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.admin-header,
+.atendente-header,
+.kitchen-header,
+.pdv-topbar {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 72px !important;
+  padding: 12px 24px !important;
+  gap: 16px !important;
+  background: var(--ds-surface) !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+  box-shadow: none !important;
+}
+
+.admin-header {
+  flex-wrap: wrap !important;
+  height: auto !important;
+}
+
+.brand-button,
+.pdv-brand-link,
+.logo-area,
+.brand-lockup,
+.client-app-brand {
+  color: var(--ds-text) !important;
+}
+
+.logo-text,
+.brand-button strong,
+.pdv-brand-link strong,
+.brand-lockup strong,
+.client-app-brand strong,
+.sidebar h2 {
+  color: var(--ds-text) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
+.brand-button small,
+.pdv-brand-link small,
+.brand-lockup span,
+.client-app-brand small {
+  color: var(--ds-muted) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.brand-button img,
+.pdv-logo,
+.brand-lockup img,
+.logo-sidebar,
+.logo-topo {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: var(--ds-radius) !important;
+  object-fit: contain !important;
+}
+
+.module-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.module-nav > a,
+.module-nav .nav-button {
+  min-height: 40px !important;
+  padding: 0 14px !important;
+  border: 0 !important;
+  border-right: 1px solid var(--ds-border) !important;
+  border-radius: 0 !important;
+  background: var(--ds-surface) !important;
+  color: var(--ds-muted) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+
+.module-nav > a:last-child,
+.module-nav .nav-item:last-child .nav-button {
+  border-right: 0 !important;
+}
+
+.module-nav > a:hover,
+.module-nav > a.is-active,
+.module-nav .nav-button:hover,
+.module-nav .nav-button.active {
+  background: var(--ds-primary) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.app-module-nav {
+  flex: 0 0 auto !important;
+}
+
+.admin-section-nav {
+  flex: 1 1 auto !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+}
+
+.admin-section-nav .nav-button {
+  min-height: 36px !important;
+  padding: 0 10px !important;
+  color: var(--ds-muted) !important;
+  background: transparent !important;
+  border: 0 !important;
+  font-size: 13px !important;
+}
+
+.admin-section-nav .nav-button:hover,
+.admin-section-nav .nav-button.active {
+  color: var(--ds-text) !important;
+  background: var(--ds-surface-2) !important;
+}
+
+.kitchen-main,
+.atendente-main,
+.main-content,
+.pdv-layout,
+.conteudo {
+  background: var(--ds-bg) !important;
+}
+
+.contentcenter,
+.admin-home,
+.home-center,
+.dashboard-grid,
+.tables-grid,
+.mesas-grid,
+.lista-grid {
+  background: var(--ds-bg) !important;
+  background-image: none !important;
+}
+
+.kitchen-main,
+.atendente-main {
+  width: min(100% - 48px, var(--ds-page-width)) !important;
+  margin: 0 auto !important;
+  padding: 24px 0 32px !important;
+}
+
+.kitchen-hero,
+.atendente-hero,
+.banner-topo,
+.login-visual {
+  min-height: auto !important;
+  padding: 24px !important;
+  background: var(--ds-surface) !important;
+  color: var(--ds-text) !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  box-shadow: none !important;
+}
+
+.kitchen-hero *,
+.atendente-hero * {
+  color: var(--ds-text) !important;
+}
+
+.hero-clock {
+  background: var(--ds-surface-2) !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  color: var(--ds-text) !important;
+}
+
+.stats-grid {
+  gap: 16px !important;
+  margin: 16px 0 !important;
+}
+
+.stat-card,
+.metric-card,
+.dashboard-card,
+.table-card,
+.order-card,
+.mesa-card,
+.produto-card,
+.dish-card,
+.pedido-card,
+.mesa-card,
+.payment-method-card,
+.pgto-card-btn,
+.pdv-panel,
+.pdv-summary,
+.pgto-modal-box,
+.modal-content,
+.login-card,
+.login-preview,
+.card-status,
+.opcao,
+.item,
+.card,
+.depoimento-card,
+.solucao-item,
+.faq-item,
+.kitchen-controls,
+.next-order-strip,
+.kitchen-column,
+.panel,
+.page-tabs,
+.mesa-selector,
+.section {
+  background: var(--ds-surface) !important;
+  border: 1px solid var(--ds-border) !important;
+  border-left-color: var(--ds-border) !important;
+  border-top-color: var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  box-shadow: none !important;
+}
+
+.stat-card,
+.metric-card,
+.dashboard-card,
+.table-card,
+.order-card,
+.mesa-card,
+.produto-card,
+.dish-card,
+.pedido-card,
+.pdv-panel,
+.pdv-summary,
+.section {
+  padding: 16px !important;
+}
+
+.stat-card {
+  min-height: 112px !important;
+  border-top: 1px solid var(--ds-border) !important;
+}
+
+.stat-card strong,
+.metric-value,
+.total,
+.preco,
+.price,
+.pgto-modal-total {
+  color: var(--ds-text) !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+}
+
+input,
+select,
+textarea,
+.input-pagamento {
+  min-height: 42px !important;
+  padding: 0 12px !important;
+  background: var(--ds-surface) !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  color: var(--ds-text) !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+}
+
+textarea {
+  min-height: 84px !important;
+  padding-top: 10px !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.input-pagamento:focus {
+  border-color: var(--ds-border-strong) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+button,
+.btn-primary,
+.btn-secondary,
+.btn-small,
+.login-button,
+.secondary-link-button,
+.header-button,
+.pdv-action-btn,
+.pdv-logout-btn,
+.header-action-btn,
+.header-logout-btn,
+.secondary-button,
+.action-button,
+.btn-add,
+.btn,
+.btn-carrinho,
+.btn-finalizar,
+.btn-novo-pedido,
+.cont,
+.pendente-btn,
+.pgto-confirm-btn,
+.pgto-cancel-btn,
+.historico-refresh-btn,
+.btn-ver-mesa,
+.cat-btn,
+.mode-btn,
+.tab-btn,
+.order-tab,
+.pgto-btn,
+.pgto-card-btn,
+.np-cat-btn,
+.lista-grid .add-rapido,
+.cart-float,
+.voltar,
+.carrinho {
+  min-height: 40px !important;
+  border-radius: var(--ds-radius) !important;
+  border: 1px solid var(--ds-border) !important;
+  background: var(--ds-surface) !important;
+  color: var(--ds-text) !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.btn-primary,
+.login-button,
+.action-button,
+.btn-add,
+.btn-success,
+.btn-recibo,
+.btn-fechar-comanda,
+.btn,
+.btn-carrinho,
+.btn-finalizar,
+.btn-novo-pedido,
+.cont,
+.pendente-btn,
+.btn-reservar,
+.category-create-button,
+.pgto-confirm-btn,
+.cat-btn.is-active,
+.mode-btn.is-active,
+.tab-btn.tab-active,
+.order-tab.is-active,
+.pdv-top-tab.is-active,
+.np-cat-btn.is-active,
+.pgto-btn.is-selected,
+.pgto-card-btn.is-selected,
+.lista-grid .add-rapido {
+  background: var(--ds-primary) !important;
+  border-color: var(--ds-primary) !important;
+  color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.login-button:hover,
+.action-button:hover,
+.btn-add:hover,
+.btn-success:hover,
+.btn-recibo:hover,
+.btn-fechar-comanda:hover,
+.btn:hover,
+.btn-carrinho:hover,
+.btn-finalizar:hover,
+.btn-novo-pedido:hover,
+.cont:hover,
+.pendente-btn:hover,
+.btn-reservar:hover,
+.category-create-button:hover,
+.pgto-confirm-btn:hover,
+.lista-grid .add-rapido:hover {
+  background: var(--ds-primary-hover) !important;
+  border-color: var(--ds-primary-hover) !important;
+  color: #ffffff !important;
+}
+
+.btn-secondary:hover,
+.header-button:hover,
+.pdv-action-btn:hover,
+.secondary-button:hover,
+.pgto-cancel-btn:hover,
+.historico-refresh-btn:hover,
+.btn-ver-mesa:hover,
+.cat-btn:hover,
+.mode-btn:hover,
+.tab-btn:hover,
+.order-tab:hover,
+.pgto-btn:hover,
+.pgto-card-btn:hover,
+.np-cat-btn:hover {
+  background: var(--ds-surface-2) !important;
+  border-color: var(--ds-border-strong) !important;
+}
+
+.logout-button,
+.pdv-logout-btn,
+.header-logout-btn,
+.btn-danger,
+.cancel-btn {
+  color: var(--ds-danger) !important;
+  background: var(--ds-surface) !important;
+  border-color: var(--ds-border) !important;
+}
+
+.connection-pill,
+.pdv-connection-pill,
+.adm-connection-pill,
+.status-badge,
+.badge,
+.priority-chip,
+.sla-chip {
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: var(--ds-surface-2) !important;
+  border: 1px solid var(--ds-border) !important;
+  color: var(--ds-text) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.connection-pill,
+.pdv-connection-pill,
+.adm-connection-pill {
+  background: var(--ds-surface) !important;
+  color: var(--ds-text) !important;
+}
+
+.badge,
+.status-badge,
+.mesa-status-badge,
+.priority-chip,
+.sla-chip {
+  background: var(--ds-surface-2) !important;
+  color: var(--ds-text) !important;
+}
+
+.status-pronto,
+.status-entregue,
+.online,
+.badge-active {
+  color: var(--ds-text) !important;
+}
+
+.status-em_preparo,
+.status-recebido,
+.warning,
+.badge-pending {
+  color: var(--ds-text) !important;
+}
+
+.status-cancelado,
+.offline,
+.badge-danger,
+.cancelado {
+  color: var(--ds-text) !important;
+}
+
+.data-table,
+table {
+  width: 100%;
+  border-collapse: collapse !important;
+  border-color: var(--ds-border) !important;
+  font-size: 14px !important;
+}
+
+.data-table th,
+table th {
+  height: 48px !important;
+  padding: 12px !important;
+  background: var(--ds-surface-2) !important;
+  color: var(--ds-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.data-table td,
+table td {
+  min-height: 48px !important;
+  padding: 12px !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+}
+
+.data-table tbody tr:hover,
+table tbody tr:hover {
+  background: var(--ds-surface-2) !important;
+}
+
+.user-avatar,
+.pdv-avatar,
+.user-avatar-small,
+.user-avatar-large {
+  background: var(--ds-surface-2) !important;
+  color: var(--ds-text) !important;
+  border: 1px solid var(--ds-border) !important;
+}
+
+.client-app-brand,
+#mesaSelectorOverlay .dp-mesa-card {
+  background: var(--ds-surface) !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  box-shadow: none !important;
+}
+
+#mesaSelectorOverlay.dp-mesa-overlay {
+  background: var(--ds-bg) !important;
+}
+
+.sidebar {
+  background: var(--ds-surface) !important;
+  border-right: 1px solid var(--ds-border) !important;
+  box-shadow: none !important;
+}
+
+.logo-text,
+.home-brand h1,
+.home-search-row span {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: var(--ds-text) !important;
+  color: var(--ds-text) !important;
+}
+
+.admin-home,
+.home-center,
+.contentcenter:has(#home.active),
+.admin-home-active .contentcenter {
+  background-image: none !important;
+  background: var(--ds-bg) !important;
+}
+
+.home-brand,
+.home-search,
+.home-status-card {
+  background: var(--ds-surface) !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  box-shadow: none !important;
+}
+
+.home-brand {
+  padding: 32px !important;
+}
+
+.home-logo,
+.logocenter {
+  width: 96px !important;
+  height: 96px !important;
+  margin-bottom: 16px !important;
+}
+
+.home-shortcuts {
+  padding-top: 0 !important;
+}
+
+.home-shortcut,
+.home-status-card,
+.table-card.status-disponivel,
+.table-card.status-reservada,
+.table-card.status-ocupada,
+.table-card.status-manutencao,
+.table-card.status-aguardando,
+.next-order-strip,
+.kitchen-card {
+  border-left: 1px solid var(--ds-border) !important;
+}
+
+.shortcut-icon,
+.integration-icon,
+.success-icon-wrap,
+.confirm-icon-wrap,
+.pdv-avatar,
+.user-avatar,
+.user-avatar-small,
+.user-avatar-large {
+  background: var(--ds-primary) !important;
+  color: #ffffff !important;
+  border-radius: var(--ds-radius) !important;
+  border: 1px solid var(--ds-primary) !important;
+}
+
+.success-progress-fill {
+  background: var(--ds-primary) !important;
+}
+
+.stat-pending,
+.stat-recebido,
+.stat-preparing,
+.stat-preparo,
+.stat-ready,
+.stat-pronto,
+.stat-late,
+.stat-mesas,
+.stat-time,
+.stat-tempo {
+  border-top-color: var(--ds-border) !important;
+}
+
+.home-status-card,
+.stat-card,
+.table-card,
+.kitchen-card,
+[class*="status-"] {
+  border-color: var(--ds-border) !important;
+  border-left-color: var(--ds-border) !important;
+  border-top-color: var(--ds-border) !important;
+}
+
+.badge,
+.status-badge,
+.mesa-status-badge,
+.badge-pgto,
+.badge-pronto,
+.badge-aguard,
+.badge-active,
+.badge-warning,
+.badge-danger,
+.time-chip,
+.column-header strong,
+.kitchen-column .column-header strong,
+.atendente-column .column-header strong,
+.kitchen-card .time-chip,
+.order-card .time-chip,
+.status-disponivel,
+.status-reservada,
+.status-ocupada,
+.status-manutencao,
+.status-aguardando {
+  background: var(--ds-surface-2) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.legend-available,
+.legend-reserved,
+.legend-occupied,
+.legend-maintenance,
+.mesa-status-dot,
+.status-dot,
+.dot {
+  background: var(--ds-text) !important;
+  color: var(--ds-text) !important;
+}
+
+[style*="border-left"],
+[style*="border-left-color"],
+[style*="border-top"],
+[style*="border-top-color"] {
+  border-color: var(--ds-border) !important;
+  border-left-color: var(--ds-border) !important;
+  border-top-color: var(--ds-border) !important;
+}
+
+[style*="color:#16a34a"],
+[style*="color: #16a34a"],
+[style*="color:#10b981"],
+[style*="color: #10b981"],
+[style*="color:#2563eb"],
+[style*="color: #2563eb"],
+[style*="color:#f85b15"],
+[style*="color: #f85b15"],
+[style*="color:#ff5a00"],
+[style*="color: #ff5a00"] {
+  color: var(--ds-text) !important;
+}
+
+.home-status-card *,
+.stat-card *,
+.table-card *,
+.kitchen-card *,
+.mesa-card *,
+.status-badge *,
+.badge * {
+  color: inherit;
+}
+
+.home-status-card::before,
+.stat-card::before,
+.table-card::before,
+.kitchen-card::before {
+  background: var(--ds-primary) !important;
+}
+
+.home-logo,
+.pdv-logo,
+.brand-button img,
+.brand-lockup img,
+.client-app-brand img,
+.logo-sidebar,
+.logo-topo,
+.pgto-icon,
+.pgto-adm-icon {
+  filter: grayscale(1) contrast(1.6) !important;
+}
+
+.kitchen-hero,
+.atendente-hero {
+  background-image: none !important;
+}
+
+.kitchen-hero::before,
+.kitchen-hero::after,
+.atendente-hero::before,
+.atendente-hero::after {
+  display: none !important;
+}
+
+.preview-grid,
+.preview-grid > div,
+.login-preview,
+.login-preview * {
+  position: static !important;
+}
+
+.login-preview {
+  display: grid !important;
+  gap: 16px !important;
+  align-content: start !important;
+}
+
+.preview-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.preview-grid > div {
+  min-height: 84px !important;
+  padding: 16px !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: var(--ds-radius) !important;
+  background: var(--ds-surface) !important;
+}
+
+.preview-bar,
+.success-progress-bar,
+.progress-bar,
+.progress-fill {
+  background: var(--ds-surface-2) !important;
+}
+
+.preview-bar span,
+.success-progress-fill,
+.progress-fill > span {
+  background: var(--ds-primary) !important;
+}
+
+.pdv-product-placeholder,
+.produto-image-placeholder,
+.dish-image-placeholder {
+  background: var(--ds-surface-2) !important;
+}
+
+.lista-grid .add-rapido {
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  border-radius: var(--ds-radius) !important;
+}
+
+.menu-categorias button.ativo,
+.menu-categorias button.active,
+.categorias button.ativo,
+.categorias button.active {
+  background: var(--ds-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--ds-primary) !important;
+}
+
+.banner-topo::before,
+.overlay-banner {
+  opacity: 0 !important;
+}
+
+.login-shell {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  place-items: center !important;
+  min-height: 100vh !important;
+  padding: 24px !important;
+  background: var(--ds-bg) !important;
+}
+
+.login-visual {
+  display: none !important;
+}
+
+.login-panel {
+  width: min(100%, 470px) !important;
+  margin: 0 auto !important;
+}
+
+.login-card {
+  width: 100% !important;
+  padding: 32px !important;
+}
+
+.login-card::before {
+  content: "DataPlate";
+  display: block;
+  margin-bottom: 24px;
+  color: var(--ds-text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.demo-users {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.demo-users button[aria-pressed="true"] {
+  background: var(--ds-primary) !important;
+  border-color: var(--ds-primary) !important;
+  color: #ffffff !important;
+}
+
+.home-status-card,
+.home-status-card *,
+.stat-card,
+.stat-card * {
+  color: var(--ds-text) !important;
+}
+
+.home-status-card small,
+.home-status-card span,
+.stat-card small,
+.stat-card span {
+  color: var(--ds-muted) !important;
+}
+
+@media (max-width: 900px) {
+  .admin-header,
+  .atendente-header,
+  .kitchen-header,
+  .pdv-topbar {
+    align-items: flex-start !important;
+    flex-wrap: wrap !important;
+    padding: 12px 16px !important;
+    gap: 12px !important;
+  }
+
+  .header-actions,
+  .pdv-topbar-right,
+  .header-right {
+    order: 2;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .session-summary,
+  .pdv-session-info,
+  .header-session-info {
+    max-width: 100% !important;
+  }
+
+  .header-button,
+  .pdv-action-btn,
+  .pdv-logout-btn,
+  .header-action-btn,
+  .header-logout-btn {
+    min-height: 38px !important;
+    padding: 0 12px !important;
+  }
+
+  .module-nav,
+  .admin-section-nav {
+    order: 3;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .module-nav > a,
+  .module-nav .nav-button {
+    flex: 0 0 auto !important;
+  }
+
+  .kitchen-main,
+  .atendente-main {
+    width: min(100% - 24px, var(--ds-page-width)) !important;
+    padding: 16px 0 24px !important;
+  }
+
+  .kitchen-hero,
+  .atendente-hero {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 24px !important;
+    overflow: hidden !important;
+  }
+
+  .hero-clock {
+    width: 100% !important;
+    min-width: 0 !important;
+    position: static !important;
+    justify-self: stretch !important;
+    text-align: left !important;
+  }
+
+  .hero-clock strong {
+    font-size: 24px !important;
+  }
+}
+
+/* Refatoracao B&W final: topbar limpa, flat e consistente com o login. */
+.module-nav,
+.admin-section-nav {
+  display: none !important;
+}
+
+.global-search {
+  flex: 1 1 360px !important;
+  max-width: 620px !important;
+  margin-left: auto !important;
+}
+
+.global-search input {
+  width: 100% !important;
+  height: 42px !important;
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+  color: #0f0f0f !important;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.admin-container,
+.kitchen-shell,
+.atendente-shell,
+.pdv-shell,
+.conteudo,
+.main-content,
+.contentcenter {
+  background: #f5f5f5 !important;
+}
+
+.admin-header,
+.atendente-header,
+.kitchen-header,
+.pdv-topbar {
+  gap: 16px !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+.header-actions,
+.pdv-topbar-right,
+.header-right {
+  gap: 10px !important;
+}
+
+.logo-area,
+.brand-button,
+.pdv-brand-link {
+  min-width: 180px !important;
+}
+
+.logo-text,
+.brand-button,
+.pdv-brand-link {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.session-summary,
+.pdv-session-info,
+.header-session-info {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+
+.brand-button img,
+.pdv-logo,
+.brand-lockup img,
+.client-app-brand img,
+.home-logo,
+.logocenter {
+  filter: grayscale(1) contrast(1.2) !important;
+}
+
+img {
+  filter: grayscale(1) contrast(1.05) !important;
+}
+
+.connection-pill,
+.pdv-connection-pill,
+.adm-connection-pill,
+.status-badge,
+.badge,
+.priority-chip,
+.sla-chip,
+.mesa-status-badge,
+.card-badge,
+.tag,
+.pill,
+[class*="badge"],
+[class*="chip"] {
+  background: #eeeeee !important;
+  border: 1px solid #e0e0e0 !important;
+  color: #0f0f0f !important;
+}
+
+.btn-primary,
+.login-button,
+.action-button,
+.btn-add,
+.btn-success,
+.btn-recibo,
+.btn-fechar-comanda,
+.btn,
+.btn-carrinho,
+.btn-finalizar,
+.btn-novo-pedido,
+.cont,
+.pendente-btn,
+.btn-reservar,
+.category-create-button,
+.pgto-confirm-btn,
+.cat-btn.is-active,
+.mode-btn.is-active,
+.tab-btn.tab-active,
+.order-tab.is-active,
+.pdv-top-tab.is-active,
+.np-cat-btn.is-active,
+.pgto-btn.is-selected,
+.pgto-card-btn.is-selected,
+.lista-grid .add-rapido,
+.focus-actions a:first-child,
+.focus-actions button:first-of-type {
+  background: #0f0f0f !important;
+  border-color: #0f0f0f !important;
+  color: #ffffff !important;
+}
+
+.home-shortcuts {
+  background: #ffffff !important;
+  border-right: 1px solid #e0e0e0 !important;
+  padding: 16px 12px !important;
+}
+
+.shortcut-group {
+  padding: 8px 0 14px !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+}
+
+.shortcut-group:last-child {
+  border-bottom: 0 !important;
+}
+
+.shortcut-group-label {
+  width: 100% !important;
+  min-height: 30px !important;
+  padding: 0 8px !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #666666 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.home-shortcut {
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-height: 44px !important;
+  margin: 2px 0 !important;
+  padding: 8px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  color: #0f0f0f !important;
+  text-align: left !important;
+}
+
+.home-shortcut:hover,
+.home-shortcut:focus-visible {
+  background: #eeeeee !important;
+}
+
+.home-shortcut strong {
+  display: block !important;
+  color: #0f0f0f !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.home-shortcut small {
+  display: block !important;
+  color: #666666 !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
+.shortcut-icon {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #0f0f0f !important;
+  font-size: 13px !important;
+  filter: grayscale(1) !important;
+}
+
+.admin-home {
+  grid-template-columns: 280px minmax(360px, 1fr) 280px !important;
+  gap: 24px !important;
+}
+
+.home-center {
+  display: grid !important;
+  align-content: start !important;
+  gap: 16px !important;
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+.home-search,
+.dashboard-focus,
+.home-stats-panel,
+.home-stat-item,
+.dashboard-panel,
+.report-section,
+.kitchen-controls,
+.next-order-strip,
+.kitchen-column,
+.page-tabs,
+.pdv-panel,
+.pdv-summary,
+.mesa-card,
+.table-card,
+.order-card,
+.pedido-card,
+.produto-card,
+.dish-card,
+.modal-content,
+.pgto-modal-box {
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.admin-home .home-search {
+  display: none !important;
+}
+
+.dashboard-focus {
+  padding: 24px !important;
+}
+
+.focus-header span,
+.focus-grid span,
+.home-panel-label,
+.home-stat-item span,
+.stat-card > span,
+.stat-label,
+.panel-heading span,
+.hero-eyebrow {
+  color: #666666 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.focus-header h1 {
+  margin: 8px 0 !important;
+  color: #0f0f0f !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+}
+
+.focus-header p {
+  max-width: 620px !important;
+  margin: 0 !important;
+  color: #666666 !important;
+}
+
+.focus-actions {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 24px !important;
+}
+
+.focus-actions a,
+.focus-actions button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+  color: #0f0f0f !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+}
+
+.focus-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-top: 24px !important;
+}
+
+.focus-grid article {
+  min-height: 126px !important;
+  padding: 16px !important;
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+}
+
+.focus-grid strong {
+  display: block !important;
+  margin-top: 12px !important;
+  color: #0f0f0f !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+}
+
+.focus-grid small {
+  display: block !important;
+  margin-top: 6px !important;
+  color: #666666 !important;
+}
+
+.home-stat-item {
+  padding: 14px 16px !important;
+  border-left: 1px solid #e0e0e0 !important;
+}
+
+.home-stat-item strong,
+.stat-card strong,
+.stat-value,
+.metric-value,
+.total,
+.preco,
+.price {
+  color: #0f0f0f !important;
+  font-weight: 800 !important;
+}
+
+.kitchen-hero,
+.atendente-hero,
+.dashboard-hero,
+.banner-topo {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 20px !important;
+  min-height: auto !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #0f0f0f !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 6px !important;
+}
+
+.kitchen-hero::before,
+.atendente-hero::before,
+.dashboard-hero::before,
+.banner-topo::before,
+.overlay-banner {
+  display: none !important;
+}
+
+.hero-clock {
+  min-width: 150px !important;
+  background: #f5f5f5 !important;
+  border: 1px solid #e0e0e0 !important;
+  color: #0f0f0f !important;
+}
+
+.stat-card,
+.metric-card,
+.dashboard-stat-card {
+  border-top: 1px solid #e0e0e0 !important;
+  border-left: 1px solid #e0e0e0 !important;
+}
+
+[style*="#"],
+[style*="rgb"],
+[style*="orange"],
+[style*="blue"],
+[style*="green"],
+[style*="red"],
+[style*="purple"] {
+  color: #0f0f0f !important;
+  border-color: #e0e0e0 !important;
+}
+
+[style*="linear-gradient"],
+[style*="radial-gradient"] {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+button[onclick*="confirmarMesaSelecionada"],
+button[onclick*="finalizar"],
+button[onclick*="adicionar"],
+button[onclick*="salvar"],
+button[onclick*="criar"],
+button[onclick*="reservar"],
+button[onclick*="iniciar"],
+button[onclick*="preparo"],
+button[onclick*="entregar"],
+button[onclick*="pagar"] {
+  background: #0f0f0f !important;
+  border-color: #0f0f0f !important;
+  color: #ffffff !important;
+}
+
+svg,
+path,
+circle,
+rect,
+line,
+polyline,
+polygon {
+  stroke: currentColor !important;
+}
+
+.success-progress-fill,
+.progress-fill,
+.barra-progresso,
+.ocupacao-fill {
+  background: #0f0f0f !important;
+}
+
+.table-card.status-disponivel,
+.table-card.status-reservada,
+.table-card.status-ocupada,
+.table-card.status-manutencao,
+.card-status.disponivel,
+.card-status.ocupada,
+.card-status.reservada,
+.card-status.manutencao,
+.kitchen-card,
+.next-order-strip {
+  border-left-color: #e0e0e0 !important;
+}
+
+.legend-dot,
+.status-dot,
+[class*="dot"] {
+  background: #0f0f0f !important;
+  border: 1px solid #0f0f0f !important;
+}
+
+.produto-card img,
+.dish-card img,
+.pgto-icon,
+.payment-method-card img,
+.item img,
+.cardapio-item img,
+.preview-image img,
+.produto-imagem,
+.dish-image,
+.cart-empty-icon {
+  filter: grayscale(1) contrast(1.05) !important;
+}
+
+@media (max-width: 1100px) {
+  .admin-home {
+    grid-template-columns: 1fr !important;
+  }
+
+  .home-shortcuts {
+    border-right: 0 !important;
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+
+  .focus-actions,
+  .focus-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .global-search {
+    flex-basis: 100% !important;
+    order: 2 !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+  }
+
+  .header-actions,
+  .pdv-topbar-right,
+  .header-right {
+    order: 3 !important;
+  }
+
+  .focus-actions,
+  .focus-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kitchen-hero,
+  .atendente-hero,
+  .dashboard-hero,
+  .banner-topo {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* DataPlate Unified UI - identidade visual unica inspirada no painel da cozinha. */
+:root {
+  --ds-bg: #f3f6fb;
+  --ds-surface: #ffffff;
+  --ds-surface-2: #f8fafc;
+  --ds-text: #020617;
+  --ds-muted: #53627a;
+  --ds-border: #dbe3ee;
+  --ds-border-strong: #b9c7da;
+  --ds-primary: #f85b15;
+  --ds-primary-hover: #e04e10;
+  --ds-secondary: #2563eb;
+  --ds-tertiary: #7c3aed;
+  --ds-success: #16a34a;
+  --ds-warning: #f59e0b;
+  --ds-danger: #dc2626;
+  --ds-radius: 8px;
+  --ds-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --ds-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  --ds-shadow-lg: 0 18px 42px rgba(15, 23, 42, 0.14);
+
+  --color-primary: var(--ds-primary);
+  --color-secondary: var(--ds-secondary);
+  --color-tertiary: var(--ds-tertiary);
+  --color-success: var(--ds-success);
+  --color-warning: var(--ds-warning);
+  --color-danger: var(--ds-danger);
+  --primary: var(--ds-primary);
+  --secondary: var(--ds-secondary);
+  --success: var(--ds-success);
+  --warning: var(--ds-warning);
+  --danger: var(--ds-danger);
+}
+
+html,
+body,
+.admin-container,
+.kitchen-shell,
+.atendente-shell,
+.pdv-shell,
+.conteudo,
+.main-content,
+.contentcenter {
+  background: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+img,
+.brand-button img,
+.pdv-logo,
+.brand-lockup img,
+.client-app-brand img,
+.home-logo,
+.logocenter,
+.produto-card img,
+.dish-card img,
+.pgto-icon,
+.payment-method-card img,
+.item img,
+.cardapio-item img,
+.preview-image img,
+.produto-imagem,
+.dish-image,
+.cart-empty-icon {
+  filter: none !important;
+}
+
+.admin-header,
+.atendente-header,
+.kitchen-header,
+.pdv-topbar {
+  min-height: 72px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.logo-text,
+.brand-button strong,
+.pdv-brand-link strong,
+.brand-lockup strong,
+.client-app-brand strong,
+.sidebar h2 {
+  color: var(--ds-primary) !important;
+  font-size: 18px !important;
+  font-weight: 900 !important;
+}
+
+.brand-button small,
+.pdv-brand-link small,
+.brand-lockup span,
+.client-app-brand small,
+.header-session-info small,
+.pdv-session-info small,
+.session-summary small {
+  color: var(--ds-muted) !important;
+  font-weight: 700 !important;
+}
+
+.logo-text,
+.brand-button,
+.pdv-brand-link {
+  min-width: 180px !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.module-nav,
+.admin-section-nav {
+  display: none !important;
+}
+
+.global-search {
+  flex: 1 1 380px !important;
+  max-width: 680px !important;
+  margin: 0 auto !important;
+}
+
+.global-search input,
+input,
+select,
+textarea,
+.input-pagamento {
+  min-height: 42px !important;
+  background: #ffffff !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: 6px !important;
+  color: var(--ds-text) !important;
+  box-shadow: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.input-pagamento:focus {
+  border-color: var(--ds-secondary) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.connection-pill,
+.pdv-connection-pill,
+.adm-connection-pill {
+  background: #dcfce7 !important;
+  border: 0 !important;
+  color: #14532d !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  border-radius: 999px !important;
+}
+
+.user-avatar,
+.pdv-avatar,
+.user-avatar-small,
+.user-avatar-large {
+  background: linear-gradient(135deg, var(--ds-primary), var(--ds-secondary)) !important;
+  border: 0 !important;
+  color: #ffffff !important;
+  border-radius: 999px !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.session-summary,
+.pdv-session-info,
+.header-session-info {
+  background: #f8fafc !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  box-shadow: none !important;
+}
+
+button,
+.btn-primary,
+.btn-secondary,
+.btn-small,
+.login-button,
+.secondary-link-button,
+.header-button,
+.pdv-action-btn,
+.pdv-logout-btn,
+.header-action-btn,
+.header-logout-btn,
+.secondary-button,
+.action-button,
+.btn-add,
+.btn,
+.btn-carrinho,
+.btn-finalizar,
+.btn-novo-pedido,
+.cont,
+.pendente-btn,
+.pgto-confirm-btn,
+.pgto-cancel-btn,
+.historico-refresh-btn,
+.btn-ver-mesa,
+.cat-btn,
+.mode-btn,
+.tab-btn,
+.order-tab,
+.pgto-btn,
+.pgto-card-btn,
+.np-cat-btn,
+.lista-grid .add-rapido,
+.cart-float,
+.voltar,
+.carrinho,
+.focus-actions a,
+.focus-actions button {
+  min-height: 40px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--ds-border) !important;
+  background: #ffffff !important;
+  color: var(--ds-text) !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+.btn-primary,
+.login-button,
+.action-button,
+.btn-add,
+.btn-success,
+.btn-recibo,
+.btn-fechar-comanda,
+.btn,
+.btn-carrinho,
+.btn-finalizar,
+.btn-novo-pedido,
+.cont,
+.pendente-btn,
+.btn-reservar,
+.category-create-button,
+.pgto-confirm-btn,
+.cat-btn.is-active,
+.mode-btn.is-active,
+.tab-btn.tab-active,
+.order-tab.is-active,
+.pdv-top-tab.is-active,
+.np-cat-btn.is-active,
+.pgto-btn.is-selected,
+.pgto-card-btn.is-selected,
+.lista-grid .add-rapido,
+.focus-actions a:first-child,
+.focus-actions button:first-of-type,
+button[onclick*="confirmarMesaSelecionada"],
+button[onclick*="finalizar"],
+button[onclick*="adicionar"],
+button[onclick*="salvar"],
+button[onclick*="criar"],
+button[onclick*="reservar"],
+button[onclick*="iniciar"],
+button[onclick*="preparo"],
+button[onclick*="entregar"],
+button[onclick*="pagar"] {
+  background: linear-gradient(135deg, var(--ds-secondary), var(--ds-tertiary)) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+.logout-button,
+.pdv-logout-btn,
+.header-logout-btn,
+.btn-danger,
+.cancel-btn {
+  background: #ffffff !important;
+  border-color: #fecaca !important;
+  color: var(--ds-danger) !important;
+}
+
+.kitchen-hero,
+.atendente-hero,
+.dashboard-hero,
+.banner-topo {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-end !important;
+  gap: 24px !important;
+  min-height: 184px !important;
+  padding: 28px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, rgba(17, 24, 39, 0.88), rgba(37, 99, 235, 0.74)),
+    url("../images/landing/restaurante-cardapio.jpg") center/cover !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: var(--ds-shadow-lg) !important;
+}
+
+.kitchen-hero::before,
+.atendente-hero::before,
+.dashboard-hero::before,
+.banner-topo::before,
+.overlay-banner {
+  display: none !important;
+}
+
+.kitchen-hero *,
+.atendente-hero *,
+.dashboard-hero *,
+.banner-topo * {
+  color: #ffffff !important;
+}
+
+.kitchen-hero h1,
+.atendente-hero h1,
+.dashboard-hero h1 {
+  color: #ffffff !important;
+  font-size: clamp(32px, 5vw, 56px) !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+}
+
+.kitchen-hero p,
+.atendente-hero p,
+.dashboard-hero p,
+.banner-topo p {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.hero-eyebrow,
+.dashboard-eyebrow {
+  color: rgba(255, 255, 255, 0.86) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase !important;
+}
+
+.hero-clock {
+  min-width: 166px !important;
+  padding: 18px !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+.stat-card,
+.metric-card,
+.dashboard-card,
+.table-card,
+.order-card,
+.mesa-card,
+.produto-card,
+.dish-card,
+.pedido-card,
+.payment-method-card,
+.pgto-card-btn,
+.pdv-panel,
+.pdv-summary,
+.pgto-modal-box,
+.modal-content,
+.login-card,
+.login-preview,
+.card-status,
+.opcao,
+.item,
+.card,
+.depoimento-card,
+.solucao-item,
+.faq-item,
+.kitchen-controls,
+.next-order-strip,
+.kitchen-column,
+.panel,
+.page-tabs,
+.mesa-selector,
+.section,
+.dashboard-focus,
+.home-stats-panel,
+.home-stat-item,
+.report-section,
+.dashboard-panel {
+  background: #ffffff !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.stat-card {
+  min-height: 122px !important;
+  border-top-width: 4px !important;
+}
+
+.stat-pending,
+.stat-recebido,
+.dashboard-stat-card:nth-child(1),
+.stats-grid .stat-card:nth-child(1) {
+  border-top-color: var(--ds-secondary) !important;
+}
+
+.stat-preparing,
+.stat-preparo,
+.dashboard-stat-card:nth-child(2),
+.stats-grid .stat-card:nth-child(2) {
+  border-top-color: var(--ds-warning) !important;
+}
+
+.stat-ready,
+.stat-pronto,
+.dashboard-stat-card:nth-child(3),
+.stats-grid .stat-card:nth-child(3) {
+  border-top-color: var(--ds-success) !important;
+}
+
+.stat-late,
+.dashboard-stat-card:nth-child(4),
+.stats-grid .stat-card:nth-child(4) {
+  border-top-color: var(--ds-danger) !important;
+}
+
+.stat-time,
+.stat-tempo,
+.dashboard-stat-card:nth-child(5),
+.stats-grid .stat-card:nth-child(5) {
+  border-top-color: var(--ds-tertiary) !important;
+}
+
+.stat-card strong,
+.metric-value,
+.stat-value,
+.total,
+.preco,
+.price,
+.home-stat-item strong,
+.focus-grid strong {
+  color: var(--ds-text) !important;
+  font-weight: 900 !important;
+}
+
+.stat-card span,
+.stat-card small,
+.stat-label,
+.home-panel-label,
+.home-stat-item span,
+.focus-header span,
+.focus-grid span,
+.panel-heading span,
+label,
+.section-label,
+.control-field span,
+.pgto-modal-label {
+  color: var(--ds-muted) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.home-shortcuts {
+  background: #f8fafc !important;
+  border-right: 1px solid var(--ds-border) !important;
+}
+
+.home-shortcut {
+  background: #ffffff !important;
+  border: 1px solid var(--ds-border) !important;
+  border-left: 4px solid var(--ds-secondary) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.home-shortcut:hover,
+.home-shortcut:focus-visible {
+  background: #f8fafc !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.shortcut-icon,
+.integration-icon,
+.success-icon-wrap,
+.confirm-icon-wrap {
+  background: linear-gradient(135deg, var(--ds-primary), var(--ds-secondary)) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+}
+
+.dashboard-focus {
+  padding: 32px !important;
+}
+
+.focus-header h1 {
+  color: var(--ds-primary) !important;
+  font-size: 34px !important;
+  font-weight: 900 !important;
+}
+
+.focus-actions a:first-child {
+  background: linear-gradient(135deg, var(--ds-primary), var(--ds-secondary)) !important;
+}
+
+.focus-grid article {
+  background: #ffffff !important;
+  border: 1px solid var(--ds-border) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.status-badge,
+.badge,
+.priority-chip,
+.sla-chip,
+.mesa-status-badge,
+.card-badge,
+.tag,
+.pill,
+[class*="badge"],
+[class*="chip"] {
+  background: #eef2ff !important;
+  border: 0 !important;
+  color: #1e3a8a !important;
+  border-radius: 999px !important;
+  font-weight: 900 !important;
+}
+
+.status-atrasado,
+.badge-danger,
+.priority-high,
+.sla-danger,
+.cancelado {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+.status-pronto,
+.status-entregue,
+.badge-active,
+.badge-success,
+.online {
+  background: #dcfce7 !important;
+  color: #14532d !important;
+}
+
+.status-em_preparo,
+.status-recebido,
+.badge-pending,
+.warning {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.success-progress-fill,
+.progress-fill,
+.barra-progresso,
+.ocupacao-fill {
+  background: linear-gradient(90deg, var(--ds-primary), var(--ds-warning), var(--ds-success)) !important;
+}
+
+.table-card.status-disponivel,
+.card-status.disponivel {
+  border-left-color: var(--ds-success) !important;
+}
+
+.table-card.status-ocupada,
+.card-status.ocupada {
+  border-left-color: var(--ds-secondary) !important;
+}
+
+.table-card.status-reservada,
+.card-status.reservada {
+  border-left-color: var(--ds-warning) !important;
+}
+
+.table-card.status-manutencao,
+.card-status.manutencao,
+.next-order-strip {
+  border-left-color: var(--ds-danger) !important;
+}
+
+.legend-dot,
+.status-dot,
+[class*="dot"] {
+  border: 0 !important;
+}
+
+.legend-available,
+.dot-success,
+.status-disponivel .status-dot {
+  background: var(--ds-success) !important;
+}
+
+.legend-occupied,
+.dot-info,
+.status-ocupada .status-dot {
+  background: var(--ds-secondary) !important;
+}
+
+.legend-reserved,
+.dot-warning,
+.status-reservada .status-dot {
+  background: var(--ds-warning) !important;
+}
+
+.legend-maintenance,
+.dot-danger,
+.status-manutencao .status-dot {
+  background: var(--ds-danger) !important;
+}
+
+[style*="linear-gradient"],
+[style*="radial-gradient"] {
+  background-image: inherit !important;
+}
+
+[style*="#"],
+[style*="rgb"],
+[style*="orange"],
+[style*="blue"],
+[style*="green"],
+[style*="red"],
+[style*="purple"] {
+  border-color: inherit !important;
+}
+
+@media (max-width: 700px) {
+  .kitchen-hero,
+  .atendente-hero,
+  .dashboard-hero,
+  .banner-topo {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -1,0 +1,782 @@
+﻿<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataPlate</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png">
+  <link rel="stylesheet" href="../Css/user.css">
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified">
+</head>
+<body>
+
+<!-- CARRINHO FLUTUANTE (sempre visivel) -->
+<button id="cartFloat" class="cart-float" onclick="abrirCarrinho()" title="Carrinho">
+  🛒
+  <span id="badgePedido" class="cart-badge" style="display:none"></span>
+</button>
+
+<!-- SELETOR DE MESA (demo) -->
+<div id="mesaSelectorOverlay" class="dp-mesa-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
+  <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div class="client-app-brand selector-brand">
+      <img src="../images/brand/logo-dataplate.png" alt="DataPlate">
+      <span>
+        <strong>DataPlate</strong>
+        <small>Cardapio Digital</small>
+      </span>
+    </div>
+    <img src="../images/brand/logo-emp.png" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:12px;margin-bottom:16px">
+    <h2 style="font-size:22px;font-weight:900;margin-bottom:4px;color:#111">Raizes do Sabor</h2>
+    <p style="font-size:14px;color:#64748b;margin-bottom:24px">Selecione sua mesa para acessar o cardapio</p>
+    <select id="mesaSelectorPicklist" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;font-weight:600;background:#f8fafc;color:#111;margin-bottom:16px;appearance:auto">
+      <option value="">Carregando mesas...</option>
+    </select>
+    <button onclick="confirmarMesaSelecionada()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">
+      Entrar no Cardapio
+    </button>
+  </div>
+</div>
+
+<!-- TELA PRINCIPAL DE PAGAMENTO -->
+
+
+  <!-- TELA PRINCIPAL DE PAGAMENTO -->
+<div id="telaPagamento" style="display:none;">
+
+  <header class="topo">
+    <button class="voltar" onclick="fecharTelaPagamento()">←</button>
+
+    <img src="../images/brand/logo-emp.png" class="logo-topo">
+
+    <div></div>
+  </header>
+
+  <div class="tela-pagamento">
+
+    <h2>Pagamento</h2>
+    <p class="subtitulo-pagamento">
+      Escolha a forma de pagamento
+    </p>
+
+  <div class="opcoes-pagamento">
+
+  <!-- PIX -->
+  <div class="opcao pix" onclick="selecionarPagamento(this, 'Pix')">
+
+    <div class="icone-pagamento">
+      <img src="../images/menu/pix.png">
+    </div>
+
+    <div class="texto-pagamento">
+      <h3>PIX</h3>
+      <p>Pagamento instantâneo aprovado em segundos</p>
+    </div>
+
+    <div class="seta">›</div>
+
+  </div>
+
+ <!-- CARTÃO NA MESA -->
+<div class="opcao cartao" onclick="selecionarPagamento(this, 'CartaoMesa')">
+
+  <div class="icone-pagamento">
+    <img src="../images/menu/Credito.png">
+  </div>
+
+  <div class="texto-pagamento">
+    <h3>Cartão na Mesa</h3>
+    <p>A maquininha será levada até sua mesa</p>
+  </div>
+
+  <div class="seta">›</div>
+
+</div>
+
+  <!-- DINHEIRO -->
+  <div class="opcao dinheiro" onclick="selecionarPagamento(this, 'Dinheiro')">
+
+    <div class="icone-pagamento">
+      <img src="../images/menu/dinheiro.png">
+    </div>
+
+    <div class="texto-pagamento">
+      <h3>Dinheiro</h3>
+      <p>Pagamento na entrega</p>
+    </div>
+
+    <div class="seta">›</div>
+
+  </div>
+
+</div>
+
+  
+
+  
+
+ <div class="resumo-pagamento total-unico">
+
+  <span>Total do Pedido</span>
+
+  <span id="totalPagamento">R$ 0,00</span>
+
+</div>
+
+  <button class="btn-finalizar" onclick="finalizarPagamento()">
+  Finalizar Pedido
+</button>
+
+</div>
+
+</div>
+
+
+<!-- TELA PIX -->
+<div id="telaPix" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button class="voltar" onclick="fecharTelaPagamento()">←</button>
+
+    <img src="../images/brand/logo-emp.png" class="logo-topo">
+
+    <div></div>
+  </header>
+
+  <div class="card-status">
+
+    <div class="banner-pagamento">
+      <img src="../images/menu/pix.png">
+    </div>
+
+    <h2>Escaneie o QR Code</h2>
+
+    <!-- QR CODE -->
+    <img
+      id="qrCodePix"
+      style="
+        width:230px;
+        height:230px;
+        margin:20px auto;
+        display:block;
+        background:#fff;
+        padding:10px;
+        border-radius:16px;
+      "
+    >
+
+    <!-- TOTAL -->
+    <div style="
+      text-align:center;
+      font-size:22px;
+      font-weight:bold;
+      margin-top:10px;
+      color:#111827;
+    ">
+      <span id="valorPix">R$ 0,00</span>
+    </div>
+
+    <p style="margin-top:18px;">
+      Chave Pix:
+    </p>
+
+    <!-- CHAVE -->
+    <div id="chavePix" style="
+      background:#f3f4f6;
+      padding:14px;
+      border-radius:12px;
+      margin-top:10px;
+      font-weight:bold;
+      word-break:break-all;
+    ">
+      pix@dataplate.com
+    </div>
+
+    <button class="btn-carrinho"
+      style="margin-top:20px;"
+      onclick="copiarPix()">
+
+      Copiar Chave Pix
+    </button>
+
+    <button class="btn-carrinho"
+      style="
+        margin-top:12px;
+        background:#4aad19;
+      "
+      onclick="pagamentoAprovado()">
+
+      Já realizei o pagamento
+    </button>
+
+  </div>
+
+</div>
+
+
+
+
+
+
+
+<!-- TELA DINHEIRO -->
+<div id="telaDinheiro" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button onclick="fecharTelaPagamento()">←</button>
+    <h2>Pagamento em Dinheiro</h2>
+  </header>
+
+  <div class="card-status">
+
+    <div class="banner-pagamento">
+  <img src="../images/menu/Dinheiro.png">
+</div>
+
+    <h2>Pagamento na entrega</h2>
+
+    <p style="margin:15px 0;">
+      Precisa de troco?
+    </p>
+
+    <input type="number"
+      placeholder="Troco para quanto?"
+      class="input-pagamento">
+
+    <button class="btn-carrinho"
+      onclick="pagamentoAprovado()">
+
+      Confirmar Pedido
+    </button>
+
+  </div>
+
+</div>
+<!-- TELA DE STATUS DO PEDIDO -->
+<div id="telaStatus" style="display:none; padding:20px;">
+
+  <h1 style="text-align:center;">Status do Pedido</h1>
+  <p id="pedidoNumero" style="text-align:center;">Pedido #—</p>
+
+  <div class="card-status">
+    <div class="icone">✔</div>
+    <h2 id="statusAtual">Pedido Recebido</h2>
+    <p id="mensagemStatus">Seu pedido foi recebido</p>
+  </div>
+
+  <div class="timeline">
+
+    <div class="step ativo" id="step1">
+      ✔ Pedido Recebido
+    </div>
+
+    <div class="step" id="step2">
+      👨‍🍳 Em Preparo
+    </div>
+
+    <div class="step" id="step3">
+      🍽 Pronto
+    </div>
+
+    <div class="step" id="step4">
+      🚚 Entregue
+    </div>
+
+     <button class="btn-novo-pedido" onclick="novoPedido()">
+  🔄 Fazer novo pedido
+     </button>
+
+  </div>
+
+</div>  
+  
+<div id="telaCarrinho" style="display:none; padding:20px;">
+
+  <header class="topo">
+    <button class="voltar" onclick="voltarCarrinho()">←</button>
+    
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
+
+      <div style="display:flex; gap:10px;">
+      </div>
+  </header>
+   <div id="listaCarrinho"></div>
+
+   <div id="total"></div>
+
+   <div style="width:97%;max-width:450px;margin:12px auto 0">
+     <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Observações para a cozinha</label>
+     <textarea id="observacaoPedido" rows="2" placeholder="Ex: sem cebola, ponto bem passado, alergia a glúten..."
+       style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;font-size:14px;resize:none;font-family:inherit;background:#f9fafb;box-sizing:border-box"></textarea>
+   </div>
+
+   <button class="btn" onclick="confirmarPedido()">Confirmar pedido</button>
+
+</div>
+ 
+
+<div id="telaLista">
+
+<div class="layout-menu">
+
+  <!-- MENU LATERAL -->
+  <aside class="sidebar">
+
+    <div class="client-app-brand">
+      <img src="../images/brand/logo-dataplate.png" alt="DataPlate">
+      <span>
+        <strong>DataPlate</strong>
+        <small>Cardapio Digital</small>
+      </span>
+    </div>
+
+    <img src="../images/brand/logo-emp.png" class="logo-sidebar">
+
+    <h2>MENU</h2>
+
+    <div class="menu-categorias categorias">
+      <button class="ativo" data-categoria="todos">Todos</button>
+    </div>
+
+  </aside>
+
+  <!-- CONTEÚDO -->
+  <main class="conteudo">
+
+    <!-- TOPO -->
+    <div class="banner-topo">
+
+      <header class="topo novo-topo">
+        <button class="voltar" onclick="voltarPagina()">←</button>
+      </header>
+
+      <div class="overlay-banner"></div>
+
+    </div>
+
+    <!-- BUSCA -->
+    <div class="busca">
+      <input type="text" id="search" placeholder="Buscar pratos...">
+    </div>
+
+    <!-- LISTA -->
+    <div class="lista-grid" id="listaPratos">
+      <p id="cardapioLoading" style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Carregando cardápio...</p>
+    </div>
+
+    <!-- RODAPE -->
+    <footer class="rodape-user">
+      <strong>Raízes do Sabor</strong>
+      <span>Restaurante</span>
+    </footer>
+
+  </main>
+
+</div>
+
+</div>
+
+
+
+
+<div id="telaProduto" style="display: none;">
+
+
+
+ 
+
+  <!-- IMAGEM -->
+
+   <header class="topo">
+   <button class="voltar" onclick="voltarLista()">←</button>
+   <img src="../images/brand/logo-emp.png" class="logo-topo">
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   </header> 
+
+  <div class="topo-img">
+     <img src="../images/menu/hamburguer.jpg">
+  </div>
+
+  <div class="container">
+
+
+
+
+  
+
+     <h2>Burger Gourmet</h2>
+     <p>Hambúrguer artesanal com queijo cheddar, bacon crocante, alface e tomate</p>
+
+     <span class="preco">R$ 32.90</span>
+
+     <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Pão brioche</span><span>1 un</span></div>
+       <div><span>Carne bovina</span><span>200g</span></div>
+       <div><span>Queijo cheddar</span><span>50g</span></div>
+       <div><span>Bacon</span><span>30g</span></div>
+       <div><span>Alface</span><span>20g</span></div>
+       <div><span>Tomate</span><span>30g</span></div>
+    </div>
+
+     <h3>Quantidade</h3>
+
+  <div class="quantidade">
+   <button onclick="diminuirQtd(this)">-</button>
+   <span class="qtd">1</span>
+   <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(1, 'Burger Gourmet', 32.90, '../images/menu/hamburguer.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+  </div>
+  </div> 
+
+
+   <div id="telaProduto2" style="display: none;"> 
+  
+   
+
+  <!-- IMAGEM2 -->
+
+   <header class="topo">
+   <button class="voltar" onclick="voltarLista2()">←</button>
+   <img src="../images/brand/logo-emp.png" class="logo-topo">
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+     <div class="topo-img">
+       <img src="../images/menu/pasta-carbonara.jpg">
+     </div> 
+
+
+  <div class="container">
+
+     <h2>Pasta Carbonara</h2>
+     <p>Massa fresca com molho carbonara tradicional, bacon e parmesão</p>
+
+     <span class="preco">R$ 38.50</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Massa fresca</span><span>250g</span></div>
+       <div><span>Bacon</span><span>80g</span></div>
+       <div><span>Ovos</span><span>2 un</span></div>
+       <div><span>Queijo parmesão</span><span>50g</span></div>
+       <div><span>Pimenta do reino</span><span>2g</span></div>
+  
+    </div>
+
+     <h3>Quantidade</h3>
+
+   <div class="quantidade">
+       <button onclick="diminuirQtd(this)">-</button>
+       <span class="qtd">1</span>
+       <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(2, 'Pasta Carbonara', 38.50, '../images/menu/pasta-carbonara.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+    </div> 
+
+</div>     
+
+
+
+<div id="telaProduto3" style="display: none;">
+
+ 
+
+  <!-- IMAGEM -->
+
+   <header class="topo">
+     <button class="voltar" onclick="voltarLista3()">←</button>
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+  </header> 
+
+  <div class="topo-img">
+     <img src="../images/menu/salmao-grelhado.jpg">
+  </div>
+
+  <div class="container">
+
+     <h2>Salmão Grelhado</h2>
+     <p>Filé de salmão grelhado com legumes salteados e molho de limão</p>
+
+     <span class="preco">R$ 52.90</span>
+
+     <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Salmão</span><span>300g</span></div>
+       <div><span>Brócolis</span><span>100g</span></div>
+       <div><span>Cenoura</span><span>80g</span></div>
+       <div><span>Limão</span><span>1 un</span></div>
+      
+    </div>
+
+     <h3>Quantidade</h3>
+
+   <div class="quantidade">
+     <button onclick="diminuirQtd(this)">-</button>
+     <span class="qtd">1</span>
+     <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(3, 'Salmão Grelhado', 52.90, '../images/menu/salmao-grelhado.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+  </div>
+  </div> 
+
+<div id="telaProduto4" style="display: none;">
+
+ 
+
+  <!-- IMAGEM -->
+
+   <header class="topo">
+     <button class="voltar" onclick="voltarLista4()">←</button>
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   </header> 
+
+  <div class="topo-img">
+     <img src="../images/menu/salada-caesar.jpg">
+  </div>
+
+  <div class="container">
+
+     <h2>Salada Caesar</h2>
+     <p>Alface, croutons, parmesão e molho caesar</p>
+
+     <span class="preco">R$ 24.90</span>
+
+    <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Alface romana</span><span>150g</span></div>
+       <div><span>Croutons</span><span>40g</span></div>
+       <div><span>Parmesão</span><span>30g</span></div>
+       <div><span>Molho caesar</span><span>50ml</span></div>
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+     <button onclick="diminuirQtd(this)">-</button>
+     <span class="qtd">1</span>
+     <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(4, 'Salada Caesar', 24.90, '../images/menu/salada-caesar.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+  </div>
+</div> 
+
+
+<div id="telaProduto5" style="display: none;">
+
+ 
+
+  <!-- IMAGEM BOLO DE CHOCOLATE -->
+
+   <header class="topo">
+       <button class="voltar" onclick="voltarLista5()">←</button>
+       <img src="../images/brand/logo-emp.png" class="logo-topo">
+       <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+   </header> 
+
+  <div class="topo-img">
+     <img src="../images/menu/bolo-chocolate.jpg">
+  </div>
+
+  <div class="container">
+
+     <h2>Bolo de Chocolate</h2>
+     <p>Bolo de chocolate belga com cobertura de chocolate</p>
+
+     <span class="preco">R$ 18.90</span>
+
+     <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Chocolate belga</span><span>100g</span></div>
+       <div><span>Farinha de trigo</span><span>80g</span></div>
+       <div><span>Ovos</span><span>2 un</span></div>
+       <div><span>Açúcar</span><span>60g</span></div>
+       <div><span>Manteiga</span><span>50g</span></div>
+      
+    </div>
+
+     <h3>Quantidade</h3>
+
+   <div class="quantidade">
+     <button onclick="diminuirQtd(this)">-</button>
+     <span class="qtd">1</span>
+     <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(6, 'Bolo de Chocolate', 18.90, '../images/menu/bolo-chocolate.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+  </div>
+</div> 
+
+
+<div id="telaProduto6" style="display: none;">
+
+ 
+
+  <!-- IMAGEM TIRAMISU -->
+
+   <header class="topo">
+     <button class="voltar" onclick="voltarLista6()">←</button>
+     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+  </header> 
+
+  <div class="topo-img">
+    <img src="../images/menu/tiramisu.jpg">
+  </div>
+
+  <div class="container">
+
+     <h2>Tiramisu</h2>
+     <p>Sobremesa italiana clássica com café e mascarpone</p>
+
+     <span class="preco">R$ 22.90</span>
+
+     <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Queijo mascarpone</span><span>200g</span></div>
+       <div><span>Biscoito champagne</span><span>150g</span></div>
+       <div><span>Café expresso</span><span>100ml</span></div>
+       <div><span>Cacau em pó</span><span>50g</span></div>
+       <div><span>Açúcar</span><span>20g</span></div>
+      
+      
+    </div>
+
+     <h3>Quantidade</h3>
+
+    <div class="quantidade">
+       <button onclick="diminuirQtd(this)">-</button>
+       <span class="qtd">1</span>
+       <button onclick="aumentarQtd(this)">+</button>
+    </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(5, 'Tiramisu', 22.90, '../images/menu/tiramisu.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+  </div>
+</div> 
+
+
+<div id="telaProduto7" style="display: none;">
+
+ 
+
+  <!-- IMAGEM ÁGUA -->
+
+   <header class="topo">
+   <button class="voltar" onclick="voltarLista7()">←</button>
+   <img src="../images/brand/logo-emp.png" class="logo-topo">
+   <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
+</header> 
+
+  <div class="topo-img">
+     <img src="../images/menu/agua.jpg">
+  </div>
+
+  <div class="container">
+
+     <h2>Água</h2>
+     <p>Água mineral cristal sem gás</p>
+
+     <span class="preco">R$ 2.90</span>
+
+     <h3>Ingredientes</h3>
+
+    <div class="ingredientes">
+       <div><span>Água Mineral Cristal Sem Gás</span><span>500ml</span></div>
+      
+    </div>
+
+    <h3>Quantidade</h3>
+
+   <div class="quantidade">
+       <button onclick="diminuirQtd(this)">-</button>
+       <span class="qtd">1</span>
+       <button onclick="aumentarQtd(this)">+</button>
+   </div>
+
+
+    <button class="btn-carrinho"
+     onclick="adicionarCarrinho(7, 'Água', 2.90, '../images/menu/agua.jpg', parseInt(this.parentElement.querySelector('.qtd').innerText))">
+      Adicionar ao carrinho 
+    </button>
+
+  
+</div>
+</div>
+<!-- NOTIFICAÇÕES -->
+<div id="notificacoes"></div>
+
+<div id="barraFlutuante" onclick="abrirAtalhoInferior()">
+
+  <div class="barra-esquerda">
+
+    <span id="tituloBarra"></span>
+
+    <span id="subtituloBarra"></span>
+
+  </div>
+
+  <div class="barra-direita">
+
+    <span id="valorBarra"></span>
+
+    <span class="barra-seta">➜</span>
+
+  </div>
+
+</div>
+
+
+
+
+<!--fim html--->
+
+  
+
+
+<script src="../JavaScript/user.js?v=3"></script>
+</body>
+</html>
+

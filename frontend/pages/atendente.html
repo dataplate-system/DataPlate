@@ -1,0 +1,240 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DataPlate - Painel do Atendente</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/atendente.css" />
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
+</head>
+<body>
+  <div class="atendente-shell">
+
+    <header class="atendente-header">
+      <button class="brand-button" type="button" id="reloadPanel">
+        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
+        <span>
+          <strong>DataPlate</strong>
+          <small>Painel do Atendente</small>
+        </span>
+      </button>
+
+      <nav class="module-nav" aria-label="Modulos DataPlate">
+        <a href="adm.html">Admin</a>
+        <a href="atendente.html" class="is-active">Atendente</a>
+        <a href="cozinha.html">Cozinha</a>
+        <a href="pdv.html">PDV</a>
+        <a href="user.html">Cardapio</a>
+      </nav>
+
+      <form class="global-search" role="search">
+        <label for="atendenteGlobalSearch" class="sr-only">Buscar no sistema</label>
+        <input id="atendenteGlobalSearch" type="search" placeholder="Buscar no sistema" />
+      </form>
+
+      <div class="header-actions">
+        <span class="connection-pill" id="connectionStatus">Conectando</span>
+        <div class="session-summary">
+          <span class="user-avatar" id="sessionInitials">AT</span>
+          <span>
+            <strong id="sessionName">Atendente</strong>
+            <small id="sessionRole">Operacional</small>
+          </span>
+        </div>
+        <button class="header-button" type="button" id="refreshButton">Atualizar</button>
+        <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
+      </div>
+    </header>
+
+    <main class="atendente-main">
+
+      <!-- HERO -->
+      <section class="atendente-hero">
+        <div>
+          <span class="hero-eyebrow">Serviço do salão</span>
+          <h1>Acompanhamento e despacho</h1>
+          <p>Visão em tempo real da cozinha, status das mesas e despacho de pedidos prontos.</p>
+        </div>
+        <div class="hero-clock">
+          <strong id="currentTime">--:--</strong>
+          <span id="currentDate">--</span>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats-grid">
+        <article class="stat-card stat-recebido">
+          <span>Aguardando cozinha</span>
+          <strong id="statRecebido">0</strong>
+          <small>Recebidos</small>
+        </article>
+        <article class="stat-card stat-preparo">
+          <span>Em preparo</span>
+          <strong id="statPreparo">0</strong>
+          <small>Produção ativa</small>
+        </article>
+        <article class="stat-card stat-pronto">
+          <span>Prontos p/ despacho</span>
+          <strong id="statPronto">0</strong>
+          <small>Aguardando garçom</small>
+        </article>
+        <article class="stat-card stat-mesas">
+          <span>Mesas ocupadas</span>
+          <strong id="statMesas">0</strong>
+          <small>Com pedidos ativos</small>
+        </article>
+        <article class="stat-card stat-tempo">
+          <span>Tempo médio</span>
+          <strong id="statTempo">--</strong>
+          <small>Pedidos ativos</small>
+        </article>
+      </section>
+
+      <!-- ABAS -->
+      <nav class="page-tabs">
+        <button class="tab-btn" data-tab="board" type="button">Fila de Pedidos</button>
+        <button class="tab-btn" data-tab="mesas" type="button">Mesas do Salão</button>
+      </nav>
+
+      <!-- TAB: FILA DE PEDIDOS -->
+      <div class="tab-panel" data-tab-panel="board">
+
+        <!-- PRIORIDADE DA VEZ -->
+        <section class="next-order-strip" id="nextOrderStrip" aria-live="polite"></section>
+
+        <!-- BOARD: VISÃO DA COZINHA -->
+        <section class="kitchen-board">
+
+          <article class="kitchen-column column-recebido">
+            <div class="column-header">
+              <span>Aguardando preparo</span>
+              <strong id="countRecebido">0</strong>
+            </div>
+            <div class="column-list" id="listRecebido"></div>
+          </article>
+
+          <article class="kitchen-column column-preparo">
+            <div class="column-header">
+              <span>Em preparação</span>
+              <strong id="countPreparo">0</strong>
+            </div>
+            <div class="column-list" id="listPreparo"></div>
+          </article>
+
+          <article class="kitchen-column column-pronto">
+            <div class="column-header">
+              <span>Pronto — aguardando despacho</span>
+              <strong id="countPronto">0</strong>
+            </div>
+            <div class="column-list" id="listPronto"></div>
+          </article>
+
+        </section>
+      </div>
+
+      <!-- TAB: MESAS -->
+      <div class="tab-panel" data-tab-panel="mesas">
+        <section class="mesas-section">
+          <div class="mesas-header">
+            <h2>Mesas do salão</h2>
+            <span id="mesasResumo">Carregando...</span>
+          </div>
+          <div class="mesas-grid" id="mesasGrid"></div>
+        </section>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- MODAL: CONSUMO DA MESA -->
+  <div class="modal-overlay" id="mesaModal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="mesaModalTitle">Mesa —</h3>
+        <button class="modal-close" onclick="fecharMesaModal()">&#x2715;</button>
+      </div>
+      <div id="mesaModalContent"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO PEDIDO (cardápio do atendente) -->
+  <div class="modal-overlay" id="novoPedidoModal" style="display:none">
+    <div class="np-box">
+      <div class="np-header">
+        <div>
+          <h3 id="npTitulo">Novo Pedido</h3>
+          <small id="npSubtitulo" style="color:var(--color-muted);font-size:12px"></small>
+        </div>
+        <button class="modal-close" onclick="fecharNovoPedido()">&#x2715;</button>
+      </div>
+      <div class="np-body">
+
+        <!-- Catálogo -->
+        <div class="np-catalogo">
+          <input id="npSearch" type="search" placeholder="Buscar produto..." autocomplete="off" />
+          <nav class="np-cats" id="npCats"></nav>
+          <div class="np-produtos" id="npProdutos">
+            <div class="empty-state">Carregando cardapio...</div>
+          </div>
+        </div>
+
+        <!-- Carrinho -->
+        <div class="np-carrinho">
+          <div class="np-cart-items" id="npCartItems">
+            <div class="empty-state" style="height:100%">Nenhum item selecionado</div>
+          </div>
+          <div class="np-cart-footer">
+            <textarea id="npObs" rows="2" placeholder="Observacao (opcional)..."></textarea>
+            <div class="np-total-row">
+              <span>Total</span>
+              <strong id="npTotal">R$ 0,00</strong>
+            </div>
+            <button id="npEnviarBtn" class="action-button" disabled onclick="enviarNpPedido()">
+              Enviar para a Cozinha
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CANCELAR PEDIDO -->
+  <div class="modal-overlay" id="cancelarModal" style="display:none">
+    <div class="modal-box" style="max-width:400px">
+      <div class="modal-header">
+        <h3 style="color:#dc2626">Cancelar Pedido</h3>
+        <button class="modal-close" onclick="fecharCancelarModal()">&#x2715;</button>
+      </div>
+      <div style="padding:16px 20px 20px">
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">
+          <strong style="color:#dc2626">Atencao:</strong> O cancelamento deve ser realizado somente com
+          autorizacao do superior ou da cozinha. Esta acao nao pode ser desfeita.
+        </div>
+        <label style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em">
+          Motivo do cancelamento (obrigatorio)
+        </label>
+        <textarea id="cancelarObs" rows="3"
+          style="width:100%;margin-top:6px;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:none;font-family:inherit;outline:none"
+          placeholder="Ex: Cliente desistiu, erro no pedido, autorizacao do gerente..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button id="cancelarConfirmarBtn" onclick="confirmarCancelamento()"
+            style="flex:1;padding:11px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer">
+            Confirmar Cancelamento
+          </button>
+          <button onclick="fecharCancelarModal()"
+            style="padding:11px 16px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;font-weight:700;cursor:pointer;font-size:13px">
+            Voltar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../JavaScript/atendente.js" defer></script>
+</body>
+</html>
+
