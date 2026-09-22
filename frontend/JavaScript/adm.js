@@ -1473,10 +1473,10 @@ function mesaApiToTable(mesa) {
     area: mesa.localizacao || 'Salão principal',
     reference: mesa.localizacao || '',
     status: apiStatusToUiStatus(mesa.status),
-    reservationName: '',
-    reservationPhone: '',
-    reservationDate: '',
-    notes: ''
+    reservationName: mesa.reservaNome || '',
+    reservationPhone: mesa.reservaTelefone || '',
+    reservationDate: mesa.reservaDataHora ? String(mesa.reservaDataHora).slice(0, 16) : '',
+    notes: mesa.observacoes || ''
   };
 }
 
@@ -1485,7 +1485,11 @@ function tableToMesaPayload(table) {
     numero: table.number,
     capacidade: table.seats,
     status: uiStatusToApiStatus(table.status),
-    localizacao: table.reference || table.area || null
+    localizacao: table.reference || table.area || null,
+    reservaNome: table.reservationName || null,
+    reservaTelefone: table.reservationPhone || null,
+    reservaDataHora: table.reservationDate || null,
+    observacoes: table.notes || null
   };
 }
 

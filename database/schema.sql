@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS mesa (
     capacidade SMALLINT NOT NULL DEFAULT 4,
     status VARCHAR(20) NOT NULL DEFAULT 'livre',
     localizacao VARCHAR(100),
+    reserva_nome VARCHAR(150),
+    reserva_telefone VARCHAR(20),
+    reserva_data_hora TIMESTAMP,
+    observacoes TEXT,
     qr_code_token UUID NOT NULL DEFAULT gen_random_uuid(),
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     CONSTRAINT uq_mesa_numero UNIQUE (id_restaurante, numero)

@@ -100,6 +100,10 @@ class MesaRequest(BaseModel):
     capacidade: int = Field(ge=1)
     status: str = Field(min_length=1)
     localizacao: str | None = None
+    reservaNome: str | None = None
+    reservaTelefone: str | None = None
+    reservaDataHora: datetime | None = None
+    observacoes: str | None = None
 
 
 class MesaResponse(BaseModel):
@@ -108,6 +112,10 @@ class MesaResponse(BaseModel):
     capacidade: int
     status: str
     localizacao: str | None
+    reservaNome: str | None
+    reservaTelefone: str | None
+    reservaDataHora: datetime | None
+    observacoes: str | None
     ativo: bool
 
 
