@@ -1446,18 +1446,28 @@ const TABLES_STORAGE_KEY = 'dataplate:adminTables';
 let selectedTableId = null;
 
 const tableStatusMeta = {
-  disponivel:            { label: 'Disponível',      badge: 'badge-active',   cardClass: 'status-disponivel' },
-  reservada:             { label: 'Reservada',        badge: 'badge-warning',  cardClass: 'status-reservada' },
-  ocupada:               { label: 'Ocupada',          badge: 'badge-info',     cardClass: 'status-ocupada' },
-  manutencao:            { label: 'Manutenção',       badge: 'badge-danger',   cardClass: 'status-manutencao' },
-  aguardando_pagamento:  { label: 'Conta Fechada',   badge: 'badge-pgto',     cardClass: 'status-aguardando' }
+  disponivel:            { label: 'Disponível',          badge: 'badge-active',  cardClass: 'status-disponivel' },
+  reservada:             { label: 'Reservada',            badge: 'badge-warning', cardClass: 'status-reservada' },
+  ocupada:               { label: 'Ocupada',              badge: 'badge-info',    cardClass: 'status-ocupada' },
+  manutencao:            { label: 'Manutenção',           badge: 'badge-danger',  cardClass: 'status-manutencao' },
+  aguardando_pagamento:  { label: 'Aguardando pagamento', badge: 'badge-pgto',    cardClass: 'status-aguardando' }
 };
 
 let admPedidosAtivos = [];
 
 function apiStatusToUiStatus(status) {
-  const value = String(status || '').toLowerCase();
-  return value === 'livre' ? 'disponivel' : value;
+  const value = String(status || 'livre').trim().toLowerCase();
+  const aliases = {
+    livre: 'disponivel',
+    disponível: 'disponivel',
+    reservado: 'reservada',
+    ocupado: 'ocupada',
+    manutenção: 'manutencao',
+    aguardando_pagamento: 'aguardando_pagamento',
+    'aguardando pagamento': 'aguardando_pagamento',
+    'conta fechada': 'aguardando_pagamento'
+  };
+  return aliases[value] || value;
 }
 
 function uiStatusToApiStatus(status) {
@@ -1527,34 +1537,11 @@ function updateReservationDateConstraints(form = document.getElementById('tableF
   );
 }
 
-function dateFromToday(days, time) {
-  const [hours, minutes] = time.split(':').map(Number);
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  date.setHours(hours, minutes || 0, 0, 0);
-  return toDateTimeLocal(date);
-}
-
 function nextReservationSlot() {
   const date = new Date();
   date.setHours(20, 0, 0, 0);
   if (date.getTime() <= Date.now()) date.setDate(date.getDate() + 1);
   return toDateTimeLocal(date);
-}
-
-function defaultTables() {
-  return [
-    { id: 1, number: 1, seats: 2, area: 'Salão principal', reference: 'Janela frontal', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Boa para casal' },
-    { id: 2, number: 2, seats: 4, area: 'Salão principal', reference: 'Centro do salão', status: 'reservada', reservationName: 'Carla Mendes', reservationPhone: '(11) 98888-2211', reservationDate: nextReservationSlot(), notes: 'Aniversário' },
-    { id: 3, number: 3, seats: 4, area: 'Salão principal', reference: 'Perto do caixa', status: 'ocupada', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pedido em andamento' },
-    { id: 4, number: 4, seats: 6, area: 'Varanda', reference: 'Vista para rua', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: '' },
-    { id: 5, number: 5, seats: 8, area: 'Espaço família', reference: 'Canto reservado', status: 'reservada', reservationName: 'Rafael Souza', reservationPhone: '(11) 97777-1444', reservationDate: dateFromToday(1, '19:30'), notes: 'Cadeira infantil' },
-    { id: 6, number: 6, seats: 2, area: 'Bar', reference: 'Balcão lateral', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: '' },
-    { id: 7, number: 7, seats: 4, area: 'Mezanino', reference: 'Escada esquerda', status: 'manutencao', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Aguardando reparo no apoio' },
-    { id: 8, number: 8, seats: 4, area: 'Área externa', reference: 'Guarda-sol 2', status: 'disponivel', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Pet friendly' },
-    { id: 9, number: 9, seats: 6, area: 'Mezanino', reference: 'Parede de quadros', status: 'ocupada', reservationName: '', reservationPhone: '', reservationDate: '', notes: 'Conta aberta' },
-    { id: 10, number: 10, seats: 10, area: 'Espaço família', reference: 'Mesa grande', status: 'reservada', reservationName: 'Fernanda Lima', reservationPhone: '(11) 96666-8800', reservationDate: dateFromToday(2, '21:00'), notes: 'Grupo corporativo' }
-  ];
 }
 
 function getTables() {
@@ -1563,9 +1550,7 @@ function getTables() {
     if (Array.isArray(saved) && saved.length > 0) return saved;
   } catch (_) {}
 
-  const seeded = defaultTables();
-  saveTables(seeded);
-  return seeded;
+  return [];
 }
 
 function saveTables(tables) {
@@ -1591,7 +1576,7 @@ function getStatusMeta(status) {
 
 function buildStatusBadge(status) {
   const meta = getStatusMeta(status);
-  return `<span class="badge ${meta.badge}">${meta.label}</span>`;
+  return `<span class="badge table-status-badge ${meta.badge}"><span class="table-status-dot" aria-hidden="true"></span>${meta.label}</span>`;
 }
 
 function getFilteredTables(tables) {
@@ -1629,6 +1614,7 @@ function renderTableFilter(tables) {
     ['status:disponivel', 'Disponível'],
     ['status:reservada', 'Reservada'],
     ['status:ocupada', 'Ocupada'],
+    ['status:aguardando_pagamento', 'Aguardando pagamento'],
     ['status:manutencao', 'Manutenção']
   ];
   const areaOptions = areas.map((area) => [`area:${area}`, area]);
@@ -1713,15 +1699,15 @@ function buildTableCard(table) {
     : `<span>${table.status === 'reservada' ? escapeHtml(table.reservationName || 'Reserva sem nome') : 'Sem pedidos ativos'}</span>`;
 
   return `
-    <article class="table-card ${meta.cardClass} ${activeClass}" onclick="selectTable(${table.id})">
+    <article class="table-card ${meta.cardClass} ${activeClass}" onclick="selectTable(${table.id})" aria-label="Mesa ${escapeHtml(table.number)}, ${meta.label}">
       <div class="table-card-header">
         <div class="table-card-number">Mesa ${escapeHtml(table.number)}</div>
         ${buildStatusBadge(table.status)}
       </div>
       <div class="table-card-meta">
-        <span>${escapeHtml(table.seats)} lugares</span>
-        <span>${escapeHtml(table.area || '-')}</span>
-        ${operacionalHtml}
+        <span class="table-card-detail"><strong>Capacidade</strong>${escapeHtml(table.seats)} lugares</span>
+        <span class="table-card-detail"><strong>Localização</strong>${escapeHtml(table.area || '-')}</span>
+        <div class="table-card-operational">${operacionalHtml}</div>
       </div>
       <div class="table-card-actions" onclick="event.stopPropagation()">
         <button class="btn-small" onclick="reserveTable(${table.id})">Reservar</button>
@@ -3028,9 +3014,8 @@ function formatDate(iso) {
 }
 
 function formatCurrency(v) {
-  const number = Number(v);
-  if (v == null || !Number.isFinite(number)) return 'R$ 0,00';
-  return 'R$ ' + number.toFixed(2).replace('.', ',');
+  if (v == null) return '-';
+  return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
 }
 
 function pedidoOrigemLabel(pedido) {
@@ -3070,58 +3055,13 @@ function setStatByLabel(sectionId, label, value, change) {
   if (changeEl && change != null) changeEl.textContent = change;
 }
 
-function setDashboardSummaryCard(valueId, detailId, value, detail, state = 'ready') {
-  const valueEl = document.getElementById(valueId);
-  const detailEl = document.getElementById(detailId);
-  const card = valueEl?.closest('.dashboard-stat-card');
-  if (valueEl) valueEl.textContent = value;
-  if (detailEl) detailEl.textContent = detail;
-  if (card) {
-    card.classList.toggle('is-loading', state === 'loading');
-    card.classList.toggle('has-error', state === 'error');
-  }
-}
-
-function setDashboardSummaryLoading() {
-  setDashboardSummaryCard('dashboardFaturamento', 'dashboardFaturamentoDetalhe', 'Carregando...', 'Buscando /api/relatorios/resumo', 'loading');
-  setDashboardSummaryCard('dashboardPedidosAtivos', 'dashboardPedidosDetalhe', 'Carregando...', 'Recebidos, em preparo e prontos', 'loading');
-  setDashboardSummaryCard('dashboardMesasOcupadas', 'dashboardMesasDetalhe', 'Carregando...', 'Buscando /api/mesas', 'loading');
-  setDashboardSummaryCard('dashboardTicketMedio', 'dashboardTicketDetalhe', 'Carregando...', 'Calculado com pedidos nao cancelados', 'loading');
-}
-
-function setDashboardResumoError() {
-  setDashboardSummaryCard('dashboardFaturamento', 'dashboardFaturamentoDetalhe', 'Indisponivel', 'Nao foi possivel carregar o resumo', 'error');
-  setDashboardSummaryCard('dashboardPedidosAtivos', 'dashboardPedidosDetalhe', 'Indisponivel', 'Nao foi possivel carregar pedidos ativos', 'error');
-  setDashboardSummaryCard('dashboardTicketMedio', 'dashboardTicketDetalhe', 'Indisponivel', 'Nao foi possivel calcular ticket medio', 'error');
-}
-
 function updateDashboardResumo(resumo) {
   const ativos = Number(resumo.pedidosRecebidos || 0)
     + Number(resumo.pedidosEmPreparo || 0)
     + Number(resumo.pedidosProntos || 0);
-  const entregues = Number(resumo.pedidosEntregues || 0);
-  const cancelados = Number(resumo.pedidosCancelados || 0);
-  const pedidosValidos = ativos + entregues;
-  const totalPedidos = pedidosValidos + cancelados;
-
-  setDashboardSummaryCard(
-    'dashboardFaturamento',
-    'dashboardFaturamentoDetalhe',
-    formatCurrency(resumo.faturamento),
-    totalPedidos ? `${pedidosValidos} pedido(s) validos hoje` : 'Nenhum pedido registrado hoje'
-  );
-  setDashboardSummaryCard(
-    'dashboardPedidosAtivos',
-    'dashboardPedidosDetalhe',
-    String(ativos),
-    `${Number(resumo.pedidosRecebidos || 0)} recebidos, ${Number(resumo.pedidosEmPreparo || 0)} em preparo, ${Number(resumo.pedidosProntos || 0)} prontos`
-  );
-  setDashboardSummaryCard(
-    'dashboardTicketMedio',
-    'dashboardTicketDetalhe',
-    formatCurrency(resumo.ticketMedio),
-    pedidosValidos ? `Base: ${pedidosValidos} pedido(s) nao cancelados` : 'Sem pedidos validos para media'
-  );
+  setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), 'Dados reais do banco');
+  setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
+  setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
 
   // Gráficos do dashboard com dados reais
   if (resumo.topProdutos?.length) {
@@ -3148,20 +3088,10 @@ function carregarSalesChartDashboard() {
 }
 
 function updateDashboardMesas(mesas) {
-  const lista = Array.isArray(mesas) ? mesas : [];
-  const total = lista.length;
-  const ocupadas = lista.filter((mesa) => {
-    const status = apiStatusToUiStatus(mesa.status);
-    return status === 'ocupada' || status === 'aguardando_pagamento';
-  }).length;
-  const disponiveis = lista.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
-  const reservadas = lista.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'reservada').length;
-  const mesasLivresLabel = disponiveis === 1 ? 'mesa livre' : 'mesas livres';
-  const reservasLabel = reservadas === 1 ? '1 reservada' : `${reservadas} reservadas`;
-  const detalhe = total
-    ? `${disponiveis} ${mesasLivresLabel} - ${reservasLabel}`
-    : 'Nenhuma mesa cadastrada';
-  setDashboardSummaryCard('dashboardMesasOcupadas', 'dashboardMesasDetalhe', `${ocupadas}/${total}`, detalhe);
+  const total = mesas.length;
+  const ocupadas = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'ocupada').length;
+  const disponiveis = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
+  setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
 }
 
 // ── Grupos colapsáveis do sidebar ─────────────────────────────────
@@ -3207,7 +3137,6 @@ function carregarHomeStats() {
 
       // Ticket médio
       if (el('homeTicketMedio'))       el('homeTicketMedio').textContent       = formatCurrency(resumo.ticketMedio);
-      if (el('homeFocusTicketMedio'))  el('homeFocusTicketMedio').textContent  = formatCurrency(resumo.ticketMedio);
 
       // Entregues
       if (el('homeEntregues'))         el('homeEntregues').textContent         = String(entregues);
@@ -3217,6 +3146,7 @@ function carregarHomeStats() {
 
       // Prontos p/ despacho
       if (el('homeProntos'))           el('homeProntos').textContent           = String(prontos);
+      if (el('homeFocusProntos'))      el('homeFocusProntos').textContent      = String(prontos);
       el('homeStatProntos')?.classList.toggle('has-alert', prontos > 0);
 
       // Em andamento
@@ -3235,8 +3165,8 @@ function carregarHomeStats() {
   getJson('/mesas')
     .then((mesas) => {
       const lista      = mesas || [];
-      const ocupadas   = lista.filter((m) => apiStatusToUiStatus(m.status) === 'ocupada').length;
-      const disponiveis= lista.filter((m) => apiStatusToUiStatus(m.status) === 'disponivel').length;
+      const ocupadas   = lista.filter((m) => (m.status || '').toLowerCase() === 'ocupada').length;
+      const disponiveis= lista.filter((m) => (m.status || '').toLowerCase() === 'disponivel').length;
       const total      = lista.length;
       if (el('homeMesas'))       el('homeMesas').textContent       = `${ocupadas}/${total}`;
       if (el('homeFocusMesas'))  el('homeFocusMesas').textContent  = `${ocupadas}/${total}`;
@@ -3247,25 +3177,17 @@ function carregarHomeStats() {
 window.carregarHomeStats = carregarHomeStats;
 
 function carregarRelatorios() {
-  setDashboardSummaryLoading();
-
   // Dashboard: resumo de hoje
   getJson('/relatorios/resumo')
     .then(updateDashboardResumo)
-    .catch((err) => {
-      setDashboardResumoError();
-      console.error('[relatorios]', err);
-    });
+    .catch((err) => console.error('[relatorios]', err));
 
   getJson('/mesas')
     .then((mesas) => {
       updateDashboardMesas(mesas);
       renderTableOccupancyChart(mesas);
     })
-    .catch((err) => {
-      setDashboardSummaryCard('dashboardMesasOcupadas', 'dashboardMesasDetalhe', 'Indisponivel', 'Nao foi possivel carregar mesas', 'error');
-      console.error('[relatorios-mesas]', err);
-    });
+    .catch((err) => console.error('[relatorios-mesas]', err));
 
   // Últimos pedidos no dashboard
   carregarUltimosPedidosDashboard();

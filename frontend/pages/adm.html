@@ -265,9 +265,9 @@
                   <small>Mesas ocupadas</small>
                 </article>
                 <article>
-                  <span>Ticket médio</span>
-                  <strong id="homeFocusTicketMedio">R$ 0,00</strong>
-                  <small>Valor médio por pedido</small>
+                  <span>Cozinha</span>
+                  <strong id="homeFocusProntos">0</strong>
+                  <small>Prontos para despacho</small>
                 </article>
               </div>
             </section>
@@ -333,26 +333,26 @@
             </div>
           </div>
 
-          <div class="stats-grid dashboard-stats" aria-live="polite">
-            <div class="stat-card dashboard-stat-card dashboard-stat-revenue is-loading">
+          <div class="stats-grid dashboard-stats">
+            <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Faturamento de hoje</div>
-              <div class="stat-value" id="dashboardFaturamento">Carregando...</div>
-              <div class="stat-change" id="dashboardFaturamentoDetalhe">Buscando /api/relatorios/resumo</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Dados reais do banco</div>
             </div>
-            <div class="stat-card dashboard-stat-card dashboard-stat-orders is-loading">
+            <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Pedidos ativos</div>
-              <div class="stat-value" id="dashboardPedidosAtivos">Carregando...</div>
-              <div class="stat-change" id="dashboardPedidosDetalhe">Recebidos, em preparo e prontos</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Pedidos em andamento</div>
             </div>
-            <div class="stat-card dashboard-stat-card dashboard-stat-tables is-loading">
+            <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Mesas ocupadas</div>
-              <div class="stat-value" id="dashboardMesasOcupadas">Carregando...</div>
-              <div class="stat-change" id="dashboardMesasDetalhe">Buscando /api/mesas</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Status atual do salão</div>
             </div>
-            <div class="stat-card dashboard-stat-card dashboard-stat-ticket is-loading">
+            <div class="stat-card dashboard-stat-card">
               <div class="stat-label">Ticket médio</div>
-              <div class="stat-value" id="dashboardTicketMedio">Carregando...</div>
-              <div class="stat-change" id="dashboardTicketDetalhe">Calculado com pedidos nao cancelados</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Calculado com pedidos pagos</div>
             </div>
           </div>
 
@@ -865,6 +865,7 @@
                 <option value="status:disponivel">Disponível</option>
                 <option value="status:reservada">Reservada</option>
                 <option value="status:ocupada">Ocupada</option>
+                <option value="status:aguardando_pagamento">Aguardando pagamento</option>
                 <option value="status:manutencao">Manutenção</option>
               </select>
               <button type="button" class="btn-secondary" id="clearTableFilters">Limpar</button>
@@ -881,6 +882,7 @@
                 <span><i class="legend-dot legend-available"></i>Disponível</span>
                 <span><i class="legend-dot legend-reserved"></i>Reservada</span>
                 <span><i class="legend-dot legend-occupied"></i>Ocupada</span>
+                <span><i class="legend-dot legend-awaiting-payment"></i>Aguardando pagamento</span>
                 <span><i class="legend-dot legend-maintenance"></i>Manutenção</span>
               </div>
               <div class="tables-map" id="tablesMap"></div>
@@ -1476,6 +1478,7 @@
               <option value="disponivel">Disponível</option>
               <option value="reservada">Reservada</option>
               <option value="ocupada">Ocupada</option>
+              <option value="aguardando_pagamento">Aguardando pagamento</option>
               <option value="manutencao">Manutenção</option>
             </select>
           </div>
@@ -2164,4 +2167,3 @@
   <script src="../JavaScript/adm.js?v=11" defer></script>
 </body>
 </html>
-
