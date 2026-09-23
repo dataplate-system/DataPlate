@@ -687,6 +687,29 @@ h2 {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+.pedido-atualizacao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 22px;
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pedido-atualizacao::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.pedido-atualizacao.atualizado::before { background: #16a34a; }
+.pedido-atualizacao.erro::before { background: #dc2626; }
+
 .icone {
   width: 80px;
   height: 80px;
