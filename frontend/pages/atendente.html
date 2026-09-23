@@ -137,8 +137,18 @@
       <div class="tab-panel" data-tab-panel="mesas">
         <section class="mesas-section">
           <div class="mesas-header">
-            <h2>Mesas do salão</h2>
-            <span id="mesasResumo">Carregando...</span>
+            <div>
+              <p class="mesas-eyebrow">Mapa do salão</p>
+              <h2>Mesas em tempo real</h2>
+            </div>
+            <span id="mesasResumo" class="mesas-resumo">Carregando...</span>
+          </div>
+          <div class="mesa-status-summary" id="mesaStatusSummary" aria-label="Resumo dos status das mesas"></div>
+          <div class="mesa-legend" aria-label="Legenda dos status das mesas">
+            <span class="mesa-legend-item livre"><i></i>Livre</span>
+            <span class="mesa-legend-item ocupada"><i></i>Ocupada</span>
+            <span class="mesa-legend-item reservada"><i></i>Reservada</span>
+            <span class="mesa-legend-item aguardando_pagamento"><i></i>Aguardando pagamento</span>
           </div>
           <div class="mesas-grid" id="mesasGrid"></div>
         </section>
@@ -237,4 +247,3 @@
   <script src="../JavaScript/atendente.js" defer></script>
 </body>
 </html>
-

@@ -148,13 +148,13 @@ function buildCard(order) {
 
 // ── Card de mesa ──────────────────────────────────────────────────
 function buildMesaCard(mesa) {
-  const st = (mesa.status || 'livre').toLowerCase();
+  const st = normalizarStatusMesa(mesa.status);
 
   const badgeCfg = {
     livre:                 { label: 'Livre',          cls: 'badge-active'  },
     ocupada:               { label: 'Ocupada',         cls: 'badge-info'    },
     reservada:             { label: 'Reservada',        cls: 'badge-warning' },
-    aguardando_pagamento:  { label: 'Conta Fechada',   cls: 'badge-pgto'   },
+    aguardando_pagamento:  { label: 'Aguardando pagamento', cls: 'badge-pgto' },
     manutencao:            { label: 'Manutencao',       cls: 'badge-danger'  },
   }[st] || { label: st, cls: 'badge-info' };
 
@@ -169,10 +169,14 @@ function buildMesaCard(mesa) {
   return `
     <article class="mesa-card status-${st}" onclick="abrirMesa(${mesa.numero})">
       <div class="mesa-top">
-        <strong class="mesa-num">Mesa ${mesa.numero}</strong>
+        <div>
+          <span class="mesa-label">Mesa</span>
+          <strong class="mesa-num">${mesa.numero}</strong>
+        </div>
         <span class="badge ${badgeCfg.cls}">${badgeCfg.label}</span>
       </div>
       <div class="mesa-meta">
+        <span class="mesa-location">${esc(mesa.localizacao || 'Salão principal')}</span>
         ${temAtivo
           ? `<span>${pedidos.length} pedido(s) ativo(s)</span>
              ${temPronto ? '<span class="mesa-pronto-hint">Pronto p/ despacho</span>' : ''}
@@ -181,9 +185,45 @@ function buildMesaCard(mesa) {
         }
       </div>
       <div class="mesa-footer">
-        <button class="btn-ver-mesa" type="button">Ver pedidos</button>
+        <button class="btn-ver-mesa" type="button">${st === 'livre' ? 'Novo pedido' : 'Ver comanda'} <span aria-hidden="true">→</span></button>
       </div>
     </article>`;
+}
+
+function normalizarStatusMesa(status) {
+  const value = String(status || 'livre').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s-]+/g, '_');
+  const aliases = {
+    disponivel: 'livre',
+    livre: 'livre',
+    ocupada: 'ocupada',
+    ocupado: 'ocupada',
+    reservada: 'reservada',
+    reservado: 'reservada',
+    aguardando_pagamento: 'aguardando_pagamento',
+    conta_fechada: 'aguardando_pagamento'
+  };
+  return aliases[value] || value;
+}
+
+function buildMesaStatusSummary(mesas) {
+  const statuses = [
+    ['livre', 'Livres'],
+    ['ocupada', 'Ocupadas'],
+    ['reservada', 'Reservadas'],
+    ['aguardando_pagamento', 'Aguardando pagamento']
+  ];
+  const counts = mesas.reduce((acc, mesa) => {
+    const status = normalizarStatusMesa(mesa.status);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  return statuses.map(([status, label]) => `
+    <div class="mesa-summary-card ${status}">
+      <strong>${counts[status] || 0}</strong>
+      <span>${label}</span>
+    </div>`).join('');
 }
 
 // -- Renderizacao ----------------------------------------------------
@@ -198,7 +238,7 @@ function render() {
   const preparo   = allOrders.filter(p => p.status === 'EM_PREPARO');
   const prontos   = allOrders.filter(p => p.status === 'PRONTO');
   // SERVIDO = já entregue na mesa, mas conta ainda aberta — não aparece no board
-  const mesasOcup = allMesas.filter(m => (m.status || '').toLowerCase() === 'ocupada');
+  const mesasOcup = allMesas.filter(m => normalizarStatusMesa(m.status) === 'ocupada');
 
   // Stats
   setText('statRecebido', recebidos.length);
@@ -248,6 +288,8 @@ function render() {
       ? allMesas.map(buildMesaCard).join('')
       : '<div class="empty-state">Nenhuma mesa cadastrada</div>';
   }
+  const statusSummary = document.getElementById('mesaStatusSummary');
+  if (statusSummary) statusSummary.innerHTML = buildMesaStatusSummary(allMesas);
   setText('mesasResumo', `${mesasOcup.length} ocupada(s) / ${allMesas.length} total`);
 }
 
@@ -309,7 +351,7 @@ window.confirmarCancelamento = async function() {
 async function _refreshModalAtual() {
   if (!_mesaModalNumero) return;
   const mesaInfo = allMesas.find(m => m.numero === _mesaModalNumero);
-  await renderMesaModal(_mesaModalNumero, (mesaInfo?.status || '').toLowerCase());
+  await renderMesaModal(_mesaModalNumero, normalizarStatusMesa(mesaInfo?.status));
 }
 
 window.despachar = async function(orderId) {
@@ -335,7 +377,7 @@ window.despachar = async function(orderId) {
     // Fallback enquanto migration V6 nao foi aplicada
     try {
       const mesa = allMesas.find(m => m.numero === order?.numeroMesa);
-      if (mesa && (mesa.status || '').toLowerCase() === 'aguardando_pagamento') {
+      if (mesa && normalizarStatusMesa(mesa.status) === 'aguardando_pagamento') {
         await putJson(`/pedidos/${orderId}/status`, { status: 'ENTREGUE' });
         showToast(`Pedido #${orderId} entregue na mesa.`, 'success');
       } else {
@@ -365,7 +407,7 @@ window.abrirMesa = async function(numeroMesa) {
   title.textContent = `Mesa ${numeroMesa}`;
   content.innerHTML = '<div style="color:#94a3b8;padding:16px">Carregando...</div>';
   modal.style.display = 'flex';
-  await renderMesaModal(numeroMesa, (mesaInfo?.status || '').toLowerCase());
+  await renderMesaModal(numeroMesa, normalizarStatusMesa(mesaInfo?.status));
 };
 
 async function renderMesaModal(numeroMesa, mesaStatus) {

@@ -367,8 +367,26 @@ button { cursor: pointer; }
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 14px;
 }
-.mesas-header h2   { font-size: 16px; font-weight: 900; }
-.mesas-header span { color: var(--color-muted); font-size: 13px; }
+.mesas-header h2   { font-size: 21px; font-weight: 900; }
+.mesas-eyebrow { color: var(--color-primary); font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 3px; }
+.mesas-resumo { color: var(--color-muted); font-size: 13px; font-weight: 800; padding: 8px 11px; background: #fff; border: 1px solid var(--color-border); border-radius: 999px; }
+
+.mesa-status-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.mesa-summary-card { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; }
+.mesa-summary-card strong { font-size: 22px; line-height: 1; }
+.mesa-summary-card span { color: var(--color-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.mesa-summary-card.livre { border-bottom: 3px solid var(--color-success); }
+.mesa-summary-card.ocupada { border-bottom: 3px solid var(--color-secondary); }
+.mesa-summary-card.reservada { border-bottom: 3px solid var(--color-warning); }
+.mesa-summary-card.aguardando_pagamento { border-bottom: 3px solid var(--color-primary); }
+
+.mesa-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 16px; }
+.mesa-legend-item { display: inline-flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: 12px; font-weight: 700; }
+.mesa-legend-item i { width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; }
+.mesa-legend-item.livre i { background: var(--color-success); }
+.mesa-legend-item.ocupada i { background: var(--color-secondary); }
+.mesa-legend-item.reservada i { background: var(--color-warning); }
+.mesa-legend-item.aguardando_pagamento i { background: var(--color-primary); }
 
 .mesas-grid {
   display: grid;
@@ -378,27 +396,27 @@ button { cursor: pointer; }
 
 /* Card estilo admin */
 .mesa-card {
-  min-height: 160px;
+  min-height: 188px;
   padding: 16px;
   border: 1px solid var(--color-border);
-  border-left: 4px solid #94a3b8;
-  border-radius: 8px;
+  border-top: 5px solid #94a3b8;
+  border-radius: 12px;
   background: var(--color-panel);
   cursor: pointer;
-  transition: transform .2s, box-shadow .2s;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
   display: flex;
   flex-direction: column;
   box-shadow: 0 1px 3px rgba(15,23,42,.05);
 }
 .mesa-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15,23,42,.1); }
 
-.mesa-card.status-livre             { border-left-color: var(--color-success); }
-.mesa-card.status-ocupada           { border-left-color: var(--color-secondary); }
-.mesa-card.status-reservada         { border-left-color: var(--color-warning); }
-.mesa-card.status-manutencao        { border-left-color: var(--color-danger); }
+.mesa-card.status-livre             { border-top-color: var(--color-success); background: linear-gradient(145deg, #fff, #f0fdf4); }
+.mesa-card.status-ocupada           { border-top-color: var(--color-secondary); background: linear-gradient(145deg, #fff, #eff6ff); }
+.mesa-card.status-reservada         { border-top-color: var(--color-warning); background: linear-gradient(145deg, #fff, #fffbeb); }
+.mesa-card.status-manutencao        { border-top-color: var(--color-danger); }
 .mesa-card.status-aguardando_pagamento {
-  border-left-color: var(--color-primary);
-  background: #fff8f5;
+  border-top-color: var(--color-primary);
+  background: linear-gradient(145deg, #fff, #fff7ed);
 }
 
 /* Badges compartilhados */
@@ -417,8 +435,10 @@ button { cursor: pointer; }
 
 /* Mesa card internals */
 .mesa-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-.mesa-num  { font-size: 20px; font-weight: 900; line-height: 1; }
+.mesa-label { display: block; margin-bottom: 2px; color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.mesa-num  { font-size: 30px; font-weight: 900; line-height: .9; }
 .mesa-meta { flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--color-muted); }
+.mesa-location { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .mesa-total   { font-size: 14px; font-weight: 800; color: var(--color-text); }
 .mesa-pedidos { font-size: 12px; color: var(--color-muted); }
 .mesa-pronto-hint { font-size: 11px; font-weight: 800; color: var(--color-success); }
@@ -435,6 +455,7 @@ button { cursor: pointer; }
   transition: border-color .15s, color .15s, background .15s;
 }
 .btn-ver-mesa:hover { border-color: var(--color-secondary); color: var(--color-secondary); background: #eff6ff; }
+.btn-ver-mesa span { float: right; font-size: 15px; line-height: .7; }
 
 /* Formas de pagamento no modal — estilo card */
 .at-pgto-lista { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
@@ -477,8 +498,6 @@ button { cursor: pointer; }
 .btn-fechar-comanda:hover { opacity: .9; transform: translateY(-1px); }
 .btn-fechar-comanda:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
-.mesa-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.mesa-num  { font-size: 15px; font-weight: 900; }
 .pronto-badge {
   font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em;
   background: var(--color-success); color: #fff; padding: 2px 7px; border-radius: 99px;
