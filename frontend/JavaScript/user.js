@@ -30,6 +30,8 @@ function extractErrorMessage(body, fallback) {
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 let pedidoAtivoId = localStorage.getItem("pedidoAtivoId") || "";
+let pedidoStatusTimer = null;
+let pedidoStatusSocket = null;
 
 let categoriaAtual = "todos";
 
@@ -682,48 +684,6 @@ function fecharTelaPagamento() {
 
 // botão estatus
 
-function iniciarStatusPedido() {
-
-  let etapa = 1;
-
- const status = [
-  { titulo: "Pedido Recebido", msg: "Seu pedido foi recebido" },
-  { titulo: "Em Preparo", msg: "Nosso chef está preparando" },
-  { titulo: "Pronto", msg: "Seu pedido está pronto" }
-];
-
-  function atualizarTela() {
-    document.getElementById("statusAtual").innerText = status[etapa - 1].titulo;
-    document.getElementById("mensagemStatus").innerText = status[etapa - 1].msg;
-
-    document.querySelectorAll(".step").forEach((el, i) => {
-      el.classList.remove("ativo");
-      if (i < etapa) el.classList.add("ativo");
-    });
-  }
-
-  atualizarTela();
-
-  let intervalo = setInterval(() => {
-    etapa++;
-
-    if (etapa > 3) {
-      clearInterval(intervalo);
-
-      localStorage.removeItem("carrinho");
-      localStorage.removeItem("pedidoAtivo");
-      localStorage.removeItem("pedidoAtivoId");
-      pedidoEmAndamento = false;
-      pedidoAtivoId = "";
-
-      return;
-    }
-
-    atualizarTela();
-
-  }, 5000);
-}
-
 function novoPedido() {
   document.getElementById("telaStatus").style.display = "none";
   document.getElementById("telaLista").style.display = "block";
@@ -732,6 +692,7 @@ function novoPedido() {
   localStorage.removeItem("pedidoAtivoId");
   pedidoEmAndamento = false;
   pedidoAtivoId = "";
+  pararAcompanhamentoPedido();
 
   document.querySelectorAll(".step").forEach(el => {
     el.classList.remove("ativo");
@@ -746,6 +707,7 @@ function abrirPedidoEmAndamento() {
   if (pedidoEmAndamento) {
     document.getElementById("telaLista").style.display = "none";
     document.getElementById("telaStatus").style.display = "block";
+    iniciarAcompanhamentoPedidoReal();
   } else {
     mostrarNotificacao(
      "aviso",
@@ -756,22 +718,25 @@ function abrirPedidoEmAndamento() {
 }
 
 function aplicarStatusPedidoReal(statusPedido) {
+  const status = String(statusPedido || "RECEBIDO").toUpperCase();
   const etapas = {
     RECEBIDO: 1,
     EM_PREPARO: 2,
     PRONTO: 3,
     ENTREGUE: 4,
-    CANCELADO: 4
+    CANCELADO: 4,
+    SERVIDO: 4
   };
   const textos = {
     RECEBIDO: ["Pedido Recebido", "Seu pedido foi recebido"],
     EM_PREPARO: ["Em Preparo", "Nosso chef está preparando"],
     PRONTO: ["Pronto", "Seu pedido está pronto"],
     ENTREGUE: ["Entregue", "Pedido entregue. Bom apetite!"],
-    CANCELADO: ["Cancelado", "Seu pedido foi cancelado"]
+    CANCELADO: ["Cancelado", "Seu pedido foi cancelado"],
+    SERVIDO: ["Servido", "Seu pedido foi entregue à mesa. Bom apetite!"]
   };
-  const etapa = etapas[statusPedido] || 1;
-  const texto = textos[statusPedido] || textos.RECEBIDO;
+  const etapa = etapas[status] || 1;
+  const texto = textos[status] || textos.RECEBIDO;
 
   document.getElementById("statusAtual").innerText = texto[0];
   document.getElementById("mensagemStatus").innerText = texto[1];
@@ -779,19 +744,57 @@ function aplicarStatusPedidoReal(statusPedido) {
     el.classList.toggle("ativo", i < etapa);
   });
 
-  if (statusPedido === "ENTREGUE" || statusPedido === "CANCELADO") {
-    localStorage.removeItem("pedidoAtivo");
-    localStorage.removeItem("pedidoAtivoId");
-    pedidoEmAndamento = false;
-    pedidoAtivoId = "";
+  definirAtualizacaoPedido("Status atualizado agora", "atualizado");
+}
+
+function definirAtualizacaoPedido(mensagem, tipo = "") {
+  const el = document.getElementById("pedidoAtualizacao");
+  if (!el) return;
+  el.textContent = mensagem;
+  el.className = `pedido-atualizacao ${tipo}`.trim();
+}
+
+function pararAcompanhamentoPedido() {
+  if (pedidoStatusTimer) window.clearInterval(pedidoStatusTimer);
+  pedidoStatusTimer = null;
+  if (pedidoStatusSocket) {
+    pedidoStatusSocket.onclose = null;
+    pedidoStatusSocket.close();
+  }
+  pedidoStatusSocket = null;
+}
+
+function conectarAtualizacoesPedido() {
+  if (!pedidoAtivoId || pedidoStatusSocket) return;
+  try {
+    const wsUrl = new URL(API_BASE_URL, window.location.href);
+    wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:";
+    wsUrl.pathname = "/ws";
+    wsUrl.search = "";
+    pedidoStatusSocket = new WebSocket(wsUrl.toString());
+    pedidoStatusSocket.onmessage = ({ data }) => {
+      try {
+        const evento = JSON.parse(data);
+        if (String(evento?.pedido?.id) === String(pedidoAtivoId)) {
+          aplicarStatusPedidoReal(evento.pedido.status);
+        }
+      } catch (_) { /* ignora mensagens que não são eventos de pedido */ }
+    };
+    pedidoStatusSocket.onerror = () => definirAtualizacaoPedido("Atualização automática indisponível; tentando novamente.", "erro");
+    pedidoStatusSocket.onclose = () => { pedidoStatusSocket = null; };
+  } catch (_) {
+    definirAtualizacaoPedido("Atualização automática indisponível; tentando novamente.", "erro");
   }
 }
 
 function iniciarAcompanhamentoPedidoReal() {
   if (!pedidoAtivoId) {
-    iniciarStatusPedido();
+    definirAtualizacaoPedido("Não foi possível identificar este pedido.", "erro");
     return;
   }
+
+  pararAcompanhamentoPedido();
+  definirAtualizacaoPedido("Atualizando status do pedido...");
 
   const carregarStatus = async () => {
     try {
@@ -802,17 +805,20 @@ function iniciarAcompanhamentoPedidoReal() {
       return pedido.status;
     } catch (error) {
       console.error("Erro ao acompanhar pedido:", error);
+      definirAtualizacaoPedido("Não foi possível atualizar agora. Tentaremos novamente.", "erro");
       return null;
     }
   };
 
   carregarStatus();
-  const timer = setInterval(async () => {
+  conectarAtualizacoesPedido();
+  pedidoStatusTimer = setInterval(async () => {
     const status = await carregarStatus();
-    if (status === "ENTREGUE" || status === "CANCELADO" || !pedidoAtivoId) {
-      clearInterval(timer);
+    if (["ENTREGUE", "CANCELADO", "SERVIDO"].includes(status) || !pedidoAtivoId) {
+      if (pedidoStatusTimer) window.clearInterval(pedidoStatusTimer);
+      pedidoStatusTimer = null;
     }
-  }, 5000);
+  }, 8000);
 }
 
 function atualizarBotaoPedido() {
@@ -875,6 +881,7 @@ window.confirmarMesaSelecionada = function() {
 carregarCategoriasCardapio();
 carregarCardapio();
 atualizarBotaoPedido();
+if (pedidoEmAndamento && pedidoAtivoId) iniciarAcompanhamentoPedidoReal();
 
 
 function atualizarBadge() {
