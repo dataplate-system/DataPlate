@@ -341,6 +341,15 @@ function getFilteredOrders() {
   const priority = document.getElementById('priorityFilter')?.value || '';
   const sort = document.getElementById('sortFilter')?.value || 'oldest';
 
+  console.log({
+    search,
+    status,
+    priority,
+    sort,
+    pedidos: kitchenOrders
+  });
+
+
   return kitchenOrders
     .filter((order) => ACTIVE_STATUSES.includes(order.status))
     .filter((order) => !status || order.status === status)
@@ -528,14 +537,46 @@ function renderNextOrder(filteredOrders) {
 }
 
 function renderColumns(filteredOrders) {
+  const selectedStatus =
+    document.getElementById('statusFilter')?.value || '';
+
   ACTIVE_STATUSES.forEach((status) => {
     const meta = STATUS_META[status];
     const list = document.getElementById(meta.listId);
-    const orders = filteredOrders.filter((order) => order.status === status);
+
+    if (!list) return;
+
+    const column = list.closest('.kitchen-column');
+
+    if (selectedStatus && status !== selectedStatus) {
+      if (column) {
+        column.style.display = 'none';
+      }
+      return;
+    }
+
+    if (column) {
+      column.style.display = '';
+    }
+
+    const orders = filteredOrders.filter(
+      (order) => order.status === status
+    );
+
     list.innerHTML = orders.length
       ? orders.map(buildCard).join('')
       : '<div class="empty-state">Nenhum pedido</div>';
   });
+
+  // Cancelados só aparecem quando estiver em "Todos"
+  const canceladosColumn =
+    document.getElementById('listCancelados')
+      ?.closest('.kitchen-column');
+
+  if (canceladosColumn) {
+    canceladosColumn.style.display =
+      selectedStatus ? 'none' : '';
+  }
 }
 
 function renderTable(filteredOrders) {
@@ -606,9 +647,30 @@ function renderCancelados() {
 }
 
 function renderKitchen() {
-  const activeOrders = kitchenOrders.filter((order) => ACTIVE_STATUSES.includes(order.status));
+  const activeOrders = kitchenOrders.filter((order) =>
+    ACTIVE_STATUSES.includes(order.status)
+  );
+
   const filteredOrders = getFilteredOrders();
+
+  // Estatísticas gerais continuam mostrando todos
   renderStats(activeOrders);
+
+  // Atualiza os contadores das colunas com o resultado filtrado
+  ACTIVE_STATUSES.forEach((status) => {
+    const meta = STATUS_META[status];
+
+    const quantidade = filteredOrders.filter(
+      (order) => order.status === status
+    ).length;
+
+    const contador = document.getElementById(meta.countId);
+
+    if (contador) {
+      contador.textContent = String(quantidade);
+    }
+  });
+
   renderNextOrder(filteredOrders);
   renderColumns(filteredOrders);
   renderCancelados();

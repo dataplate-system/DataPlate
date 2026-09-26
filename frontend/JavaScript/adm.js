@@ -4046,7 +4046,30 @@ function carregarCozinha() {
       col.querySelector('.col-count').textContent = '0';
     });
 
-    const ativos = pedidos.filter(p => ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status));
+    const filtro = document.getElementById('filtroCozinha')?.value || '';
+    
+    Object.entries(cols).forEach(([status, col]) => {
+      if (!col) return;
+
+      if (!filtro) {
+      // Todos
+      col.style.display = '';
+    } else {
+      // Mostra somente a coluna correspondente
+      col.style.display = status === filtro ? '' : 'none';
+    }
+    });
+    const ativos = pedidos.filter(p => {
+      const ativo = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status);
+
+      if (!ativo) return false;
+
+      // Sem filtro = mostra todos
+      if (!filtro) return true;
+
+      // Mostra somente o status selecionado
+      return p.status === filtro;
+    });
 
     ativos.forEach(p => {
       const col = cols[p.status];
@@ -4139,6 +4162,28 @@ col.querySelector('.col-count').textContent =
     showToast(err.message || 'Erro ao carregar cozinha.');
   });
 }
+// =============================================
+// FILTROS DA COZINHA
+// =============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+
+  const filtroCozinha = document.getElementById('filtroCozinha');
+  const btnAtualizarCozinha = document.getElementById('btnAtualizarCozinha');
+
+
+
+  filtroCozinha?.addEventListener('change', () => {
+    console.log('Status selecionado:', filtroCozinha.value);
+    carregarCozinha();
+  });
+
+  btnAtualizarCozinha?.addEventListener('click', () => {
+    console.log('Atualizando cozinha...');
+    carregarCozinha();
+  });
+
+});
 
 // =============================================
 // INSUMOS
