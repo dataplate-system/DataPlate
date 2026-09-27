@@ -925,13 +925,13 @@
 
           <div class="section-toolbar">
             <div class="toolbar-filters">
-              <select class="filter-select">
-                <option>Aguardando Preparo</option>
-                <option>Em Preparação</option>
-                <option>Pronto para Entrega</option>
-              </select>
-              <button class="btn-secondary">Atualizar</button>
-            </div>
+             <select class="filter-select" id="filtroCozinha"onchange="carregarCozinha()">
+              <option value="">Todos</option>
+              <option value="RECEBIDO">Aguardando Preparo</option>
+              <option value="EM_PREPARO">Em Preparação</option>
+              <option value="PRONTO">Pronto para Entrega</option>
+            </select>
+        </div>
           </div>
 
           <div class="kitchen-board">
@@ -2164,6 +2164,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=11" defer></script>
+  <script src="../JavaScript/adm.js" defer></script>
 </body>
 </html>

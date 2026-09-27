@@ -253,6 +253,8 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
             "quantidade": int(item.quantidade),
             "precoUnitario": float(item.preco_unitario),
             "subtotal": float(_subtotal_do_item(item)),
+            "tempoPreparo": item.produto.tempo_preparo,
+
         }
         for item in pedido.itens
     ]
