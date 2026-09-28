@@ -834,13 +834,39 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   background: rgba(255, 255, 255, 0.94);
 }
 
-.dashboard-stats {
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+.stats-grid.dashboard-stats {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   width: 100%;
 }
 
 .dashboard-stat-card {
   border-top: 3px solid var(--color-secondary);
+}
+
+.dashboard-stock-card {
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-stock-card:hover,
+.dashboard-stock-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: #f59e0b;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  outline: none;
+}
+
+.dashboard-stock-card.has-critical {
+  background: var(--color-white);
+  border-top-color: #f59e0b;
+}
+
+.dashboard-stock-card.has-critical .stat-value {
+  color: #b45309;
 }
 
 .dashboard-layout {

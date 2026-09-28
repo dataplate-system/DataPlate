@@ -1897,6 +1897,29 @@ button[onclick*="pagar"] {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
+.dashboard-hero .dashboard-actions #verdash {
+  background: var(--ds-secondary) !important;
+  border-color: var(--ds-secondary) !important;
+  color: #ffffff !important;
+}
+
+.dashboard-hero .dashboard-actions .btn-secondary {
+  background: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--ds-primary) !important;
+}
+
+.dashboard-hero .dashboard-actions #verdash:hover {
+  background: var(--ds-primary) !important;
+  border-color: var(--ds-primary) !important;
+}
+
+.dashboard-hero .dashboard-actions .btn-secondary:hover {
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: var(--ds-primary-hover) !important;
+}
+
 .hero-eyebrow,
 .dashboard-eyebrow {
   color: rgba(255, 255, 255, 0.86) !important;
@@ -1994,6 +2017,22 @@ button[onclick*="pagar"] {
 .dashboard-stat-card:nth-child(5),
 .stats-grid .stat-card:nth-child(5) {
   border-top-color: var(--ds-tertiary) !important;
+}
+
+.dashboard-stock-card {
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+.stats-grid .dashboard-stock-card.has-critical {
+  background: #ffffff !important;
+  border-top-color: var(--ds-warning) !important;
+}
+
+.dashboard-stock-card.has-critical .stat-value {
+  color: #b45309 !important;
 }
 
 .stat-card strong,

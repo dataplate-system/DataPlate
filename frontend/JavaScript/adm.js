@@ -4490,15 +4490,32 @@ function carregarNotificacoes() {
 // Alerta de estoque baixo no dashboard
 function verificarEstoqueBaixo() {
   const prefs = JSON.parse(localStorage.getItem(NOTIFICACOES_KEY) || '{}');
-  if (prefs.alertaEstoqueBaixo === false) return;
 
   getJson('/insumos')
     .then((insumos) => {
       const criticos = (insumos || []).filter((i) => Number(i.quantidadeAtual) <= Number(i.quantidadeMinima));
-      if (!criticos.length) return;
-      showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+      const card = document.getElementById('dashboardLowStockCard');
+      const value = document.getElementById('dashboardLowStockValue');
+      const detail = document.getElementById('dashboardLowStockDetail');
+
+      if (value) value.textContent = String(criticos.length);
+      if (detail) {
+        detail.textContent = criticos.length
+          ? `${criticos.slice(0, 2).map((item) => item.nome).join(', ')} · Ver insumos`
+          : 'Todos os insumos estão em nível normal';
+      }
+      card?.classList.toggle('has-critical', criticos.length > 0);
+
+      if (criticos.length && prefs.alertaEstoqueBaixo !== false) {
+        showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+      }
     })
-    .catch(() => {});
+    .catch(() => {
+      const value = document.getElementById('dashboardLowStockValue');
+      const detail = document.getElementById('dashboardLowStockDetail');
+      if (value) value.textContent = '-';
+      if (detail) detail.textContent = 'Não foi possível consultar o estoque';
+    });
 }
 
 // =============================================
