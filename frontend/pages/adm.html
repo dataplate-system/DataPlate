@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataPlate - Painel Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/adm.css?v=2" />
-  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
+  <link rel="stylesheet" href="../Css/adm.css?v=3-dashboard-stock" />
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260928-stock-card-v2" />
 </head>
 <body>
   <div class="admin-container">
@@ -354,6 +354,17 @@
               <div class="stat-value">Carregando...</div>
               <div class="stat-change">Calculado com pedidos pagos</div>
             </div>
+            <button
+              type="button"
+              id="dashboardLowStockCard"
+              class="stat-card dashboard-stat-card dashboard-stock-card"
+              onclick="navigateTo('insumos')"
+              aria-label="Ver insumos com estoque baixo"
+            >
+              <div class="stat-label">Estoque baixo</div>
+              <div class="stat-value" id="dashboardLowStockValue">Carregando...</div>
+              <div class="stat-change" id="dashboardLowStockDetail">Verificar insumos</div>
+            </button>
           </div>
 
           <div class="dashboard-layout">
@@ -1941,6 +1952,7 @@
             <input type="number" name="quantidadeMinima" placeholder="0.000" min="0" step="0.001" required />
           </div>
         </div>
+        <p id="insumoEstoqueAlerta" class="insumo-stock-alert" role="status" aria-live="polite" style="margin:0 0 14px;padding:10px 12px;border:1px solid #fcd34d;border-radius:6px;background:#fffbeb;color:#92400e;font-size:13px" hidden></p>
         <div class="form-row">
           <div class="form-group">
             <label>Custo Unitário (R$)</label>
@@ -2164,6 +2176,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<<<<<<< HEAD
   <script src="../JavaScript/adm.js" defer></script>
+=======
+  <script src="../JavaScript/adm.js?v=13-stock-dashboard" defer></script>
+>>>>>>> 73263e2ab03cf6f0c91e4cbc6eedbd81057f026a
 </body>
 </html>

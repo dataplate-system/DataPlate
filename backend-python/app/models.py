@@ -83,6 +83,10 @@ class Mesa(Base):
     capacidade: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     localizacao: Mapped[str | None] = mapped_column(String(100))
+    reserva_nome: Mapped[str | None] = mapped_column(String(150))
+    reserva_telefone: Mapped[str | None] = mapped_column(String(20))
+    reserva_data_hora: Mapped[datetime | None] = mapped_column(DateTime)
+    observacoes: Mapped[str | None] = mapped_column(Text)
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 

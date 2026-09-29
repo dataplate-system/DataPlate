@@ -1,0 +1,5 @@
+ALTER TABLE mesa
+    ADD COLUMN IF NOT EXISTS reserva_nome VARCHAR(150),
+    ADD COLUMN IF NOT EXISTS reserva_telefone VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS reserva_data_hora TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS observacoes TEXT;

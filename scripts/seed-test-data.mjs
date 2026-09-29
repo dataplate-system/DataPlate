@@ -1,94 +1,104 @@
 import pg from 'pg';
+
 const { Client } = pg;
 
 const client = new Client({
-  host: 'aws-1-sa-east-1.pooler.supabase.com',
-  port: 5432,
-  database: 'postgres',
-  user: 'postgres.zcdjzwnzapzvisllnivh',
-  password: 'Dataplate@123',
-  ssl: { rejectUnauthorized: false }
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT || 5433),
+  database: process.env.DB_NAME || 'dataplate',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'dataplate_local'
 });
 
 async function seed() {
   await client.connect();
-  console.log('Conectado ao banco.');
+  console.log('Conectado ao PostgreSQL local.');
 
-  // IDs fixos do schema
-  const statusMap = {};
-  const { rows: statuses } = await client.query('SELECT id_status, nome FROM status_pedido');
-  statuses.forEach(s => statusMap[s.nome] = s.id_status);
-  console.log('Status:', statusMap);
+  try {
+    await client.query('BEGIN');
 
-  const { rows: mesas } = await client.query(
-    'SELECT id_mesa, numero FROM mesa ORDER BY numero LIMIT 10'
-  );
-  console.log('Mesas disponíveis:', mesas.map(m => `${m.numero}(id:${m.id_mesa})`).join(', '));
+    const statusMap = {};
+    const { rows: statuses } = await client.query('SELECT id_status, nome FROM status_pedido');
+    statuses.forEach((status) => { statusMap[status.nome] = status.id_status; });
 
-  const { rows: produtos } = await client.query(
-    'SELECT id_produto, nome, preco FROM produto WHERE ativo = true LIMIT 10'
-  );
-  if (!produtos.length) {
-    console.error('Nenhum produto encontrado. Cadastre produtos no admin antes de rodar o seed.');
-    await client.end();
-    return;
-  }
-  console.log('Produtos:', produtos.map(p => `${p.nome}(R$${p.preco})`).join(', '));
-
-  // Atualizar 4 mesas para 'ocupada'
-  const mesasOcupadas = mesas.slice(0, 4);
-  for (const m of mesasOcupadas) {
-    await client.query('UPDATE mesa SET status = $1 WHERE id_mesa = $2', ['ocupada', m.id_mesa]);
-  }
-  console.log(`\nMesas ${mesasOcupadas.map(m=>m.numero).join(', ')} marcadas como ocupadas.`);
-
-  // Pedidos de teste
-  const pedidosSeed = [
-    { mesa: mesas[0], statusNome: 'RECEBIDO',   itens: [0, 1],    minutosAtras: 5  },
-    { mesa: mesas[1], statusNome: 'EM_PREPARO', itens: [2, 0],    minutosAtras: 15 },
-    { mesa: mesas[2], statusNome: 'EM_PREPARO', itens: [1, 2, 3], minutosAtras: 22 },
-    { mesa: mesas[3], statusNome: 'PRONTO',     itens: [0, 3],    minutosAtras: 30 },
-  ];
-
-  // Limpar pedidos de seed anteriores para não duplicar
-  await client.query(`DELETE FROM pedido WHERE numero_pedido LIKE 'SEED-%'`);
-  console.log('Pedidos de seed anteriores removidos.');
-
-  for (let i = 0; i < pedidosSeed.length; i++) {
-    const s = pedidosSeed[i];
-    if (!s.mesa) continue;
-
-    const dataHora = new Date(Date.now() - s.minutosAtras * 60000).toISOString();
-    const itensPedido = s.itens
-      .map(idx => produtos[idx])
-      .filter(Boolean);
-
-    const total = itensPedido.reduce((sum, p) => sum + Number(p.preco), 0).toFixed(2);
-    const numeroPedido = `SEED-${String(i + 1).padStart(3, '0')}-${Date.now()}`.slice(0, 20);
-
-    const { rows: [pedido] } = await client.query(
-      `INSERT INTO pedido (id_mesa, id_status, numero_pedido, data_hora, valor_total, atualizado_em)
-       VALUES ($1, $2, $3, $4, $5, now()) RETURNING id_pedido`,
-      [s.mesa.id_mesa, statusMap[s.statusNome], numeroPedido, dataHora, total]
+    const { rows: mesas } = await client.query(
+      'SELECT id_mesa, numero FROM mesa WHERE ativo = true ORDER BY numero LIMIT 10'
+    );
+    const { rows: produtos } = await client.query(
+      'SELECT id_produto, nome, preco FROM produto WHERE ativo = true ORDER BY id_produto LIMIT 10'
     );
 
-    for (const prod of itensPedido) {
-      await client.query(
-        `INSERT INTO item_pedido (id_pedido, id_produto, quantidade, preco_unitario)
-         VALUES ($1, $2, 1, $3)`,
-        [pedido.id_pedido, prod.id_produto, prod.preco]
+    if (mesas.length < 6) throw new Error('Sao necessarias pelo menos 6 mesas ativas para o seed.');
+    if (produtos.length < 4) throw new Error('Sao necessarios pelo menos 4 produtos ativos para o seed.');
+
+    await client.query("DELETE FROM pedido WHERE numero_pedido LIKE 'DEMO-%' OR numero_pedido LIKE 'SEED-%'");
+
+    const pedidos = [
+      { mesa: 0, status: 'RECEBIDO', itens: [0, 6], hora: 10 },
+      { mesa: 1, status: 'EM_PREPARO', itens: [2, 7], hora: 11 },
+      { mesa: 2, status: 'EM_PREPARO', itens: [3, 6], hora: 12 },
+      { mesa: 3, status: 'PRONTO', itens: [4, 7], hora: 13 },
+      { mesa: 0, status: 'ENTREGUE', itens: [2, 2, 6], hora: 14 },
+      { mesa: 1, status: 'ENTREGUE', itens: [3, 5, 7], hora: 15 },
+      { mesa: 2, status: 'ENTREGUE', itens: [4, 6], hora: 16 },
+      { mesa: 3, status: 'CANCELADO', itens: [5], hora: 17 }
+    ];
+
+    for (let index = 0; index < pedidos.length; index += 1) {
+      const demo = pedidos[index];
+      const itens = demo.itens.map((produtoIndex) => produtos[produtoIndex % produtos.length]);
+      const total = itens.reduce((soma, produto) => soma + Number(produto.preco), 0).toFixed(2);
+      const numero = `DEMO-${String(index + 1).padStart(3, '0')}`;
+
+      const { rows: [pedido] } = await client.query(
+        `INSERT INTO pedido
+           (id_mesa, id_status, numero_pedido, data_hora, valor_total, atualizado_em)
+         VALUES ($1, $2, $3, CURRENT_DATE + make_interval(hours => $4), $5, now())
+         RETURNING id_pedido`,
+        [mesas[demo.mesa].id_mesa, statusMap[demo.status], numero, demo.hora, total]
       );
+
+      for (const produto of itens) {
+        await client.query(
+          `INSERT INTO item_pedido (id_pedido, id_produto, quantidade, preco_unitario)
+           VALUES ($1, $2, 1, $3)`,
+          [pedido.id_pedido, produto.id_produto, produto.preco]
+        );
+      }
     }
 
-    console.log(`  Pedido #${pedido.id_pedido} criado — Mesa ${s.mesa.numero} — ${s.statusNome} — R$ ${total}`);
-  }
+    await client.query(
+      `UPDATE mesa
+       SET status = 'ocupada', reserva_nome = NULL, reserva_telefone = NULL, reserva_data_hora = NULL
+       WHERE id_mesa = ANY($1::int[])`,
+      [mesas.slice(0, 4).map((mesa) => mesa.id_mesa)]
+    );
+    await client.query(
+      `UPDATE mesa
+       SET status = 'reservada', reserva_nome = $1, reserva_telefone = $2,
+           reserva_data_hora = CURRENT_DATE + INTERVAL '1 day 19 hours'
+       WHERE id_mesa = $3`,
+      ['Mariana Souza', '(11) 98888-1200', mesas[4].id_mesa]
+    );
+    await client.query(
+      `UPDATE mesa
+       SET status = 'reservada', reserva_nome = $1, reserva_telefone = $2,
+           reserva_data_hora = CURRENT_DATE + INTERVAL '2 days 20 hours 30 minutes'
+       WHERE id_mesa = $3`,
+      ['Carlos Oliveira', '(11) 97777-3400', mesas[5].id_mesa]
+    );
 
-  console.log('\nSeed concluído! Abra o painel da cozinha e o admin para ver os pedidos.');
-  await client.end();
+    await client.query('COMMIT');
+    console.log(`Seed concluido: ${pedidos.length} pedidos, 4 mesas ocupadas e 2 reservas futuras.`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    await client.end();
+  }
 }
 
-seed().catch(err => {
-  console.error('Erro no seed:', err.message);
-  client.end();
+seed().catch((error) => {
+  console.error('Erro no seed:', error.message);
   process.exit(1);
 });

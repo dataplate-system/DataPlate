@@ -62,6 +62,10 @@ def _apply_request(mesa: Mesa, request: MesaRequest) -> None:
     mesa.capacidade = request.capacidade
     mesa.status = _normalize_status(request.status)
     mesa.localizacao = _blank_to_none(request.localizacao)
+    mesa.reserva_nome = _blank_to_none(request.reservaNome)
+    mesa.reserva_telefone = _blank_to_none(request.reservaTelefone)
+    mesa.reserva_data_hora = request.reservaDataHora
+    mesa.observacoes = _blank_to_none(request.observacoes)
     if mesa.ativo is None:
         mesa.ativo = True
 
@@ -94,5 +98,9 @@ def _to_response(mesa: Mesa) -> MesaResponse:
         capacidade=mesa.capacidade,
         status=mesa.status,
         localizacao=mesa.localizacao,
+        reservaNome=mesa.reserva_nome,
+        reservaTelefone=mesa.reserva_telefone,
+        reservaDataHora=mesa.reserva_data_hora,
+        observacoes=mesa.observacoes,
         ativo=mesa.ativo,
     )

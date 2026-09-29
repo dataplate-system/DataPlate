@@ -1483,10 +1483,10 @@ function mesaApiToTable(mesa) {
     area: mesa.localizacao || 'Salão principal',
     reference: mesa.localizacao || '',
     status: apiStatusToUiStatus(mesa.status),
-    reservationName: '',
-    reservationPhone: '',
-    reservationDate: '',
-    notes: ''
+    reservationName: mesa.reservaNome || '',
+    reservationPhone: mesa.reservaTelefone || '',
+    reservationDate: mesa.reservaDataHora ? String(mesa.reservaDataHora).slice(0, 16) : '',
+    notes: mesa.observacoes || ''
   };
 }
 
@@ -1495,7 +1495,11 @@ function tableToMesaPayload(table) {
     numero: table.number,
     capacidade: table.seats,
     status: uiStatusToApiStatus(table.status),
-    localizacao: table.reference || table.area || null
+    localizacao: table.reference || table.area || null,
+    reservaNome: table.reservationName || null,
+    reservaTelefone: table.reservationPhone || null,
+    reservaDataHora: table.reservationDate || null,
+    observacoes: table.notes || null
   };
 }
 
@@ -4227,6 +4231,7 @@ window.editarInsumo = function(id) {
   form.querySelector('[name="quantidadeMinima"]').value = insumo.quantidadeMinima || '';
   form.querySelector('[name="custoUnitario"]').value = insumo.custoUnitario
     ? formatCurrencyInput(floatToInputDigits(insumo.custoUnitario)) : '';
+  atualizarAlertaEstoqueInsumo(form);
   const header = document.querySelector('#addInsumoModal .modal-header');
   if (header) header.textContent = 'Editar Insumo';
   const submit = form.querySelector('button[type="submit"]');
@@ -4246,6 +4251,12 @@ window.excluirInsumo = async function(id, nome) {
   document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('addInsumoForm');
     if (!form) return;
+
+    const quantidadeAtual = form.querySelector('[name="quantidadeAtual"]');
+    const quantidadeMinima = form.querySelector('[name="quantidadeMinima"]');
+    [quantidadeAtual, quantidadeMinima].forEach((input) => {
+      input.addEventListener('input', () => atualizarAlertaEstoqueInsumo(form));
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -4272,6 +4283,7 @@ window.excluirInsumo = async function(id, nome) {
         closeModal('addInsumoModal');
         form.reset();
         form.querySelector('[name="id"]').value = '';
+        atualizarAlertaEstoqueInsumo(form);
         const header = document.querySelector('#addInsumoModal .modal-header');
         if (header) header.textContent = 'Novo Insumo';
         const submit = form.querySelector('button[type="submit"]');
@@ -4283,6 +4295,23 @@ window.excluirInsumo = async function(id, nome) {
     }, true);
   });
 })();
+
+function atualizarAlertaEstoqueInsumo(form) {
+  const alerta = document.getElementById('insumoEstoqueAlerta');
+  if (!alerta) return;
+
+  const atualInput = form.querySelector('[name="quantidadeAtual"]');
+  const minimaInput = form.querySelector('[name="quantidadeMinima"]');
+  const atual = Number(atualInput.value);
+  const minima = Number(minimaInput.value);
+  const abaixoDoMinimo = atualInput.value !== '' && minimaInput.value !== ''
+    && Number.isFinite(atual) && Number.isFinite(minima) && atual <= minima;
+
+  alerta.hidden = !abaixoDoMinimo;
+  alerta.textContent = abaixoDoMinimo
+    ? `Atenção: estoque no limite mínimo ou abaixo (${atual.toFixed(3)}; mínimo: ${minima.toFixed(3)}).`
+    : '';
+}
 
 // =============================================
 // CHARTS - dados reais da API
@@ -4558,15 +4587,32 @@ function carregarNotificacoes() {
 // Alerta de estoque baixo no dashboard
 function verificarEstoqueBaixo() {
   const prefs = JSON.parse(localStorage.getItem(NOTIFICACOES_KEY) || '{}');
-  if (prefs.alertaEstoqueBaixo === false) return;
 
   getJson('/insumos')
     .then((insumos) => {
       const criticos = (insumos || []).filter((i) => Number(i.quantidadeAtual) <= Number(i.quantidadeMinima));
-      if (!criticos.length) return;
-      showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+      const card = document.getElementById('dashboardLowStockCard');
+      const value = document.getElementById('dashboardLowStockValue');
+      const detail = document.getElementById('dashboardLowStockDetail');
+
+      if (value) value.textContent = String(criticos.length);
+      if (detail) {
+        detail.textContent = criticos.length
+          ? `${criticos.slice(0, 2).map((item) => item.nome).join(', ')} · Ver insumos`
+          : 'Todos os insumos estão em nível normal';
+      }
+      card?.classList.toggle('has-critical', criticos.length > 0);
+
+      if (criticos.length && prefs.alertaEstoqueBaixo !== false) {
+        showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+      }
     })
-    .catch(() => {});
+    .catch(() => {
+      const value = document.getElementById('dashboardLowStockValue');
+      const detail = document.getElementById('dashboardLowStockDetail');
+      if (value) value.textContent = '-';
+      if (detail) detail.textContent = 'Não foi possível consultar o estoque';
+    });
 }
 
 // =============================================
