@@ -85,22 +85,45 @@ async function readResponseBody(response) {
   }
 }
 
+// Le mensagens de erro do FastAPI (detail string ou lista de validacao do Pydantic)
+// e tambem dos formatos antigos (message / mensagem / erro).
 function extractErrorMessage(body, fallback) {
   if (!body) return fallback;
   if (typeof body === 'string') return body || fallback;
+
+  if (Array.isArray(body.detail)) {
+    const msgs = body.detail
+      .map((d) => String(d?.msg || '').replace(/^Value error,\s*/i, ''))
+      .filter(Boolean);
+    if (msgs.length) return msgs.join('; ');
+  }
+  if (typeof body.detail === 'string' && body.detail) return body.detail;
+
   return body.message || body.mensagem || body.erro || fallback;
 }
+
+let _encerrandoSessao = false;
 
 async function apiFetch(endpoint, options = {}) {
   const session = readAdminSession();
   const headers = { ...(options.headers || {}) };
-  if (session?.token && !headers.Authorization) {
-    headers.Authorization = `Bearer ${session.token}`;
+  const token = session?.token || session?.accessToken;
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
   }
-  return fetch(`${API_BASE_URL}${endpoint}`, {
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers
   });
+
+  // Sessao ausente, invalida ou expirada: volta para o login (uma unica vez)
+  if (response.status === 401 && !_encerrandoSessao) {
+    _encerrandoSessao = true;
+    window.logoutAdmin();
+  }
+
+  return response;
 }
 
 function showSuccessModal(title, message, duration = 4000) {
@@ -197,9 +220,9 @@ function showToast(message, type = 'error') {
   window.setTimeout(() => toast.remove(), 4500);
 }
 
-// Destaca o campo CPF quando o erro indica duplicidade
+// Destaca o campo CPF/CNPJ apenas quando o erro indica duplicidade
 function mostrarErroCpf(form, mensagem) {
-  const ehDuplicado = /cpf|ja cadastrado|already exists|duplicate|unique/i.test(mensagem);
+  const ehDuplicado = /cadastrad|already exists|duplic|unique|j[aá] existe/i.test(mensagem);
   if (!ehDuplicado) { showToast(mensagem); return; }
 
   const campo = form?.querySelector('[name="cpf"], [name="cnpj"]');
@@ -235,11 +258,12 @@ function applyAdminSession() {
   const userKey = isLegacyCashier ? 'atendente' : session.userKey || Object.keys(ADMIN_PANEL_USERS).find((key) =>
     ADMIN_PANEL_USERS[key].initials === session.initials
   ) || 'gerente';
-  const normalizedSession = {
-    ...session,
-    ...(ADMIN_PANEL_USERS[userKey] || {}),
-    userKey
-  };
+  // Sessao com token (login real): os dados do usuario vem do backend e prevalecem.
+  // Sessao sem token (modo demonstracao): valem os perfis fixos do painel.
+  const demoProfile = ADMIN_PANEL_USERS[userKey] || {};
+  const normalizedSession = session.token
+    ? { ...demoProfile, ...session, userKey }
+    : { ...session, ...demoProfile, userKey };
   const headerName = document.getElementById('headerUserName');
   const headerAvatar = document.getElementById('headerUserAvatar');
   const headerRole = document.getElementById('headerUserRole');
@@ -276,7 +300,7 @@ function applyAdminSession() {
     document.querySelectorAll('[data-role="admin"]').forEach((el) => {
       el.style.display = 'none';
     });
-    // também oculta atalhos da home que exigem admin
+    // tambem oculta atalhos da home que exigem admin
     document.querySelectorAll('.home-shortcut[data-role="admin"]').forEach((el) => {
       el.style.display = 'none';
     });
@@ -378,7 +402,7 @@ function navigateTo(sectionId) {
     if (searchBox) searchBox.style.display = 'flex';
   }
 
-  // Mapa: seção → [grupo pai, nome de exibição]
+  // Mapa: secao -> [grupo pai, nome de exibicao]
   const NAV_MAP = {
     pedidos:             ['Operações',    'Pedidos'],
     cancelamentos:       ['Operações',    'Cancelamentos'],
@@ -400,7 +424,7 @@ function navigateTo(sectionId) {
     'config-notificacoes':['Configurações','Notificações'],
   };
 
-  // Destacar botão pai do top nav
+  // Destacar botao pai do top nav
   document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
   const navInfo = NAV_MAP[sectionId];
   if (navInfo) {
@@ -599,7 +623,14 @@ window.closeModal = function(modalId) {
 };
 
 window.openAddDishModal = () => window.openModal('addDishModal');
-window.openAddUserModal = () => window.openModal('addUserModal');
+window.openAddUserModal = () => {
+  const form = document.getElementById('addUserForm');
+  if (form) {
+    form.reset();
+    resetUserFormMode(form);
+  }
+  window.openModal('addUserModal');
+};
 
 // =============================================
 // FORM VALIDATION AND INPUT MASKS
@@ -643,7 +674,7 @@ function formatCep(value) {
   return onlyDigits(value).slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
 }
 
-// Máscara de moeda BRL (estilo ATM): digitar "800000" -> "R$ 8.000,00"
+// Mascara de moeda BRL (estilo ATM): digitar "800000" -> "R$ 8.000,00"
 function formatCurrencyInput(value) {
   const digits = onlyDigits(value).slice(0, 13);
   if (!digits) return '';
@@ -654,14 +685,14 @@ function formatCurrencyInput(value) {
   return `R$ ${withDots},${decPart}`;
 }
 
-// Converte "R$ 8.000,00" -> 8000.00 (float para enviar à API)
+// Converte "R$ 8.000,00" -> 8000.00 (float para enviar a API)
 function parseCurrencyValue(value) {
   const digits = onlyDigits(value);
   if (!digits) return null;
   return Number(digits) / 100;
 }
 
-// Converte float da API -> string de dígitos para formatCurrencyInput
+// Converte float da API -> string de digitos para formatCurrencyInput
 function floatToInputDigits(value) {
   const num = Number(value) || 0;
   return String(Math.round(num * 100));
@@ -992,7 +1023,7 @@ function fileToDataUrl(file) {
   });
 }
 
-// ── Cloudinary (upload unsigned de imagens) ────────────────────────
+// -- Cloudinary (upload unsigned de imagens) --------------------------
 const CLOUDINARY_CLOUD_NAME = 'dufufat0a';
 const CLOUDINARY_UPLOAD_PRESET = 'fotospadrao';
 
@@ -1021,7 +1052,7 @@ async function uploadImagemCloudinary(file) {
   return data.secure_url;
 }
 
-// Categorias carregadas do backend (fonte única da verdade)
+// Categorias carregadas do backend (fonte unica da verdade)
 window.__categorias = window.__categorias || [];
 let __categoriasPromise = null;
 
@@ -1069,6 +1100,7 @@ document.addEventListener('click', (e) => {
     const form = modal?.querySelector('form');
     resetCrudForm(form, modalId);
     if (modalId === 'addClientModal') configureClientPersonType(form);
+    if (modalId === 'addUserModal') resetUserFormMode(form);
     if (modalId === 'addDishModal') {
       window.__produtoAtivoId = null;
       const secFT = document.getElementById('fichaTecnicaSection');
@@ -1111,7 +1143,7 @@ document.getElementById('addClientForm')?.addEventListener('submit', (e) => {
   const documento = fd.get('cpf') || fd.get('cnpj');
   const endereco = [
     fd.get('address'),
-    fd.get('num') && `NÂº ${fd.get('num')}`,
+    fd.get('num') && `Nº ${fd.get('num')}`,
     fd.get('complemento'),
     fd.get('bairro') && `Bairro ${fd.get('bairro')}`,
     [fd.get('cidade'), fd.get('uf')].filter(Boolean).join(' - '),
@@ -1183,7 +1215,7 @@ document.getElementById('addSupplierForm')?.addEventListener('submit', (e) => {
     .catch((err) => showToast(err.message || 'Erro ao salvar fornecedor.'));
 });
 
-// Add Dish Modal — criar categoria (persiste no banco)
+// Add Dish Modal - criar categoria (persiste no banco)
 document.querySelector('.category-create-button')?.addEventListener('click', async () => {
   const form = document.getElementById('addDishForm');
   const categoryInput = form?.querySelector('[name="newCategory"]');
@@ -1270,7 +1302,7 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
     .catch((error) => {
       console.error('Erro ao salvar prato:', error);
       const msg = error.message || '';
-      // Mensagem amigável quando a categoria (FK) não existe no banco
+      // Mensagem amigavel quando a categoria (FK) nao existe no banco
       if (msg.includes('categoria') || msg.includes('id_categoria') || msg.includes('violates foreign key') || msg.includes('constraint')) {
         showToast('Categoria nao encontrada no banco. Verifique se o schema local foi carregado corretamente.', 'error');
       } else {
@@ -1279,29 +1311,9 @@ document.getElementById('addDishForm')?.addEventListener('submit', async (e) => 
     });
 });
 
-// Add User Modal
-document.getElementById('addUserForm')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  if (!validateForm(e.target)) return;
-  const fd = new FormData(e.target);
-  const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Visualização': 'FUNCIONARIO', 'Cozinha': 'COZINHA' };
-  const payload = {
-    nome: fd.get('name'),
-    cpf: fd.get('cpf'),
-    senha: fd.get('temporaryPassword'),
-    role: accessTypeMap[fd.get('accessType')] || 'FUNCIONARIO'
-  };
-  postJson('/auth/register', payload)
-    .then(() => {
-      showToast('Usuario criado com sucesso!', 'success');
-      closeModal('addUserModal');
-      e.target.reset();
-      carregarUsuarios();
-    })
-    .catch((err) => mostrarErroCpf(e.target, err.message || 'Erro ao criar usuário.'));
-});
+// Add User Modal: o submit (criar e editar) fica em initUserForm(), na secao CONFIG USUARIOS.
 
-// ── PAGAMENTOS ─────────────────────────────────────────────────────
+// -- PAGAMENTOS -------------------------------------------------------
 const PGTO_ICONS = {
   PIX:      'PIX',
   CREDITO:  'Cartao Credito',
@@ -1351,7 +1363,7 @@ async function carregarPagamentos() {
       return d >= iniDate && d <= fimDate;
     }).sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
 
-    // Totais por método
+    // Totais por metodo
     const totais = { PIX: 0, CREDITO: 0, DEBITO: 0, DINHEIRO: 0, outros: 0 };
     const qtds   = { PIX: 0, CREDITO: 0, DEBITO: 0, DINHEIRO: 0 };
 
@@ -1432,7 +1444,7 @@ window.exportarPagamentosCSV = function() {
     return `${p.id},"${data}","${hora}","${orig}","${pgto}","R$ ${val}"`;
   }).join('\n');
 
-  const blob = new Blob(['﻿' + header + rows], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement('a'), { href: url, download: `pagamentos-${new Date().toISOString().slice(0,10)}.csv` });
   document.body.appendChild(a);
@@ -1686,7 +1698,7 @@ function buildTableCard(table) {
   const activeClass = selectedTableId === table.id ? 'active' : '';
   const fmtBRL = v => 'R$ ' + Number(v || 0).toFixed(2).replace('.', ',');
 
-  // Dados operacionais — pedidos ativos para esta mesa
+  // Dados operacionais - pedidos ativos para esta mesa
   const pedidosMesa = admPedidosAtivos.filter(p => p.numeroMesa === table.number);
   const totalMesa   = pedidosMesa.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
   const temPronto   = pedidosMesa.some(p => String(p.status).toUpperCase() === 'PRONTO');
@@ -2152,7 +2164,7 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
 
 // TODO backend: adicionar campo "urgente BOOLEAN DEFAULT FALSE" na tabela pedido
 // e endpoint PUT /pedidos/{id}/urgente para sincronizar entre dispositivos.
-// Por ora a urgência é propagada via localStorage (funciona no mesmo browser).
+// Por ora a urgencia e propagada via localStorage (funciona no mesmo browser).
 window.marcarUrgente = function(pedidoId) {
   const key = 'dataplate:kitchenUrgentOrders';
   let ids = [];
@@ -2454,9 +2466,9 @@ function asciiBytes(value) {
 
 function normalizePdfText(value) {
   return String(value ?? '')
-    .replace(/[""]/g, '"')
-    .replace(/['']/g, "'")
-    .replace(/[--]/g, '-');
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2013\u2014]/g, '-');
 }
 
 function toWinAnsiByte(char) {
@@ -2570,7 +2582,7 @@ function buildSimplePdf(lines) {
 }
 
 function exportReportToPdf(data) {
-  // Usa jsPDF quando disponível (qualidade profissional)
+  // Usa jsPDF quando disponivel (qualidade profissional)
   if (window.jspdf?.jsPDF) {
     exportReportToPdfJsPDF(data);
     return;
@@ -2583,7 +2595,7 @@ function exportReportToPdf(data) {
 function exportReportToPdfJsPDF(data) {
   const { jsPDF } = window.jspdf;
 
-  // Decide orientação conforme qtd de colunas
+  // Decide orientacao conforme qtd de colunas
   const muitasColunas = data.table.headers.length > 5;
   const doc = new jsPDF({ orientation: muitasColunas ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
 
@@ -2594,7 +2606,7 @@ function exportReportToPdfJsPDF(data) {
   const LIGHT   = [241, 245, 249]; // #f1f5f9
   const WHITE   = [255, 255, 255];
 
-  // â"â" Cabeçalho â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+  // -- Cabecalho --------------------------------------------------
   doc.setFillColor(...PRIMARY);
   doc.rect(0, 0, W, 22, 'F');
 
@@ -2608,7 +2620,7 @@ function exportReportToPdfJsPDF(data) {
   doc.setFont('helvetica', 'normal');
   doc.text('Sistema de Gestao Gastronomica', 46, 14);
 
-  // â"â" Título e data â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+  // -- Titulo e data ----------------------------------------------
   doc.setTextColor(...DARK);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
@@ -2621,7 +2633,7 @@ function exportReportToPdfJsPDF(data) {
 
   let y = 50;
 
-  // â"â" Indicadores (stat cards) â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+  // -- Indicadores (stat cards) -----------------------------------
   if (data.summary.length > 0) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
@@ -2659,7 +2671,7 @@ function exportReportToPdfJsPDF(data) {
     y += rows * (cardH + gap) + 8;
   }
 
-  // â"â" Tabela â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+  // -- Tabela -----------------------------------------------------
   if (data.table.headers.length > 0 && data.table.rows.length > 0) {
     doc.autoTable({
       head: [data.table.headers],
@@ -2692,7 +2704,7 @@ function exportReportToPdfJsPDF(data) {
     _adicionarRodapePdf(doc, null, data.title);
   }
 
-  // Rodapé na última página se autoTable não foi chamado
+  // Rodape na ultima pagina se autoTable nao foi chamado
   const pags = doc.internal.getNumberOfPages();
   if (data.table.rows.length === 0) {
     for (let p = 1; p <= pags; p++) {
@@ -2911,13 +2923,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialSection = window.location.hash.slice(1);
   applyAdminSession();
 
-  // Atendente começa direto nas mesas (visão operacional do salão)
+  // Atendente comeca direto nas mesas (visao operacional do salao)
   const _sess = readAdminSession();
   const _defaultSection = (_sess?.userKey === 'atendente' && !initialSection) ? 'mesas' : (initialSection || 'home');
   navigateTo(_defaultSection);
   initAdminHomeSearch();
   initClientForm();
   initCepAutocomplete();
+  initUserForm();
   applyCollapsedGroups();
 
   // Initialize dropdown toggles
@@ -3063,7 +3076,7 @@ function updateDashboardResumo(resumo) {
   setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
   setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
 
-  // Gráficos do dashboard com dados reais
+  // Graficos do dashboard com dados reais
   if (resumo.topProdutos?.length) {
     renderTopDishesChart(resumo.topProdutos);
   }
@@ -3094,7 +3107,7 @@ function updateDashboardMesas(mesas) {
   setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
 }
 
-// ── Grupos colapsáveis do sidebar ─────────────────────────────────
+// -- Grupos colapsaveis do sidebar ------------------------------------
 const SHORTCUT_COLLAPSE_KEY = 'dataplate:shortcut_collapsed';
 
 function getCollapsedGroups() {
@@ -3135,7 +3148,7 @@ function carregarHomeStats() {
       if (el('homeFocusFaturamento'))  el('homeFocusFaturamento').textContent  = formatCurrency(resumo.faturamento);
       if (el('homeFaturamentoDetalhe'))el('homeFaturamentoDetalhe').textContent = `${totalPed} pedido(s) no dia`;
 
-      // Ticket médio
+      // Ticket medio
       if (el('homeTicketMedio'))       el('homeTicketMedio').textContent       = formatCurrency(resumo.ticketMedio);
 
       // Entregues
@@ -3189,10 +3202,10 @@ function carregarRelatorios() {
     })
     .catch((err) => console.error('[relatorios-mesas]', err));
 
-  // Últimos pedidos no dashboard
+  // Ultimos pedidos no dashboard
   carregarUltimosPedidosDashboard();
 
-  // Gráfico de vendas por hora do dashboard
+  // Grafico de vendas por hora do dashboard
   carregarSalesChartDashboard();
 
   // Alerta de estoque baixo
@@ -3224,7 +3237,7 @@ function carregarUltimosPedidosDashboard() {
     });
 }
 
-// â"â" Relatório de Vendas â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+// -- Relatorio de Vendas ----------------------------------------------
 function carregarRelVendas(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   showTableSkeleton('rel-vendas');
@@ -3256,7 +3269,7 @@ function carregarRelVendas(inicio, fim) {
         }
       }
 
-      // Gráfico de vendas
+      // Grafico de vendas
       renderHistoricoVendas(data.historico || []);
       if (data.timeline?.length) renderSalesChart(data.timeline, 'salesChart');
     })
@@ -3286,7 +3299,7 @@ function renderHistoricoVendas(historico) {
   }).join('');
 }
 
-// â"â" Relatório Financeiro â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+// -- Relatorio Financeiro ---------------------------------------------
 function carregarRelFinanceiro(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   getJson(`/relatorios/vendas${params}`)
@@ -3304,14 +3317,14 @@ function carregarRelFinanceiro(inicio, fim) {
       if (tbody) {
         tbody.innerHTML = `
           <tr><td>Receita de pedidos</td><td>${formatCurrency(data.faturamento)}</td><td>100%</td><td>${data.totalPedidos} pedidos</td></tr>
-          <tr><td>Pedidos cancelados</td><td>${data.pedidosCancelados || 0}</td><td>"</td><td>Não geram receita</td></tr>
+          <tr><td>Pedidos cancelados</td><td>${data.pedidosCancelados || 0}</td><td>&mdash;</td><td>Não geram receita</td></tr>
           ${data.custoTotal ? `<tr><td>Custos operacionais</td><td>${formatCurrency(data.custoTotal)}</td><td>${((Number(data.custoTotal)/Number(data.faturamento))*100).toFixed(1)}%</td><td>Calculado via insumos</td></tr>` : `<tr><td>Custos operacionais</td><td colspan="3" style="color:#94a3b8">Vincule insumos aos produtos para calcular custos</td></tr>`}`;
       }
     })
     .catch((err) => console.error('[rel-financeiro]', err));
 }
 
-// â"â" Relatório de Cardápio â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+// -- Relatorio de Cardapio --------------------------------------------
 function carregarRelCardapio(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   showTableSkeleton('rel-cardapio');
@@ -3349,7 +3362,7 @@ function carregarRelCardapio(inicio, fim) {
     });
 }
 
-// â"â" Relatório Operacional â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"â"
+// -- Relatorio Operacional --------------------------------------------
 function carregarRelOperacional(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   getJson(`/relatorios/operacional${params}`)
@@ -3382,14 +3395,14 @@ function getRelDateRange(sectionId) {
   return { inicio: inputs[0]?.value || null, fim: inputs[1]?.value || null };
 }
 
-// Preenche os campos de data com um range padrão (dias atrás até hoje)
-// Só preenche se ainda estiverem vazios (não substitui escolha do usuário)
+// Preenche os campos de data com um range padrao (dias atras ate hoje)
+// So preenche se ainda estiverem vazios (nao substitui escolha do usuario)
 function preencherDatasRelatorio(sectionId, diasAtras) {
   const section = document.getElementById(sectionId);
   if (!section) return;
   const inputs = section.querySelectorAll('input[type="date"]');
   if (!inputs[0] || !inputs[1]) return;
-  if (inputs[0].value && inputs[1].value) return; // já preenchido
+  if (inputs[0].value && inputs[1].value) return; // ja preenchido
 
   const hoje = new Date();
   const inicio = new Date(hoje);
@@ -3404,6 +3417,7 @@ window.__clientes = [];
 window.__funcionarios = [];
 window.__fornecedores = [];
 window.__produtos = [];
+window.__usuarios = [];
 
 const _sectionLoaderNames = {
   clientes: 'carregarClientes',
@@ -3720,7 +3734,7 @@ window.excluirProduto = async function(id) {
 };
 
 // =============================================
-// FICHA TÉCNICA (INSUMOS DO PRODUTO)
+// FICHA TECNICA (INSUMOS DO PRODUTO)
 // =============================================
 
 window.__produtoAtivoId = null;
@@ -3890,7 +3904,7 @@ function carregarPedidos(page = 0) {
     });
 }
 
-// ── Cancelamentos ─────────────────────────────────────────────────
+// -- Cancelamentos ----------------------------------------------------
 let _todosCancelados = [];
 
 function carregarCancelamentos() {
@@ -3985,39 +3999,10 @@ function renderPedidosPaginacao(page, totalPages) {
     section.querySelector('.table-container')?.after(bar);
   }
   bar.innerHTML = `
-    <button class="btn-secondary" style="padding:4px 10px" ${page === 0 ? 'disabled' : ''} onclick="carregarPedidos(${page - 1})"><- Anterior</button>
+    <button class="btn-secondary" style="padding:4px 10px" ${page === 0 ? 'disabled' : ''} onclick="carregarPedidos(${page - 1})">&larr; Anterior</button>
     <span style="color:#64748b">Página ${page + 1} de ${totalPages}</span>
-    <button class="btn-secondary" style="padding:4px 10px" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="carregarPedidos(${page + 1})">Próxima -></button>
+    <button class="btn-secondary" style="padding:4px 10px" ${page >= totalPages - 1 ? 'disabled' : ''} onclick="carregarPedidos(${page + 1})">Próxima &rarr;</button>
   `;
-}
-
-function buildLinhaUsuarioResumo(u) {
-  const roleLabel = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional' };
-  const roleClass = u.role === 'ADMIN' ? 'badge-info' : 'badge-active';
-  return `<tr>
-    <td><strong>${u.nome}</strong></td>
-    <td>${u.cpf || '-'}</td>
-    <td><span class="badge ${roleClass}">${roleLabel[u.role] || u.role || '-'}</span></td>
-    <td>${u.role === 'ADMIN' ? 'Todos' : 'Operações'}</td>
-    <td><span class="badge badge-active">Ativo</span></td>
-    <td>-</td>
-    <td>
-      <button class="btn-icon" title="Editar">&#9998;</button>
-      <button class="btn-icon" title="Permissoes">Perm.</button>
-      <button class="btn-icon" title="Resetar Senha">Senha</button>
-    </td>
-  </tr>`;
-}
-
-function carregarUsuariosResumo() {
-  showTableSkeleton('config-usuarios');
-  getJson('/usuarios')
-    .then(list => setTableBody('config-usuarios', list.map(buildLinhaUsuarioResumo)))
-    .catch((err) => {
-      const msg = err.message || 'Erro ao carregar usuários.';
-      setTableBody('config-usuarios', [], msg);
-      console.error('[usuarios]', err);
-    });
 }
 
 function carregarCozinha() {
@@ -4390,7 +4375,7 @@ function horizontalBarOptions(unitLabel) {
 
 function hasChartLibrary() { return typeof Chart !== 'undefined'; }
 
-// Instâncias dos charts (para destruir antes de recriar)
+// Instancias dos charts (para destruir antes de recriar)
 const _charts = {};
 
 function destroyChart(id) {
@@ -4527,10 +4512,10 @@ function renderProfitChart(faturamento, custo) {
   });
 }
 
-// Inicializa charts vazios - serão preenchidos pelas chamadas de API
+// Inicializa charts vazios - serao preenchidos pelas chamadas de API
 window.addEventListener('load', () => {
   if (!hasChartLibrary()) return;
-  // não renderiza placeholder; aguarda dados reais
+  // nao renderiza placeholder; aguarda dados reais
 });
 
 // =============================================
@@ -4660,22 +4645,31 @@ function carregarConfiguracaoRestaurante() {
 })();
 
 // =============================================
-// CONFIG USUARIOS - CRUD completo
+// CONFIG USUARIOS - CRUD completo (rotas /api/usuarios, somente ADMIN)
 // =============================================
 
+const USER_ROLE_LABEL = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional', COZINHA: 'Cozinha' };
+const USER_ROLE_CLASS = { ADMIN: 'badge-info', FUNCIONARIO: 'badge-active', COZINHA: 'badge-warning' };
+// Texto do <select name="accessType"> -> role do backend
+const USER_ACCESS_TYPE_TO_ROLE = {
+  'Administrador': 'ADMIN',
+  'Gerente': 'ADMIN',
+  'Operacional': 'FUNCIONARIO',
+  'Visualização': 'FUNCIONARIO',
+  'Cozinha': 'COZINHA'
+};
+
 function buildLinhaUsuario(u) {
-  const roleLabel = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional', COZINHA: 'Cozinha' };
-  const roleClass = { ADMIN: 'badge-info', FUNCIONARIO: 'badge-active', COZINHA: 'badge-warning' };
   return `<tr>
     <td><strong>${escapeHtml(u.nome)}</strong></td>
-    <td>${escapeHtml(u.cpf || '-')}</td>
-    <td><span class="badge ${roleClass[u.role] || 'badge-active'}">${roleLabel[u.role] || u.role || '-'}</span></td>
+    <td>${escapeHtml(u.cpf ? formatCpf(u.cpf) : '-')}</td>
+    <td><span class="badge ${USER_ROLE_CLASS[u.role] || 'badge-active'}">${escapeHtml(USER_ROLE_LABEL[u.role] || u.role || '-')}</span></td>
     <td>${u.role === 'ADMIN' ? 'Todos os módulos' : u.role === 'COZINHA' ? 'Cozinha' : 'Operações'}</td>
     <td><span class="badge badge-active">Ativo</span></td>
     <td>-</td>
     <td>
       <button class="btn-icon btn-icon-edit" title="Editar" onclick="editarUsuario(${u.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
-      <button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirUsuario(${u.id}, '${escapeHtml(u.nome)}')"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
+      <button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirUsuario(${u.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
   </tr>`;
 }
@@ -4683,7 +4677,10 @@ function buildLinhaUsuario(u) {
 function carregarUsuarios() {
   showTableSkeleton('config-usuarios');
   getJson('/usuarios')
-    .then((list) => setTableBody('config-usuarios', (list || []).map(buildLinhaUsuario)))
+    .then((list) => {
+      window.__usuarios = list || [];
+      setTableBody('config-usuarios', window.__usuarios.map(buildLinhaUsuario));
+    })
     .catch((err) => {
       const msg = err.message || 'Erro ao carregar usuários.';
       setTableBody('config-usuarios', [], msg);
@@ -4693,88 +4690,121 @@ function carregarUsuarios() {
 
 window.__usuarioEditando = null;
 
+// Volta o formulario para o modo "Novo Usuario"
+function resetUserFormMode(form) {
+  if (!form) return;
+  window.__usuarioEditando = null;
+
+  const idField = form.querySelector('[name="id"]');
+  if (idField) idField.value = '';
+
+  const pwField = form.querySelector('[name="temporaryPassword"]');
+  if (pwField) {
+    pwField.disabled = false;
+    pwField.required = true;
+    pwField.placeholder = pwField.dataset.originalPlaceholder || 'Senha temporária';
+  }
+
+  const header = document.querySelector('#addUserModal .modal-header');
+  if (header) header.textContent = 'Novo Usuário';
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.textContent = 'Cadastrar';
+}
+
 window.editarUsuario = function(id) {
-  getJson('/usuarios')
-    .then((list) => {
-      const u = (list || []).find((item) => item.id === id);
-      if (!u) return;
-      window.__usuarioEditando = u;
-      const form = document.getElementById('addUserForm');
-      if (!form) return;
-      form.querySelector('[name="id"]')?.setAttribute('value', u.id);
-      form.querySelector('[name="name"]').value = u.nome || '';
-      form.querySelector('[name="cpf"]').value = u.cpf || '';
-      const accessTypeMap = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional', COZINHA: 'Cozinha' };
-      const sel = form.querySelector('[name="accessType"]');
-      if (sel) sel.value = accessTypeMap[u.role] || 'Operacional';
-      const pwField = form.querySelector('[name="temporaryPassword"]');
-      if (pwField) { pwField.required = false; pwField.placeholder = 'Deixe em branco para manter'; }
-      const header = document.querySelector('#addUserModal .modal-header');
-      if (header) header.textContent = 'Editar Usuário';
-      const submit = form.querySelector('button[type="submit"]');
-      if (submit) submit.textContent = 'Atualizar';
-      window.openModal('addUserModal');
-    })
-    .catch((err) => showToast(err.message || 'Erro ao carregar usuário.'));
+  const u = (window.__usuarios || []).find((item) => item.id === id);
+  const form = document.getElementById('addUserForm');
+  if (!u || !form) {
+    showToast('Usuário não encontrado. Atualize a lista e tente novamente.');
+    return;
+  }
+
+  form.reset();
+  window.__usuarioEditando = u;
+
+  const idField = form.querySelector('[name="id"]');
+  if (idField) idField.value = u.id;
+  form.querySelector('[name="name"]').value = u.nome || '';
+  form.querySelector('[name="cpf"]').value = formatCpf(u.cpf || '');
+
+  const sel = form.querySelector('[name="accessType"]');
+  if (sel) sel.value = USER_ROLE_LABEL[u.role] || 'Operacional';
+
+  // A senha nao e alterada por este formulario
+  const pwField = form.querySelector('[name="temporaryPassword"]');
+  if (pwField) {
+    if (!pwField.dataset.originalPlaceholder) pwField.dataset.originalPlaceholder = pwField.placeholder;
+    pwField.required = false;
+    pwField.disabled = true;
+    pwField.placeholder = 'Não alterada na edição';
+  }
+
+  const header = document.querySelector('#addUserModal .modal-header');
+  if (header) header.textContent = 'Editar Usuário';
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) submit.textContent = 'Atualizar';
+  window.openModal('addUserModal');
 };
 
-window.excluirUsuario = async function(id, nome) {
-  const ok = await showConfirmModal('Excluir usuário?', `Deseja excluir o usuário <strong>${nome}</strong>?`);
+window.excluirUsuario = async function(id) {
+  const u = (window.__usuarios || []).find((item) => item.id === id);
+  const nome = u?.nome || 'este usuário';
+  const ok = await showConfirmModal('Excluir usuário?', `Deseja excluir o usuário <strong>${escapeHtml(nome)}</strong>?`);
   if (!ok) return;
   deleteJson(`/usuarios/${id}`)
     .then(() => { showToast('Usuário excluído.', 'success'); carregarUsuarios(); })
     .catch((err) => showToast(err.message || 'Erro ao excluir usuário.'));
 };
 
-// Sobrescreve o submit do addUserForm para suportar edição
-(function patchUserForm() {
-  document.addEventListener('DOMContentLoaded', () => {
-    const originalHandler = document.getElementById('addUserForm')?._submitHandler;
-    const form = document.getElementById('addUserForm');
-    if (!form) return;
+// Submit unico do formulario de usuario: cria (POST /usuarios) ou edita (PUT /usuarios/{id})
+function initUserForm() {
+  const form = document.getElementById('addUserForm');
+  if (!form) return;
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      if (!validateForm(e.target)) return;
+  const pwField = form.querySelector('[name="temporaryPassword"]');
+  if (pwField) {
+    pwField.dataset.originalPlaceholder = pwField.placeholder;
+    pwField.minLength = 8;
+    pwField.maxLength = 64;
+    pwField.title = 'A senha deve ter de 8 a 64 caracteres.';
+  }
 
-      const fd = new FormData(form);
-      const idField = form.querySelector('[name="id"]');
-      const editingId = idField?.value ? Number(idField.value) : null;
-      const accessTypeMap = { 'Administrador': 'ADMIN', 'Gerente': 'ADMIN', 'Operacional': 'FUNCIONARIO', 'Cozinha': 'COZINHA', 'Visualização': 'FUNCIONARIO' };
-      const role = accessTypeMap[fd.get('accessType')] || 'FUNCIONARIO';
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!validateForm(form)) return;
 
-      if (editingId) {
-        // PUT - editar
-        const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), role };
-        putJson(`/usuarios/${editingId}`, payload)
-          .then(() => {
-            showToast('Usuário atualizado!', 'success');
-            closeModal('addUserModal');
-            form.reset();
-            if (idField) idField.value = '';
-            window.__usuarioEditando = null;
-            const pwField = form.querySelector('[name="temporaryPassword"]');
-            if (pwField) { pwField.required = true; pwField.placeholder = 'Senha temporária'; }
-            const header = document.querySelector('#addUserModal .modal-header');
-            if (header) header.textContent = 'Novo Usuário';
-            const submit = form.querySelector('button[type="submit"]');
-            if (submit) submit.textContent = 'Cadastrar';
-            carregarUsuarios();
-          })
-          .catch((err) => showToast(err.message || 'Erro ao atualizar usuário.'));
-      } else {
-        // POST - criar
-        const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), senha: fd.get('temporaryPassword'), role };
-        postJson('/auth/register', payload)
-          .then(() => {
-            showToast('Usuário criado!', 'success');
-            closeModal('addUserModal');
-            form.reset();
-            carregarUsuarios();
-          })
-          .catch((err) => showToast(err.message || 'Erro ao criar usuário.'));
-      }
-    }, true); // captura antes do handler original
+    const fd = new FormData(form);
+    const role = USER_ACCESS_TYPE_TO_ROLE[fd.get('accessType')] || 'FUNCIONARIO';
+    const editingId = window.__usuarioEditando?.id ?? null;
+
+    if (editingId) {
+      const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), role };
+      putJson(`/usuarios/${editingId}`, payload)
+        .then(() => {
+          showToast('Usuário atualizado!', 'success');
+          closeModal('addUserModal');
+          form.reset();
+          resetUserFormMode(form);
+          carregarUsuarios();
+        })
+        .catch((err) => mostrarErroCpf(form, err.message || 'Erro ao atualizar usuário.'));
+      return;
+    }
+
+    const payload = {
+      nome: fd.get('name'),
+      cpf: fd.get('cpf'),
+      senha: fd.get('temporaryPassword'),
+      role
+    };
+    postJson('/usuarios', payload)
+      .then(() => {
+        showToast('Usuário criado com sucesso!', 'success');
+        closeModal('addUserModal');
+        form.reset();
+        resetUserFormMode(form);
+        carregarUsuarios();
+      })
+      .catch((err) => mostrarErroCpf(form, err.message || 'Erro ao criar usuário.'));
   });
-})();
+}

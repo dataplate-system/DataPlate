@@ -24,14 +24,16 @@ class PedidoStatusNome(StrEnum):
     CANCELADO = "CANCELADO"
 
 
+# app/models.py (trecho)
 class User(Base):
     __tablename__ = "usuarios"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    nome: Mapped[str] = mapped_column(String, nullable=False)
-    cpf: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    senha: Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[Role] = mapped_column(Enum(Role, native_enum=False), nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nome: Mapped[str] = mapped_column(String(120))
+    cpf: Mapped[str] = mapped_column(String(11), unique=True, index=True)
+    senha_hash: Mapped[str] = mapped_column("senha", String(255))
+    role: Mapped[str] = mapped_column(String(30))
+    ativo: Mapped[bool] = mapped_column(default=True)
 
 
 class Restaurante(Base):

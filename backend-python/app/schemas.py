@@ -1,9 +1,11 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import PedidoStatusNome, Role
+from enum import Enum
+
 
 
 class AuthLoginRequest(BaseModel):
@@ -382,3 +384,33 @@ class RelatorioOperacionalResponse(BaseModel):
     ticketMedio: float
     faturamento: float
     tempoMedioPreparoMin: float
+
+class Role(str, Enum):
+    GERENTE = "GERENTE"
+    ATENDENTE = "ATENDENTE"
+    CAIXA = "CAIXA"
+    COZINHA = "COZINHA"
+
+
+def _validar_cpf(valor: str) -> str:
+    cpf = "".join(c for c in valor if c.isdigit())
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        raise ValueError("CPF invalido")
+    for i in (9, 10):
+        soma = sum(int(cpf[j]) * (i + 1 - j) for j in range(i))
+        digito = (soma * 10 % 11) % 10
+        if digito != int(cpf[i]):
+            raise ValueError("CPF invalido")
+    return cpf
+
+
+class UserCreateRequest(BaseModel):
+    nome: str = Field(min_length=2, max_length=120)
+    cpf: str
+    senha: str = Field(min_length=8, max_length=72)  # limite do bcrypt
+    role: Role
+
+    @field_validator("cpf")
+    @classmethod
+    def cpf_valido(cls, v: str) -> str:
+        return _validar_cpf(v)

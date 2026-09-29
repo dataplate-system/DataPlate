@@ -10,7 +10,7 @@ from app.security import create_access_token, create_refresh_token, decode_refre
 
 def login(db: Session, request: AuthLoginRequest) -> AuthResponse:
     user = _get_user_by_cpf(db, request.cpf)
-    if user is None or not verify_password(request.senha, user.senha):
+    if user is None or not user.ativo or not verify_password(request.senha, user.senha_hash):
         raise _bad_credentials("CPF ou senha invalidos")
     return _to_auth_response(user)
 
@@ -22,7 +22,7 @@ def refresh(db: Session, request: AuthRefreshRequest) -> AuthResponse:
         raise _bad_credentials("Refresh token invalido") from None
 
     user = _get_user_by_cpf(db, cpf)
-    if user is None:
+    if user is None or not user.ativo:
         raise _bad_credentials("Refresh token invalido")
 
     return _to_auth_response(user)
@@ -30,12 +30,12 @@ def refresh(db: Session, request: AuthRefreshRequest) -> AuthResponse:
 
 def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     nome = request.nome.strip()
-    cpf = request.cpf.strip()
+    cpf = _only_digits(request.cpf)
 
     if not nome:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome obrigatorio")
-    if not cpf:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="CPF obrigatorio")
+    if len(cpf) != 11:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="CPF invalido")
     if _get_user_by_cpf(db, cpf) is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"CPF ja cadastrado: {cpf}")
 
@@ -56,8 +56,13 @@ def reset_password(db: Session, request: AuthPasswordResetRequest) -> None:
     db.commit()
 
 
+def _only_digits(value: str) -> str:
+    return "".join(c for c in (value or "") if c.isdigit())
+
+
 def _get_user_by_cpf(db: Session, cpf: str) -> User | None:
-    return db.scalar(select(User).where(User.cpf == cpf))
+    # O banco guarda o CPF so com digitos; aceita entrada com ou sem mascara.
+    return db.scalar(select(User).where(User.cpf == _only_digits(cpf)))
 
 
 def _to_auth_response(user: User) -> AuthResponse:

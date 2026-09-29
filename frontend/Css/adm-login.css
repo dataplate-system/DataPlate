@@ -23,11 +23,13 @@ body {
   background:
     linear-gradient(180deg, #ffffff 0%, var(--color-bg) 100%);
   color: var(--color-text);
+  display: flex;
 }
 
 .login-shell {
   min-height: 100vh;
-  display: grid;
+  display: flex;
+  justify-content: flex-end;
   grid-template-columns: minmax(380px, 0.92fr) minmax(420px, 1.08fr);
   gap: 0;
 }
@@ -82,6 +84,16 @@ body {
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.34);
   backdrop-filter: blur(12px);
+}
+
+.login-logo {
+  display: block;
+  width: 200px;
+  margin-left: auto;
+  margin-right: 10px;
+  position: relative;
+  top: -20px;
+  z-index: 2;
 }
 
 .preview-header {
@@ -209,12 +221,13 @@ body {
 }
 
 .login-card {
-  width: min(100%, 470px);
-  padding: 32px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-white);
-  box-shadow: var(--shadow-card);
+    width: min(100%, 470px);
+    padding: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-white);
+    box-shadow: var(--shadow-card);
+    margin-left: auto;
 }
 
 .login-card-header {

@@ -949,9 +949,15 @@ table tbody tr:hover {
   content: "DataPlate";
   display: block;
   margin-bottom: 24px;
-  color: var(--ds-text);
-  font-size: 18px;
+  color: #F44101;
+
+  font-size: 30px;
   font-weight: 700;
+
+  position: relative;
+  top: 70px;
+
+  text-shadow: 0 2px 5px rgba(2, 6, 23, 0.25);
 }
 
 .demo-users {
