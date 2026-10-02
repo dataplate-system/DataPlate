@@ -4703,7 +4703,10 @@ function resetUserFormMode(form) {
     pwField.disabled = false;
     pwField.required = true;
     pwField.placeholder = pwField.dataset.originalPlaceholder || 'Senha temporária';
+    pwField.value = '';
   }
+  const passwordHint = document.getElementById('userPasswordHint');
+  if (passwordHint) passwordHint.textContent = '';
 
   const header = document.querySelector('#addUserModal .modal-header');
   if (header) header.textContent = 'Novo Usuário';
@@ -4730,14 +4733,15 @@ window.editarUsuario = function(id) {
   const sel = form.querySelector('[name="accessType"]');
   if (sel) sel.value = USER_ROLE_LABEL[u.role] || 'Operacional';
 
-  // A senha nao e alterada por este formulario
   const pwField = form.querySelector('[name="temporaryPassword"]');
   if (pwField) {
     if (!pwField.dataset.originalPlaceholder) pwField.dataset.originalPlaceholder = pwField.placeholder;
     pwField.required = false;
-    pwField.disabled = true;
-    pwField.placeholder = 'Não alterada na edição';
+    pwField.disabled = false;
+    pwField.placeholder = 'Deixe em branco para manter';
   }
+  const passwordHint = document.getElementById('userPasswordHint');
+  if (passwordHint) passwordHint.textContent = '(opcional; mínimo de 8 caracteres)';
 
   const header = document.querySelector('#addUserModal .modal-header');
   if (header) header.textContent = 'Editar Usuário';
@@ -4779,6 +4783,8 @@ function initUserForm() {
 
     if (editingId) {
       const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), role };
+      const newPassword = String(fd.get('temporaryPassword') || '');
+      if (newPassword) payload.senha = newPassword;
       putJson(`/usuarios/${editingId}`, payload)
         .then(() => {
           showToast('Usuário atualizado!', 'success');

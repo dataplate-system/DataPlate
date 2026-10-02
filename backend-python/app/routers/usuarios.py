@@ -30,7 +30,7 @@ def criar_usuario(request: UserCreateRequest, db: Session = Depends(get_db)) -> 
     usuario = User(
         nome=request.nome,
         cpf=request.cpf,
-        senha=hash_password(request.senha),
+        senha_hash=hash_password(request.senha),
         role=request.role.value,
     )
     db.add(usuario)
@@ -60,6 +60,8 @@ def atualizar_usuario(
     usuario.nome = request.nome
     usuario.cpf = request.cpf
     usuario.role = request.role.value if hasattr(request.role, "value") else request.role
+    if request.senha is not None:
+        usuario.senha_hash = hash_password(request.senha)
     db.add(usuario)
     try:
         db.commit()

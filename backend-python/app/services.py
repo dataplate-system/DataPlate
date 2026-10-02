@@ -39,7 +39,7 @@ def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     if _get_user_by_cpf(db, cpf) is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"CPF ja cadastrado: {cpf}")
 
-    user = User(nome=nome, cpf=cpf, senha=hash_password(request.senha), role=request.role)
+    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -51,7 +51,7 @@ def reset_password(db: Session, request: AuthPasswordResetRequest) -> None:
     if user is None:
         raise _bad_credentials("CPF nao encontrado")
 
-    user.senha = hash_password(request.novaSenha)
+    user.senha_hash = hash_password(request.novaSenha)
     db.add(user)
     db.commit()
 

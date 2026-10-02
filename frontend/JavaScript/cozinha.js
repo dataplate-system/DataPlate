@@ -22,7 +22,7 @@ const KITCHEN_CHECKLIST_KEY = 'dataplate:kitchenChecklist';
 
 const STATUS_META = {
   RECEBIDO: {
-    label: 'Recebido',
+    label: 'Novo pedido',
     badgeClass: 'status-recebido',
     listId: 'listRecebido',
     countId: 'countRecebido',
@@ -47,9 +47,18 @@ const STATUS_META = {
     listId: 'listPronto',
     countId: 'countPronto',
     statId: 'statPronto',
+    nextStatus: 'ENTREGUE',
+    actionLabel: 'Finalizar pedido',
+    actionClass: 'deliver'
+  },
+  ENTREGUE: {
+    label: 'Finalizado',
+    badgeClass: 'status-finalizado',
+    listId: 'listFinalizados',
+    countId: 'countFinalizados',
     nextStatus: null,
     actionLabel: null,
-    actionClass: 'deliver'
+    actionClass: ''
   }
 };
 
@@ -106,6 +115,7 @@ let fallbackMode = false;
 let fallbackNoticeShown = false;
 let urgentOrderIds = new Set();
 let checklistState = {};
+const updatingOrderIds = new Set();
 
 function readSession() {
   try {
@@ -409,6 +419,7 @@ function updateClock() {
 function getAction(order) {
   const meta = STATUS_META[order.status];
   if (!meta?.nextStatus) return '';
+  const isUpdating = updatingOrderIds.has(orderKey(order.id));
   return `
     <button
       class="action-button ${meta.actionClass}"
@@ -416,8 +427,9 @@ function getAction(order) {
       data-order-action
       data-order-id="${order.id}"
       data-next-status="${meta.nextStatus}"
+      ${isUpdating ? 'disabled aria-busy="true"' : ''}
     >
-      ${meta.actionLabel}
+      ${isUpdating ? 'Atualizando...' : meta.actionLabel}
     </button>
   `;
 }
@@ -450,6 +462,7 @@ function buildCard(order) {
       <div class="card-main">
         <div class="card-topline">
           <strong>Pedido #${escapeHtml(order.id)} - ${escapeHtml(origemPedido(order))}</strong>
+          <span class="status-badge ${meta.badgeClass || ''}">${escapeHtml(meta.label || order.status)}</span>
           <span class="time-chip sla-${sla.level}">${formatElapsed(order.dataHora)}</span>
         </div>
         <div class="card-items">
@@ -573,8 +586,17 @@ function renderColumns(filteredOrders) {
     document.getElementById('listCancelados')
       ?.closest('.kitchen-column');
 
+  const finalizadosColumn =
+    document.getElementById('listFinalizados')
+      ?.closest('.kitchen-column');
+
   if (canceladosColumn) {
     canceladosColumn.style.display =
+      selectedStatus ? 'none' : '';
+  }
+
+  if (finalizadosColumn) {
+    finalizadosColumn.style.display =
       selectedStatus ? 'none' : '';
   }
 }
@@ -646,6 +668,21 @@ function renderCancelados() {
   }
 }
 
+function renderFinalizados() {
+  const finalizados = kitchenOrders
+    .filter((order) => order.status === 'ENTREGUE')
+    .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
+
+  const countEl = document.getElementById('countFinalizados');
+  const listEl = document.getElementById('listFinalizados');
+  if (countEl) countEl.textContent = String(finalizados.length);
+  if (listEl) {
+    listEl.innerHTML = finalizados.length
+      ? finalizados.map(buildCard).join('')
+      : '<div class="empty-state">Nenhum pedido finalizado</div>';
+  }
+}
+
 function renderKitchen() {
   const activeOrders = kitchenOrders.filter((order) =>
     ACTIVE_STATUSES.includes(order.status)
@@ -673,6 +710,7 @@ function renderKitchen() {
 
   renderNextOrder(filteredOrders);
   renderColumns(filteredOrders);
+  renderFinalizados();
   renderCancelados();
   renderTable(filteredOrders);
 }
@@ -709,8 +747,10 @@ async function loadOrders({ silent = false } = {}) {
 async function changeOrderStatus(orderId, nextStatus) {
   const id = Number(orderId);
   const order = kitchenOrders.find((item) => Number(item.id) === id);
-  if (!order) return;
+  if (!order || updatingOrderIds.has(orderKey(id))) return;
 
+  updatingOrderIds.add(orderKey(id));
+  renderKitchen();
   try {
     if (!fallbackMode) await putJson(`/pedidos/${id}/status`, { status: nextStatus });
 
@@ -728,6 +768,9 @@ async function changeOrderStatus(orderId, nextStatus) {
   } catch (error) {
     console.error('[cozinha-status]', error);
     showToast(error.message || 'Não foi possível atualizar o pedido.');
+  } finally {
+    updatingOrderIds.delete(orderKey(id));
+    renderKitchen();
   }
 }
 
