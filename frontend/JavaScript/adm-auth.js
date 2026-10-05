@@ -9,7 +9,7 @@
     gerente: {
       name: 'Gerente Principal',
       initials: 'GP',
-      cpf: '000.000.000-00',
+      cpf: '000.000.000-01',
       password: 'admin123',
       role: 'Administrador',
       userKey: 'gerente',
@@ -18,8 +18,8 @@
     atendente: {
       name: 'Atendente',
       initials: 'AT',
-      cpf: '111.111.111-11',
-      password: 'atendente123',
+      cpf: '000.000.000-02',
+      password: 'admin123',
       role: 'Operacional',
       userKey: 'atendente',
       recoveryContact: 'SMS final 1111'
@@ -27,8 +27,8 @@
     cozinha: {
       name: 'Cozinha',
       initials: 'CZ',
-      cpf: '222.222.222-22',
-      password: 'cozinha123',
+      cpf: '000.000.000-03',
+      password: 'admin123',
       role: 'Pedidos e preparo',
       userKey: 'cozinha',
       recoveryContact: 'SMS final 2222'
@@ -36,8 +36,8 @@
     caixa: {
       name: 'Caixa',
       initials: 'CX',
-      cpf: '333.333.333-33',
-      password: 'caixa123',
+      cpf: '000.000.000-04',
+      password: 'admin123',
       role: 'PDV e vendas',
       userKey: 'caixa',
       recoveryContact: 'SMS final 3333'

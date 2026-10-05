@@ -13,6 +13,7 @@ class Role(StrEnum):
     ADMIN = "ADMIN"
     COZINHA = "COZINHA"
     FUNCIONARIO = "FUNCIONARIO"
+    CAIXA = "CAIXA"
 
 
 class PedidoStatusNome(StrEnum):

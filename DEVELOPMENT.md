@@ -126,7 +126,23 @@ docker compose -f backend-python\docker-compose.yml up -d --build
 - Refresh: `POST /api/auth/refresh`
 - Reset de senha: `POST /api/auth/reset-password`
 - Header padrao: `Authorization: Bearer <token>`
-- Roles: `ADMIN`, `COZINHA`, `FUNCIONARIO`
+- Roles: `ADMIN`, `COZINHA`, `FUNCIONARIO`, `CAIXA`
+
+O Docker local cria automaticamente estes acessos de teste, todos com senha `admin123`:
+
+| Perfil | CPF | Tela inicial |
+|---|---|---|
+| Gerente / Administrador | `000.000.000-01` | `adm.html` |
+| Atendente | `000.000.000-02` | `atendente.html` |
+| Cozinha | `000.000.000-03` | `cozinha.html` |
+| Caixa | `000.000.000-04` | `pdv.html` |
+
+Esses CPFs simplificados sao exclusivos dos acessos de teste; o cadastro normal continua validando CPF.
+O administrador padrao `000.000.001-91` e os usuarios existentes continuam disponiveis.
+O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados.
+`DEFAULT_TEST_USERS_ENABLED=true` habilita esses quatro acessos (configurado no Docker local).
+Fora do Docker local, esse seed de teste fica desligado por padrao.
+`DEFAULT_ADMIN_ENABLED=false` desliga toda a criacao automatica de acessos.
 
 ## WebSocket
 
