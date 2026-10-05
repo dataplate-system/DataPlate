@@ -1,0 +1,139 @@
+﻿/* Ajustes compartilhados: preservar o conteudo e limitar a rolagem às listas. */
+:root {
+  --mesa-livre: #15803d;
+  --mesa-reservada: #a16207;
+  --mesa-ocupada: #1d4ed8;
+  --mesa-pagamento: #7e22ce;
+  --mesa-manutencao: #b91c1c;
+}
+.table-card.status-disponivel, .mesa-card.status-livre { --mesa-cor: var(--mesa-livre); --mesa-fundo: #f0fdf4; }
+.table-card.status-reservada, .mesa-card.status-reservada { --mesa-cor: var(--mesa-reservada); --mesa-fundo: #fffbeb; }
+.table-card.status-ocupada, .mesa-card.status-ocupada { --mesa-cor: var(--mesa-ocupada); --mesa-fundo: #eff6ff; }
+.table-card.status-aguardando, .mesa-card.status-aguardando_pagamento { --mesa-cor: var(--mesa-pagamento); --mesa-fundo: #faf5ff; }
+.table-card.status-manutencao, .mesa-card.status-manutencao { --mesa-cor: var(--mesa-manutencao); --mesa-fundo: #fef2f2; }
+.table-card[class*="status-"], .mesa-card[class*="status-"] {
+  border-left: 5px solid var(--mesa-cor) !important;
+  background: var(--mesa-fundo) !important;
+}
+.table-card .table-status-badge, .mesa-card .mesa-top > .badge {
+  background: var(--mesa-fundo) !important;
+  color: var(--mesa-cor) !important;
+  border: 1px solid var(--mesa-cor) !important;
+  white-space: normal !important;
+  line-height: 1.4;
+}
+.table-card.active { outline: 2px solid var(--mesa-cor); outline-offset: 2px; }
+.legend-available { background: var(--mesa-livre) !important; }
+.legend-reserved { background: var(--mesa-reservada) !important; }
+.legend-occupied { background: var(--mesa-ocupada) !important; }
+.legend-awaiting-payment { background: var(--mesa-pagamento) !important; }
+.legend-maintenance { background: var(--mesa-manutencao) !important; }
+.table-control-layout { grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); }
+.table-control-layout > *, .stats-grid > *, .content-section, .pdv-left, .pdv-right { min-width: 0; }
+.tables-map { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.table-card-detail { flex-wrap: wrap; }
+.table-card-meta, .mesa-meta { overflow-wrap: anywhere; }
+.table-card:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #2563eb !important;
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .table-control-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .admin-container { height: auto; overflow: visible; }
+  .admin-header, .kitchen-header, .atendente-header, .pdv-topbar { position: relative; height: auto !important; }
+  .main-content, .admin-home-active .main-content { overflow: visible !important; }
+  .contentcenter, .admin-home-active .contentcenter { height: auto !important; min-height: 0; padding: 16px 12px !important; }
+  .header-right, .header-actions, .pdv-topbar-right { flex-wrap: wrap; min-width: 0; }
+  .module-nav { flex: 1 1 100% !important; max-width: 100%; }
+  .admin-section-nav { overflow: visible !important; flex-wrap: wrap; gap: 4px !important; }
+  .admin-section-nav .nav-item { position: static; }
+  .admin-section-nav .dropdown-menu { left: 12px; right: 12px; top: auto; min-width: 0; max-height: 60vh; overflow-y: auto; }
+  .header-session-info, .session-summary, .pdv-session-info { flex: 1 1 120px; min-width: 0; }
+  .header-session-info strong, .session-summary strong { overflow-wrap: anywhere; }
+  .global-search, .global-search input { min-width: 0 !important; width: 100% !important; }
+  .table-container, .table-shell { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+  .pdv-layout { grid-template-columns: minmax(0, 1fr) !important; height: auto !important; overflow: visible; }
+  body:has(.pdv-layout) { height: auto; overflow: auto; }
+  .pdv-left, .pdv-right, .produtos-grid, .order-items { height: auto !important; overflow: visible; }
+  .pdv-right { position: static; }
+  .modal-content, .pgto-modal-box { max-width: calc(100vw - 24px) !important; max-height: 90dvh !important; overflow-y: auto; }
+}
+@media (max-width: 600px) {
+  h1, .section-header h1, .kitchen-hero h1, .atendente-hero h1, .focus-header h1 { font-size: 24px !important; overflow-wrap: anywhere; }
+  .stats-grid, .table-stats-grid, .dashboard-stats-grid, .mesa-status-summary { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+  .stat-card { padding: 12px !important; min-height: 100px !important; }
+  .stat-card strong, .stat-value { font-size: 26px !important; }
+  .table-control-layout, .tables-map, .mesas-grid, .kitchen-board, .dashboard-grid, .report-grid, .config-grid, .form-grid, .form-row { grid-template-columns: minmax(0, 1fr) !important; }
+  .section-toolbar, .toolbar-filters, .kitchen-controls { display: flex !important; flex-direction: column; align-items: stretch; }
+  .section-toolbar > *, .toolbar-filters > *, .control-field, #tableSearch { width: 100% !important; min-width: 0 !important; }
+  .panel-heading, .section-header { flex-wrap: wrap; }
+  .panel-heading span { overflow-wrap: anywhere; }
+  .kitchen-hero, .atendente-hero, .dashboard-focus { padding: 16px !important; }
+  .table-card-actions, .modal-footer, .pgto-modal-actions { flex-wrap: wrap; }
+  .table-card-actions button, .modal-footer button { flex: 1 1 100px; }
+  input, select, textarea { font-size: 16px !important; max-width: 100%; }
+  button, .module-nav > a { min-height: 44px !important; }
+  .login-card, .login-preview { min-width: 0; max-width: 100%; padding: 20px !important; }
+  .login-shell { padding: 16px !important; }
+  .produtos-toolbar { flex-wrap: wrap; }
+  .produtos-toolbar .search-wrap { width: 100%; }
+  .categorias-bar { max-width: 100%; min-width: 0; }
+  .produtos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .pgto-modal-opcoes { grid-template-columns: minmax(0, 1fr); }
+  .lista-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+@media (max-width: 600px) {
+  #codigoInput { min-width: 0; width: 100%; }
+  .codigo-wrap { min-width: 0; }
+  #telaLista .layout-menu { display: block; }
+  #telaLista .sidebar {
+    position: relative; width: 100% !important; min-width: 0 !important;
+    height: auto; padding: 12px !important; border-right: 0 !important;
+    border-bottom: 1px solid var(--ds-border); display: block;
+  }
+  #telaLista .client-app-brand { justify-content: flex-start; padding-right: 52px; }
+  #telaLista .sidebar .logo-sidebar, #telaLista .sidebar h2 { display: none; }
+  #telaLista .menu-categorias { display: flex; gap: 8px; overflow-x: auto; margin: 12px 0 0; padding: 4px 0; }
+  #telaLista .menu-categorias button { width: auto !important; min-width: max-content !important; flex: 0 0 auto; margin: 0; padding: 8px 14px; }
+  #telaLista .conteudo { margin-left: 0 !important; width: 100% !important; }
+  #telaLista .lista-grid { padding: 12px; gap: 12px; }
+  #telaLista .lista-grid .item { margin: 0; width: 100%; }
+  .mesa-top { flex-wrap: wrap; gap: 8px; }
+  .mesa-summary-card { flex-wrap: wrap; }
+}
+.table-responsive { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+@media (max-width: 900px) {
+  .dashboard-layout, .dashboard-layout-wide { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-panel, .dashboard-chart-frame { min-width: 0; }
+}
+@media (max-width: 600px) {
+  #addClientForm .client-form-row-3, #addSupplierForm .supplier-form-row-3 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .admin-header { flex-direction: row !important; }
+  .admin-header .header-left { width: auto; margin: 0; }
+  .admin-header .logo-text { display: block; }
+  .module-nav { display: flex !important; }
+  .admin-section-nav { display: flex !important; }
+  #mesasProntosBanner { flex-wrap: wrap; gap: 12px !important; }
+  #mesasProntosBanner > div { min-width: 0; }
+  #mesasProntosLista { display: flex; flex-wrap: wrap; gap: 8px; }
+  #mesasProntosLista > span { display: flex; flex: 1 1 180px; align-items: center; justify-content: space-between; gap: 8px; margin: 0 !important; padding: 8px; background: white; border-radius: 6px; }
+  .dashboard-chart-frame canvas { max-width: 100%; }
+}
+@media (max-width: 600px) {
+  #telaLista .menu-categorias { flex-direction: row !important; }
+  #telaLista .client-app-brand { display: flex; align-items: center; gap: 10px; }
+  #telaLista .client-app-brand img { width: 36px; height: 36px; object-fit: contain; }
+  #telaLista .client-app-brand strong, #telaLista .client-app-brand small { display: block; }
+}
+@media (max-width: 900px) {
+  .admin-section-nav .nav-button { height: 44px; padding: 0 10px !important; }
+  .admin-section-nav { justify-content: flex-start; padding-bottom: 0; }
+  .header-breadcrumb { flex: 1 1 100%; }
+}
+#mesas .table-stats-grid .stat-card:nth-child(2) { border-top-color: var(--mesa-livre) !important; }
+#mesas .table-stats-grid .stat-card:nth-child(3) { border-top-color: var(--mesa-reservada) !important; }
+#mesas .table-stats-grid .stat-card:nth-child(4) { border-top-color: #64748b !important; }

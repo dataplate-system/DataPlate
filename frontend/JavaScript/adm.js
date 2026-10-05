@@ -1711,7 +1711,7 @@ function buildTableCard(table) {
     : `<span>${table.status === 'reservada' ? escapeHtml(table.reservationName || 'Reserva sem nome') : 'Sem pedidos ativos'}</span>`;
 
   return `
-    <article class="table-card ${meta.cardClass} ${activeClass}" onclick="selectTable(${table.id})" aria-label="Mesa ${escapeHtml(table.number)}, ${meta.label}">
+    <article class="table-card ${meta.cardClass} ${activeClass}" tabindex="0" onkeydown="if(event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectTable(${table.id}); }" onclick="selectTable(${table.id})" aria-label="Mesa ${escapeHtml(table.number)}, ${meta.label}">
       <div class="table-card-header">
         <div class="table-card-number">Mesa ${escapeHtml(table.number)}</div>
         ${buildStatusBadge(table.status)}
