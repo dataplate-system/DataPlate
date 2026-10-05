@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
+from app.security import exigir_admin
 from app.db import get_db
 from app.models import User
 from app.schemas import UserCreateRequest, UserResponse, UserUpdateRequest
@@ -17,13 +17,13 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[UserResponse])
-def listar_usuarios(db: Session = Depends(get_db)) -> list[UserResponse]:
+def listar_usuarios(db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> list[UserResponse]:
     usuarios = db.scalars(select(User).limit(500)).all()
     return [_to_response(usuario) for usuario in usuarios]
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def criar_usuario(request: UserCreateRequest, db: Session = Depends(get_db)) -> UserResponse:
+def criar_usuario(request: UserCreateRequest, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> UserResponse:
     if db.scalar(select(User).where(User.cpf == request.cpf)) is not None:
         raise HTTPException(status_code=409, detail="CPF ja cadastrado")
 
@@ -47,7 +47,7 @@ def criar_usuario(request: UserCreateRequest, db: Session = Depends(get_db)) -> 
 def atualizar_usuario(
     usuario_id: int,
     request: UserUpdateRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),usuario=Depends(exigir_admin)
 ) -> UserResponse:
     usuario = db.get(User, usuario_id)
     if usuario is None:

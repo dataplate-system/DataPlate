@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-
+from app.security import exigir_admin
 from app.db import get_db
 from app.models import Categoria, Restaurante
 from app.schemas import CategoriaRequest, CategoriaResponse
+
 
 
 router = APIRouter(prefix="/api/categorias", tags=["categorias"])
@@ -21,7 +22,7 @@ def listar_categorias(db: Session = Depends(get_db)) -> list[CategoriaResponse]:
 
 
 @router.post("", response_model=CategoriaResponse, status_code=status.HTTP_201_CREATED)
-def criar_categoria(request: CategoriaRequest, db: Session = Depends(get_db)) -> CategoriaResponse:
+def criar_categoria(request: CategoriaRequest, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> CategoriaResponse:
     nome = request.nome.strip()
     if not nome:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nome da categoria e obrigatorio.")
@@ -54,7 +55,7 @@ def criar_categoria(request: CategoriaRequest, db: Session = Depends(get_db)) ->
 
 
 @router.delete("/{categoria_id}", status_code=status.HTTP_204_NO_CONTENT)
-def excluir_categoria(categoria_id: int, db: Session = Depends(get_db)) -> Response:
+def excluir_categoria(categoria_id: int, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> Response:
     categoria = db.get(Categoria, categoria_id)
     if categoria is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoria nao encontrada")

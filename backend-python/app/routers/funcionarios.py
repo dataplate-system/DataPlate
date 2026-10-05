@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
+from app.security import exigir_admin
 from app.db import get_db
 from app.models import Funcionario
 from app.schemas import FuncionarioRequest, FuncionarioResponse
@@ -13,13 +13,13 @@ router = APIRouter(prefix="/api/funcionarios", tags=["funcionarios"])
 
 
 @router.get("", response_model=list[FuncionarioResponse])
-def listar_funcionarios(db: Session = Depends(get_db)) -> list[FuncionarioResponse]:
+def listar_funcionarios(db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> list[FuncionarioResponse]:
     funcionarios = db.scalars(select(Funcionario).where(Funcionario.ativo.is_(True)).limit(500)).all()
     return [_to_response(funcionario) for funcionario in funcionarios]
 
 
 @router.post("", response_model=FuncionarioResponse, status_code=status.HTTP_201_CREATED)
-def criar_funcionario(request: FuncionarioRequest, db: Session = Depends(get_db)) -> FuncionarioResponse:
+def criar_funcionario(request: FuncionarioRequest, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> FuncionarioResponse:
     funcionario = Funcionario(criado_em=datetime.now())
     _apply_request(funcionario, request)
     db.add(funcionario)
@@ -40,6 +40,7 @@ def atualizar_funcionario(
     funcionario_id: int,
     request: FuncionarioRequest,
     db: Session = Depends(get_db),
+    usuario=Depends(exigir_admin)
 ) -> FuncionarioResponse:
     funcionario = db.get(Funcionario, funcionario_id)
     if funcionario is None:
@@ -53,7 +54,7 @@ def atualizar_funcionario(
 
 
 @router.delete("/{funcionario_id}", status_code=status.HTTP_204_NO_CONTENT)
-def excluir_funcionario(funcionario_id: int, db: Session = Depends(get_db)) -> Response:
+def excluir_funcionario(funcionario_id: int, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> Response:
     funcionario = db.get(Funcionario, funcionario_id)
     if funcionario is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Funcionario nao encontrado")

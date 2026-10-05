@@ -4,7 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
+from app.security import exigir_admin
 from app.db import get_db
 from app.models import PedidoStatusNome
 from app.schemas import (
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/api/relatorios", tags=["relatorios"])
 
 
 @router.get("/resumo", response_model=RelatorioResumoResponse)
-def resumo(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db)) -> RelatorioResumoResponse:
+def resumo(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> RelatorioResumoResponse:
     data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=False)
     status_counts = _counts_by_status(db, inicio_dia, fim_dia)
     faturamento = _faturamento(db, inicio_dia, fim_dia)
@@ -50,7 +50,7 @@ def resumo(inicio: date | None = None, fim: date | None = None, db: Session = De
 
 
 @router.get("/vendas", response_model=RelatorioVendasResponse)
-def vendas(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db)) -> RelatorioVendasResponse:
+def vendas(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> RelatorioVendasResponse:
     data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=False)
     status_counts = _counts_by_status(db, inicio_dia, fim_dia)
     total_pedidos = _count_total(db, inicio_dia, fim_dia)
@@ -75,7 +75,7 @@ def vendas(inicio: date | None = None, fim: date | None = None, db: Session = De
 
 
 @router.get("/cardapio", response_model=RelatorioCardapioResponse)
-def cardapio(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db)) -> RelatorioCardapioResponse:
+def cardapio(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> RelatorioCardapioResponse:
     data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=True)
     del data_inicio, data_fim
     custos = {
@@ -148,6 +148,7 @@ def operacional(
     inicio: date | None = Query(default=None),
     fim: date | None = Query(default=None),
     db: Session = Depends(get_db),
+    usuario=Depends(exigir_admin)
 ) -> RelatorioOperacionalResponse:
     data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=False)
     status_counts = _counts_by_status(db, inicio_dia, fim_dia)

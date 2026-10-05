@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models import Mesa
 from app.schemas import MesaRequest, MesaResponse
-
+from app.security import exigir_admin
 
 DEFAULT_RESTAURANTE_ID = 1
 
@@ -23,7 +23,7 @@ def listar_mesas(db: Session = Depends(get_db)) -> list[MesaResponse]:
 
 
 @router.post("", response_model=MesaResponse, status_code=status.HTTP_201_CREATED)
-def criar_mesa(request: MesaRequest, db: Session = Depends(get_db)) -> MesaResponse:
+def criar_mesa(request: MesaRequest, db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> MesaResponse:
     mesa = Mesa(id_restaurante=DEFAULT_RESTAURANTE_ID)
     _apply_request(mesa, request)
     db.add(mesa)
@@ -33,7 +33,7 @@ def criar_mesa(request: MesaRequest, db: Session = Depends(get_db)) -> MesaRespo
 
 
 @router.put("/{mesa_id}", response_model=MesaResponse)
-def atualizar_mesa(mesa_id: int, request: MesaRequest, db: Session = Depends(get_db)) -> MesaResponse:
+def atualizar_mesa(mesa_id: int, request: MesaRequest, db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> MesaResponse:
     mesa = db.get(Mesa, mesa_id)
     if mesa is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Mesa nao encontrada: {mesa_id}")
@@ -46,7 +46,7 @@ def atualizar_mesa(mesa_id: int, request: MesaRequest, db: Session = Depends(get
 
 
 @router.delete("/{mesa_id}", status_code=status.HTTP_204_NO_CONTENT)
-def excluir_mesa(mesa_id: int, db: Session = Depends(get_db)) -> Response:
+def excluir_mesa(mesa_id: int, db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> Response:
     mesa = db.get(Mesa, mesa_id)
     if mesa is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Mesa nao encontrada: {mesa_id}")
