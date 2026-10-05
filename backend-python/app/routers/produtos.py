@@ -4,7 +4,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
+from app.security import exigir_admin
 from app.db import get_db
 from app.models import Produto
 from app.schemas import ProdutoRequest, ProdutoResponse
@@ -34,7 +34,7 @@ def obter_produto(produto_id: int, db: Session = Depends(get_db)) -> ProdutoResp
 
 
 @router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
-def criar_produto(request: ProdutoRequest, db: Session = Depends(get_db)) -> ProdutoResponse:
+def criar_produto(request: ProdutoRequest, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> ProdutoResponse:
     erro = _validar_produto(request)
     if erro is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=erro)
@@ -65,7 +65,7 @@ def criar_produto(request: ProdutoRequest, db: Session = Depends(get_db)) -> Pro
 
 
 @router.put("/{produto_id}", response_model=ProdutoResponse)
-def atualizar_produto(produto_id: int, request: ProdutoRequest, db: Session = Depends(get_db)) -> ProdutoResponse:
+def atualizar_produto(produto_id: int, request: ProdutoRequest, db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> ProdutoResponse:
     if produto_id <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID invalido")
 
@@ -106,7 +106,7 @@ def atualizar_produto(produto_id: int, request: ProdutoRequest, db: Session = De
 
 
 @router.delete("/{produto_id}", status_code=status.HTTP_204_NO_CONTENT)
-def deletar_produto(produto_id: int, db: Session = Depends(get_db)) -> Response:
+def deletar_produto(produto_id: int, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> Response:
     if produto_id <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID invalido")
 

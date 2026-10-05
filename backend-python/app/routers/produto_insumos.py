@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.db import get_db
 from app.models import Insumo, Produto, ProdutoInsumo
 from app.schemas import ProdutoInsumoRequest, ProdutoInsumoResponse
-
+from app.security import exigir_admin
 
 router = APIRouter(prefix="/api/produtos/{produto_id}/insumos", tags=["produto-insumos"])
 
@@ -25,6 +25,7 @@ def adicionar_produto_insumo(
     produto_id: int,
     request: ProdutoInsumoRequest,
     db: Session = Depends(get_db),
+    usuario=Depends(exigir_admin)
 ) -> ProdutoInsumoResponse:
     produto = db.get(Produto, produto_id)
     if produto is None:
@@ -42,7 +43,7 @@ def adicionar_produto_insumo(
 
 
 @router.delete("/{insumo_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remover_produto_insumo(produto_id: int, insumo_id: int, db: Session = Depends(get_db)) -> Response:
+def remover_produto_insumo(produto_id: int, insumo_id: int, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> Response:
     db.execute(delete(ProdutoInsumo).where(ProdutoInsumo.produto_id == produto_id, ProdutoInsumo.insumo_id == insumo_id))
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)

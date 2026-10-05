@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-
+from app.security import exigir_admin   
 from app.db import get_db
 from app.models import Fornecedor
 from app.schemas import FornecedorRequest, FornecedorResponse
@@ -13,13 +13,13 @@ router = APIRouter(prefix="/api/fornecedores", tags=["fornecedores"])
 
 
 @router.get("", response_model=list[FornecedorResponse])
-def listar_fornecedores(db: Session = Depends(get_db)) -> list[FornecedorResponse]:
+def listar_fornecedores(db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> list[FornecedorResponse]:
     fornecedores = db.scalars(select(Fornecedor).where(Fornecedor.ativo.is_(True)).limit(500)).all()
     return [_to_response(fornecedor) for fornecedor in fornecedores]
 
 
 @router.post("", response_model=FornecedorResponse, status_code=status.HTTP_201_CREATED)
-def criar_fornecedor(request: FornecedorRequest, db: Session = Depends(get_db)) -> FornecedorResponse:
+def criar_fornecedor(request: FornecedorRequest, db: Session = Depends(get_db),usuario=Depends(exigir_admin)) -> FornecedorResponse:
     fornecedor = Fornecedor(criado_em=datetime.now())
     _apply_request(fornecedor, request)
     db.add(fornecedor)
@@ -39,7 +39,7 @@ def criar_fornecedor(request: FornecedorRequest, db: Session = Depends(get_db)) 
 def atualizar_fornecedor(
     fornecedor_id: int,
     request: FornecedorRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db),usuario=Depends(exigir_admin)
 ) -> FornecedorResponse:
     fornecedor = db.get(Fornecedor, fornecedor_id)
     if fornecedor is None:
@@ -53,7 +53,7 @@ def atualizar_fornecedor(
 
 
 @router.delete("/{fornecedor_id}", status_code=status.HTTP_204_NO_CONTENT)
-def excluir_fornecedor(fornecedor_id: int, db: Session = Depends(get_db)) -> Response:
+def excluir_fornecedor(fornecedor_id: int, db: Session = Depends(get_db), usuario=Depends(exigir_admin)) -> Response:
     fornecedor = db.get(Fornecedor, fornecedor_id)
     if fornecedor is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fornecedor nao encontrado")

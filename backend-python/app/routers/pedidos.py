@@ -7,7 +7,7 @@ import anyio
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
-
+from app.security import exigir_admin
 from app.db import get_db
 from app.models import Mesa, Pedido, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto
 from app.realtime import manager
@@ -118,6 +118,7 @@ def atualizar_status(
     pedido_id: int,
     request: PedidoStatusUpdateRequest,
     db: Session = Depends(get_db),
+    usuario=Depends(exigir_admin)
 ) -> PedidoResponse:
     pedido = db.get(Pedido, pedido_id)
     if pedido is None:
