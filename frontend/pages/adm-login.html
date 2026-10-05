@@ -2,18 +2,28 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
   <title>DataPlate - Login Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
   <link rel="stylesheet" href="../Css/adm-login.css" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
+  <link rel="stylesheet" href="../Css/mobile.css?v=1" />
+  <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
-<body>
+<body class="login-page">
   <main class="login-shell">
     <section class="login-panel" aria-label="Login do administrador">
       <div class="login-card">
-        <img class="login-logo" src="../images/brand/logo-dataplate.png" alt="Logo do DataPlate" />
+        <div class="dataplate-brand login-brand">
+          <span class="dataplate-brand-name">DataPlate</span>
+          <span class="dataplate-brand-mark" aria-hidden="true">
+            <img src="../images/brand/logo-dataplate.png" alt="" />
+          </span>
+        </div>
         <div class="login-card-header">
           <h1>Painel de Controle</h1>
         </div>

@@ -1,6 +1,6 @@
 import math
 import time
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 import anyio
@@ -73,14 +73,23 @@ def listar_ativos(db: Session = Depends(get_db)) -> list[PedidoResponse]:
 def listar_pedidos(
     page: int = Query(default=0, ge=0),
     size: int = Query(default=50, ge=1),
+    data: date | None = Query(default=None),
+    status: list[PedidoStatusNome] | None = Query(default=None),
     db: Session = Depends(get_db),
 ) -> PaginatedPedidoResponse:
     safe_size = min(size, 200)
-    total = db.scalar(select(func.count(Pedido.id))) or 0
+    filters = []
+    if data is not None:
+        inicio = datetime.combine(data, datetime.min.time())
+        filters.extend((Pedido.data_hora >= inicio, Pedido.data_hora < inicio + timedelta(days=1)))
+    if status:
+        filters.append(Pedido.id_status.in_([_to_status_id(item) for item in status]))
+    total = db.scalar(select(func.count(Pedido.id)).where(*filters)) or 0
     pedidos = db.scalars(
         select(Pedido)
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
-        .order_by(Pedido.data_hora.desc())
+        .where(*filters)
+        .order_by(Pedido.data_hora.desc(), Pedido.id.desc())
         .offset(page * safe_size)
         .limit(safe_size)
     ).unique().all()

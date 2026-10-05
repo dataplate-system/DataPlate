@@ -2,17 +2,28 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
   <title>HomePage DataPlate</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
   <link rel="stylesheet" href="../Css/style.css" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
+  <link rel="stylesheet" href="../Css/mobile.css?v=1" />
+  <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 
 <body>
   <section class="container">
       <div class="nav">
+        <div class="dataplate-brand site-brand">
+          <span class="dataplate-brand-name">DataPlate</span>
+          <span class="dataplate-brand-mark" aria-hidden="true">
+            <img src="../images/brand/logo-dataplate.png" alt="" />
+          </span>
+        </div>
         <h1 class="titulo"><b>DataPlate:</b> a inteligência que seu restaurante precisa.  </h1>
         <p class="subtit">Simplifique operações, aumente a eficiência e melhore a experiência do cliente com nosso sistema integrado de cardápio digital, cozinha e administrativo.</p>
         
@@ -285,8 +296,12 @@
     </section>
 
   <footer class="site-footer">
-    <img src="../images/brand/logo-dataplate.png" alt="logo-footer">
-    <h3 class="footertit">DataPlate</h3>
+    <div class="dataplate-brand">
+      <span class="dataplate-brand-name">DataPlate</span>
+      <span class="dataplate-brand-mark" aria-hidden="true">
+        <img src="../images/brand/logo-dataplate.png" alt="">
+      </span>
+    </div>
     <p>Â©DataPlate - Sistema de Gestão para o Setor Alimentício</p>
   </footer>
 

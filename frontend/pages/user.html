@@ -2,12 +2,17 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
   <title>DataPlate</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png">
   <link rel="stylesheet" href="../Css/user.css">
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified">
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
+  <link rel="stylesheet" href="../Css/mobile.css?v=1">
+  <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 <body>
 
@@ -21,9 +26,13 @@
 <div id="mesaSelectorOverlay" class="dp-mesa-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
   <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div class="client-app-brand selector-brand">
-      <img src="../images/brand/logo-dataplate.png" alt="DataPlate">
       <span>
-        <strong>DataPlate</strong>
+        <span class="dataplate-brand">
+          <strong class="dataplate-brand-name">DataPlate</strong>
+          <span class="dataplate-brand-mark" aria-hidden="true">
+            <img src="../images/brand/logo-dataplate.png" alt="">
+          </span>
+        </span>
         <small>Cardapio Digital</small>
       </span>
     </div>
@@ -325,9 +334,13 @@
   <aside class="sidebar">
 
     <div class="client-app-brand">
-      <img src="../images/brand/logo-dataplate.png" alt="DataPlate">
       <span>
-        <strong>DataPlate</strong>
+        <span class="dataplate-brand">
+          <strong class="dataplate-brand-name">DataPlate</strong>
+          <span class="dataplate-brand-mark" aria-hidden="true">
+            <img src="../images/brand/logo-dataplate.png" alt="">
+          </span>
+        </span>
         <small>Cardapio Digital</small>
       </span>
     </div>

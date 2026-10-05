@@ -2,13 +2,18 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
   <title>DataPlate - Painel Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/adm.css?v=3-dashboard-stock" />
+  <link rel="stylesheet" href="../Css/adm.css?v=20261005-stock-awareness" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260928-stock-card-v2" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
-  <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261005-manager-home" />
+  <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261005-clickable-cards" />
+  <link rel="stylesheet" href="../Css/mobile.css?v=20261005-clean-header" />
+  <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 <body>
   <div class="admin-container">
@@ -16,8 +21,11 @@
     <header class="admin-header">
       <div class="header-left">
         <div class="logo-area">
-          <button class="logo-text" onclick="navigateTo('home')">
-              DataPlate
+          <button type="button" class="logo-text dataplate-brand" onclick="navigateTo('home')">
+            <span class="dataplate-brand-name">DataPlate</span>
+            <span class="dataplate-brand-mark" aria-hidden="true">
+              <img src="../images/brand/logo-dataplate.png" alt="" />
+            </span>
           </button>
         </div>
       </div>
@@ -29,9 +37,13 @@
         <a href="user.html">Cardapio</a>
       </nav>
       <nav class="main-nav admin-section-nav" aria-label="Areas administrativas">
+        <div class="nav-item mobile-admin-home">
+          <button type="button" class="nav-button active" id="mobileAdminHome" onclick="navigateTo('home')">Início</button>
+        </div>
+
         <!-- Cadastros -->
         <div class="nav-item dropdown" data-role="admin">
-          <button type="button" class="nav-button">Cadastros</button>
+          <button type="button" class="nav-button" id="mobileAdminCadastros">Cadastros</button>
           <div class="dropdown-menu">
             <a href="#clientes" class="dropdown-link" onclick="navigateTo('clientes')">Clientes</a>
             <a href="#fornecedores" class="dropdown-link" onclick="navigateTo('fornecedores')">Fornecedores</a>
@@ -43,7 +55,7 @@
 
         <!-- Operações -->
         <div class="nav-item dropdown">
-          <button type="button" class="nav-button">Operações</button>
+          <button type="button" class="nav-button" id="mobileAdminOperacoes">Operações</button>
           <div class="dropdown-menu">
             <a href="pdv.html" class="dropdown-link">PDV Caixa</a>
             <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
@@ -56,7 +68,7 @@
 
         <!-- Relatórios -->
         <div class="nav-item dropdown" data-role="admin">
-          <button type="button" class="nav-button">Relatórios</button>
+          <button type="button" class="nav-button" id="mobileAdminRelatorios">Relatórios</button>
           <div class="dropdown-menu">
             <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
             <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
@@ -66,7 +78,7 @@
 
         <!-- Configurações -->
         <div class="nav-item dropdown" data-role="admin">
-          <button type="button" class="nav-button">Configurações</button>
+          <button type="button" class="nav-button" id="mobileAdminConfiguracoes">Configurações</button>
           <div class="dropdown-menu">
             <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
             <a href="#config-usuarios" class="dropdown-link" onclick="navigateTo('config-usuarios')">Usuários e Permissões</a>
@@ -84,7 +96,6 @@
 
       <div class="header-right">
         <span class="header-breadcrumb" id="headerBreadcrumb" aria-live="polite"></span>
-        <span class="adm-connection-pill" id="admConnectionStatus">Conectado</span>
         <div class="header-session-info">
           <div class="user-avatar-small" id="headerUserAvatar">GP</div>
           <span>
@@ -92,7 +103,6 @@
             <small id="headerUserRole">Administrador</small>
           </span>
         </div>
-        <button type="button" class="header-action-btn" onclick="location.reload()">Atualizar</button>
         <button type="button" class="header-logout-btn" onclick="openModal('logoutModal')">Sair</button>
       </div>
     </header>
@@ -250,46 +260,46 @@
               </div>
 
               <div class="stats-grid dashboard-stats">
-                <div class="stat-card dashboard-stat-card">
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('rel-vendas')" aria-label="Ver faturamento de hoje">
                   <div class="stat-label">Faturamento de hoje</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Dados reais do banco</div>
-                </div>
-                <div class="stat-card dashboard-stat-card">
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('pedidos')" aria-label="Ver todos os pedidos de hoje">
                   <div class="stat-label">Total de pedidos</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Todos os pedidos de hoje</div>
-                </div>
-                <div class="stat-card dashboard-stat-card">
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('pedidos', 'ativos')" aria-label="Ver pedidos ativos de hoje">
                   <div class="stat-label">Pedidos ativos</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Pedidos em andamento</div>
-                </div>
-                <div class="stat-card dashboard-stat-card">
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('mesas', 'status:ocupada')" aria-label="Ver mesas ocupadas">
                   <div class="stat-label">Mesas ocupadas</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Status atual do salão</div>
-                </div>
-                <div class="stat-card dashboard-stat-card">
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('mesas', 'status:disponivel')" aria-label="Ver mesas disponíveis">
                   <div class="stat-label">Mesas disponíveis</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Disponibilidade atual do salão</div>
-                </div>
-                <div class="stat-card dashboard-stat-card">
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('cozinha', 'EM_PREPARO')" aria-label="Ver pedidos de hoje em preparo na cozinha">
                   <div class="stat-label">Cozinha em preparo</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Aguardando e prontos para despacho</div>
-                </div>
-                <div class="stat-card dashboard-stat-card">
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('rel-vendas')" aria-label="Ver ticket médio e vendas de hoje">
                   <div class="stat-label">Ticket médio</div>
                   <div class="stat-value">Carregando...</div>
-                  <div class="stat-change">Calculado com pedidos pagos</div>
-                </div>
+                  <div class="stat-change">Calculado com pedidos não cancelados</div>
+                </button>
                 <button
                   type="button"
                   id="dashboardLowStockCard"
-                  class="stat-card dashboard-stat-card dashboard-stock-card"
-                  onclick="navigateTo('insumos')"
+                  class="stat-card dashboard-stat-card dashboard-stock-card dashboard-card-action"
+                  onclick="openDashboardCard('insumos', 'baixo')"
                   aria-label="Ver insumos com estoque baixo"
                 >
                   <div class="stat-label">Estoque baixo</div>
@@ -396,44 +406,44 @@
           <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
             <div class="home-panel-label">Hoje — tempo real</div>
 
-            <article class="home-stat-item">
+            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('rel-vendas')" aria-label="Ver faturamento de hoje">
               <span>Faturamento</span>
               <strong id="homeFaturamento">—</strong>
               <small id="homeFaturamentoDetalhe"></small>
-            </article>
+            </button>
 
-            <article class="home-stat-item">
+            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('rel-vendas')" aria-label="Ver ticket médio e vendas de hoje">
               <span>Ticket médio</span>
               <strong id="homeTicketMedio">—</strong>
-            </article>
+            </button>
 
-            <article class="home-stat-item">
+            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('pedidos', 'entregue')" aria-label="Ver pedidos entregues hoje">
               <span>Entregues hoje</span>
               <strong id="homeEntregues">—</strong>
               <small id="homeEntreguesDetalhe"></small>
-            </article>
+            </button>
 
-            <article class="home-stat-item home-stat-pronto" id="homeStatProntos">
+            <button type="button" class="home-stat-item home-stat-pronto dashboard-card-action" id="homeStatProntos" onclick="openDashboardCard('cozinha', 'PRONTO')" aria-label="Ver pedidos de hoje prontos para despacho">
               <span>Prontos p/ despacho</span>
               <strong id="homeProntos">—</strong>
-            </article>
+            </button>
 
-            <article class="home-stat-item">
+            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('pedidos', 'ativos')" aria-label="Ver pedidos de hoje em andamento">
               <span>Em andamento</span>
               <strong id="homePedidosAtivos">—</strong>
               <small id="homePedidosDetalhe"></small>
-            </article>
+            </button>
 
-            <article class="home-stat-item">
+            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('mesas', 'status:ocupada')" aria-label="Ver mesas ocupadas">
               <span>Mesas ocupadas</span>
               <strong id="homeMesas">—</strong>
               <small id="homeMesasDetalhe"></small>
-            </article>
+            </button>
 
-            <article class="home-stat-item home-stat-cancel" id="homeStatCancelamentos">
+            <button type="button" class="home-stat-item home-stat-cancel dashboard-card-action" id="homeStatCancelamentos" onclick="openDashboardCard('pedidos', 'cancelado')" aria-label="Ver pedidos cancelados hoje">
               <span>Cancelamentos hoje</span>
               <strong id="homeCancelamentos">—</strong>
-            </article>
+            </button>
 
             <button class="home-stat-refresh" type="button" onclick="carregarRelatorios()">Atualizar</button>
           </aside>
@@ -773,13 +783,14 @@
                 <option value="">Filtrar</option>
                 <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
                 <option value="total" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
-                <option value="recebido" data-filter-column="5" data-filter-match="exact">Recebido</option>
-                <option value="preparando" data-filter-column="5" data-filter-match="exact">Preparando</option>
-                <option value="pronto" data-filter-column="5" data-filter-match="exact">Pronto</option>
-                <option value="entregue" data-filter-column="5" data-filter-match="exact">Entregue</option>
-                <option value="cancelado" data-filter-column="5" data-filter-match="exact">Cancelado</option>
+                <option value="ativos" data-filter-column="5" data-filter-values="recebido,preparando,pronto" data-pedido-status="RECEBIDO,EM_PREPARO,PRONTO">Ativos</option>
+                <option value="recebido" data-filter-column="5" data-filter-match="exact" data-pedido-status="RECEBIDO">Recebido</option>
+                <option value="preparando" data-filter-column="5" data-filter-match="exact" data-pedido-status="EM_PREPARO">Preparando</option>
+                <option value="pronto" data-filter-column="5" data-filter-match="exact" data-pedido-status="PRONTO">Pronto</option>
+                <option value="entregue" data-filter-column="5" data-filter-match="exact" data-pedido-status="ENTREGUE">Entregue</option>
+                <option value="cancelado" data-filter-column="5" data-filter-match="exact" data-pedido-status="CANCELADO">Cancelado</option>
               </select>
-              <input type="date" class="filter-input" data-table-date data-section="pedidos" />
+              <input type="date" class="filter-input" data-table-date data-section="pedidos" aria-label="Data dos pedidos" />
             </div>
             <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
             <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
@@ -920,6 +931,7 @@
               <option value="EM_PREPARO">Em Preparação</option>
               <option value="PRONTO">Pronto para Entrega</option>
             </select>
+            <input type="date" class="filter-input" id="filtroCozinhaData" aria-label="Data dos pedidos da cozinha" onchange="carregarCozinha()" />
         </div>
           </div>
 
@@ -1202,6 +1214,11 @@
           </div>
           <div class="section-toolbar">
             <button type="button" class="btn-primary" data-open-modal="addInsumoModal">+ Novo Insumo</button>
+            <select class="filter-select toolbar-filter-select" aria-label="Filtrar estoque" data-table-filter data-section="insumos">
+              <option value="">Todos os insumos</option>
+              <option value="baixo" data-filter-column="5" data-filter-values="Estoque baixo,Zerado">Estoque baixo ou zerado</option>
+              <option value="normal" data-filter-column="5" data-filter-match="exact">Estoque normal</option>
+            </select>
             <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
             <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
           </div>
@@ -2060,6 +2077,30 @@
     </div>
   </div>
 
+  <dialog id="lowStockAlert" class="low-stock-alert" role="alertdialog" aria-labelledby="lowStockAlertTitle" aria-describedby="lowStockAlertSummary" aria-modal="true">
+    <div class="low-stock-alert-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.3 3.9 1.8 18.5A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.5L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </svg>
+    </div>
+    <h2 id="lowStockAlertTitle">Estoque baixo</h2>
+    <p id="lowStockAlertSummary"></p>
+    <button id="lowStockAlertConfirm" type="button" class="low-stock-alert-button" autofocus>Estou ciente</button>
+  </dialog>
+
+  <dialog id="lowStockAcknowledgement" class="low-stock-alert" aria-labelledby="lowStockAcknowledgementTitle" aria-describedby="lowStockAcknowledgementSummary" aria-modal="true">
+    <div class="low-stock-alert-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m5 12 4 4 10-10" />
+      </svg>
+    </div>
+    <h2 id="lowStockAcknowledgementTitle">Ciência confirmada</h2>
+    <p id="lowStockAcknowledgementSummary">Você está ciente do estoque baixo.</p>
+    <button id="lowStockAcknowledgementClose" type="button" class="low-stock-alert-button" autofocus>OK</button>
+  </dialog>
+
   <div class="modal" id="logoutModal">
     <div class="modal-content modal-content-confirm">
       <button type="button" class="modal-close" onclick="closeModal('logoutModal')">✕</button>
@@ -2154,6 +2195,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261005-manager-home" defer></script>
+  <script src="../JavaScript/adm.js?v=20261005-clickable-cards" defer></script>
 </body>
 </html>

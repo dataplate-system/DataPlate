@@ -2,21 +2,30 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
   <title>DataPlate - Painel do Atendente</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
   <link rel="stylesheet" href="../Css/atendente.css" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
+  <link rel="stylesheet" href="../Css/mobile.css?v=3-atendente-mesas" />
+  <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 <body>
   <div class="atendente-shell">
 
     <header class="atendente-header">
       <button class="brand-button" type="button" id="reloadPanel">
-        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
         <span>
-          <strong>DataPlate</strong>
+          <span class="dataplate-brand">
+            <strong class="dataplate-brand-name">DataPlate</strong>
+            <span class="dataplate-brand-mark" aria-hidden="true">
+              <img src="../images/brand/logo-dataplate.png" alt="" />
+            </span>
+          </span>
           <small>Painel do Atendente</small>
         </span>
       </button>
@@ -35,7 +44,6 @@
       </form>
 
       <div class="header-actions">
-        <span class="connection-pill" id="connectionStatus">Conectando</span>
         <div class="session-summary">
           <span class="user-avatar" id="sessionInitials">AT</span>
           <span>
@@ -43,7 +51,6 @@
             <small id="sessionRole">Operacional</small>
           </span>
         </div>
-        <button class="header-button" type="button" id="refreshButton">Atualizar</button>
         <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
       </div>
     </header>
@@ -245,6 +252,6 @@
     </div>
   </div>
 
-  <script src="../JavaScript/atendente.js" defer></script>
+  <script src="../JavaScript/atendente.js?v=20261005-clean-header" defer></script>
 </body>
 </html>

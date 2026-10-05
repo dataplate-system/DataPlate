@@ -49,8 +49,8 @@ app = FastAPI(title="DataPlate API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    # O Live Server abre tanto em localhost quanto em 127.0.0.1
-    allow_origins=["http://localhost:5500", "http://127.0.0.1:5500"],
+    # Compartilha a configuracao de origens entre o frontend web e o app Capacitor.
+    allow_origins=settings.cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

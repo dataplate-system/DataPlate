@@ -430,6 +430,7 @@ function navigateTo(sectionId) {
   // Destacar botao pai do top nav
   document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
   const navInfo = NAV_MAP[sectionId];
+  document.getElementById('mobileAdminHome')?.classList.toggle('active', sectionId === 'home' || !selectedSection);
   if (navInfo) {
     document.querySelectorAll('.nav-button').forEach(btn => {
       if (btn.textContent.trim() === navInfo[0]) btn.classList.add('active');
@@ -475,6 +476,37 @@ function navigateTo(sectionId) {
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
 }
 window.navigateTo = navigateTo;
+
+function openDashboardCard(sectionId, filterValue = '') {
+  const today = new Date();
+  const date = document.getElementById('dashboard')?.dataset.date
+    || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+
+  if (sectionId === 'rel-vendas') {
+    section.querySelectorAll('input[type="date"]').forEach(input => { input.value = date; });
+  } else if (sectionId === 'pedidos') {
+    section.querySelector('[data-table-filter]').value = filterValue;
+    section.querySelector('[data-table-date]').value = date;
+  } else if (sectionId === 'mesas') {
+    document.getElementById('tableSearch').value = '';
+    document.getElementById('tableFilter').value = filterValue;
+  } else if (sectionId === 'cozinha') {
+    document.getElementById('filtroCozinha').value = filterValue;
+    document.getElementById('filtroCozinhaData').value = date;
+  } else if (sectionId === 'insumos') {
+    section.querySelector('[data-table-filter]').value = filterValue;
+  }
+
+  navigateTo(sectionId);
+  document.querySelector('.main-content')?.scrollTo({ top: 0 });
+  window.scrollTo({ top: 0 });
+  const heading = section.querySelector('h1');
+  heading?.setAttribute('tabindex', '-1');
+  heading?.focus({ preventScroll: true });
+}
+window.openDashboardCard = openDashboardCard;
 
 const ADMIN_HOME_ROUTES = [
   { id: 'dashboard', labels: ['dashboard', 'painel', 'indicadores', 'controle'] },
@@ -2258,6 +2290,7 @@ function applyToolbarFilters(sectionId) {
   const filterColumn = Number.parseInt(selectedOption?.dataset.filterColumn || '', 10);
   const filterValue = normalizeFilterText(selectedOption?.value);
   const filterMatch = selectedOption?.dataset.filterMatch || 'includes';
+  const filterValues = selectedOption?.dataset.filterValues?.split(',').map(normalizeFilterText);
   const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.querySelector('td[colspan]'));
 
   sortTableRows(rows, selectedOption).forEach(row => tbody.appendChild(row));
@@ -2269,7 +2302,8 @@ function applyToolbarFilters(sectionId) {
     const matchesDate = !dateTerm || rowText.includes(dateTerm);
     const matchesFilter = !filterValue
       || !Number.isInteger(filterColumn)
-      || (filterMatch === 'exact' ? columnText === filterValue : columnText.includes(filterValue));
+      || (filterValues ? filterValues.includes(columnText)
+        : filterMatch === 'exact' ? columnText === filterValue : columnText.includes(filterValue));
 
     row.style.display = matchesSearch && matchesDate && matchesFilter ? '' : 'none';
   });
@@ -2279,7 +2313,8 @@ document.querySelectorAll('[data-table-filter], [data-table-search], [data-table
   const eventName = element?.tagName === 'INPUT' ? 'input' : 'change';
   element?.addEventListener(eventName, () => {
     const sectionId = element.dataset.section || element.closest('.content-section')?.id;
-    if (sectionId) applyToolbarFilters(sectionId);
+    if (sectionId === 'pedidos') carregarPedidos();
+    else if (sectionId) applyToolbarFilters(sectionId);
   });
 });
 
@@ -3071,6 +3106,8 @@ function setStatByLabel(sectionId, label, value, change) {
 }
 
 function updateDashboardResumo(resumo) {
+  const dashboard = document.getElementById('dashboard');
+  if (dashboard && resumo.inicio) dashboard.dataset.date = resumo.inicio;
   const ativos = Number(resumo.pedidosRecebidos || 0)
     + Number(resumo.pedidosEmPreparo || 0)
     + Number(resumo.pedidosProntos || 0);
@@ -3880,12 +3917,21 @@ window.abrirDetalhesPedido = function(id) {
 };
 
 let _pedidosPage = 0;
+let _pedidosRequest = 0;
 
 function carregarPedidos(page = 0) {
+  const requestId = ++_pedidosRequest;
   _pedidosPage = page;
   showTableSkeleton('pedidos');
-  getJson(`/pedidos?page=${page}&size=50`)
+  const params = new URLSearchParams({ page: String(page), size: '50' });
+  const section = document.getElementById('pedidos');
+  const date = section?.querySelector('[data-table-date]')?.value;
+  const statuses = section?.querySelector('[data-table-filter]')?.selectedOptions[0]?.dataset.pedidoStatus;
+  if (date) params.set('data', date);
+  statuses?.split(',').forEach(status => params.append('status', status));
+  getJson(`/pedidos?${params}`)
     .then(data => {
+      if (requestId !== _pedidosRequest) return;
       // suporta resposta paginada {content, totalPages} ou lista simples
       const list = Array.isArray(data) ? data : (data.content || []);
       const totalPages = data.totalPages ?? 1;
@@ -3894,6 +3940,7 @@ function carregarPedidos(page = 0) {
       renderPedidosPaginacao(page, totalPages);
     })
     .catch((err) => {
+      if (requestId !== _pedidosRequest) return;
       const msg = err.message || 'Erro ao carregar pedidos.';
       setTableBody('pedidos', [], msg);
       console.error('[pedidos]', err);
@@ -4018,6 +4065,7 @@ function carregarCozinha() {
     });
 
     const filtro = document.getElementById('filtroCozinha')?.value || '';
+    const date = document.getElementById('filtroCozinhaData')?.value || '';
     
     Object.entries(cols).forEach(([status, col]) => {
       if (!col) return;
@@ -4034,6 +4082,7 @@ function carregarCozinha() {
       const ativo = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status);
 
       if (!ativo) return false;
+      if (date && p.dataHora?.slice(0, 10) !== date) return false;
 
       // Sem filtro = mostra todos
       if (!filtro) return true;
@@ -4566,6 +4615,25 @@ function carregarNotificacoes() {
 })();
 
 // Alerta de estoque baixo no dashboard
+const alertaEstoqueBaixo = document.getElementById('lowStockAlert');
+const cienciaEstoqueBaixo = document.getElementById('lowStockAcknowledgement');
+alertaEstoqueBaixo?.addEventListener('cancel', (event) => event.preventDefault());
+document.getElementById('lowStockAlertConfirm')?.addEventListener('click', () => {
+  alertaEstoqueBaixo.close();
+  cienciaEstoqueBaixo?.showModal();
+});
+document.getElementById('lowStockAcknowledgementClose')?.addEventListener('click', () => {
+  cienciaEstoqueBaixo.close();
+});
+
+function mostrarAlertaEstoqueBaixo(quantidade) {
+  if (!alertaEstoqueBaixo || cienciaEstoqueBaixo?.open) return;
+  document.getElementById('lowStockAlertSummary').textContent = quantidade === 1
+    ? '1 insumo com estoque baixo.'
+    : `${quantidade} insumos com estoque baixo.`;
+  if (!alertaEstoqueBaixo.open) alertaEstoqueBaixo.showModal();
+}
+
 function verificarEstoqueBaixo() {
   const prefs = JSON.parse(localStorage.getItem(NOTIFICACOES_KEY) || '{}');
 
@@ -4585,7 +4653,7 @@ function verificarEstoqueBaixo() {
       card?.classList.toggle('has-critical', criticos.length > 0);
 
       if (criticos.length && prefs.alertaEstoqueBaixo !== false) {
-        showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+        mostrarAlertaEstoqueBaixo(criticos.length);
       }
     })
     .catch(() => {
