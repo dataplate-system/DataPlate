@@ -67,6 +67,22 @@ cd backend-python
 .\run-local.ps1
 ```
 
+Para executar o seed manualmente no banco local do Docker, rode-o como módulo a partir
+da pasta `backend-python`. As variáveis abaixo garantem que o `.env` da raiz (que pode
+apontar para um proxy remoto) não altere a conexão local:
+
+```powershell
+$env:DB_HOST = "localhost"
+$env:DB_PORT = "5433"
+$env:DB_NAME = "dataplate"
+$env:DB_USER = "postgres"
+$env:DB_PASSWORD = "dataplate_local"
+.\.venv\Scripts\python.exe -m app.seed
+$env:DB_HOST = $env:DB_PORT = $env:DB_NAME = $env:DB_USER = $env:DB_PASSWORD = $null
+```
+
+Normalmente isso não é necessário: a API cria o administrador padrão ao iniciar.
+
 ## Endpoints migrados
 
 - `GET /actuator/health`

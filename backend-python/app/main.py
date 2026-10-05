@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,18 +32,28 @@ from app.routers import (
     restaurante,
     usuarios,
 )
+from app.seed import ensure_default_admin
 
 
 settings = get_settings()
 
-app = FastAPI(title="DataPlate API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Garante o administrador padrao em qualquer ambiente (banco local de cada pessoa do grupo)
+    ensure_default_admin()
+    yield
+
+
+app = FastAPI(title="DataPlate API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5500"],
+    # O Live Server abre tanto em localhost quanto em 127.0.0.1
+    allow_origins=["http://localhost:5500", "http://127.0.0.1:5500"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type"],
     expose_headers=["Authorization"],
 )
 
