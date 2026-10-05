@@ -23,7 +23,7 @@ services:
       PGPASSWORD: dataplate_local
     volumes:
       - ../database/migrations:/migrations:ro
-    command: ["psql", "-h", "db", "-U", "postgres", "-d", "dataplate", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/001_mesa_reserva.sql"]
+    command: ["psql", "-h", "db", "-U", "postgres", "-d", "dataplate", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/001_mesa_reserva.sql", "-f", "/migrations/002_usuario_ativo.sql"]
     depends_on:
       db:
         condition: service_healthy
