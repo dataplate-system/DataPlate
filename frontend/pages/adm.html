@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../Css/adm.css?v=3-dashboard-stock" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260928-stock-card-v2" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
+  <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261005-manager-home" />
 </head>
 <body>
   <div class="admin-container">
@@ -102,7 +103,7 @@
       <!-- CONTENT -->
       <div class="contentcenter">
         <!-- HOME -->
-        <section id="home" class="content-section admin-home">
+        <section id="home" class="content-section admin-home active">
           <aside class="home-shortcuts home-shortcuts-left" aria-label="Atalhos do sistema">
 
             <div class="shortcut-group" data-group="operacoes">
@@ -235,43 +236,161 @@
               <p id="adminHomeSearchHint">Digite o nome de uma tela e pressione Enter.</p>
             </form>
 
-            <section class="dashboard-focus" aria-label="Resumo operacional">
-              <div class="focus-header">
-                <span>Visão geral</span>
-                <h1>Operação do restaurante</h1>
-                <p>Atalhos principais e indicadores essenciais para acompanhar o salão, caixa e cozinha.</p>
+            <div id="dashboard" class="home-dashboard" aria-label="Dashboard do gerente">
+              <div class="dashboard-hero">
+                <div>
+                  <span class="dashboard-eyebrow">Visão geral</span>
+                  <h1>Dashboard DataPlate</h1>
+                  <p>Acompanhe pedidos, mesas, cozinha e resultados do restaurante em uma única tela.</p>
+                </div>
+                <div class="dashboard-actions">
+                  <button type="button" id="verdash" onclick="navigateTo('pedidos')">Ver Pedidos</button>
+                  <button type="button" class="btn-secondary" onclick="navigateTo('pagamentos')">Pagamentos</button>
+                </div>
               </div>
 
-              <div class="focus-actions">
-                <a href="pdv.html">Abrir PDV</a>
-                <button type="button" onclick="navigateTo('mesas')">Ver mesas</button>
-                <button type="button" onclick="navigateTo('pedidos')">Pedidos</button>
-                <button type="button" onclick="navigateTo('dashboard')">Relatórios</button>
+              <div class="stats-grid dashboard-stats">
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Faturamento de hoje</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Dados reais do banco</div>
+                </div>
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Total de pedidos</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Todos os pedidos de hoje</div>
+                </div>
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Pedidos ativos</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Pedidos em andamento</div>
+                </div>
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Mesas ocupadas</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Status atual do salão</div>
+                </div>
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Mesas disponíveis</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Disponibilidade atual do salão</div>
+                </div>
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Cozinha em preparo</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Aguardando e prontos para despacho</div>
+                </div>
+                <div class="stat-card dashboard-stat-card">
+                  <div class="stat-label">Ticket médio</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Calculado com pedidos pagos</div>
+                </div>
+                <button
+                  type="button"
+                  id="dashboardLowStockCard"
+                  class="stat-card dashboard-stat-card dashboard-stock-card"
+                  onclick="navigateTo('insumos')"
+                  aria-label="Ver insumos com estoque baixo"
+                >
+                  <div class="stat-label">Estoque baixo</div>
+                  <div class="stat-value" id="dashboardLowStockValue">Carregando...</div>
+                  <div class="stat-change" id="dashboardLowStockDetail">Verificar insumos</div>
+                </button>
               </div>
 
-              <div class="focus-grid">
-                <article>
-                  <span>Caixa</span>
-                  <strong id="homeFocusFaturamento">R$ 0,00</strong>
-                  <small>Faturamento de hoje</small>
-                </article>
-                <article>
-                  <span>Pedidos</span>
-                  <strong id="homeFocusPedidos">0</strong>
-                  <small>Em andamento</small>
-                </article>
-                <article>
-                  <span>Salão</span>
-                  <strong id="homeFocusMesas">0/0</strong>
-                  <small>Mesas ocupadas</small>
-                </article>
-                <article>
-                  <span>Cozinha</span>
-                  <strong id="homeFocusProntos">0</strong>
-                  <small>Prontos para despacho</small>
-                </article>
+              <div class="dashboard-layout">
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Vendas por hora — hoje</h3>
+                    <span id="dashSalesLabel">Carregando…</span>
+                  </div>
+                  <div class="dashboard-chart-frame">
+                    <canvas id="dashboardSalesChart"></canvas>
+                  </div>
+                </section>
+
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Pedidos por status</h3>
+                    <span id="dashOrdersLabel">Hoje</span>
+                  </div>
+                  <div class="dashboard-chart-frame">
+                    <canvas id="ordersChart"></canvas>
+                  </div>
+                </section>
               </div>
-            </section>
+
+              <div class="dashboard-layout">
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Top produtos vendidos</h3>
+                    <span>Acumulado</span>
+                  </div>
+                  <div class="dashboard-chart-frame">
+                    <canvas id="topDishesChart"></canvas>
+                  </div>
+                </section>
+
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Ocupação das mesas</h3>
+                    <span>Status do salão</span>
+                  </div>
+                  <div class="dashboard-chart-frame">
+                    <canvas id="tablesOccupancyChart"></canvas>
+                  </div>
+                </section>
+              </div>
+
+              <div class="dashboard-layout dashboard-layout-wide">
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Atalhos rápidos</h3>
+                    <span>Acesso direto</span>
+                  </div>
+                  <div class="quick-actions-grid">
+                    <button type="button" class="quick-action" onclick="navigateTo('clientes')">
+                      <strong>Clientes</strong>
+                      <span>Cadastros e histórico</span>
+                    </button>
+                    <button type="button" class="quick-action" onclick="navigateTo('cardapio')">
+                      <strong>Cardápio</strong>
+                      <span>Itens, preço e destaque</span>
+                    </button>
+                    <button type="button" class="quick-action" onclick="navigateTo('mesas')">
+                      <strong>Mesas</strong>
+                      <span>Mapa do salão</span>
+                    </button>
+                    <button type="button" class="quick-action" onclick="navigateTo('cozinha')">
+                      <strong>Cozinha</strong>
+                      <span>Preparo em tempo real</span>
+                    </button>
+                  </div>
+                </section>
+
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Últimos pedidos</h3>
+                    <span>Hoje</span>
+                  </div>
+                  <div class="table-container">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Pedido</th>
+                          <th>Origem</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="dashUltimosPedidosTbody">
+                        <tr><td colspan="4" style="text-align:center;color:#94a3b8">Carregando…</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </div>
           </div>
 
           <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
@@ -316,150 +435,8 @@
               <strong id="homeCancelamentos">—</strong>
             </article>
 
-            <button class="home-stat-refresh" type="button" onclick="carregarHomeStats()">Atualizar</button>
+            <button class="home-stat-refresh" type="button" onclick="carregarRelatorios()">Atualizar</button>
           </aside>
-        </section>
-
-        <!-- DASHBOARD -->
-        <section id="dashboard" class="content-section">
-          <div class="dashboard-hero">
-            <div>
-              <span class="dashboard-eyebrow">Visão geral</span>
-              <h1>Dashboard DataPlate</h1>
-              <p>Acompanhe pedidos, mesas, cozinha e resultados do restaurante em uma única tela.</p>
-            </div>
-            <div class="dashboard-actions">
-              <button type="button" id="verdash" onclick="navigateTo('pedidos')">Ver Pedidos</button>
-              <button type="button" class="btn-secondary" onclick="navigateTo('pagamentos')">Pagamentos</button>
-            </div>
-          </div>
-
-          <div class="stats-grid dashboard-stats">
-            <div class="stat-card dashboard-stat-card">
-              <div class="stat-label">Faturamento de hoje</div>
-              <div class="stat-value">Carregando...</div>
-              <div class="stat-change">Dados reais do banco</div>
-            </div>
-            <div class="stat-card dashboard-stat-card">
-              <div class="stat-label">Pedidos ativos</div>
-              <div class="stat-value">Carregando...</div>
-              <div class="stat-change">Pedidos em andamento</div>
-            </div>
-            <div class="stat-card dashboard-stat-card">
-              <div class="stat-label">Mesas ocupadas</div>
-              <div class="stat-value">Carregando...</div>
-              <div class="stat-change">Status atual do salão</div>
-            </div>
-            <div class="stat-card dashboard-stat-card">
-              <div class="stat-label">Ticket médio</div>
-              <div class="stat-value">Carregando...</div>
-              <div class="stat-change">Calculado com pedidos pagos</div>
-            </div>
-            <button
-              type="button"
-              id="dashboardLowStockCard"
-              class="stat-card dashboard-stat-card dashboard-stock-card"
-              onclick="navigateTo('insumos')"
-              aria-label="Ver insumos com estoque baixo"
-            >
-              <div class="stat-label">Estoque baixo</div>
-              <div class="stat-value" id="dashboardLowStockValue">Carregando...</div>
-              <div class="stat-change" id="dashboardLowStockDetail">Verificar insumos</div>
-            </button>
-          </div>
-
-          <div class="dashboard-layout">
-            <section class="report-section dashboard-panel">
-              <div class="panel-heading">
-                <h3>Vendas por hora — hoje</h3>
-                <span id="dashSalesLabel">Carregando…</span>
-              </div>
-              <div class="dashboard-chart-frame">
-                <canvas id="dashboardSalesChart"></canvas>
-              </div>
-            </section>
-
-            <section class="report-section dashboard-panel">
-              <div class="panel-heading">
-                <h3>Pedidos por status</h3>
-                <span id="dashOrdersLabel">Hoje</span>
-              </div>
-              <div class="dashboard-chart-frame">
-                <canvas id="ordersChart"></canvas>
-              </div>
-            </section>
-          </div>
-
-          <div class="dashboard-layout">
-            <section class="report-section dashboard-panel">
-              <div class="panel-heading">
-                <h3>Top produtos vendidos</h3>
-                <span>Acumulado</span>
-              </div>
-              <div class="dashboard-chart-frame">
-                <canvas id="topDishesChart"></canvas>
-              </div>
-            </section>
-
-            <section class="report-section dashboard-panel">
-              <div class="panel-heading">
-                <h3>Ocupação das mesas</h3>
-                <span>Status do salão</span>
-              </div>
-              <div class="dashboard-chart-frame">
-                <canvas id="tablesOccupancyChart"></canvas>
-              </div>
-            </section>
-          </div>
-
-          <div class="dashboard-layout dashboard-layout-wide">
-            <section class="report-section dashboard-panel">
-              <div class="panel-heading">
-                <h3>Atalhos rápidos</h3>
-                <span>Acesso direto</span>
-              </div>
-              <div class="quick-actions-grid">
-                <button type="button" class="quick-action" onclick="navigateTo('clientes')">
-                  <strong>Clientes</strong>
-                  <span>Cadastros e histórico</span>
-                </button>
-                <button type="button" class="quick-action" onclick="navigateTo('cardapio')">
-                  <strong>Cardápio</strong>
-                  <span>Itens, preço e destaque</span>
-                </button>
-                <button type="button" class="quick-action" onclick="navigateTo('mesas')">
-                  <strong>Mesas</strong>
-                  <span>Mapa do salão</span>
-                </button>
-                <button type="button" class="quick-action" onclick="navigateTo('cozinha')">
-                  <strong>Cozinha</strong>
-                  <span>Preparo em tempo real</span>
-                </button>
-              </div>
-            </section>
-
-            <section class="report-section dashboard-panel">
-              <div class="panel-heading">
-                <h3>Últimos pedidos</h3>
-                <span>Hoje</span>
-              </div>
-              <div class="table-container">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Pedido</th>
-                      <th>Origem</th>
-                      <th>Total</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="dashUltimosPedidosTbody">
-                    <tr><td colspan="4" style="text-align:center;color:#94a3b8">Carregando…</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
         </section>
 
         <!-- CLIENTES -->
@@ -2177,10 +2154,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<<<<<<< HEAD
-  <script src="../JavaScript/adm.js" defer></script>
-=======
-  <script src="../JavaScript/adm.js?v=13-stock-dashboard" defer></script>
->>>>>>> 73263e2ab03cf6f0c91e4cbc6eedbd81057f026a
+  <script src="../JavaScript/adm.js?v=20261005-manager-home" defer></script>
 </body>
 </html>

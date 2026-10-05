@@ -369,6 +369,9 @@ async function getJson(endpoint) {
 // =============================================
 
 function navigateTo(sectionId) {
+  // Links antigos do dashboard continuam abrindo a nova tela inicial.
+  if (sectionId === 'dashboard') sectionId = 'home';
+
   // Hide all sections
   document.querySelectorAll('.content-section').forEach(section => {
     section.classList.remove('active');
@@ -404,6 +407,7 @@ function navigateTo(sectionId) {
 
   // Mapa: secao -> [grupo pai, nome de exibicao]
   const NAV_MAP = {
+    home:                ['Início',       'Dashboard'],
     pedidos:             ['Operações',    'Pedidos'],
     cancelamentos:       ['Operações',    'Cancelamentos'],
     pagamentos:          ['Operações',    'Pagamentos'],
@@ -414,7 +418,6 @@ function navigateTo(sectionId) {
     funcionarios:        ['Cadastros',    'Funcionários'],
     cardapio:            ['Cadastros',    'Cardápio'],
     insumos:             ['Cadastros',    'Insumos'],
-    dashboard:           ['Relatórios',   'Dashboard'],
     'rel-financeiro':    ['Relatórios',   'Financeiro'],
     'rel-cardapio':      ['Relatórios',   'Desempenho do Cardápio'],
     'rel-operacional':   ['Relatórios',   'Operacional'],
@@ -451,8 +454,7 @@ function navigateTo(sectionId) {
 
   // Load data for the section being shown
   const sectionLoaders = {
-    home:           carregarHomeStats,
-    dashboard:      carregarRelatorios,
+    home:           carregarRelatorios,
     clientes:       carregarClientes,
     funcionarios:   carregarFuncionarios,
     fornecedores:   carregarFornecedores,
@@ -2888,7 +2890,7 @@ function connectAdminWebSocket() {
           carregarPedidos();
           carregarCozinha();
           carregarUltimosPedidosDashboard();
-          if (document.getElementById('dashboard')?.classList.contains('active')) {
+          if (document.getElementById('home')?.classList.contains('active')) {
             carregarRelatorios();
           }
         }, 500);
@@ -3073,7 +3075,10 @@ function updateDashboardResumo(resumo) {
     + Number(resumo.pedidosEmPreparo || 0)
     + Number(resumo.pedidosProntos || 0);
   setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), 'Dados reais do banco');
+  const total = ativos + Number(resumo.pedidosEntregues || 0) + Number(resumo.pedidosCancelados || 0);
+  setStatByLabel('dashboard', 'Total de pedidos', String(total), 'Todos os pedidos de hoje, incluindo cancelados');
   setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
+  setStatByLabel('dashboard', 'Cozinha em preparo', String(resumo.pedidosEmPreparo || 0), `${resumo.pedidosRecebidos || 0} aguardando e ${resumo.pedidosProntos || 0} prontos para despacho`);
   setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
 
   // Graficos do dashboard com dados reais
@@ -3105,6 +3110,7 @@ function updateDashboardMesas(mesas) {
   const ocupadas = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'ocupada').length;
   const disponiveis = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
   setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
+  setStatByLabel('dashboard', 'Mesas disponíveis', String(disponiveis), `De ${total} mesas cadastradas`);
 }
 
 // -- Grupos colapsaveis do sidebar ------------------------------------
@@ -3137,6 +3143,7 @@ function carregarHomeStats() {
 
   getJson('/relatorios/resumo')
     .then((resumo) => {
+      updateDashboardResumo(resumo);
       const ativos      = Number(resumo.pedidosRecebidos || 0) + Number(resumo.pedidosEmPreparo || 0) + Number(resumo.pedidosProntos || 0);
       const prontos     = Number(resumo.pedidosProntos || 0);
       const entregues   = Number(resumo.pedidosEntregues || 0);
@@ -3145,7 +3152,6 @@ function carregarHomeStats() {
 
       // Faturamento
       if (el('homeFaturamento'))       el('homeFaturamento').textContent       = formatCurrency(resumo.faturamento);
-      if (el('homeFocusFaturamento'))  el('homeFocusFaturamento').textContent  = formatCurrency(resumo.faturamento);
       if (el('homeFaturamentoDetalhe'))el('homeFaturamentoDetalhe').textContent = `${totalPed} pedido(s) no dia`;
 
       // Ticket medio
@@ -3159,12 +3165,10 @@ function carregarHomeStats() {
 
       // Prontos p/ despacho
       if (el('homeProntos'))           el('homeProntos').textContent           = String(prontos);
-      if (el('homeFocusProntos'))      el('homeFocusProntos').textContent      = String(prontos);
       el('homeStatProntos')?.classList.toggle('has-alert', prontos > 0);
 
       // Em andamento
       if (el('homePedidosAtivos'))     el('homePedidosAtivos').textContent     = String(ativos);
-      if (el('homeFocusPedidos'))      el('homeFocusPedidos').textContent      = String(ativos);
       if (el('homePedidosDetalhe'))    el('homePedidosDetalhe').textContent    =
         `${resumo.pedidosRecebidos || 0} aguardando · ${resumo.pedidosEmPreparo || 0} em preparo`;
 
@@ -3173,34 +3177,26 @@ function carregarHomeStats() {
       const cancelCard = el('homeStatCancelamentos');
       if (cancelCard) cancelCard.classList.toggle('has-alert', cancelados > 0);
     })
-    .catch(() => {});
+    .catch((err) => console.error('[home-resumo]', err));
 
   getJson('/mesas')
     .then((mesas) => {
       const lista      = mesas || [];
-      const ocupadas   = lista.filter((m) => (m.status || '').toLowerCase() === 'ocupada').length;
-      const disponiveis= lista.filter((m) => (m.status || '').toLowerCase() === 'disponivel').length;
+      updateDashboardMesas(lista);
+      renderTableOccupancyChart(lista);
+      const ocupadas   = lista.filter((m) => apiStatusToUiStatus(m.status) === 'ocupada').length;
+      const disponiveis= lista.filter((m) => apiStatusToUiStatus(m.status) === 'disponivel').length;
       const total      = lista.length;
       if (el('homeMesas'))       el('homeMesas').textContent       = `${ocupadas}/${total}`;
-      if (el('homeFocusMesas'))  el('homeFocusMesas').textContent  = `${ocupadas}/${total}`;
       if (el('homeMesasDetalhe'))el('homeMesasDetalhe').textContent = `${disponiveis} disponíve${disponiveis === 1 ? 'l' : 'is'}`;
     })
-    .catch(() => {});
+    .catch((err) => console.error('[home-mesas]', err));
 }
 window.carregarHomeStats = carregarHomeStats;
 
 function carregarRelatorios() {
-  // Dashboard: resumo de hoje
-  getJson('/relatorios/resumo')
-    .then(updateDashboardResumo)
-    .catch((err) => console.error('[relatorios]', err));
-
-  getJson('/mesas')
-    .then((mesas) => {
-      updateDashboardMesas(mesas);
-      renderTableOccupancyChart(mesas);
-    })
-    .catch((err) => console.error('[relatorios-mesas]', err));
+  // Uma consulta de resumo e mesas atualiza o dashboard e o painel lateral.
+  carregarHomeStats();
 
   // Ultimos pedidos no dashboard
   carregarUltimosPedidosDashboard();

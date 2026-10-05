@@ -1,0 +1,116 @@
+/* Dashboard central da tela inicial, com os dois paineis laterais preservados. */
+.admin-home-active .main-content {
+  overflow-y: auto;
+}
+
+.contentcenter:has(#home.active),
+.admin-home-active .contentcenter {
+  height: auto;
+  justify-content: flex-start;
+  padding-block: 24px;
+}
+
+#home.admin-home {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(180px, 220px) !important;
+  gap: 20px !important;
+  align-items: start;
+}
+
+#home .home-center,
+#home .home-dashboard {
+  min-width: 0;
+  width: 100%;
+}
+
+#home .home-center {
+  display: block !important;
+  border: 0;
+}
+
+#home .home-dashboard {
+  display: grid;
+  gap: 20px;
+}
+
+#home .dashboard-hero {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+#home .dashboard-stats {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+#home .dashboard-stat-card {
+  min-width: 0;
+}
+
+#home .dashboard-layout {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#home .dashboard-panel,
+#home .dashboard-chart-frame {
+  min-width: 0;
+}
+
+#home .dashboard-chart-frame canvas {
+  max-width: 100%;
+}
+
+#home .home-shortcuts,
+#home .home-stats-panel {
+  position: sticky;
+  top: 0;
+  max-height: calc(100dvh - 180px);
+  overflow-y: auto;
+}
+
+#home .home-stats-panel {
+  padding-top: 0;
+}
+
+@media (max-width: 1200px) {
+  #home.admin-home {
+    grid-template-columns: 200px minmax(0, 1fr) !important;
+  }
+
+  #home .home-stats-panel {
+    grid-column: 2;
+    position: static;
+    max-height: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #home .dashboard-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  #home.admin-home {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  #home .home-center {
+    order: -1;
+  }
+
+  #home .home-shortcuts,
+  #home .home-stats-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  #home .dashboard-stats,
+  #home .home-stats-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
