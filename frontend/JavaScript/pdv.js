@@ -41,11 +41,10 @@ function readSession() {
   catch (_) { return null; }
 }
 
-function pdvLogout() {
+function pdvVoltarAoDashboard() {
   window.clearInterval(_cobrancasTimer);
   _cobrancasTimer = null;
-  sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  window.location.replace('adm-login.html');
+  window.location.replace('adm.html');
 }
 
 // ── HISTÓRICO DE VENDAS ──────────────────────────────────────────
@@ -1045,6 +1044,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   mobileProducts?.addEventListener('click', () => setMobilePdvView('products'));
   mobileOrder?.addEventListener('click', () => setMobilePdvView('order'));
+  document.getElementById('pdvLogoutBtn')?.addEventListener('click', pdvVoltarAoDashboard);
 
   const session = readSession();
   if (!session) { window.location.replace('adm-login.html'); return; }

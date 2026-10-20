@@ -24,6 +24,7 @@ body {
   background: var(--bg);
   color: var(--text);
   height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1186,3 +1187,181 @@ input, select, textarea { font-size: 14px; }
 .toast.error   { background: var(--danger); }
 .toast.info    { background: var(--secondary); }
 @keyframes slideIn { from { transform: translateX(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Manter o caixa dentro da area util da janela, acima da barra do Windows. */
+@media (min-width: 901px) {
+  .pdv-left,
+  .pdv-right,
+  .order-panel,
+  .order-items { min-height: 0; }
+
+  #vistaPdv {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  #vistaPdv[hidden] { display: none; }
+
+  .pdv-mode-selector { flex-shrink: 0; }
+  .order-footer {
+    min-height: 0;
+    flex-shrink: 1;
+    overflow-y: auto;
+  }
+  .order-footer > * { flex-shrink: 0; }
+  .order-items { flex: 1 0 64px; }
+  .pendentes-grid { max-height: min(200px, 15dvh); }
+}
+
+@media (min-width: 901px) and (max-height: 760px) {
+  .pdv-logo { width: 30px; height: 30px; }
+
+  .pdv-session-info { gap: 6px; }
+  .pdv-avatar { width: 26px; height: 26px; }
+  .pdv-session-info strong { font-size: 12px; }
+
+  .pdv-action-btn,
+  .pdv-logout-btn {
+    min-height: 30px;
+    padding: 4px 9px;
+  }
+
+  .codigo-bar { padding: 6px 12px; }
+  #codigoInput { height: 34px; }
+
+  .produtos-toolbar {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+  #produtoSearch { height: 32px; }
+  .cat-btn { padding: 3px 9px; }
+
+  .produtos-grid { padding: 8px; gap: 8px; }
+  .produto-info { padding: 6px 8px 8px; }
+  .btn-add { height: 28px; margin-top: 4px; }
+
+  .pdv-top-tabs { padding: 6px 10px 0; }
+  .pdv-top-tab { min-height: 30px; padding: 4px 8px; }
+  .pdv-mode-selector { padding: 7px 10px; }
+  .mode-btn { height: 32px; }
+  .mesa-selector { padding: 8px 10px; }
+  #mesaSelect { height: 32px; }
+  .order-tab { padding: 7px 5px; }
+
+  .order-footer {
+    flex-shrink: 1;
+    min-height: 0;
+    overflow-y: auto;
+    gap: 7px;
+    padding: 7px 10px 8px;
+  }
+  .total-row strong { font-size: 18px; }
+  .checkout-summary { gap: 5px; padding: 7px; }
+  .checkout-summary input { height: 30px; }
+  .cash-row { gap: 5px; padding-top: 5px; }
+  .pgto-card-grid { gap: 4px; }
+  .pgto-card-btn { gap: 3px; padding: 6px; }
+  .pgto-icon-sm { width: 20px; height: 20px; }
+  #pedidoObs { padding: 5px 8px; }
+}
+
+@media (min-width: 901px) and (max-height: 600px) {
+  .pdv-logo { width: 26px; height: 26px; }
+  .codigo-bar { padding: 4px 10px; }
+  #codigoInput { height: 30px; }
+  .produtos-toolbar { padding: 4px 10px; }
+  #produtoSearch { height: 30px; }
+  .pdv-top-tabs { padding-top: 4px; }
+  .pdv-mode-selector { padding: 5px 8px; }
+  .mode-btn { height: 29px; }
+  .order-footer { gap: 5px; padding: 5px 8px 6px; }
+  .checkout-summary { gap: 3px; padding: 5px; }
+  .checkout-summary input { height: 27px; }
+  .pgto-card-btn { padding: 4px; }
+}
+
+
+@media (min-width: 901px) and (max-height: 760px) {
+  body .mode-btn,
+  body .order-tab,
+  body .cat-btn { min-height: 30px !important; }
+
+  .checkout-summary,
+  .cash-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+  .checkout-summary > .checkout-line,
+  .cash-row,
+  .cash-row > .checkout-line { grid-column: 1 / -1; }
+
+  .pgto-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  body .pgto-card-btn { min-height: 44px !important; font-size: 11px; }
+  #pedidoObs { height: 34px; }
+  .btn-action { height: 36px; }
+}
+
+@media (min-width: 901px) and (max-height: 760px) {
+  body .order-footer .section { padding: 6px !important; gap: 4px; }
+  body .checkout-summary input,
+  body #mesaSelect,
+  body #codigoInput,
+  body #produtoSearch { min-height: 30px !important; }
+  body #pedidoObs {
+    min-height: 34px !important;
+    padding: 5px 8px !important;
+  }
+  .cash-row { grid-template-columns: auto minmax(60px, 1fr) minmax(100px, 1fr); }
+  .cash-row > .checkout-line { grid-column: auto; gap: 4px; }
+  body .order-footer .btn-action { min-height: 36px !important; }
+}
+
+@media (min-width: 901px) and (max-height: 600px) {
+  .checkout-summary { grid-template-columns: auto 70px minmax(0, 1fr); }
+  .checkout-summary > .checkout-line { grid-column: auto; gap: 4px; }
+  body .order-footer .section { padding: 2px !important; }
+  .order-footer .section:has(#pedidoObs) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+}
+
+/* Reservar o espaco do icone e manter o texto da busca em uma linha. */
+body #produtoSearch {
+  padding-inline: 34px 12px !important;
+  line-height: normal;
+}
+.search-wrap { min-width: 0; flex-shrink: 0; }
+#codigoInput { min-width: 0; }
+
+@media (min-width: 901px) {
+  .pdv-brand-link { flex-shrink: 0; }
+  .pdv-brand-link > span {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    line-height: 1;
+  }
+  body .pdv-brand-link small { margin-top: 0; line-height: 12px; white-space: nowrap; }
+  body .pdv-topbar .global-search { min-width: 0; }
+  .pdv-topbar-right { flex-shrink: 0; }
+}
+
+/* Mesma largura total e altura de 72px do cabecalho do dashboard. */
+@media (min-width: 901px) {
+  body .pdv-topbar {
+    width: 100%;
+    height: 72px;
+    min-height: 72px !important;
+    padding: 8px 24px !important;
+    gap: 16px !important;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 600px) {
+  .order-items { flex-basis: 40px; }
+}

@@ -29,7 +29,10 @@ services:
         condition: service_healthy
 
   api:
-    build: .
+    build:
+      context: .
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     environment:
       DB_HOST: db
       DB_PORT: 5432

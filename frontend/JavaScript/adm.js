@@ -52,7 +52,6 @@ if (isAdminPanelPage) {
       const _s = JSON.parse(_rawSession);
       if (_s?.userKey === 'atendente') window.location.replace('atendente.html');
       if (_s?.userKey === 'cozinha')   window.location.replace('cozinha.html');
-      if (_s?.userKey === 'caixa')     window.location.replace('pdv.html');
     } catch (_) {}
   }
 }

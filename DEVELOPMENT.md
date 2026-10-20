@@ -49,6 +49,19 @@ Subir tudo:
 .\dev-start-python.ps1
 ```
 
+Se o build do backend falhar com `SSLEOFError` ao baixar pacotes do PyPI, escolha um indice acessivel pela rede do Docker e tente novamente. Por exemplo, este espelho foi validado:
+
+```powershell
+$env:PIP_INDEX_URL = "https://mirrors.ustc.edu.cn/pypi/simple"
+.\dev-start-python.ps1
+```
+
+Para voltar ao indice oficial no terminal atual:
+
+```powershell
+Remove-Item Env:PIP_INDEX_URL
+```
+
 Servicos:
 
 ```text

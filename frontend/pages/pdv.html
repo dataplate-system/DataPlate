@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111827" />
   <title>DataPlate PDV</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/pdv.css" />
+  <link rel="stylesheet" href="../Css/pdv.css?v=20261020-dashboard-header" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
@@ -51,7 +51,7 @@
           <small id="pdvUserRole">Operacional</small>
         </span>
       </div>
-      <button class="pdv-logout-btn" id="pdvLogoutBtn" onclick="pdvLogout()">Sair</button>
+      <button class="pdv-logout-btn" id="pdvLogoutBtn" type="button">Sair</button>
     </div>
   </header>
 
@@ -81,14 +81,14 @@
           <span class="pgto-opt-info"><strong>PIX</strong><small>Pagamento instantaneo</small></span>
           <span class="pgto-opt-arrow">›</span>
         </button>
-        <button class="pdv-pgto-opt" data-pgto="CREDITO" onclick="selecionarPdvPgto('CREDITO',this)">
-          <img src="../images/menu/Credito.png" class="pgto-icon" alt="Credito">
-          <span class="pgto-opt-info"><strong>Cartao Credito</strong><small>Parcelamento disponivel</small></span>
-          <span class="pgto-opt-arrow">›</span>
-        </button>
         <button class="pdv-pgto-opt" data-pgto="DEBITO" onclick="selecionarPdvPgto('DEBITO',this)">
           <img src="../images/menu/Debito.png" class="pgto-icon" alt="Debito">
           <span class="pgto-opt-info"><strong>Cartao Debito</strong><small>Debito na hora</small></span>
+          <span class="pgto-opt-arrow">›</span>
+        </button>
+        <button class="pdv-pgto-opt" data-pgto="CREDITO" onclick="selecionarPdvPgto('CREDITO',this)">
+          <img src="../images/menu/Credito.png" class="pgto-icon" alt="Credito">
+          <span class="pgto-opt-info"><strong>Cartao Credito</strong><small>Parcelamento disponivel</small></span>
           <span class="pgto-opt-arrow">›</span>
         </button>
         <button class="pdv-pgto-opt" data-pgto="DINHEIRO" onclick="selecionarPdvPgto('DINHEIRO',this)">
@@ -228,13 +228,13 @@
                 <img src="../images/menu/pix.png" class="pgto-icon-sm" alt="PIX">
                 <span>PIX</span>
               </button>
-              <button class="pgto-btn pgto-card-btn" data-pgto="CREDITO">
-                <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="Credito">
-                <span>Credito</span>
-              </button>
               <button class="pgto-btn pgto-card-btn" data-pgto="DEBITO">
                 <img src="../images/menu/Debito.png" class="pgto-icon-sm" alt="Debito">
                 <span>Debito</span>
+              </button>
+              <button class="pgto-btn pgto-card-btn" data-pgto="CREDITO">
+                <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="Credito">
+                <span>Credito</span>
               </button>
               <button class="pgto-btn pgto-card-btn" data-pgto="DINHEIRO">
                 <img src="../images/menu/dinheiro.png" class="pgto-icon-sm" alt="Dinheiro">
@@ -274,13 +274,13 @@
                 <img src="../images/menu/pix.png" class="pgto-icon-sm" alt="PIX">
                 <span>PIX</span>
               </button>
-              <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="CREDITO">
-                <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="Credito">
-                <span>Credito</span>
-              </button>
               <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="DEBITO">
                 <img src="../images/menu/Debito.png" class="pgto-icon-sm" alt="Debito">
                 <span>Debito</span>
+              </button>
+              <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="CREDITO">
+                <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="Credito">
+                <span>Credito</span>
               </button>
               <button class="pgto-btn pgto-conta pgto-card-btn" data-pgto="DINHEIRO">
                 <img src="../images/menu/dinheiro.png" class="pgto-icon-sm" alt="Dinheiro">
@@ -342,7 +342,6 @@
 
   <div id="toastArea" aria-live="polite"></div>
 
-  <script src="../JavaScript/pdv.js"></script>
+  <script src="../JavaScript/pdv.js?v=20261020-compact-window"></script>
 </body>
 </html>
-
