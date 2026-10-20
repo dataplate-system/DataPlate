@@ -383,14 +383,6 @@ function getFilteredOrders() {
     });
 }
 
-function setConnectionStatus(text, mode) {
-  const status = document.getElementById('connectionStatus');
-  if (!status) return;
-  status.textContent = text;
-  status.classList.toggle('online', mode === 'online');
-  status.classList.toggle('offline', mode === 'offline');
-}
-
 function showToast(message, type = 'error') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
@@ -729,12 +721,10 @@ async function loadOrders({ silent = false } = {}) {
     kitchenOrders = novos;
     fallbackMode = false;
     fallbackNoticeShown = false;
-    setConnectionStatus('Conectado', 'online');
   } catch (error) {
     console.error('[cozinha]', error);
     if (!fallbackMode || kitchenOrders.length === 0) kitchenOrders = getFallbackOrders();
     fallbackMode = true;
-    setConnectionStatus('Demonstração', 'offline');
     if (!fallbackNoticeShown) {
       showToast('API indisponível. Exibindo pedidos de demonstração.', 'warning');
       fallbackNoticeShown = true;
@@ -866,7 +856,6 @@ function connectKitchenWebSocket() {
     kitchenSocket = new WebSocket(wsBaseUrl);
     kitchenSocket.addEventListener('open', () => {
       websocketRetryDelay = 1000;
-      if (!fallbackMode) setConnectionStatus('Conectado', 'online');
       window.clearInterval(autoRefreshTimer);
       autoRefreshTimer = null;
     });
@@ -907,7 +896,6 @@ function connectKitchenWebSocket() {
 function bindEvents() {
   document.getElementById('logoutButton')?.addEventListener('click', logout);
   document.getElementById('reloadKitchen')?.addEventListener('click', () => loadOrders());
-  document.getElementById('refreshButton')?.addEventListener('click', () => loadOrders());
   document.getElementById('clearFilters')?.addEventListener('click', () => {
     document.getElementById('orderSearch').value = '';
     document.getElementById('statusFilter').value = '';

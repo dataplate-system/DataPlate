@@ -32,7 +32,7 @@ from app.routers import (
     restaurante,
     usuarios,
 )
-from app.seed import ensure_default_admin
+from app.seed import ensure_default_users
 
 
 settings = get_settings()
@@ -40,8 +40,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # Garante o administrador padrao em qualquer ambiente (banco local de cada pessoa do grupo)
-    ensure_default_admin()
+    # Garante o administrador e, quando habilitados, os acessos de teste locais.
+    ensure_default_users()
     yield
 
 
@@ -49,8 +49,8 @@ app = FastAPI(title="DataPlate API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    # O Live Server abre tanto em localhost quanto em 127.0.0.1
-    allow_origins=["http://localhost:5500", "http://127.0.0.1:5500"],
+    # Compartilha a configuracao de origens entre o frontend web e o app Capacitor.
+    allow_origins=settings.cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

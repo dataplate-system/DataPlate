@@ -1031,6 +1031,21 @@ function fecharSucesso() {
 
 // -- INIT ----------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+  const mobileProducts = document.getElementById('pdvMobileProducts');
+  const mobileOrder = document.getElementById('pdvMobileOrder');
+  const setMobilePdvView = (view) => {
+    const showOrder = view === 'order';
+    document.body.classList.toggle('mobile-pdv-order', showOrder);
+    mobileProducts?.classList.toggle('is-active', !showOrder);
+    mobileOrder?.classList.toggle('is-active', showOrder);
+    mobileProducts?.setAttribute('aria-pressed', String(!showOrder));
+    mobileOrder?.setAttribute('aria-pressed', String(showOrder));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  mobileProducts?.addEventListener('click', () => setMobilePdvView('products'));
+  mobileOrder?.addEventListener('click', () => setMobilePdvView('order'));
+
   const session = readSession();
   if (!session) { window.location.replace('adm-login.html'); return; }
 

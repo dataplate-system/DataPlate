@@ -369,6 +369,9 @@ async function getJson(endpoint) {
 // =============================================
 
 function navigateTo(sectionId) {
+  // Links antigos do dashboard continuam abrindo a nova tela inicial.
+  if (sectionId === 'dashboard') sectionId = 'home';
+
   // Hide all sections
   document.querySelectorAll('.content-section').forEach(section => {
     section.classList.remove('active');
@@ -404,6 +407,7 @@ function navigateTo(sectionId) {
 
   // Mapa: secao -> [grupo pai, nome de exibicao]
   const NAV_MAP = {
+    home:                ['Início',       'Dashboard'],
     pedidos:             ['Operações',    'Pedidos'],
     cancelamentos:       ['Operações',    'Cancelamentos'],
     pagamentos:          ['Operações',    'Pagamentos'],
@@ -414,7 +418,6 @@ function navigateTo(sectionId) {
     funcionarios:        ['Cadastros',    'Funcionários'],
     cardapio:            ['Cadastros',    'Cardápio'],
     insumos:             ['Cadastros',    'Insumos'],
-    dashboard:           ['Relatórios',   'Dashboard'],
     'rel-financeiro':    ['Relatórios',   'Financeiro'],
     'rel-cardapio':      ['Relatórios',   'Desempenho do Cardápio'],
     'rel-operacional':   ['Relatórios',   'Operacional'],
@@ -427,6 +430,7 @@ function navigateTo(sectionId) {
   // Destacar botao pai do top nav
   document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
   const navInfo = NAV_MAP[sectionId];
+  document.getElementById('mobileAdminHome')?.classList.toggle('active', sectionId === 'home' || !selectedSection);
   if (navInfo) {
     document.querySelectorAll('.nav-button').forEach(btn => {
       if (btn.textContent.trim() === navInfo[0]) btn.classList.add('active');
@@ -451,8 +455,7 @@ function navigateTo(sectionId) {
 
   // Load data for the section being shown
   const sectionLoaders = {
-    home:           carregarHomeStats,
-    dashboard:      carregarRelatorios,
+    home:           carregarRelatorios,
     clientes:       carregarClientes,
     funcionarios:   carregarFuncionarios,
     fornecedores:   carregarFornecedores,
@@ -473,6 +476,37 @@ function navigateTo(sectionId) {
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
 }
 window.navigateTo = navigateTo;
+
+function openDashboardCard(sectionId, filterValue = '') {
+  const today = new Date();
+  const date = document.getElementById('dashboard')?.dataset.date
+    || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+
+  if (sectionId === 'rel-vendas') {
+    section.querySelectorAll('input[type="date"]').forEach(input => { input.value = date; });
+  } else if (sectionId === 'pedidos') {
+    section.querySelector('[data-table-filter]').value = filterValue;
+    section.querySelector('[data-table-date]').value = date;
+  } else if (sectionId === 'mesas') {
+    document.getElementById('tableSearch').value = '';
+    document.getElementById('tableFilter').value = filterValue;
+  } else if (sectionId === 'cozinha') {
+    document.getElementById('filtroCozinha').value = filterValue;
+    document.getElementById('filtroCozinhaData').value = date;
+  } else if (sectionId === 'insumos') {
+    section.querySelector('[data-table-filter]').value = filterValue;
+  }
+
+  navigateTo(sectionId);
+  document.querySelector('.main-content')?.scrollTo({ top: 0 });
+  window.scrollTo({ top: 0 });
+  const heading = section.querySelector('h1');
+  heading?.setAttribute('tabindex', '-1');
+  heading?.focus({ preventScroll: true });
+}
+window.openDashboardCard = openDashboardCard;
 
 const ADMIN_HOME_ROUTES = [
   { id: 'dashboard', labels: ['dashboard', 'painel', 'indicadores', 'controle'] },
@@ -1759,7 +1793,7 @@ function buildTableCard(table) {
     : `<span>${table.status === 'reservada' ? escapeHtml(table.reservationName || 'Reserva sem nome') : 'Sem pedidos ativos'}</span>`;
 
   return `
-    <article class="table-card ${meta.cardClass} ${activeClass}" onclick="selectTable(${table.id})" aria-label="Mesa ${escapeHtml(table.number)}, ${meta.label}">
+    <article class="table-card ${meta.cardClass} ${activeClass}" tabindex="0" onkeydown="if(event.target === this && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); selectTable(${table.id}); }" onclick="selectTable(${table.id})" aria-label="Mesa ${escapeHtml(table.number)}, ${meta.label}">
       <div class="table-card-header">
         <div class="table-card-number">Mesa ${escapeHtml(table.number)}</div>
         ${buildStatusBadge(table.status)}
@@ -2304,6 +2338,7 @@ function applyToolbarFilters(sectionId) {
   const filterColumn = Number.parseInt(selectedOption?.dataset.filterColumn || '', 10);
   const filterValue = normalizeFilterText(selectedOption?.value);
   const filterMatch = selectedOption?.dataset.filterMatch || 'includes';
+  const filterValues = selectedOption?.dataset.filterValues?.split(',').map(normalizeFilterText);
   const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => !row.querySelector('td[colspan]'));
 
   sortTableRows(rows, selectedOption).forEach(row => tbody.appendChild(row));
@@ -2315,7 +2350,8 @@ function applyToolbarFilters(sectionId) {
     const matchesDate = !dateTerm || rowText.includes(dateTerm);
     const matchesFilter = !filterValue
       || !Number.isInteger(filterColumn)
-      || (filterMatch === 'exact' ? columnText === filterValue : columnText.includes(filterValue));
+      || (filterValues ? filterValues.includes(columnText)
+        : filterMatch === 'exact' ? columnText === filterValue : columnText.includes(filterValue));
 
     row.style.display = matchesSearch && matchesDate && matchesFilter ? '' : 'none';
   });
@@ -2325,7 +2361,8 @@ document.querySelectorAll('[data-table-filter], [data-table-search], [data-table
   const eventName = element?.tagName === 'INPUT' ? 'input' : 'change';
   element?.addEventListener(eventName, () => {
     const sectionId = element.dataset.section || element.closest('.content-section')?.id;
-    if (sectionId) applyToolbarFilters(sectionId);
+    if (sectionId === 'pedidos') carregarPedidos();
+    else if (sectionId) applyToolbarFilters(sectionId);
   });
 });
 
@@ -2936,7 +2973,7 @@ function connectAdminWebSocket() {
           carregarPedidos();
           carregarCozinha();
           carregarUltimosPedidosDashboard();
-          if (document.getElementById('dashboard')?.classList.contains('active')) {
+          if (document.getElementById('home')?.classList.contains('active')) {
             carregarRelatorios();
           }
         }, 500);
@@ -3117,11 +3154,16 @@ function setStatByLabel(sectionId, label, value, change) {
 }
 
 function updateDashboardResumo(resumo) {
+  const dashboard = document.getElementById('dashboard');
+  if (dashboard && resumo.inicio) dashboard.dataset.date = resumo.inicio;
   const ativos = Number(resumo.pedidosRecebidos || 0)
     + Number(resumo.pedidosEmPreparo || 0)
     + Number(resumo.pedidosProntos || 0);
   setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), 'Dados reais do banco');
+  const total = ativos + Number(resumo.pedidosEntregues || 0) + Number(resumo.pedidosCancelados || 0);
+  setStatByLabel('dashboard', 'Total de pedidos', String(total), 'Todos os pedidos de hoje, incluindo cancelados');
   setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
+  setStatByLabel('dashboard', 'Cozinha em preparo', String(resumo.pedidosEmPreparo || 0), `${resumo.pedidosRecebidos || 0} aguardando e ${resumo.pedidosProntos || 0} prontos para despacho`);
   setStatByLabel('dashboard', 'Ticket médio', formatCurrency(resumo.ticketMedio), 'Calculado com pedidos não cancelados');
 
   // Graficos do dashboard com dados reais
@@ -3153,6 +3195,7 @@ function updateDashboardMesas(mesas) {
   const ocupadas = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'ocupada').length;
   const disponiveis = mesas.filter((mesa) => apiStatusToUiStatus(mesa.status) === 'disponivel').length;
   setStatByLabel('dashboard', 'Mesas ocupadas', `${ocupadas}/${total}`, `${disponiveis} mesas disponíveis`);
+  setStatByLabel('dashboard', 'Mesas disponíveis', String(disponiveis), `De ${total} mesas cadastradas`);
 }
 
 // -- Grupos colapsaveis do sidebar ------------------------------------
@@ -3185,6 +3228,7 @@ function carregarHomeStats() {
 
   getJson('/relatorios/resumo')
     .then((resumo) => {
+      updateDashboardResumo(resumo);
       const ativos      = Number(resumo.pedidosRecebidos || 0) + Number(resumo.pedidosEmPreparo || 0) + Number(resumo.pedidosProntos || 0);
       const prontos     = Number(resumo.pedidosProntos || 0);
       const entregues   = Number(resumo.pedidosEntregues || 0);
@@ -3193,7 +3237,6 @@ function carregarHomeStats() {
 
       // Faturamento
       if (el('homeFaturamento'))       el('homeFaturamento').textContent       = formatCurrency(resumo.faturamento);
-      if (el('homeFocusFaturamento'))  el('homeFocusFaturamento').textContent  = formatCurrency(resumo.faturamento);
       if (el('homeFaturamentoDetalhe'))el('homeFaturamentoDetalhe').textContent = `${totalPed} pedido(s) no dia`;
 
       // Ticket medio
@@ -3207,12 +3250,10 @@ function carregarHomeStats() {
 
       // Prontos p/ despacho
       if (el('homeProntos'))           el('homeProntos').textContent           = String(prontos);
-      if (el('homeFocusProntos'))      el('homeFocusProntos').textContent      = String(prontos);
       el('homeStatProntos')?.classList.toggle('has-alert', prontos > 0);
 
       // Em andamento
       if (el('homePedidosAtivos'))     el('homePedidosAtivos').textContent     = String(ativos);
-      if (el('homeFocusPedidos'))      el('homeFocusPedidos').textContent      = String(ativos);
       if (el('homePedidosDetalhe'))    el('homePedidosDetalhe').textContent    =
         `${resumo.pedidosRecebidos || 0} aguardando · ${resumo.pedidosEmPreparo || 0} em preparo`;
 
@@ -3221,34 +3262,26 @@ function carregarHomeStats() {
       const cancelCard = el('homeStatCancelamentos');
       if (cancelCard) cancelCard.classList.toggle('has-alert', cancelados > 0);
     })
-    .catch(() => {});
+    .catch((err) => console.error('[home-resumo]', err));
 
   getJson('/mesas')
     .then((mesas) => {
       const lista      = mesas || [];
-      const ocupadas   = lista.filter((m) => (m.status || '').toLowerCase() === 'ocupada').length;
-      const disponiveis= lista.filter((m) => (m.status || '').toLowerCase() === 'disponivel').length;
+      updateDashboardMesas(lista);
+      renderTableOccupancyChart(lista);
+      const ocupadas   = lista.filter((m) => apiStatusToUiStatus(m.status) === 'ocupada').length;
+      const disponiveis= lista.filter((m) => apiStatusToUiStatus(m.status) === 'disponivel').length;
       const total      = lista.length;
       if (el('homeMesas'))       el('homeMesas').textContent       = `${ocupadas}/${total}`;
-      if (el('homeFocusMesas'))  el('homeFocusMesas').textContent  = `${ocupadas}/${total}`;
       if (el('homeMesasDetalhe'))el('homeMesasDetalhe').textContent = `${disponiveis} disponíve${disponiveis === 1 ? 'l' : 'is'}`;
     })
-    .catch(() => {});
+    .catch((err) => console.error('[home-mesas]', err));
 }
 window.carregarHomeStats = carregarHomeStats;
 
 function carregarRelatorios() {
-  // Dashboard: resumo de hoje
-  getJson('/relatorios/resumo')
-    .then(updateDashboardResumo)
-    .catch((err) => console.error('[relatorios]', err));
-
-  getJson('/mesas')
-    .then((mesas) => {
-      updateDashboardMesas(mesas);
-      renderTableOccupancyChart(mesas);
-    })
-    .catch((err) => console.error('[relatorios-mesas]', err));
+  // Uma consulta de resumo e mesas atualiza o dashboard e o painel lateral.
+  carregarHomeStats();
 
   // Ultimos pedidos no dashboard
   carregarUltimosPedidosDashboard();
@@ -3932,12 +3965,21 @@ window.abrirDetalhesPedido = function(id) {
 };
 
 let _pedidosPage = 0;
+let _pedidosRequest = 0;
 
 function carregarPedidos(page = 0) {
+  const requestId = ++_pedidosRequest;
   _pedidosPage = page;
   showTableSkeleton('pedidos');
-  getJson(`/pedidos?page=${page}&size=50`)
+  const params = new URLSearchParams({ page: String(page), size: '50' });
+  const section = document.getElementById('pedidos');
+  const date = section?.querySelector('[data-table-date]')?.value;
+  const statuses = section?.querySelector('[data-table-filter]')?.selectedOptions[0]?.dataset.pedidoStatus;
+  if (date) params.set('data', date);
+  statuses?.split(',').forEach(status => params.append('status', status));
+  getJson(`/pedidos?${params}`)
     .then(data => {
+      if (requestId !== _pedidosRequest) return;
       // suporta resposta paginada {content, totalPages} ou lista simples
       const list = Array.isArray(data) ? data : (data.content || []);
       const totalPages = data.totalPages ?? 1;
@@ -3946,6 +3988,7 @@ function carregarPedidos(page = 0) {
       renderPedidosPaginacao(page, totalPages);
     })
     .catch((err) => {
+      if (requestId !== _pedidosRequest) return;
       const msg = err.message || 'Erro ao carregar pedidos.';
       setTableBody('pedidos', [], msg);
       console.error('[pedidos]', err);
@@ -4070,6 +4113,7 @@ function carregarCozinha() {
     });
 
     const filtro = document.getElementById('filtroCozinha')?.value || '';
+    const date = document.getElementById('filtroCozinhaData')?.value || '';
     
     Object.entries(cols).forEach(([status, col]) => {
       if (!col) return;
@@ -4086,6 +4130,7 @@ function carregarCozinha() {
       const ativo = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status);
 
       if (!ativo) return false;
+      if (date && p.dataHora?.slice(0, 10) !== date) return false;
 
       // Sem filtro = mostra todos
       if (!filtro) return true;
@@ -4618,6 +4663,25 @@ function carregarNotificacoes() {
 })();
 
 // Alerta de estoque baixo no dashboard
+const alertaEstoqueBaixo = document.getElementById('lowStockAlert');
+const cienciaEstoqueBaixo = document.getElementById('lowStockAcknowledgement');
+alertaEstoqueBaixo?.addEventListener('cancel', (event) => event.preventDefault());
+document.getElementById('lowStockAlertConfirm')?.addEventListener('click', () => {
+  alertaEstoqueBaixo.close();
+  cienciaEstoqueBaixo?.showModal();
+});
+document.getElementById('lowStockAcknowledgementClose')?.addEventListener('click', () => {
+  cienciaEstoqueBaixo.close();
+});
+
+function mostrarAlertaEstoqueBaixo(quantidade) {
+  if (!alertaEstoqueBaixo || cienciaEstoqueBaixo?.open) return;
+  document.getElementById('lowStockAlertSummary').textContent = quantidade === 1
+    ? '1 insumo com estoque baixo.'
+    : `${quantidade} insumos com estoque baixo.`;
+  if (!alertaEstoqueBaixo.open) alertaEstoqueBaixo.showModal();
+}
+
 function verificarEstoqueBaixo() {
   const prefs = JSON.parse(localStorage.getItem(NOTIFICACOES_KEY) || '{}');
 
@@ -4637,7 +4701,7 @@ function verificarEstoqueBaixo() {
       card?.classList.toggle('has-critical', criticos.length > 0);
 
       if (criticos.length && prefs.alertaEstoqueBaixo !== false) {
-        showToast(`Estoque baixo: ${criticos.length} insumo(s) abaixo do mínimo. Verifique a tela de Insumos.`, 'error');
+        mostrarAlertaEstoqueBaixo(criticos.length);
       }
     })
     .catch(() => {

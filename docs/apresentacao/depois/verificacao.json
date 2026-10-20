@@ -1,0 +1,194 @@
+[
+  {
+    "name": "login",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "admin",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "mesas",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "clientes",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "cozinha",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "atendente",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "pdv",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "cardapio",
+    "width": 390,
+    "scroll": 390,
+    "overflow": []
+  },
+  {
+    "name": "login",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "admin",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "mesas",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "clientes",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "cozinha",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "atendente",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "pdv",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "cardapio",
+    "width": 320,
+    "scroll": 320,
+    "overflow": []
+  },
+  {
+    "name": "login",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "admin",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "mesas",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "clientes",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "cozinha",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "atendente",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "pdv",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "cardapio",
+    "width": 768,
+    "scroll": 768,
+    "overflow": []
+  },
+  {
+    "name": "login",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "admin",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "mesas",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "clientes",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "cozinha",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "atendente",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "pdv",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  },
+  {
+    "name": "cardapio",
+    "width": 1440,
+    "scroll": 1440,
+    "overflow": []
+  }
+]

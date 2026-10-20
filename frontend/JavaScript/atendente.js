@@ -84,14 +84,6 @@ function showToast(msg, type = 'success') {
   document.getElementById('toastContainer').appendChild(el);
   setTimeout(() => el.remove(), 4500);
 }
-function setStatus(text, mode) {
-  const el = document.getElementById('connectionStatus');
-  if (!el) return;
-  el.textContent = text;
-  el.classList.toggle('online', mode === 'online');
-  el.classList.toggle('offline', mode === 'offline');
-}
-
 // ── Relogio ───────────────────────────────────────────────────────
 function updateClock() {
   const now = new Date();
@@ -585,10 +577,8 @@ async function loadData({ silent = false } = {}) {
     const list = Array.isArray(ordersRaw) ? ordersRaw : [];
     allOrders = list.map(o => ({ ...o, status: String(o.status || '').toUpperCase() }));
     allMesas  = (mesasRaw || []).filter(m => m.ativo !== false).sort((a, b) => a.numero - b.numero);
-    setStatus('Conectado', 'online');
   } catch (err) {
     console.error('[atendente]', err);
-    setStatus('Offline', 'offline');
   }
   render();
 }
@@ -782,7 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sessionRole').textContent     = session.role    || 'Operacional';
 
   document.getElementById('logoutButton').addEventListener('click', logout);
-  document.getElementById('refreshButton').addEventListener('click', () => loadData());
   document.getElementById('reloadPanel').addEventListener('click', () => loadData());
 
   document.getElementById('mesaModal')?.addEventListener('click', (e) => {

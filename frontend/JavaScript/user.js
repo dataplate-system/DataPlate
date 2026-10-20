@@ -1,7 +1,9 @@
 ﻿const botoes = document.querySelectorAll(".categorias button");
 const itens = document.querySelectorAll(".item");
 const searchInput = document.getElementById("search");
-const API_BASE_URL = (() => {
+const API_BASE_URL = window.DATAPLATE_API_BASE_URL
+  || localStorage.getItem('DATAPLATE_API_BASE_URL')
+  || (() => {
   const h = window.location.hostname;
   const isLocalFile = window.location.protocol === 'file:' || !h;
   const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
@@ -9,7 +11,7 @@ const API_BASE_URL = (() => {
   if (isLocalFile) return 'http://localhost:8081/api';
   if (isLocal) return `http://${h}:8081/api`;
   return 'http://localhost:8081/api';
-})();
+  })();
 
 async function readResponseBody(response) {
   const text = await response.text();

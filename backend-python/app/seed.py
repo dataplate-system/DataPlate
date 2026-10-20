@@ -1,4 +1,4 @@
-"""Cria o administrador padrao do DataPlate ao iniciar a API.
+"""Cria os acessos padrao do DataPlate ao iniciar a API.
 
 Como cada pessoa do grupo tem o proprio banco local, o usuario nao vem junto
 com o codigo. Este modulo garante que todo ambiente tenha um ADMIN para entrar
@@ -10,6 +10,12 @@ Credenciais padrao (apenas para desenvolvimento):
 
 Para mudar, defina variaveis de ambiente no docker-compose ou no .env:
     DEFAULT_ADMIN_CPF, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_NOME
+O Docker local tambem habilita DEFAULT_TEST_USERS_ENABLED=true para criar:
+    000.000.000-01: Gerente
+    000.000.000-02: Atendente
+    000.000.000-03: Cozinha
+    000.000.000-04: Caixa
+Todos usam admin123. Esses CPFs simplificados servem apenas para testes de login.
 Para desligar (producao):
     DEFAULT_ADMIN_ENABLED=false
 """
@@ -28,13 +34,19 @@ logger = logging.getLogger("uvicorn.error")
 DEFAULT_ADMIN_CPF = "00000000191"
 DEFAULT_ADMIN_PASSWORD = "admin123"
 DEFAULT_ADMIN_NOME = "Administrador"
+DEFAULT_TEST_USERS = (
+    ("Gerente", "00000000001", Role.ADMIN),
+    ("Atendente", "00000000002", Role.FUNCIONARIO),
+    ("Cozinha", "00000000003", Role.COZINHA),
+    ("Caixa", "00000000004", Role.CAIXA),
+)
 
 
 def _only_digits(value: str) -> str:
     return "".join(c for c in (value or "") if c.isdigit())
 
 
-def ensure_default_admin() -> None:
+def ensure_default_users() -> None:
     if os.getenv("DEFAULT_ADMIN_ENABLED", "true").strip().lower() in {"0", "false", "no"}:
         return
 
@@ -46,6 +58,10 @@ def ensure_default_admin() -> None:
         logger.warning("DEFAULT_ADMIN_CPF invalido (precisa ter 11 digitos); administrador padrao nao criado.")
         return
 
+    users = [(nome, cpf, Role.ADMIN, senha)]
+    if os.getenv("DEFAULT_TEST_USERS_ENABLED", "false").strip().lower() in {"1", "true", "yes"}:
+        users.extend((nome, cpf, role, DEFAULT_ADMIN_PASSWORD) for nome, cpf, role in DEFAULT_TEST_USERS)
+
     generator = get_db()
     db = next(generator)
     try:
@@ -53,27 +69,28 @@ def ensure_default_admin() -> None:
         db.execute(text("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ativo BOOLEAN NOT NULL DEFAULT TRUE"))
         db.commit()
 
-        if db.scalar(select(User).where(User.cpf == cpf)) is not None:
-            return
+        for user_nome, user_cpf, user_role, user_senha in users:
+            if db.scalar(select(User).where(User.cpf == user_cpf)) is not None:
+                continue
 
-        db.add(
-            User(
-                nome=nome,
-                cpf=cpf,
-                senha_hash=hash_password(senha),
-                role=Role.ADMIN.value,
-                ativo=True,
+            db.add(
+                User(
+                    nome=user_nome,
+                    cpf=user_cpf,
+                    senha_hash=hash_password(user_senha),
+                    role=user_role.value,
+                    ativo=True,
+                )
             )
-        )
-        db.commit()
-        logger.info("Administrador padrao criado (CPF %s).", cpf)
+            db.commit()
+            logger.info("Acesso padrao criado (perfil %s, CPF %s).", user_role.value, user_cpf)
     except Exception:
         db.rollback()
-        logger.exception("Nao foi possivel criar o administrador padrao.")
+        logger.exception("Nao foi possivel criar os acessos padrao.")
         raise
     finally:
         generator.close()
 
 
 if __name__ == "__main__":
-    ensure_default_admin()
+    ensure_default_users()

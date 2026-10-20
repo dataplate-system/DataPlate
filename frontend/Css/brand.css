@@ -1,0 +1,73 @@
+/* Marca compartilhada: nome e talheres alinhados, com a cor original. */
+.dataplate-brand,
+.admin-header .dataplate-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.dataplate-brand .dataplate-brand-name {
+  display: block;
+  color: #f54c01 !important;
+  -webkit-text-fill-color: #f54c01 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap;
+}
+
+.dataplate-brand .dataplate-brand-mark {
+  --brand-icon-size: 36px;
+  position: relative;
+  display: block;
+  flex: 0 0 var(--brand-icon-size);
+  width: var(--brand-icon-size);
+  height: var(--brand-icon-size);
+  overflow: hidden;
+}
+
+/* O PNG tem 148 x 104 px, com o simbolo em x=41, y=14 e 74 x 74 px.
+   Recorta apenas o espaco transparente ao exibir o arquivo original. */
+.dataplate-brand .dataplate-brand-mark img {
+  position: absolute !important;
+  left: calc(var(--brand-icon-size) * -41 / 74) !important;
+  top: calc(var(--brand-icon-size) * -14 / 74) !important;
+  width: calc(var(--brand-icon-size) * 148 / 74) !important;
+  height: calc(var(--brand-icon-size) * 104 / 74) !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  object-fit: contain !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.login-card:has(.login-brand)::before {
+  content: none;
+}
+
+.login-brand {
+  display: flex !important;
+  width: max-content;
+  margin: 0 auto 24px;
+}
+
+.site-brand {
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.site-footer .dataplate-brand {
+  margin-bottom: 16px;
+}
