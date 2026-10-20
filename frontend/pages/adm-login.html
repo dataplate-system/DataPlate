@@ -5,45 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DataPlate - Login Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/adm-login.css" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
+  <link rel="stylesheet" href="../Css/admin-login.css" />
 </head>
 <body>
-  <main class="login-shell">
-    <section class="login-panel" aria-label="Login do administrador">
-      <div class="login-card">
-        <img class="login-logo" src="../images/brand/logo-dataplate.png" alt="Logo do DataPlate" />
-        <div class="login-card-header">
-          <h1>Painel de Controle</h1>
+  <main class="admin-login-page">
+    <section class="admin-login-card" aria-label="Acesso administrativo">
+      <a class="admin-login-brand" href="index.html" aria-label="DataPlate - início">
+        <span class="admin-login-brand-mark" aria-hidden="true">D</span>
+        <span>DataPlate</span>
+      </a>
+
+      <header class="admin-login-header">
+        <h1>Boas-vindas!</h1>
+        <p>Entre com seus dados para acessar o painel.</p>
+      </header>
+
+      <form id="adminLoginForm" novalidate>
+        <div class="form-group">
+          <label for="adminCpf">CPF</label>
+          <input id="adminCpf" name="cpf" type="text" value="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
         </div>
 
-        <form id="adminLoginForm" novalidate>
-          <div class="form-group">
-            <label for="adminCpf">CPF</label>
-            <input id="adminCpf" name="cpf" type="text" value="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off" required />
+        <div class="form-group">
+          <label for="adminPassword">Senha</label>
+          <div class="password-field">
+            <input id="adminPassword" name="password" type="password" value="admin123" autocomplete="current-password" minlength="6" required />
+            <button type="button" id="togglePassword" aria-label="Mostrar senha">Mostrar</button>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label for="adminPassword">Senha</label>
-            <div class="password-field">
-              <input id="adminPassword" name="password" type="password" value="admin123" autocomplete="current-password" minlength="6" required />
-              <button type="button" id="togglePassword" aria-label="Mostrar senha">Mostrar</button>
-            </div>
-          </div>
+        <div class="login-options-row">
+          <label class="remember-row">
+            <input type="checkbox" name="remember" checked />
+            <span>Manter acesso neste navegador</span>
+          </label>
+          <a class="forgot-password-link" href="adm-recuperar-senha.html">Esqueci minha senha</a>
+        </div>
 
-          <div class="login-options-row">
-            <label class="remember-row">
-              <input type="checkbox" name="remember" checked />
-              <span>Manter acesso neste navegador</span>
-            </label>
-            <a class="forgot-password-link" href="adm-recuperar-senha.html">Esqueci minha senha</a>
-          </div>
+        <p class="login-error" id="loginError" role="alert"></p>
 
-          <p class="login-error" id="loginError" role="alert"></p>
-
-          <button class="login-button" type="submit">Entrar</button>
-        </form>
-      </div>
+        <button class="login-button" type="submit">Entrar</button>
+      </form>
+      <p class="admin-login-help">Acesso seguro à gestão do seu restaurante.</p>
     </section>
   </main>
 
@@ -51,4 +55,3 @@
   <script src="../JavaScript/adm-login.js" defer></script>
 </body>
 </html>
-

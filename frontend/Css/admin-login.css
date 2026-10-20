@@ -1,0 +1,272 @@
+:root {
+  --login-accent: #f05a24;
+  --login-accent-hover: #d94a18;
+  --login-text: #202124;
+  --login-muted: #6b7280;
+  --login-border: #e2e5e9;
+}
+
+body {
+  margin: 0 !important;
+  min-width: 320px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.admin-login-page {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px 20px;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(240, 90, 36, 0.08), transparent 42%),
+    #f5f6f8;
+}
+
+.admin-login-card {
+  width: min(100%, 440px);
+  padding: clamp(28px, 5vw, 44px);
+  border: 1px solid #e8eaed;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(31, 41, 55, 0.09) !important;
+}
+
+.admin-login-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 38px;
+  color: var(--login-text);
+  font-size: 19px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.admin-login-brand-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--login-accent);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.admin-login-header {
+  margin-bottom: 28px;
+}
+
+.admin-login-eyebrow {
+  margin: 0 0 10px;
+  color: var(--login-accent) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.admin-login-header h1 {
+  margin: 0 0 8px !important;
+  color: var(--login-text) !important;
+  font-size: 32px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.15 !important;
+}
+
+.admin-login-header > p:last-child {
+  margin: 0;
+  color: var(--login-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.admin-login-card .form-group {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.admin-login-card .form-group label,
+.admin-login-card .remember-row {
+  color: #3f434a !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+  text-transform: none !important;
+}
+
+.admin-login-card .form-group input {
+  width: 100%;
+  min-height: 50px !important;
+  padding: 0 14px !important;
+  border: 1px solid var(--login-border) !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  color: var(--login-text) !important;
+  font-size: 15px !important;
+}
+
+.admin-login-card .form-group input:focus {
+  border-color: var(--login-accent) !important;
+  box-shadow: 0 0 0 4px rgba(240, 90, 36, 0.13) !important;
+  outline: none !important;
+}
+
+.admin-login-card .password-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid var(--login-border);
+  border-radius: 10px;
+}
+
+.admin-login-card .password-field:focus-within {
+  border-color: var(--login-accent);
+  box-shadow: 0 0 0 4px rgba(240, 90, 36, 0.13) !important;
+}
+
+.admin-login-card .password-field input {
+  min-width: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.admin-login-card .password-field input:focus {
+  box-shadow: none !important;
+}
+
+.admin-login-card .password-field button {
+  min-width: 74px;
+  min-height: 48px !important;
+  padding: 0 12px;
+  border: 0 !important;
+  background: #fff !important;
+  color: var(--login-accent) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+}
+
+.admin-login-card .login-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 2px 0 18px;
+}
+
+.admin-login-card .remember-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--login-muted) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.admin-login-card .remember-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--login-accent);
+}
+
+.admin-login-card .forgot-password-link {
+  color: var(--login-accent) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-decoration: none;
+}
+
+.admin-login-card .forgot-password-link:hover {
+  color: var(--login-accent-hover) !important;
+  text-decoration: underline;
+}
+
+.admin-login-card .login-error:empty {
+  display: none;
+}
+
+.admin-login-card .login-error:not(:empty) {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fff5f5;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-login-card .login-error.is-success:not(:empty) {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.admin-login-card .login-button {
+  width: 100%;
+  min-height: 50px !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: var(--login-accent) !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.admin-login-card .login-button:hover {
+  background: var(--login-accent-hover) !important;
+  transform: translateY(-1px);
+}
+
+.admin-login-card .login-button:focus-visible,
+.admin-login-card .password-field button:focus-visible,
+.admin-login-brand:focus-visible,
+.admin-login-card .forgot-password-link:focus-visible {
+  outline: 3px solid rgba(240, 90, 36, 0.35) !important;
+  outline-offset: 3px;
+}
+
+.admin-login-help {
+  margin: 22px 0 0;
+  color: #8a8e97;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .admin-login-page {
+    padding: 18px 14px;
+  }
+
+  .admin-login-card {
+    padding: 26px 22px;
+    border-radius: 15px;
+  }
+
+  .admin-login-brand {
+    margin-bottom: 30px;
+  }
+
+  .admin-login-card .login-options-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-login-card .login-button {
+    transition: none;
+  }
+}

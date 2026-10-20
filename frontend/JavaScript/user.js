@@ -65,7 +65,11 @@ function formatarPreco(valor) {
   return "R$ " + Number(valor || 0).toFixed(2).replace(".", ",");
 }
 
+let mesaQrContext = null;
+
 function getMesaDoPedido() {
+  if (mesaQrToken && mesaQrContext) return mesaQrContext;
+
   const params = new URLSearchParams(window.location.search);
   const mesaIdRaw     = params.get("mesaId")     || localStorage.getItem("mesaId")     || null;
   const numeroMesaRaw = params.get("mesa")        || params.get("numeroMesa")
@@ -77,6 +81,31 @@ function getMesaDoPedido() {
     numeroMesa: numeroMesa > 0 ? numeroMesa : null
   };
 }
+
+const mesaQrToken = new URLSearchParams(window.location.search).get('mesaToken');
+let mesaQrResolucaoFalhou = false;
+const mesaQrPronto = mesaQrToken
+  ? fetch(`${API_BASE_URL}/mesas/por-token/${encodeURIComponent(mesaQrToken)}`)
+    .then(async (response) => {
+      const body = await readResponseBody(response);
+      if (!response.ok) {
+        throw new Error(extractErrorMessage(body, 'Este QR Code não identifica uma mesa ativa.'));
+      }
+      const mesaId = Number(body?.mesaId);
+      const numero = Number(body?.numero);
+      if (!(mesaId > 0) || !(numero > 0)) {
+        throw new Error('A resposta da mesa vinculada ao QR Code é inválida.');
+      }
+      mesaQrContext = { mesaId, numeroMesa: numero };
+      localStorage.setItem('mesaId', String(mesaId));
+      localStorage.setItem('numeroMesa', String(numero));
+    })
+    .catch((error) => {
+      mesaQrResolucaoFalhou = true;
+      console.error('Erro ao identificar mesa pelo QR Code:', error);
+      mostrarNotificacao('erro', 'Não foi possível identificar a mesa', error.message);
+    })
+  : Promise.resolve();
 
 function escaparHtml(valor) {
   const div = document.createElement("div");
@@ -519,6 +548,9 @@ async function pagamentoAprovado() {
     return;
   }
 
+  await mesaQrPronto;
+  if (mesaQrResolucaoFalhou) return;
+
   const mesa = getMesaDoPedido();
   const obs = document.getElementById('observacaoPedido')?.value.trim() || null;
   const pedido = {
@@ -872,7 +904,9 @@ window.confirmarMesaSelecionada = function() {
   if (overlay) overlay.style.display = 'none';
 };
 
-(function verificarMesa() {
+(async function verificarMesa() {
+  await mesaQrPronto;
+  if (mesaQrToken) return;
   const { numeroMesa } = getMesaDoPedido();
   if (!numeroMesa) mostrarSeletorMesa();
 })();

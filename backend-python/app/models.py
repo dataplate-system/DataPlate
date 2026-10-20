@@ -1,9 +1,9 @@
 from enum import StrEnum
-
 from datetime import datetime
 from decimal import Decimal
+from uuid import UUID
 
-from sqlalchemy import BigInteger, Boolean, Computed, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger, String, Text
+from sqlalchemy import BigInteger, Boolean, Computed, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger, String, Text, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -89,6 +89,11 @@ class Mesa(Base):
     reserva_telefone: Mapped[str | None] = mapped_column(String(20))
     reserva_data_hora: Mapped[datetime | None] = mapped_column(DateTime)
     observacoes: Mapped[str | None] = mapped_column(Text)
+    qr_code_token: Mapped[UUID] = mapped_column(
+        Uuid,
+        nullable=False,
+        server_default=text("gen_random_uuid()"),
+    )
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 

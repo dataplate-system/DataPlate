@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS mesa (
     CONSTRAINT uq_mesa_numero UNIQUE (id_restaurante, numero)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS uq_mesa_qr_code_token ON mesa (qr_code_token);
+
 CREATE TABLE IF NOT EXISTS status_pedido (
     id_status INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nome VARCHAR(60) NOT NULL UNIQUE,

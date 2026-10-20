@@ -1539,6 +1539,19 @@
     </div>
   </div>
 
+  <div class="modal" id="tableQrModal">
+    <div class="modal-content" style="max-width:420px;text-align:center">
+      <button class="modal-close" onclick="closeModal('tableQrModal')" aria-label="Fechar">✕</button>
+      <div class="modal-header" id="tableQrTitle">QR Code da mesa</div>
+      <p style="color:#64748b;margin:0 0 16px">Escaneie para abrir o cardápio com esta mesa identificada.</p>
+      <img id="tableQrImage" alt="" style="display:block;width:min(100%,280px);margin:0 auto 16px">
+      <div class="form-actions" style="justify-content:center">
+        <button type="button" class="btn-secondary" onclick="closeModal('tableQrModal')">Fechar</button>
+        <button type="button" class="btn-primary" id="tableQrDownload">Baixar QR Code</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal" id="addClientModal">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('addClientModal')">✕</button>

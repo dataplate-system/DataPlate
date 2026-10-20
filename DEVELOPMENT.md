@@ -99,6 +99,8 @@ O schema inicial fica em `database/schema.sql`.
 
 Quando criar ou alterar tabelas, atualize esse arquivo. O Postgres local executa o schema apenas na primeira criacao do volume Docker.
 
+Para bancos existentes, aplique manualmente a migracao correspondente em `database/migrations/` antes de usar as novas colunas. A migracao `002_mesa_qr_code_token.sql` adiciona o token exclusivo usado nos QR Codes das mesas.
+
 Para recriar o banco local do zero:
 
 ```powershell

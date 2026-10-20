@@ -1670,6 +1670,7 @@ function buildTableActions(table) {
     : '';
 
   return `
+    <button class="btn-small" onclick="abrirQRCodeMesa(${table.id})">QR Code</button>
     <button class="btn-small" onclick="openTableModal(${table.id})">Editar</button>
     <button class="btn-small" onclick="reserveTable(${table.id})">${reserveLabel}</button>
     ${occupyButton}
@@ -1692,6 +1693,53 @@ function buildTableRow(table) {
     <td class="table-actions">${buildTableActions(table)}</td>
   </tr>`;
 }
+
+window.abrirQRCodeMesa = function(tableId) {
+  const table = getTables().find((item) => Number(item.id) === Number(tableId));
+  if (!table) {
+    showToast('Mesa não encontrada para gerar o QR Code.');
+    return;
+  }
+
+  if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
+    showToast('Abra o painel por HTTP ou HTTPS para gerar um QR Code que possa ser escaneado.');
+    return;
+  }
+  const menuUrl = new URL('user.html', window.location.href);
+  const qrEndpoint = `/mesas/${table.id}/qrcode.svg?url=${encodeURIComponent(menuUrl.href)}`;
+  const qrImageUrl = `${API_BASE_URL}${qrEndpoint}`;
+  const modal = document.getElementById('tableQrModal');
+  const title = document.getElementById('tableQrTitle');
+  const image = document.getElementById('tableQrImage');
+  const download = document.getElementById('tableQrDownload');
+  if (!modal || !title || !image || !download) return;
+
+  title.textContent = `QR Code — Mesa ${table.number}`;
+  image.src = qrImageUrl;
+  image.alt = `QR Code exclusivo da Mesa ${table.number}`;
+  image.onerror = () => showToast('Não foi possível gerar o QR Code desta mesa.');
+  download.onclick = async () => {
+    try {
+      const response = await apiFetch(qrEndpoint);
+      if (!response.ok) {
+        const body = await readResponseBody(response);
+        throw new Error(extractErrorMessage(body, 'Não foi possível baixar o QR Code.'));
+      }
+      const imageBlob = await response.blob();
+      const objectUrl = URL.createObjectURL(imageBlob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `qrcode-mesa-${table.number}.svg`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (error) {
+      showToast(error.message || 'Não foi possível baixar o QR Code.');
+    }
+  };
+  window.openModal('tableQrModal');
+};
 
 function buildTableCard(table) {
   const meta = getStatusMeta(table.status);
