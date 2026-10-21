@@ -11,13 +11,20 @@
 }
 
 #home.admin-home {
-  display: grid;
   height: auto;
   min-height: 100%;
   overflow: visible;
   grid-template-columns: minmax(58px, 232px) minmax(0, 1fr) !important;
   gap: 16px !important;
   align-items: start;
+}
+
+#home.admin-home:not(.active) {
+  display: none;
+}
+
+#home.admin-home.active {
+  display: grid;
 }
 
 #home.admin-home:has(> .dashboard-navigation:not([open])) {
