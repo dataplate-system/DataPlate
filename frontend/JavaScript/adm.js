@@ -586,6 +586,20 @@ function initAdminHomeSearch() {
   }
 }
 
+function initDashboardDisclosures() {
+  document.querySelectorAll('#home .dashboard-insights').forEach((disclosure) => {
+    disclosure.addEventListener('toggle', () => {
+      if (!disclosure.open) return;
+
+      window.requestAnimationFrame(() => {
+        Object.entries(_charts).forEach(([id, chart]) => {
+          if (disclosure.contains(document.getElementById(id))) chart.resize();
+        });
+      });
+    });
+  });
+}
+
 // =============================================
 // MODAL MANAGEMENT
 // =============================================
@@ -3012,6 +3026,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const _defaultSection = (_sess?.userKey === 'atendente' && !initialSection) ? 'mesas' : (initialSection || 'home');
   navigateTo(_defaultSection);
   initAdminHomeSearch();
+  initDashboardDisclosures();
   initClientForm();
   initCepAutocomplete();
   initUserForm();

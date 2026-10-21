@@ -89,11 +89,6 @@
         </div>
       </nav>
 
-      <form class="global-search" id="adminGlobalSearchForm" autocomplete="off" role="search">
-        <label for="adminGlobalSearch" class="sr-only">Buscar no sistema</label>
-        <input id="adminGlobalSearch" type="search" placeholder="Buscar no sistema" list="adminHomeSearchOptions" />
-      </form>
-
       <div class="header-right">
         <span class="header-breadcrumb" id="headerBreadcrumb" aria-live="polite"></span>
         <div class="header-session-info">
@@ -265,11 +260,6 @@
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Dados reais do banco</div>
                 </button>
-                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('pedidos')" aria-label="Ver todos os pedidos de hoje">
-                  <div class="stat-label">Total de pedidos</div>
-                  <div class="stat-value">Carregando...</div>
-                  <div class="stat-change">Todos os pedidos de hoje</div>
-                </button>
                 <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('pedidos', 'ativos')" aria-label="Ver pedidos ativos de hoje">
                   <div class="stat-label">Pedidos ativos</div>
                   <div class="stat-value">Carregando...</div>
@@ -279,6 +269,27 @@
                   <div class="stat-label">Mesas ocupadas</div>
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Status atual do salão</div>
+                </button>
+                <button
+                  type="button"
+                  id="dashboardLowStockCard"
+                  class="stat-card dashboard-stat-card dashboard-stock-card dashboard-card-action"
+                  onclick="openDashboardCard('insumos', 'baixo')"
+                  aria-label="Ver insumos com estoque baixo"
+                >
+                  <div class="stat-label">Estoque baixo</div>
+                  <div class="stat-value" id="dashboardLowStockValue">Carregando...</div>
+                  <div class="stat-change" id="dashboardLowStockDetail">Verificar insumos</div>
+                </button>
+              </div>
+
+              <details class="dashboard-disclosure dashboard-secondary-stats">
+                <summary>Indicadores complementares</summary>
+                <div class="stats-grid dashboard-stats dashboard-stats-secondary">
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('pedidos')" aria-label="Ver todos os pedidos de hoje">
+                  <div class="stat-label">Total de pedidos</div>
+                  <div class="stat-value">Carregando...</div>
+                  <div class="stat-change">Todos os pedidos de hoje</div>
                 </button>
                 <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="openDashboardCard('mesas', 'status:disponivel')" aria-label="Ver mesas disponíveis">
                   <div class="stat-label">Mesas disponíveis</div>
@@ -295,19 +306,11 @@
                   <div class="stat-value">Carregando...</div>
                   <div class="stat-change">Calculado com pedidos não cancelados</div>
                 </button>
-                <button
-                  type="button"
-                  id="dashboardLowStockCard"
-                  class="stat-card dashboard-stat-card dashboard-stock-card dashboard-card-action"
-                  onclick="openDashboardCard('insumos', 'baixo')"
-                  aria-label="Ver insumos com estoque baixo"
-                >
-                  <div class="stat-label">Estoque baixo</div>
-                  <div class="stat-value" id="dashboardLowStockValue">Carregando...</div>
-                  <div class="stat-change" id="dashboardLowStockDetail">Verificar insumos</div>
-                </button>
-              </div>
+                </div>
+              </details>
 
+              <details class="dashboard-disclosure dashboard-insights">
+                <summary>Análises e últimos pedidos</summary>
               <div class="dashboard-layout">
                 <section class="report-section dashboard-panel">
                   <div class="panel-heading">
@@ -400,22 +403,14 @@
                   </div>
                 </section>
               </div>
+              </details>
             </div>
           </div>
 
-          <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
+          <details class="dashboard-disclosure dashboard-operation-details">
+            <summary>Entregas, cozinha e cancelamentos</summary>
+            <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
             <div class="home-panel-label">Hoje — tempo real</div>
-
-            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('rel-vendas')" aria-label="Ver faturamento de hoje">
-              <span>Faturamento</span>
-              <strong id="homeFaturamento">—</strong>
-              <small id="homeFaturamentoDetalhe"></small>
-            </button>
-
-            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('rel-vendas')" aria-label="Ver ticket médio e vendas de hoje">
-              <span>Ticket médio</span>
-              <strong id="homeTicketMedio">—</strong>
-            </button>
 
             <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('pedidos', 'entregue')" aria-label="Ver pedidos entregues hoje">
               <span>Entregues hoje</span>
@@ -428,25 +423,14 @@
               <strong id="homeProntos">—</strong>
             </button>
 
-            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('pedidos', 'ativos')" aria-label="Ver pedidos de hoje em andamento">
-              <span>Em andamento</span>
-              <strong id="homePedidosAtivos">—</strong>
-              <small id="homePedidosDetalhe"></small>
-            </button>
-
-            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('mesas', 'status:ocupada')" aria-label="Ver mesas ocupadas">
-              <span>Mesas ocupadas</span>
-              <strong id="homeMesas">—</strong>
-              <small id="homeMesasDetalhe"></small>
-            </button>
-
             <button type="button" class="home-stat-item home-stat-cancel dashboard-card-action" id="homeStatCancelamentos" onclick="openDashboardCard('pedidos', 'cancelado')" aria-label="Ver pedidos cancelados hoje">
               <span>Cancelamentos hoje</span>
               <strong id="homeCancelamentos">—</strong>
             </button>
 
             <button class="home-stat-refresh" type="button" onclick="carregarRelatorios()">Atualizar</button>
-          </aside>
+            </aside>
+          </details>
         </section>
 
         <!-- CLIENTES -->
