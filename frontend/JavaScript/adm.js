@@ -3223,7 +3223,7 @@ function initDashboardNavigation() {
 
   try {
     const savedState = localStorage.getItem(DASHBOARD_NAVIGATION_KEY);
-    if (savedState !== null) navigation.open = savedState === 'true';
+    navigation.open = savedState === null ? true : savedState === 'true';
   } catch {
     // Keep the navigation usable when browser storage is unavailable.
   }
@@ -3238,7 +3238,7 @@ function initDashboardNavigation() {
 }
 
 function getCollapsedGroups() {
-  const defaultCollapsed = ['cadastros', 'relatorios', 'configuracoes'];
+  const defaultCollapsed = ['operacoes', 'cadastros', 'relatorios', 'configuracoes'];
   try {
     const savedState = localStorage.getItem(SHORTCUT_COLLAPSE_KEY);
     return savedState === null ? defaultCollapsed : JSON.parse(savedState);
