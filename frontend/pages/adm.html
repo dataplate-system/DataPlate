@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="../Css/adm.css?v=20261005-stock-awareness" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260928-stock-card-v2" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
-  <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261005-clickable-cards" />
+  <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261021-manager-navigation" />
   <link rel="stylesheet" href="../Css/mobile.css?v=20261005-clean-header" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="manifest" href="../manifest.webmanifest" />
@@ -109,6 +109,11 @@
       <div class="contentcenter">
         <!-- HOME -->
         <section id="home" class="content-section admin-home active">
+          <details class="dashboard-navigation" id="dashboardNavigation">
+            <summary aria-label="Abrir ou recolher menu de navegação">
+              <span class="dashboard-navigation-icon" aria-hidden="true">☰</span>
+              <span class="dashboard-navigation-label">Navegação</span>
+            </summary>
           <aside class="home-shortcuts home-shortcuts-left" aria-label="Atalhos do sistema">
 
             <div class="shortcut-group" data-group="operacoes">
@@ -212,6 +217,7 @@
             </div>
 
           </aside>
+          </details>
 
           <div class="home-center">
             <form class="home-search" id="adminHomeSearchForm" autocomplete="off">
@@ -404,33 +410,32 @@
                 </section>
               </div>
               </details>
+              <details class="dashboard-disclosure dashboard-operation-details">
+                <summary>Entregas, cozinha e cancelamentos</summary>
+                <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
+                  <div class="home-panel-label">Hoje — tempo real</div>
+
+                  <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('pedidos', 'entregue')" aria-label="Ver pedidos entregues hoje">
+                    <span>Entregues hoje</span>
+                    <strong id="homeEntregues">—</strong>
+                    <small id="homeEntreguesDetalhe"></small>
+                  </button>
+
+                  <button type="button" class="home-stat-item home-stat-pronto dashboard-card-action" id="homeStatProntos" onclick="openDashboardCard('cozinha', 'PRONTO')" aria-label="Ver pedidos de hoje prontos para despacho">
+                    <span>Prontos p/ despacho</span>
+                    <strong id="homeProntos">—</strong>
+                  </button>
+
+                  <button type="button" class="home-stat-item home-stat-cancel dashboard-card-action" id="homeStatCancelamentos" onclick="openDashboardCard('pedidos', 'cancelado')" aria-label="Ver pedidos cancelados hoje">
+                    <span>Cancelamentos hoje</span>
+                    <strong id="homeCancelamentos">—</strong>
+                  </button>
+
+                  <button class="home-stat-refresh" type="button" onclick="carregarRelatorios()">Atualizar</button>
+                </aside>
+              </details>
             </div>
           </div>
-
-          <details class="dashboard-disclosure dashboard-operation-details">
-            <summary>Entregas, cozinha e cancelamentos</summary>
-            <aside class="home-stats-panel" aria-label="Estatísticas em tempo real">
-            <div class="home-panel-label">Hoje — tempo real</div>
-
-            <button type="button" class="home-stat-item dashboard-card-action" onclick="openDashboardCard('pedidos', 'entregue')" aria-label="Ver pedidos entregues hoje">
-              <span>Entregues hoje</span>
-              <strong id="homeEntregues">—</strong>
-              <small id="homeEntreguesDetalhe"></small>
-            </button>
-
-            <button type="button" class="home-stat-item home-stat-pronto dashboard-card-action" id="homeStatProntos" onclick="openDashboardCard('cozinha', 'PRONTO')" aria-label="Ver pedidos de hoje prontos para despacho">
-              <span>Prontos p/ despacho</span>
-              <strong id="homeProntos">—</strong>
-            </button>
-
-            <button type="button" class="home-stat-item home-stat-cancel dashboard-card-action" id="homeStatCancelamentos" onclick="openDashboardCard('pedidos', 'cancelado')" aria-label="Ver pedidos cancelados hoje">
-              <span>Cancelamentos hoje</span>
-              <strong id="homeCancelamentos">—</strong>
-            </button>
-
-            <button class="home-stat-refresh" type="button" onclick="carregarRelatorios()">Atualizar</button>
-            </aside>
-          </details>
         </section>
 
         <!-- CLIENTES -->
@@ -2192,6 +2197,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261020-cashier-dashboard-access" defer></script>
+  <script src="../JavaScript/adm.js?v=20261021-manager-navigation" defer></script>
 </body>
 </html>

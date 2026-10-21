@@ -3030,6 +3030,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initClientForm();
   initCepAutocomplete();
   initUserForm();
+  initDashboardNavigation();
   applyCollapsedGroups();
 
   // Initialize dropdown toggles
@@ -3214,17 +3215,45 @@ function updateDashboardMesas(mesas) {
 
 // -- Grupos colapsaveis do sidebar ------------------------------------
 const SHORTCUT_COLLAPSE_KEY = 'dataplate:shortcut_collapsed';
+const DASHBOARD_NAVIGATION_KEY = 'dataplate:dashboard_navigation_open';
+
+function initDashboardNavigation() {
+  const navigation = document.getElementById('dashboardNavigation');
+  if (!navigation) return;
+
+  try {
+    const savedState = localStorage.getItem(DASHBOARD_NAVIGATION_KEY);
+    if (savedState !== null) navigation.open = savedState === 'true';
+  } catch {
+    // Keep the navigation usable when browser storage is unavailable.
+  }
+
+  navigation.addEventListener('toggle', () => {
+    try {
+      localStorage.setItem(DASHBOARD_NAVIGATION_KEY, String(navigation.open));
+    } catch {
+      // The native details control still works without persisted state.
+    }
+  });
+}
 
 function getCollapsedGroups() {
-  try { return JSON.parse(localStorage.getItem(SHORTCUT_COLLAPSE_KEY) || '[]'); }
-  catch { return []; }
+  const defaultCollapsed = ['cadastros', 'relatorios', 'configuracoes'];
+  try {
+    const savedState = localStorage.getItem(SHORTCUT_COLLAPSE_KEY);
+    return savedState === null ? defaultCollapsed : JSON.parse(savedState);
+  } catch {
+    return defaultCollapsed;
+  }
 }
 
 function applyCollapsedGroups() {
   const collapsed = getCollapsedGroups();
   document.querySelectorAll('.shortcut-group[data-group]').forEach(el => {
     const id = el.dataset.group;
-    el.classList.toggle('collapsed', collapsed.includes(id));
+    const isCollapsed = collapsed.includes(id);
+    el.classList.toggle('collapsed', isCollapsed);
+    el.querySelector('.shortcut-group-label')?.setAttribute('aria-expanded', String(!isCollapsed));
   });
 }
 
@@ -3232,6 +3261,7 @@ window.toggleShortcutGroup = function(groupId) {
   const el = document.querySelector(`.shortcut-group[data-group="${groupId}"]`);
   if (!el) return;
   el.classList.toggle('collapsed');
+  el.querySelector('.shortcut-group-label')?.setAttribute('aria-expanded', String(!el.classList.contains('collapsed')));
   const collapsed = Array.from(document.querySelectorAll('.shortcut-group.collapsed'))
     .map(g => g.dataset.group).filter(Boolean);
   localStorage.setItem(SHORTCUT_COLLAPSE_KEY, JSON.stringify(collapsed));
