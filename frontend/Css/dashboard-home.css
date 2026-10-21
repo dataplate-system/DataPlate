@@ -45,18 +45,28 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
+  min-height: 46px;
+  padding: 8px 10px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-left: 4px solid var(--color-secondary);
+  border-radius: 4px;
   background: var(--color-white);
-  color: var(--color-text);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  color: var(--color-gray-light);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   list-style: none;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+#home .dashboard-navigation > summary:hover {
+  background: #f8fafc;
+  color: var(--color-primary);
 }
 
 #home .dashboard-navigation > summary::-webkit-details-marker,
@@ -66,20 +76,21 @@
 
 #home .dashboard-navigation > summary::after {
   margin-left: auto;
-  color: var(--color-secondary);
-  content: "+";
-  font-size: 20px;
-  font-weight: 500;
+  color: var(--color-gray-light);
+  content: "▾";
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
+  transition: transform 0.2s ease;
 }
 
 #home .dashboard-navigation[open] > summary::after {
-  content: "-";
+  transform: rotate(180deg);
 }
 
 #home .dashboard-navigation-icon {
   color: var(--color-secondary);
-  font-size: 19px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -91,9 +102,14 @@
   min-height: 58px;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
   padding: 7px 2px;
-  font-size: 10px;
+  font-size: 9px;
+}
+
+#home .dashboard-navigation:not([open]) .dashboard-navigation-label {
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 #home .dashboard-navigation:not([open]) > summary::after {
@@ -327,9 +343,9 @@
     min-height: 48px;
     flex-direction: row;
     justify-content: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
-    font-size: 13px;
+    gap: 8px;
+    padding: 8px 10px;
+    font-size: 10px;
   }
 
   #home .dashboard-navigation:not([open]) > summary::after {
