@@ -190,8 +190,10 @@ body:has(#telaLista) #cartFloat {
   #telaLista .lista-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; padding: 20px; gap: 22px; }
   #telaLista .item .info { padding: 16px; }
 }
-@media (max-width: 700px) {
-  body:has(#telaLista) { padding: 8px; }
+@media (max-width: 1024px) {
+  body:has(#telaLista) {
+    padding: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  }
   #telaLista .layout-menu { display: block; min-height: calc(100dvh - 16px); }
   #telaLista .sidebar {
     position: relative;
@@ -206,18 +208,18 @@ body:has(#telaLista) #cartFloat {
     overflow: visible;
   }
   #telaLista .sidebar .logo-sidebar { display: block; width: 52px !important; height: 52px !important; margin: 0; }
-  #telaLista .sidebar h2 { display: block; margin: 0; text-align: left; font-size: 22px !important; }
+  #telaLista .sidebar h2 { display: block; margin: 0; padding-right: 52px; text-align: left; font-size: 22px !important; }
   #telaLista .menu-categorias { grid-column: 1 / -1; flex-direction: row !important; overflow-x: auto; padding: 4px 0 10px; gap: 8px; }
   #telaLista .menu-categorias button { width: auto !important; min-width: max-content !important; flex: 0 0 auto; min-height: 44px !important; padding: 12px 16px !important; white-space: nowrap; }
-  #telaLista .banner-topo { height: 180px; }
+  #telaLista .banner-topo { height: clamp(150px, 26vw, 210px); }
   #telaLista .busca { padding: 16px 12px; }
-  #telaLista #search { padding: 0 22px !important; }
+  #telaLista #search { padding: 0 22px !important; font-size: 16px !important; }
   #telaLista .lista-grid { padding: 10px 12px 24px; gap: 18px; }
   #telaLista .item > img { height: 128px !important; }
   #telaLista .item .info { padding: 14px; }
   body:has(#telaLista) #cartFloat { top: 24px; right: 24px; }
 }
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   #telaLista .lista-grid { grid-template-columns: minmax(0, 1fr) !important; }
   #telaLista .item > img { height: 150px !important; }
 }
@@ -227,7 +229,7 @@ body:has(#telaLista) #barraFlutuante {
   display: none !important;
   left: 190px;
   right: 20px;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom, 0px);
   width: auto;
   height: 48px;
   min-height: 48px !important;
@@ -259,6 +261,30 @@ body:has(#telaLista[style*="display: none"]) #barraFlutuante { display: none !im
 #barraFlutuante #valorBarra { font-size: 13px; color: #fff; }
 #barraFlutuante .barra-seta { font-size: 14px; line-height: 1; color: #4ade80; }
 body:has(#barraFlutuante.ativa) #telaLista .conteudo { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
-@media (max-width: 700px) {
-  body:has(#telaLista) #barraFlutuante { left: 8px; right: 8px; }
+@media (max-width: 1024px) {
+  body:has(#telaLista) #barraFlutuante { left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); }
+}
+
+/* Textos longos e controles de toque permanecem dentro dos cartoes. */
+#telaLista .info h3,
+#telaLista .info p { overflow-wrap: anywhere; }
+#telaLista .sidebar { min-height: 0; }
+#telaLista .menu-categorias { min-width: 0; overscroll-behavior-x: contain; }
+@media (pointer: coarse) {
+  #telaLista .item .add-rapido {
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    opacity: 1;
+  }
+  #telaLista .banner-topo .voltar,
+  body:has(#telaLista) #cartFloat {
+    width: 44px;
+    height: 44px;
+    min-height: 44px !important;
+  }
+}
+@media (max-width: 600px) {
+  #telaLista .lista-grid { gap: 16px; }
+  #telaLista .item .info { padding: 14px 16px; }
 }
