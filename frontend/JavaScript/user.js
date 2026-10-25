@@ -1113,14 +1113,15 @@ function atualizarBarraFlutuante(){
 
     barra.classList.add("ativa");
 
-    titulo.innerText =
-      "Pedido em andamento";
+    barra.dataset.modo = "status";
+    titulo.innerText = pedidoAtivoId
+      ? `Pedido #${pedidoAtivoId} em andamento`
+      : "Pedido em andamento";
 
     subtitulo.innerText =
       "Toque para acompanhar";
 
-    valor.innerText =
-      "STATUS";
+    valor.innerText = "Acompanhar";
 
     return;
   }
@@ -1133,8 +1134,8 @@ function atualizarBarraFlutuante(){
 
     barra.classList.add("ativa");
 
-    titulo.innerText =
-      quantidade + " item(ns) no carrinho";
+    barra.dataset.modo = "carrinho";
+    titulo.innerText = `${quantidade} ${quantidade === 1 ? "item" : "itens"} no carrinho`;
 
     subtitulo.innerText =
       "Toque para abrir o carrinho";
@@ -1185,3 +1186,12 @@ function controlarBarraFlutuante(){
 
 
 atualizarBarraFlutuante();
+
+// A barra acompanha as navegacoes entre cardapio, detalhes, carrinho e status.
+const telaListaBarra = document.getElementById("telaLista");
+if (telaListaBarra) {
+  new MutationObserver(atualizarBarraFlutuante).observe(telaListaBarra, {
+    attributes: true,
+    attributeFilter: ["style", "hidden"]
+  });
+}

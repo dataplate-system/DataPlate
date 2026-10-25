@@ -11,13 +11,14 @@
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1">
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand">
+  <link rel="stylesheet" href="../Css/user-menu.css?v=20261025-original-bar">
   <link rel="manifest" href="../manifest.webmanifest">
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 <body>
 
 <!-- CARRINHO FLUTUANTE (sempre visivel) -->
-<button id="cartFloat" class="cart-float" onclick="abrirCarrinho()" title="Carrinho">
+<button id="cartFloat" class="cart-float" onclick="abrirCarrinho()" title="Carrinho" aria-label="Abrir carrinho">
   🛒
   <span id="badgePedido" class="cart-badge" style="display:none"></span>
 </button>
@@ -333,19 +334,7 @@
   <!-- MENU LATERAL -->
   <aside class="sidebar">
 
-    <div class="client-app-brand">
-      <span>
-        <span class="dataplate-brand">
-          <strong class="dataplate-brand-name">DataPlate</strong>
-          <span class="dataplate-brand-mark" aria-hidden="true">
-            <img src="../images/brand/logo-dataplate.png" alt="">
-          </span>
-        </span>
-        <small>Cardapio Digital</small>
-      </span>
-    </div>
-
-    <img src="../images/brand/logo-emp.png" class="logo-sidebar">
+    <img src="../images/brand/logo-emp.png" class="logo-sidebar" alt="Raízes do Sabor">
 
     <h2>MENU</h2>
 
@@ -362,7 +351,7 @@
     <div class="banner-topo">
 
       <header class="topo novo-topo">
-        <button class="voltar" onclick="voltarPagina()">←</button>
+        <button class="voltar" onclick="voltarPagina()" aria-label="Voltar">←</button>
       </header>
 
       <div class="overlay-banner"></div>
@@ -371,7 +360,8 @@
 
     <!-- BUSCA -->
     <div class="busca">
-      <input type="text" id="search" placeholder="Buscar pratos...">
+      <label class="sr-only" for="search">Buscar pratos</label>
+      <input type="search" id="search" placeholder="Buscar pratos..." autocomplete="off">
     </div>
 
     <!-- LISTA -->
@@ -763,34 +753,28 @@
 <!-- NOTIFICAÇÕES -->
 <div id="notificacoes"></div>
 
-<div id="barraFlutuante" onclick="abrirAtalhoInferior()">
-
-  <div class="barra-esquerda">
-
+<button id="barraFlutuante" type="button" onclick="abrirAtalhoInferior()">
+  <span class="barra-icone" aria-hidden="true">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/>
+      <path d="M9 7h6M9 11h6M9 15h3"/>
+    </svg>
+  </span>
+  <span class="barra-esquerda" aria-live="polite">
     <span id="tituloBarra"></span>
-
     <span id="subtituloBarra"></span>
-
-  </div>
-
-  <div class="barra-direita">
-
+  </span>
+  <span class="barra-direita">
     <span id="valorBarra"></span>
-
-    <span class="barra-seta">➜</span>
-
-  </div>
-
-</div>
-
-
-
+    <span class="barra-seta" aria-hidden="true">→</span>
+  </span>
+</button>
 
 <!--fim html--->
 
   
 
 
-<script src="../JavaScript/user.js"></script>
+<script src="../JavaScript/user.js?v=20261025-order-bar"></script>
 </body>
 </html>

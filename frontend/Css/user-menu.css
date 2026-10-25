@@ -1,0 +1,264 @@
+/* Cardapio do restaurante. Carregado depois do tema compartilhado. */
+body:has(#telaLista) {
+  background: #fff4ce !important;
+  padding: 20px;
+}
+
+#telaLista { background: #fff; min-height: calc(100dvh - 40px); }
+#telaLista::before { content: none; }
+#telaLista .layout-menu {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  min-height: calc(100dvh - 40px);
+  background: #fff;
+}
+#telaLista .sidebar {
+  position: sticky;
+  top: 20px;
+  left: auto;
+  width: 170px !important;
+  min-width: 0 !important;
+  height: calc(100dvh - 40px);
+  padding: 28px 22px !important;
+  border: 0 !important;
+  border-right: 1px solid #f1f2f4 !important;
+  background: #fff !important;
+  align-items: center;
+  overflow-y: auto;
+  z-index: 20;
+}
+#telaLista .logo-sidebar {
+  display: block;
+  width: 92px !important;
+  height: 92px !important;
+  border-radius: 50% !important;
+  filter: none !important;
+  object-fit: contain;
+  margin: 0 auto 40px;
+}
+#telaLista .sidebar h2 {
+  display: block;
+  margin: 0 0 34px;
+  font-size: 26px !important;
+  line-height: 1.2 !important;
+  text-align: center;
+  color: #111827 !important;
+}
+#telaLista .menu-categorias {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch;
+  width: 100%;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+}
+#telaLista .menu-categorias button {
+  width: 100% !important;
+  min-height: 48px !important;
+  padding: 14px !important;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 3px 7px rgb(0 0 0 / 4%) !important;
+  transform: none;
+  cursor: pointer;
+}
+#telaLista .menu-categorias button:hover { background: #fff0e5 !important; }
+#telaLista .menu-categorias button.ativo {
+  background: #ff5a00 !important;
+  color: #fff !important;
+  border-radius: 22px !important;
+  box-shadow: 0 6px 14px rgb(255 90 0 / 22%) !important;
+}
+#telaLista .conteudo {
+  width: 100% !important;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
+}
+#telaLista .banner-topo {
+  display: block !important;
+  position: relative;
+  height: 222px;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: url('../images/menu/fundo%20da%20logo%20restaurante.png') center / cover !important;
+  border: 0 !important;
+  border-radius: 0 0 20px 20px !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+#telaLista .novo-topo { position: relative; padding: 16px; background: transparent !important; }
+#telaLista .banner-topo .voltar {
+  width: 36px;
+  height: 36px;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgb(255 255 255 / 75%) !important;
+  color: #222 !important;
+  box-shadow: none !important;
+}
+body:has(#telaLista) #cartFloat {
+  top: 36px;
+  right: 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgb(255 255 255 / 85%) !important;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%) !important;
+  font-size: 20px;
+}
+#telaLista .busca { padding: 18px; }
+#telaLista .busca::before { content: none; }
+#telaLista #search {
+  width: 100%;
+  height: 44px;
+  min-height: 44px !important;
+  padding: 0 40px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #fff !important;
+  color: #111827 !important;
+  font-size: 13px !important;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 5%) !important;
+}
+#telaLista .lista-grid {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  max-width: none;
+  gap: 38px 18px;
+  padding: 26px 10px 24px 28px;
+  margin: 0;
+  background: #fff !important;
+}
+#telaLista .lista-grid .item {
+  position: relative;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  padding: 0 !important;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: #fff !important;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 7%) !important;
+  overflow: hidden;
+}
+#telaLista .item > img {
+  display: block;
+  width: 100% !important;
+  height: 140px !important;
+  aspect-ratio: auto;
+  object-fit: cover;
+  border-radius: 0 !important;
+}
+#telaLista .item .info { width: 100%; margin: 0; padding: 16px 22px 18px; }
+#telaLista .info h3 { margin: 0 0 6px; font-size: 16px !important; font-weight: 600 !important; color: #1f2937 !important; }
+#telaLista .info p { display: block; margin: 0 0 10px; font-size: 13px !important; line-height: 1.5; color: #7b8191 !important; }
+#telaLista .info .preco { display: block; font-size: 18px !important; line-height: 1.2; font-weight: 700 !important; color: #111 !important; }
+#telaLista .item .add-rapido {
+  top: 12px;
+  right: 12px;
+  bottom: auto;
+  opacity: 0;
+  transition: opacity .15s;
+}
+#telaLista .item:hover .add-rapido,
+#telaLista .item:focus-within .add-rapido { opacity: 1; }
+
+
+@media (hover: none) { #telaLista .item .add-rapido { opacity: 1; } }
+@media (max-width: 1100px) {
+  #telaLista .lista-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; padding: 20px; gap: 22px; }
+  #telaLista .item .info { padding: 16px; }
+}
+@media (max-width: 700px) {
+  body:has(#telaLista) { padding: 8px; }
+  #telaLista .layout-menu { display: block; min-height: calc(100dvh - 16px); }
+  #telaLista .sidebar {
+    position: relative;
+    top: auto;
+    width: 100% !important;
+    height: auto;
+    padding: 16px 12px !important;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 12px;
+    border: 0 !important;
+    overflow: visible;
+  }
+  #telaLista .sidebar .logo-sidebar { display: block; width: 52px !important; height: 52px !important; margin: 0; }
+  #telaLista .sidebar h2 { display: block; margin: 0; text-align: left; font-size: 22px !important; }
+  #telaLista .menu-categorias { grid-column: 1 / -1; flex-direction: row !important; overflow-x: auto; padding: 4px 0 10px; gap: 8px; }
+  #telaLista .menu-categorias button { width: auto !important; min-width: max-content !important; flex: 0 0 auto; min-height: 44px !important; padding: 12px 16px !important; white-space: nowrap; }
+  #telaLista .banner-topo { height: 180px; }
+  #telaLista .busca { padding: 16px 12px; }
+  #telaLista #search { padding: 0 22px !important; }
+  #telaLista .lista-grid { padding: 10px 12px 24px; gap: 18px; }
+  #telaLista .item > img { height: 128px !important; }
+  #telaLista .item .info { padding: 14px; }
+  body:has(#telaLista) #cartFloat { top: 24px; right: 24px; }
+}
+@media (max-width: 480px) {
+  #telaLista .lista-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  #telaLista .item > img { height: 150px !important; }
+}
+
+/* Aparencia original da barra, com resumo e acao alinhados. */
+body:has(#telaLista) #barraFlutuante {
+  display: none !important;
+  left: 190px;
+  right: 20px;
+  bottom: 0;
+  width: auto;
+  height: 48px;
+  min-height: 48px !important;
+  padding: 0 14px !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  border: 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, .014) !important;
+  border-radius: 0 !important;
+  background: rgba(20, 20, 20, .55) !important;
+  color: #fff;
+  box-shadow: none !important;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  z-index: 1000;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: none;
+}
+body:has(#telaLista) #barraFlutuante.ativa { display: grid !important; }
+body:has(#telaLista[style*="display: none"]) #barraFlutuante { display: none !important; }
+#barraFlutuante .barra-icone { display: none; }
+#barraFlutuante .barra-esquerda { min-width: 0; gap: 2px; }
+#barraFlutuante #tituloBarra { font-size: 12px; line-height: 1.2; color: #fff; overflow-wrap: anywhere; }
+#barraFlutuante #subtituloBarra { font-size: 10px; line-height: 1.2; color: rgba(255, 255, 255, .75); }
+#barraFlutuante .barra-direita { flex-shrink: 0; gap: 8px; white-space: nowrap; }
+#barraFlutuante #valorBarra { font-size: 13px; color: #fff; }
+#barraFlutuante .barra-seta { font-size: 14px; line-height: 1; color: #4ade80; }
+body:has(#barraFlutuante.ativa) #telaLista .conteudo { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)) !important; }
+@media (max-width: 700px) {
+  body:has(#telaLista) #barraFlutuante { left: 8px; right: 8px; }
+}
