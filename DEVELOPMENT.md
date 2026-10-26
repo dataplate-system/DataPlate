@@ -62,6 +62,25 @@ Para voltar ao indice oficial no terminal atual:
 Remove-Item Env:PIP_INDEX_URL
 ```
 
+### E-mail de recuperação de senha
+
+O envio de códigos exige SMTP configurado no `.env` da raiz. Para Gmail, use uma
+senha de app (não a senha normal da conta):
+
+```text
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=seu-email@gmail.com
+SMTP_PASSWORD=sua-senha-de-app
+SMTP_FROM_EMAIL=seu-email@gmail.com
+```
+
+Depois de alterar o `.env`, recrie o container da API para aplicar as variáveis:
+
+```powershell
+docker compose -f backend-python\docker-compose.yml up -d --build api
+```
+
 Servicos:
 
 ```text
@@ -105,6 +124,17 @@ Para servir as telas:
 cd frontend
 python -m http.server 5500
 ```
+
+### QR Code em celular na rede local
+
+Conecte o celular e o computador na mesma rede. Abra o painel no computador
+por `http://<IP-DO-PC>:5500/pages/adm.html` (em vez de `localhost`) e gere o
+QR Code da mesa. O QR aponta para o mesmo IP e o cardapio identifica a mesa
+automaticamente pelo token. Use `ipconfig` para encontrar o IPv4 do computador.
+
+O `dev-start-python.ps1` expoe o frontend na rede local; a API tambem aceita
+origens privadas na porta 5500 somente no Docker local. Caso o Windows pergunte,
+autorize o acesso nas portas 5500 e 8081 em redes privadas.
 
 ## Banco de Dados
 

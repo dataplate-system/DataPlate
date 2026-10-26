@@ -24,14 +24,16 @@ def listar_usuarios(db: Session = Depends(get_db)) -> list[UserResponse]:
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def criar_usuario(request: UserCreateRequest, db: Session = Depends(get_db)) -> UserResponse:
-    if db.scalar(select(User).where(User.cpf == request.cpf)) is not None:
+    cpf = _only_digits(request.cpf)
+    if db.scalar(select(User).where(User.cpf == cpf)) is not None:
         raise HTTPException(status_code=409, detail="CPF ja cadastrado")
 
     usuario = User(
         nome=request.nome,
-        cpf=request.cpf,
+        cpf=cpf,
         senha_hash=hash_password(request.senha),
         role=request.role.value,
+        email=request.email.strip().lower(),
     )
     db.add(usuario)
     try:
@@ -53,13 +55,15 @@ def atualizar_usuario(
     if usuario is None:
         raise HTTPException(status_code=404, detail="Usuario nao encontrado")
 
-    outro = db.scalar(select(User).where(User.cpf == request.cpf, User.id != usuario_id))
+    cpf = _only_digits(request.cpf)
+    outro = db.scalar(select(User).where(User.cpf == cpf, User.id != usuario_id))
     if outro is not None:
         raise HTTPException(status_code=409, detail="CPF ja cadastrado")
 
     usuario.nome = request.nome
-    usuario.cpf = request.cpf
+    usuario.cpf = cpf
     usuario.role = request.role.value if hasattr(request.role, "value") else request.role
+    usuario.email = request.email.strip().lower() if request.email else usuario.email
     if request.senha is not None:
         usuario.senha_hash = hash_password(request.senha)
     db.add(usuario)
@@ -91,4 +95,8 @@ def excluir_usuario(
 
 
 def _to_response(usuario: User) -> UserResponse:
-    return UserResponse(id=usuario.id, nome=usuario.nome, cpf=usuario.cpf, role=usuario.role)
+    return UserResponse(id=usuario.id, nome=usuario.nome, cpf=usuario.cpf, role=usuario.role, email=usuario.email)
+
+
+def _only_digits(value: str) -> str:
+    return "".join(char for char in (value or "") if char.isdigit())

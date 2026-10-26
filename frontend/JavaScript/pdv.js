@@ -16,7 +16,7 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     if (isLocal && window.location.port === '8081') return '/api';
     if (isFile)  return 'http://localhost:8081/api';
     if (isLocal) return `http://${h}:8081/api`;
-    return 'http://localhost:8081/api';
+    return `http://${h}:8081/api`;
   })();
 
 const CATEGORIA_SLUG  = { 1:'hamburguer', 2:'massas', 3:'principais', 4:'entradas', 5:'sobremesas', 6:'bebidas' };

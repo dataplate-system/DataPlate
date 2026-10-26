@@ -1,0 +1,198 @@
+/* Recuperação de senha: extensão do mesmo visual do login administrativo. */
+.reset-password-page {
+  padding: 32px 20px;
+}
+
+.reset-card {
+  width: min(100%, 440px);
+}
+
+.reset-card .admin-login-brand {
+  margin-bottom: 32px;
+}
+
+.reset-card .admin-login-header {
+  margin-bottom: 24px;
+}
+
+.reset-card .admin-login-header h1 {
+  font-size: 30px !important;
+}
+
+.reset-card .reset-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 24px;
+  padding: 0;
+  list-style: none;
+  counter-reset: reset-step;
+}
+
+.reset-card .reset-steps li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid var(--login-border);
+  border-radius: 10px;
+  background: #f8f9fa;
+  color: var(--login-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  counter-increment: reset-step;
+}
+
+.reset-card .reset-steps li::before {
+  content: counter(reset-step);
+  display: grid;
+  flex: 0 0 21px;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e9edf2;
+  color: #58616d;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.reset-card .reset-steps li.is-active {
+  border-color: rgba(240, 90, 36, 0.42);
+  background: #fff3ee;
+  color: var(--login-accent);
+}
+
+.reset-card .reset-steps li.is-active::before {
+  background: var(--login-accent);
+  color: #fff;
+}
+
+.reset-card .reset-steps li.is-complete {
+  border-color: rgba(22, 163, 74, 0.26);
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.reset-card .reset-steps li.is-complete::before {
+  background: #16a34a;
+  color: #fff;
+}
+
+.reset-card .reset-step-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.reset-card .reset-step-panel[hidden] {
+  display: none;
+}
+
+.reset-card .reset-step-panel .form-group,
+.reset-card .reset-step-panel .login-button {
+  margin: 0;
+}
+
+.reset-card .security-code-box {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--login-border);
+  border-radius: 10px;
+  background: #f8f9fa;
+}
+
+.reset-card .security-code-box span {
+  color: var(--login-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reset-card .security-code-box strong {
+  color: var(--login-text);
+  font-size: 26px;
+  letter-spacing: 0.14em;
+  line-height: 1.15;
+}
+
+.reset-card .security-code-box small {
+  color: var(--login-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.reset-card #securityCode {
+  font-size: 19px !important;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-align: center;
+}
+
+.reset-card .secondary-link-button {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--login-border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--login-accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reset-card .secondary-link-button:hover,
+.reset-card .secondary-link-button:focus-visible {
+  border-color: rgba(240, 90, 36, 0.45);
+  background: #fff3ee;
+  outline: none;
+}
+
+.reset-card .security-confirmation {
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--login-border);
+  border-radius: 10px;
+  background: #f8f9fa;
+  line-height: 1.45;
+}
+
+.reset-card .login-error:empty {
+  display: none;
+}
+
+.reset-card .back-login-link {
+  display: inline-flex;
+  margin-top: 20px;
+  color: var(--login-accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.reset-card .back-login-link:hover,
+.reset-card .back-login-link:focus-visible {
+  color: var(--login-accent-hover);
+  text-decoration: underline;
+  outline: none;
+}
+
+.reset-card .admin-login-help {
+  margin-top: 20px;
+}
+
+@media (max-width: 480px) {
+  .reset-password-page {
+    padding: 18px 14px;
+  }
+
+  .reset-card .reset-steps li {
+    padding: 7px 6px;
+    font-size: 11px;
+  }
+}

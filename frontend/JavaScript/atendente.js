@@ -7,7 +7,7 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     if (isLocal && window.location.port === '8081') return '/api';
     if (isLocalFile) return 'http://localhost:8081/api';
     if (isLocal) return `http://${h}:8081/api`;
-    return 'http://localhost:8081/api';
+    return `http://${h}:8081/api`;
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';

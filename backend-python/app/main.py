@@ -51,6 +51,7 @@ app.add_middleware(
     CORSMiddleware,
     # Compartilha a configuracao de origens entre o frontend web e o app Capacitor.
     allow_origins=settings.cors_origins,
+    allow_origin_regex=settings.allowed_origin_regex,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

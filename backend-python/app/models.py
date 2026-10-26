@@ -34,7 +34,20 @@ class User(Base):
     cpf: Mapped[str] = mapped_column(String(11), unique=True, index=True)
     senha_hash: Mapped[str] = mapped_column("senha", String(255))
     role: Mapped[str] = mapped_column(String(30))
+    email: Mapped[str | None] = mapped_column(String(255), unique=True)
     ativo: Mapped[bool] = mapped_column(default=True)
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False, index=True)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
 class Restaurante(Base):

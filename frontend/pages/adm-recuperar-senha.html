@@ -6,50 +6,25 @@
   <meta name="theme-color" content="#111827" />
   <title>DataPlate - Recuperar Senha</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/adm-login.css" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
-  <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
-  <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/admin-login.css" />
+  <link rel="stylesheet" href="../Css/adm-recuperar-senha.css" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 <body class="login-page">
-  <main class="login-shell reset-shell">
-    <section class="login-visual" aria-label="DataPlate Administrativo">
-      <div class="brand-lockup">
-        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" />
-        <div>
-          <strong>DataPlate</strong>
-          <span>Recuperação de acesso</span>
-        </div>
-      </div>
+  <main class="admin-login-page reset-password-page">
+    <section class="admin-login-card reset-card" aria-label="Recuperação de senha administrativa">
+      <a class="admin-login-brand" href="index.html" aria-label="DataPlate - início">
+        <img src="../images/brand/logo-dataplate.png" alt="DataPlate" height="64" width="86" />
+        <span>DataPlate</span>
+      </a>
 
-      <div class="login-preview security-preview">
-        <div class="preview-header">
-          <span>Segurança</span>
-          <strong>Verificação em etapas</strong>
-        </div>
-        <div class="security-checklist">
-          <span>CPF do usuário administrativo</span>
-          <span>Código temporário de 6 dígitos</span>
-          <span>Nova senha com letras e números</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="login-panel" aria-label="Recuperação de senha administrativa">
-      <div class="login-card reset-card">
-        <div class="dataplate-brand login-brand">
-          <span class="dataplate-brand-name">DataPlate</span>
-          <span class="dataplate-brand-mark" aria-hidden="true">
-            <img src="../images/brand/logo-dataplate.png" alt="" />
-          </span>
-        </div>
-        <div class="login-card-header">
-          <p>Acesso Administrativo</p>
-          <h1>Recuperar senha</h1>
-        </div>
+      <header class="admin-login-header">
+        <h1>Recuperar senha</h1>
+        <p>Informe seu CPF para recuperar o acesso ao painel.</p>
+      </header>
 
         <ol class="reset-steps" aria-label="Etapas da recuperação">
           <li class="is-active" data-step="identify">CPF</li>
@@ -68,9 +43,9 @@
 
         <form id="securityCodeForm" class="reset-step-panel" data-step-panel="code" novalidate hidden>
           <div class="security-code-box">
-            <span>Código de segurança simulado</span>
-            <strong id="resetCodePreview">------</strong>
-            <small id="resetCodeHint">Código temporário aguardando envio.</small>
+            <span>Código de segurança</span>
+            <strong id="resetCodePreview" hidden></strong>
+            <small id="resetCodeHint">Solicite um código para continuar.</small>
           </div>
 
           <div class="form-group">
@@ -79,7 +54,7 @@
           </div>
 
           <button class="login-button" type="submit">Validar código</button>
-          <button class="secondary-link-button" type="button" id="resendSecurityCode">Reenviar código</button>
+          <button class="secondary-link-button" type="button" id="resendSecurityCode">Enviar código</button>
         </form>
 
         <form id="newPasswordForm" class="reset-step-panel" data-step-panel="password" novalidate hidden>
@@ -101,15 +76,15 @@
           <button class="login-button" type="submit">Atualizar senha</button>
         </form>
 
-        <p class="login-error" id="resetMessage" role="alert"></p>
+      <p class="login-error" id="resetMessage" role="alert"></p>
 
-        <a class="back-login-link" href="adm-login.html">Voltar ao login</a>
-      </div>
+      <a class="back-login-link" href="adm-login.html">Voltar ao login</a>
+      <p class="admin-login-help">Acesso seguro à gestão do seu restaurante.</p>
     </section>
   </main>
 
   <script src="../JavaScript/adm-auth.js" defer></script>
-  <script src="../JavaScript/adm-recuperar-senha.js" defer></script>
+  <script src="../JavaScript/adm-recuperar-senha.js?v=20261026-password-reset-api" defer></script>
 </body>
 </html>
 

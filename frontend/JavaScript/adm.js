@@ -11,7 +11,8 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     if (isLocal && window.location.port === '8081') return '/api';
     if (isLocalFile) return 'http://localhost:8081/api';
     if (isLocal) return `http://${h}:8081/api`;
-    return 'http://localhost:8081/api';
+    // Mantem frontend e API no mesmo host quando o painel e acessado pela rede local.
+    return `http://${h}:8081/api`;
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
@@ -4885,6 +4886,8 @@ window.editarUsuario = function(id) {
   if (idField) idField.value = u.id;
   form.querySelector('[name="name"]').value = u.nome || '';
   form.querySelector('[name="cpf"]').value = formatCpf(u.cpf || '');
+  const emailField = form.querySelector('[name="email"]');
+  if (emailField) emailField.value = u.email || '';
 
   const sel = form.querySelector('[name="accessType"]');
   if (sel) sel.value = USER_ROLE_LABEL[u.role] || 'Operacional';
@@ -4938,7 +4941,7 @@ function initUserForm() {
     const editingId = window.__usuarioEditando?.id ?? null;
 
     if (editingId) {
-      const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), role };
+      const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), role };
       const newPassword = String(fd.get('temporaryPassword') || '');
       if (newPassword) payload.senha = newPassword;
       putJson(`/usuarios/${editingId}`, payload)
@@ -4956,6 +4959,7 @@ function initUserForm() {
     const payload = {
       nome: fd.get('name'),
       cpf: fd.get('cpf'),
+      email: fd.get('email'),
       senha: fd.get('temporaryPassword'),
       role
     };

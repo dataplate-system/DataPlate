@@ -1,196 +1,86 @@
 const adminAuth = window.DataPlateAdminAuth;
-const API_BASE_URL = window.DATAPLATE_API_BASE_URL
-  || localStorage.getItem('DATAPLATE_API_BASE_URL')
-  || (() => {
-    const h = window.location.hostname;
-    const isLocalFile = window.location.protocol === 'file:' || !h;
-    const isLocal = isLocalFile || h === 'localhost' || h === '127.0.0.1';
-    if (isLocal && window.location.port === '8081') return '/api';
-    if (isLocalFile) return 'http://localhost:8081/api';
-    if (isLocal) return `http://${h}:8081/api`;
-    return 'http://localhost:8081/api';
-  })();
+const API_BASE_URL = window.DATAPLATE_API_BASE_URL || localStorage.getItem('DATAPLATE_API_BASE_URL') || `http://${location.hostname || 'localhost'}:8081/api`;
+let resetToken = null;
+let verifiedCode = '';
 
-let selectedAdmin = null;
-let codeVerified = false;
-
-function setResetMessage(message, type = 'error') {
-  const messageEl = document.getElementById('resetMessage');
-  if (!messageEl) return;
-
-  messageEl.textContent = message || '';
-  messageEl.classList.toggle('is-success', type === 'success');
+function message(value, success = false) {
+  const el = document.getElementById('resetMessage');
+  el.textContent = value || '';
+  el.classList.toggle('is-success', success);
 }
 
-function setActiveStep(stepName) {
-  document.querySelectorAll('[data-step-panel]').forEach((panel) => {
-    panel.hidden = panel.dataset.stepPanel !== stepName;
-  });
-
-  const stepOrder = ['identify', 'code', 'password'];
-  const activeIndex = stepOrder.indexOf(stepName);
-
-  document.querySelectorAll('.reset-steps [data-step]').forEach((step) => {
-    const stepIndex = stepOrder.indexOf(step.dataset.step);
-    step.classList.toggle('is-active', step.dataset.step === stepName);
-    step.classList.toggle('is-complete', stepIndex >= 0 && stepIndex < activeIndex);
+function setStep(name) {
+  const order = ['identify', 'code', 'password'];
+  document.querySelectorAll('[data-step-panel]').forEach((el) => { el.hidden = el.dataset.stepPanel !== name; });
+  document.querySelectorAll('.reset-steps [data-step]').forEach((el) => {
+    const index = order.indexOf(el.dataset.step);
+    el.classList.toggle('is-active', el.dataset.step === name);
+    el.classList.toggle('is-complete', index < order.indexOf(name));
   });
 }
 
-function createSecurityChallenge() {
-  if (!selectedAdmin) return;
-
-  const challenge = adminAuth.createPasswordResetChallenge(selectedAdmin.userKey);
-  const codePreview = document.getElementById('resetCodePreview');
-  const codeHint = document.getElementById('resetCodeHint');
-
-  if (codePreview) codePreview.textContent = challenge.code;
-  if (codeHint) {
-    codeHint.textContent = `Enviado para ${challenge.recoveryContact}. Expira em 10 minutos.`;
-  }
-}
-
-function preparePasswordStep() {
-  codeVerified = true;
-  setActiveStep('password');
-  setResetMessage('Codigo validado. Cadastre a nova senha.', 'success');
-  document.getElementById('newAdminPassword')?.focus();
-}
-
-async function resetBackendPassword(cpf, novaSenha) {
-  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cpf, novaSenha })
-  });
-
+async function request(path, body) {
+  const response = await fetch(`${API_BASE_URL}/auth${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const result = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(body?.message || body?.mensagem || 'Nao foi possivel atualizar a senha no servidor.');
+    const detail = result?.mensagem || result?.detail;
+    throw new Error(typeof detail === 'string' ? detail : 'Não foi possível concluir a solicitação. Tente novamente.');
   }
+  return result;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const identifyForm = document.getElementById('identifyCpfForm');
+  const identify = document.getElementById('identifyCpfForm');
   const codeForm = document.getElementById('securityCodeForm');
-  const passwordForm = document.getElementById('newPasswordForm');
-  const cpfInput = document.getElementById('recoveryCpf');
-  const codeInput = document.getElementById('securityCode');
-  const resendButton = document.getElementById('resendSecurityCode');
+  const password = document.getElementById('newPasswordForm');
+  const cpf = document.getElementById('recoveryCpf');
+  const code = document.getElementById('securityCode');
+  const preview = document.getElementById('resetCodePreview');
+  const hint = document.getElementById('resetCodeHint');
+  cpf.addEventListener('input', () => { cpf.value = adminAuth.formatCpf(cpf.value); });
+  code.addEventListener('input', () => { code.value = code.value.replace(/\D/g, '').slice(0, 6); });
 
-  cpfInput?.addEventListener('input', () => {
-    cpfInput.value = adminAuth.formatCpf(cpfInput.value);
-  });
+  async function sendCode() {
+    const result = await request('/password-reset/request', { cpf: cpf.value });
+    resetToken = result.resetToken || null;
+    verifiedCode = '';
+    preview.hidden = !result.debugCode;
+    preview.textContent = result.debugCode || '';
+    hint.textContent = result.debugCode ? 'Código de desenvolvimento.' : `Código enviado para ${result.recoveryEmail || 'o e-mail cadastrado'}.`;
+    document.getElementById('resendSecurityCode').textContent = 'Reenviar código';
+    message('Código enviado. Verifique seu e-mail.', true);
+    code.focus();
+  }
 
-  codeInput?.addEventListener('input', () => {
-    codeInput.value = String(codeInput.value || '').replace(/\D/g, '').slice(0, 6);
-  });
-
-  identifyForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    setResetMessage('');
-
-    if (!identifyForm.checkValidity()) {
-      identifyForm.reportValidity();
-      return;
-    }
-
-    selectedAdmin = adminAuth.findAdminByCpf(cpfInput.value);
-    codeVerified = false;
-
-    if (!selectedAdmin) {
-      setResetMessage('Nao encontramos um acesso administrativo para este CPF.');
-      return;
-    }
-
-    createSecurityChallenge();
-    setActiveStep('code');
-    setResetMessage('Codigo temporario gerado para verificacao.', 'success');
-    codeInput?.focus();
-  });
-
-  codeForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    setResetMessage('');
-
-    if (!codeForm.checkValidity()) {
-      codeForm.reportValidity();
-      return;
-    }
-
-    const result = adminAuth.verifyPasswordResetCode(selectedAdmin?.userKey, codeInput.value);
-    if (!result.valid) {
-      setResetMessage(result.message);
-      codeInput?.select();
-      return;
-    }
-
-    preparePasswordStep();
-  });
-
-  resendButton?.addEventListener('click', () => {
-    if (!selectedAdmin) return;
-
-    codeInput.value = '';
-    createSecurityChallenge();
-    setResetMessage('Novo codigo temporario gerado.', 'success');
-    codeInput.focus();
-  });
-
-  passwordForm?.addEventListener('submit', async(event) => {
-    event.preventDefault();
-    setResetMessage('');
-
-    const newPassword = passwordForm.querySelector('[name="newPassword"]');
-    const confirmPassword = passwordForm.querySelector('[name="confirmPassword"]');
-
-    newPassword.setCustomValidity('');
-    confirmPassword.setCustomValidity('');
-
-    if (!passwordForm.checkValidity()) {
-      passwordForm.reportValidity();
-      return;
-    }
-
-    if (!codeVerified) {
-      setResetMessage('Valide o codigo de seguranca antes de alterar a senha.');
-      setActiveStep('code');
-      return;
-    }
-
-    const passwordValidation = adminAuth.validatePassword(newPassword.value);
-    if (!passwordValidation.valid) {
-      newPassword.setCustomValidity(passwordValidation.message);
-      newPassword.reportValidity();
-      return;
-    }
-
-    if (newPassword.value === adminAuth.getAdmin(selectedAdmin.userKey).password) {
-      newPassword.setCustomValidity('A nova senha precisa ser diferente da senha atual.');
-      newPassword.reportValidity();
-      return;
-    }
-
-    if (newPassword.value !== confirmPassword.value) {
-      confirmPassword.setCustomValidity('As senhas nao conferem.');
-      confirmPassword.reportValidity();
-      return;
-    }
-
+  identify.addEventListener('submit', async (event) => {
+    event.preventDefault(); message('');
+    if (!identify.checkValidity()) return identify.reportValidity();
     try {
-      await resetBackendPassword(selectedAdmin.cpf, newPassword.value);
-      adminAuth.updatePassword(selectedAdmin.userKey, newPassword.value);
-      adminAuth.clearPasswordResetChallenge();
-    } catch (error) {
-      setResetMessage(error.message || 'Nao foi possivel atualizar a senha.');
-      return;
-    }
-
-    setResetMessage('Senha atualizada. Redirecionando para o login...', 'success');
-    passwordForm.querySelector('.login-button').disabled = true;
-
-    window.setTimeout(() => {
-      window.location.href = `adm-login.html?senhaAtualizada=1&user=${encodeURIComponent(selectedAdmin.userKey)}`;
-    }, 1300);
+      const result = await request('/password-reset/identify', { cpf: cpf.value });
+      if (!result.recoveryEmail) return message('Não foi possível confirmar um e-mail de recuperação para este CPF.');
+      hint.textContent = `Confirma o envio para ${result.recoveryEmail}?`;
+      document.getElementById('resendSecurityCode').textContent = 'Enviar código';
+      setStep('code');
+    } catch (_) { message('Não foi possível iniciar a recuperação. Tente novamente.'); }
+  });
+  document.getElementById('resendSecurityCode').addEventListener('click', async () => {
+    try { await sendCode(); code.value = ''; } catch (error) { message(error.message || 'Não foi possível enviar o código.'); }
+  });
+  codeForm.addEventListener('submit', async (event) => {
+    event.preventDefault(); message('');
+    if (!codeForm.checkValidity()) return codeForm.reportValidity();
+    if (!resetToken) return message('Código inválido, expirado ou com limite de tentativas atingido.');
+    try { await request('/password-reset/verify', { resetToken, codigo: code.value }); verifiedCode = code.value; setStep('password'); message('Código validado. Cadastre a nova senha.', true); } catch (error) { message(error.message); code.select(); }
+  });
+  password.addEventListener('submit', async (event) => {
+    event.preventDefault(); message('');
+    const newPassword = document.getElementById('newAdminPassword');
+    const confirm = document.getElementById('confirmAdminPassword');
+    newPassword.setCustomValidity(''); confirm.setCustomValidity('');
+    if (!password.checkValidity()) return password.reportValidity();
+    if (!resetToken || !verifiedCode) return message('Valide o código antes de alterar a senha.');
+    if (!adminAuth.validatePassword(newPassword.value).valid) { newPassword.setCustomValidity('Use pelo menos 8 caracteres, com letras e números.'); return newPassword.reportValidity(); }
+    if (newPassword.value !== confirm.value) { confirm.setCustomValidity('As senhas não conferem.'); return confirm.reportValidity(); }
+    try { await request('/reset-password', { resetToken, codigo: verifiedCode, novaSenha: newPassword.value }); message('Senha atualizada. Redirecionando para o login...', true); password.querySelector('.login-button').disabled = true; setTimeout(() => { location.href = 'adm-login.html?senhaAtualizada=1'; }, 1300); } catch (error) { message(error.message); }
   });
 });

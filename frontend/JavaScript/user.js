@@ -10,7 +10,9 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   if (isLocal && window.location.port === '8081') return '/api';
   if (isLocalFile) return 'http://localhost:8081/api';
   if (isLocal) return `http://${h}:8081/api`;
-  return 'http://localhost:8081/api';
+  // Quando o cardapio e aberto pelo IP da rede, a API esta no mesmo computador.
+  // "localhost" nesse caso apontaria para o celular, e nao para o servidor.
+  return `http://${h}:8081/api`;
   })();
 
 async function readResponseBody(response) {

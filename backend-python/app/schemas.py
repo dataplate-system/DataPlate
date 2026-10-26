@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import PedidoStatusNome, Role
-from enum import Enum
 
 
 
@@ -25,8 +25,25 @@ class AuthRegisterRequest(BaseModel):
 
 
 class AuthPasswordResetRequest(BaseModel):
+    resetToken: UUID
+    codigo: str = Field(pattern=r"^\d{6}$")
+    novaSenha: str = Field(min_length=8, max_length=72)
+
+
+class AuthPasswordResetStartRequest(BaseModel):
     cpf: str = Field(min_length=1)
-    novaSenha: str = Field(min_length=1)
+
+
+class AuthPasswordResetVerifyRequest(BaseModel):
+    resetToken: UUID
+    codigo: str = Field(pattern=r"^\d{6}$")
+
+
+class AuthPasswordResetStartResponse(BaseModel):
+    resetToken: UUID | None = None
+    # Disponivel somente no Docker local, para permitir testar o fluxo sem SMTP/SMS.
+    debugCode: str | None = None
+    recoveryEmail: str | None = None
 
 
 class AuthResponse(BaseModel):
@@ -42,6 +59,7 @@ class UserUpdateRequest(BaseModel):
     nome: str = Field(min_length=1)
     cpf: str = Field(min_length=1)
     role: Role
+    email: str | None = Field(default=None, max_length=255)
     senha: str | None = Field(default=None, min_length=8, max_length=72)
 
 
@@ -50,6 +68,7 @@ class UserResponse(BaseModel):
     nome: str
     cpf: str
     role: Role
+    email: str | None
 
 
 class CategoriaRequest(BaseModel):
@@ -386,12 +405,6 @@ class RelatorioOperacionalResponse(BaseModel):
     faturamento: float
     tempoMedioPreparoMin: float
 
-class Role(str, Enum):
-    GERENTE = "GERENTE"
-    ATENDENTE = "ATENDENTE"
-    CAIXA = "CAIXA"
-    COZINHA = "COZINHA"
-
 
 def _validar_cpf(valor: str) -> str:
     cpf = "".join(c for c in valor if c.isdigit())
@@ -409,6 +422,7 @@ class UserCreateRequest(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     cpf: str
     senha: str = Field(min_length=8, max_length=72)  # limite do bcrypt
+    email: str = Field(min_length=5, max_length=255)
     role: Role
 
     @field_validator("cpf")
