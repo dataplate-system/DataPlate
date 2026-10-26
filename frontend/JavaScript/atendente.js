@@ -143,7 +143,7 @@ function buildMesaCard(mesa) {
   const st = normalizarStatusMesa(mesa.status);
 
   const badgeCfg = {
-    livre:                 { label: 'Livre',          cls: 'badge-active'  },
+    livre:                 { label: 'Disponível',     cls: 'badge-active'  },
     ocupada:               { label: 'Ocupada',         cls: 'badge-info'    },
     reservada:             { label: 'Reservada',        cls: 'badge-warning' },
     aguardando_pagamento:  { label: 'Aguardando pagamento', cls: 'badge-pgto' },
@@ -201,7 +201,7 @@ function normalizarStatusMesa(status) {
 
 function buildMesaStatusSummary(mesas) {
   const statuses = [
-    ['livre', 'Livres'],
+    ['livre', 'Disponíveis'],
     ['ocupada', 'Ocupadas'],
     ['reservada', 'Reservadas'],
     ['aguardando_pagamento', 'Aguardando pagamento']
