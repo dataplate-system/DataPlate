@@ -368,9 +368,20 @@ async function getJson(endpoint) {
 // NAVIGATION: Section Switching
 // =============================================
 
-function navigateTo(sectionId) {
+const adminNavigationHistory = [];
+let currentAdminSection = 'home';
+let adminNavigationInitialized = false;
+
+function navigateTo(sectionId, options = {}) {
   // Links antigos do dashboard continuam abrindo a nova tela inicial.
   if (sectionId === 'dashboard') sectionId = 'home';
+
+  if (!document.getElementById(sectionId)) sectionId = 'home';
+  if (adminNavigationInitialized && sectionId !== currentAdminSection && options.addToHistory !== false) {
+    adminNavigationHistory.push(currentAdminSection);
+  } else if (!adminNavigationInitialized && sectionId !== 'home') {
+    adminNavigationHistory.push('home');
+  }
 
   // Hide all sections
   document.querySelectorAll('.content-section').forEach(section => {
@@ -474,8 +485,23 @@ function navigateTo(sectionId) {
     insumos: carregarInsumos
   };
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
+
+  currentAdminSection = sectionId;
+  adminNavigationInitialized = true;
 }
 window.navigateTo = navigateTo;
+
+function navigateBack() {
+  const activeModal = document.querySelector('.modal.active');
+  if (activeModal) {
+    closeModal(activeModal.id);
+    return;
+  }
+
+  const previousSection = adminNavigationHistory.pop() || 'home';
+  navigateTo(previousSection, { addToHistory: false });
+}
+window.navigateBack = navigateBack;
 
 function openDashboardCard(sectionId, filterValue = '') {
   const today = new Date();

@@ -20,15 +20,18 @@
     <!-- HEADER -->
     <header class="admin-header">
       <div class="header-left">
-        <div class="logo-area">
-          <button type="button" class="logo-text dataplate-brand" onclick="navigateTo('home')">
-            <span class="dataplate-brand-name">DataPlate</span>
-            <span class="dataplate-brand-mark" aria-hidden="true">
-              <img src="../images/brand/logo-dataplate.png" alt="" />
-            </span>
-          </button>
-        </div>
+        <button type="button" class="admin-back-button" onclick="navigateBack()" aria-label="Voltar para a tela anterior" title="Voltar">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M19 12H5m0 0 7 7m-7-7 7-7" />
+          </svg>
+        </button>
       </div>
+      <button type="button" class="logo-text dataplate-brand header-brand" onclick="navigateTo('home')" aria-label="DataPlate - Início">
+        <span class="dataplate-brand-name">DataPlate</span>
+        <span class="dataplate-brand-mark" aria-hidden="true">
+          <img src="../images/brand/logo-dataplate.png" alt="" />
+        </span>
+      </button>
       <nav class="module-nav app-module-nav" aria-label="Modulos DataPlate">
         <a href="adm.html" class="is-active">Admin</a>
         <a href="atendente.html">Atendente</a>
