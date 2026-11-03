@@ -117,7 +117,7 @@ const SECTION_ROLES = {
   'rel-operacional':     ['admin', 'gerente'],
   'config-restaurante':  ['admin', 'gerente'],
   'config-usuarios':     ['admin', 'gerente'],
-  'config-integracao':   ['admin'],
+  'config-integracao':   ['admin', 'gerente'],
   'config-notificacoes': ['admin', 'gerente']
 };
 
@@ -161,6 +161,15 @@ function applyRoleVisibility() {
   const restauranteForm = document.getElementById('formConfigRestaurante');
   if (restauranteForm && !isAdminRole()) {
     restauranteForm.querySelectorAll('input, select, textarea').forEach((field) => {
+      field.readOnly = true;
+      field.required = false;
+    });
+  }
+
+  // Integracoes: somente o Administrador altera (Gerente apenas consulta)
+  const integracaoForm = document.getElementById('formIntegracao');
+  if (integracaoForm && !isAdminRole()) {
+    integracaoForm.querySelectorAll('input, select, textarea').forEach((field) => {
       field.readOnly = true;
       field.required = false;
     });
@@ -223,7 +232,8 @@ const PANEL_IDENTITY = {
     },
     scopeBanners: {
       'config-usuarios': 'Você gerencia apenas usuários de Atendente, Caixa e Cozinha. Administradores e Gerentes são mantidos pelo Administrador do sistema.',
-      'config-restaurante': 'Modo consulta: os dados do restaurante são mantidos pelo Administrador do sistema.'
+      'config-restaurante': 'Modo consulta: os dados do restaurante são mantidos pelo Administrador do sistema.',
+      'config-integracao': 'Modo consulta: as integrações são mantidas pelo Administrador do sistema.'
     }
   }
 };
@@ -692,7 +702,7 @@ function navigateTo(sectionId, options = {}) {
 
   // Load data for the section being shown
   const sectionLoaders = {
-    home:           isAdminRole() ? carregarPainelAdministrador : carregarRelatorios,
+    home:           isAdminRole() ? () => { carregarPainelAdministrador(); carregarRelatorios(); } : carregarRelatorios,
     clientes:       carregarClientes,
     funcionarios:   carregarFuncionarios,
     fornecedores:   carregarFornecedores,
@@ -1121,7 +1131,9 @@ function configureField(field) {
     field.required = true;
   }
 
-  if (key.includes('cpf')) {
+  if (field.dataset.mask === 'none') {
+    // Campo livre: sem mascara automatica (ex.: chave PIX aceita CPF, CNPJ, email ou chave aleatoria)
+  } else if (key.includes('cpf')) {
     field.classList.add('masked-input');
     field.inputMode = 'numeric';
     field.maxLength = 14;
@@ -3277,16 +3289,6 @@ document.addEventListener('click', (e) => {
     window.exportTable(format, button);
     return;
   }
-
-  if (/salvar/i.test(label)) {
-    const configForm = button.closest('.config-form');
-    if (configForm) {
-      e.preventDefault();
-      if (!validateContainer(configForm)) return;
-      showToast('Alterações salvas com sucesso!', 'success');
-      return;
-    }
-  }
 });
 
 document.addEventListener('submit', (e) => {
@@ -5108,6 +5110,10 @@ function carregarNotificacoes() {
 
     document.getElementById('formIntegracao')?.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (!isAdminRole()) {
+        showToast('Somente o Administrador altera as integrações.', 'error');
+        return;
+      }
       const fd = new FormData(e.target);
       const data = {};
       fd.forEach((v, k) => { if (v) data[k] = v; });

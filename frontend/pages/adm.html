@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261021-pedidos-visibility" />
   <link rel="stylesheet" href="../Css/mobile.css?v=20261005-clean-header" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
-  <link rel="stylesheet" href="../Css/role-theme.css?v=20261103-perfis" />
+  <link rel="stylesheet" href="../Css/role-theme.css?v=20261103-perfis-v2" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
@@ -414,8 +414,13 @@
             </div>
 
             <!-- Tela inicial do GERENTE: gestao e operacao do restaurante -->
-            <div id="dashboard" class="home-dashboard" data-roles="gerente" aria-label="Dashboard do gerente">
-              <div class="dashboard-hero role-hero">
+            <!-- Administrador ve os indicadores em modo consulta (cards operacionais ficam ocultos por perfil) -->
+            <div id="dashboard" class="home-dashboard" data-roles="admin gerente" aria-label="Dashboard do restaurante">
+              <div class="panel-heading" data-roles="admin">
+                <h3>Indicadores do restaurante</h3>
+                <span>Consulta · hoje</span>
+              </div>
+              <div class="dashboard-hero role-hero" data-roles="gerente">
                 <div>
                   <span class="dashboard-eyebrow">Gestão do restaurante</span>
                   <h1>Painel do Gerente</h1>
@@ -1491,11 +1496,11 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Token de Integração iFood</label>
-                  <input type="text" name="ifoodToken" placeholder="Token fornecido pelo iFood" autocomplete="off" />
+                  <input type="text" name="ifoodToken" data-optional="true" placeholder="Token fornecido pelo iFood" autocomplete="off" />
                 </div>
                 <div class="form-group">
                   <label>ID do Restaurante (iFood)</label>
-                  <input type="text" name="ifoodRestauranteId" placeholder="Ex: abc123" autocomplete="off" />
+                  <input type="text" name="ifoodRestauranteId" data-optional="true" placeholder="Ex: abc123" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -1505,11 +1510,11 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Chave PIX</label>
-                  <input type="text" name="chavePix" placeholder="CPF, CNPJ, email ou chave aleatória" />
+                  <input type="text" name="chavePix" data-optional="true" data-mask="none" placeholder="CPF, CNPJ, email ou chave aleatória" />
                 </div>
                 <div class="form-group">
                   <label>Token PagSeguro</label>
-                  <input type="text" name="pagseguroToken" placeholder="Token da conta PagSeguro" autocomplete="off" />
+                  <input type="text" name="pagseguroToken" data-optional="true" placeholder="Token da conta PagSeguro" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -1519,17 +1524,17 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Chave Google Maps API</label>
-                  <input type="text" name="googleMapsKey" placeholder="AIza..." autocomplete="off" />
+                  <input type="text" name="googleMapsKey" data-optional="true" placeholder="AIza..." autocomplete="off" />
                 </div>
                 <div class="form-group">
                   <label>Email de marketing (remetente)</label>
-                  <input type="email" name="emailMarketing" placeholder="marketing@seurestaurante.com" />
+                  <input type="email" name="emailMarketing" data-optional="true" placeholder="marketing@seurestaurante.com" />
                 </div>
               </div>
             </div>
 
             <div class="form-actions">
-              <button type="submit" class="btn-primary">Salvar Integrações</button>
+              <button type="submit" class="btn-primary" data-roles="admin">Salvar Integrações</button>
               <button type="button" class="btn-secondary" onclick="carregarIntegracao()">Recarregar</button>
             </div>
           </form>
@@ -2364,6 +2369,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261103-perfis" defer></script>
+  <script src="../JavaScript/adm.js?v=20261103-perfis-v2" defer></script>
 </body>
 </html>
