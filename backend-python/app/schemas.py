@@ -127,6 +127,8 @@ class MesaRequest(BaseModel):
     reservaDataHora: datetime | None = None
     observacoes: str | None = None
 
+class StatusMesaSchema(BaseModel):
+    status: str = Field(min_length=1, max_length=30)
 
 class MesaResponse(BaseModel):
     id: int
