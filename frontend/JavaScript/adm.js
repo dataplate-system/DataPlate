@@ -16,13 +16,18 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
-const isAdminPanelPage = /adm\.html(?:$|[?#])/.test(window.location.href);
 const ADMIN_PANEL_USERS = {
+  admin: {
+    name: 'Administrador',
+    initials: 'AD',
+    cpf: '910.000.001-92',
+    role: 'Administrador'
+  },
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
-    cpf: '000.000.000-00',
-    role: 'Administrador'
+    cpf: '910.000.002-73',
+    role: 'Gerente'
   },
   atendente: {
     name: 'Atendente',
@@ -44,17 +49,236 @@ const ADMIN_PANEL_USERS = {
   }
 };
 
-if (isAdminPanelPage) {
-  const _rawSession = sessionStorage.getItem(ADMIN_SESSION_KEY);
-  if (!_rawSession) {
-    window.location.replace('adm-login.html');
-  } else {
-    try {
-      const _s = JSON.parse(_rawSession);
-      if (_s?.userKey === 'atendente') window.location.replace('atendente.html');
-      if (_s?.userKey === 'cozinha')   window.location.replace('cozinha.html');
-    } catch (_) {}
+// Perfil do backend -> chave do painel (RN-AC06: perfil desconhecido nao acessa)
+const PANEL_ROLE_BY_BACKEND_ROLE = {
+  ADMIN: 'admin',
+  GERENTE: 'gerente',
+  FUNCIONARIO: 'atendente',
+  CAIXA: 'caixa',
+  COZINHA: 'cozinha'
+};
+const PANEL_HOME_BY_ROLE = {
+  admin: 'adm.html',
+  gerente: 'adm.html',
+  atendente: 'atendente.html',
+  caixa: 'pdv.html',
+  cozinha: 'cozinha.html'
+};
+
+// Login real (com token): vale o backendRole. Modo demonstracao (sem token): vale o userKey.
+function resolvePanelRole(session) {
+  if (!session) return null;
+  const token = session.token || session.accessToken;
+  if (!token) return null;
+  if (session.backendRole) return PANEL_ROLE_BY_BACKEND_ROLE[session.backendRole] || null;
+  if (token) return null;
+  return Object.prototype.hasOwnProperty.call(PANEL_HOME_BY_ROLE, session.userKey) ? session.userKey : null;
+}
+
+function readSessionRaw() {
+  try {
+    return JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+  } catch (_) {
+    return null;
   }
+}
+
+const CURRENT_PANEL_ROLE = resolvePanelRole(readSessionRaw());
+const PANEL_ACCESS_ALLOWED = CURRENT_PANEL_ROLE === 'admin' || CURRENT_PANEL_ROLE === 'gerente';
+
+if (!CURRENT_PANEL_ROLE) {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  window.location.replace('adm-login.html');
+} else if (!PANEL_ACCESS_ALLOWED) {
+  window.location.replace(PANEL_HOME_BY_ROLE[CURRENT_PANEL_ROLE]);
+} else {
+  // Tema visual por perfil (role-theme.css), aplicado antes do primeiro paint
+  document.documentElement.dataset.panelRole = CURRENT_PANEL_ROLE;
+}
+
+function isAdminRole() { return CURRENT_PANEL_ROLE === 'admin'; }
+function isGerenteRole() { return CURRENT_PANEL_ROLE === 'gerente'; }
+
+// Secoes do painel por perfil. Secao fora do mapa: negada.
+const SECTION_ROLES = {
+  home:                  ['admin', 'gerente'],
+  pedidos:               ['admin', 'gerente'],
+  cancelamentos:         ['admin', 'gerente'],
+  pagamentos:            ['admin', 'gerente'],
+  mesas:                 ['gerente'],
+  cozinha:               ['gerente'],
+  clientes:              ['gerente'],
+  fornecedores:          ['gerente'],
+  funcionarios:          ['admin', 'gerente'],
+  cardapio:              ['gerente'],
+  insumos:               ['gerente'],
+  'rel-vendas':          ['admin', 'gerente'],
+  'rel-financeiro':      ['admin', 'gerente'],
+  'rel-cardapio':        ['admin', 'gerente'],
+  'rel-operacional':     ['admin', 'gerente'],
+  'config-restaurante':  ['admin', 'gerente'],
+  'config-usuarios':     ['admin', 'gerente'],
+  'config-integracao':   ['admin', 'gerente'],
+  'config-notificacoes': ['admin', 'gerente']
+};
+
+function canAccessSection(sectionId) {
+  const id = sectionId === 'dashboard' ? 'home' : sectionId;
+  return Boolean(CURRENT_PANEL_ROLE && SECTION_ROLES[id]?.includes(CURRENT_PANEL_ROLE));
+}
+
+// Aplica visibilidade por perfil: [data-roles], atalhos/menus que navegam para secoes e grupos vazios.
+function applyRoleVisibility() {
+  const role = CURRENT_PANEL_ROLE;
+  const hide = (el) => { el.hidden = true; el.style.display = 'none'; };
+
+  document.querySelectorAll('[data-roles]').forEach((el) => {
+    const roles = el.getAttribute('data-roles').split(/\s+/).filter(Boolean);
+    if (!roles.includes(role)) hide(el);
+  });
+
+  document.querySelectorAll('[onclick*="navigateTo(\'"], [onclick*="openDashboardCard(\'"]').forEach((el) => {
+    const match = /(?:navigateTo|openDashboardCard)\('([^']+)'/.exec(el.getAttribute('onclick') || '');
+    if (match && !canAccessSection(match[1])) hide(el);
+  });
+
+  document.querySelectorAll('.admin-section-nav .dropdown').forEach((dropdown) => {
+    const visible = Array.from(dropdown.querySelectorAll('.dropdown-link')).some((link) => !link.hidden);
+    if (!visible) hide(dropdown);
+  });
+
+  document.querySelectorAll('.shortcut-group').forEach((group) => {
+    const visible = Array.from(group.querySelectorAll('.home-shortcut')).some((item) => !item.hidden);
+    if (!visible) hide(group);
+  });
+
+  const datalist = document.getElementById('adminHomeSearchOptions');
+  datalist?.querySelectorAll('option').forEach((option) => {
+    const route = findAdminRoute(option.value);
+    if (!route) option.remove();
+  });
+
+  // Restaurante: somente o Administrador altera (Gerente apenas consulta)
+  const restauranteForm = document.getElementById('formConfigRestaurante');
+  if (restauranteForm && !isAdminRole()) {
+    restauranteForm.querySelectorAll('input, select, textarea').forEach((field) => {
+      field.readOnly = true;
+      field.required = false;
+    });
+  }
+
+  // Integracoes: somente o Administrador altera (Gerente apenas consulta)
+  const integracaoForm = document.getElementById('formIntegracao');
+  if (integracaoForm && !isAdminRole()) {
+    integracaoForm.querySelectorAll('input, select, textarea').forEach((field) => {
+      field.readOnly = true;
+      field.required = false;
+    });
+  }
+
+  applyPanelIdentity();
+}
+
+// Identidade de cada painel: o Administrador administra o sistema; o Gerente gere o restaurante.
+const PANEL_IDENTITY = {
+  admin: {
+    title: 'DataPlate - Administração do Sistema',
+    moduleLabel: 'Administração',
+    headerRole: 'Administrador do sistema',
+    ribbonIcon: '⚙',
+    ribbonTag: 'Administração do sistema',
+    ribbonText: 'Usuários, perfis de acesso e configurações. A operação do restaurante é do Gerente.',
+    groupLabels: { relatorios: 'Relatórios (consulta)' },
+    breadcrumbs: {
+      home: ['Administração', 'Painel'],
+      'config-usuarios': ['Sistema', 'Usuários e perfis'],
+      'config-restaurante': ['Sistema', 'Restaurante'],
+      'config-integracao': ['Sistema', 'Integrações'],
+      'config-notificacoes': ['Sistema', 'Notificações'],
+      funcionarios: ['Pessoas', 'Funcionários'],
+      pedidos: ['Consultas', 'Pedidos'],
+      pagamentos: ['Consultas', 'Pagamentos'],
+      cancelamentos: ['Consultas', 'Cancelamentos']
+    },
+    sectionHeaders: {
+      'config-usuarios': ['Usuários e Perfis de Acesso', 'Crie usuários, defina o perfil de cada um e controle quem está ativo'],
+      funcionarios: ['Funcionários', 'Consulta da equipe cadastrada pelo Gerente']
+    },
+    scopeBanners: {
+      'config-usuarios': 'Você gerencia todos os perfis: Administrador, Gerente, Atendente, Caixa e Cozinha.',
+      funcionarios: 'Modo consulta: o Administrador vê a equipe sem CPF, telefone e salário. Cadastro e edição de funcionários são feitos pelo Gerente.',
+      pedidos: 'Modo consulta: lançar, cancelar e receber pedidos é tarefa do Gerente e da equipe operacional.',
+      pagamentos: 'Modo consulta: os recebimentos são registrados pelo Caixa e pelo Gerente.',
+      cancelamentos: 'Modo consulta: cancelamentos são feitos pela equipe operacional e autorizados pelo Gerente.',
+      'rel-vendas': 'Relatório em modo consulta.',
+      'rel-financeiro': 'Relatório em modo consulta.',
+      'rel-cardapio': 'Relatório em modo consulta.',
+      'rel-operacional': 'Relatório em modo consulta.'
+    }
+  },
+  gerente: {
+    title: 'DataPlate - Gestão do Restaurante',
+    moduleLabel: 'Gestão',
+    headerRole: 'Gerente do restaurante',
+    ribbonIcon: '◆',
+    ribbonTag: 'Gestão do restaurante',
+    ribbonText: 'Cardápio, estoque, equipe, salão, caixa e relatórios. Usuários e configurações do sistema são do Administrador.',
+    groupLabels: {},
+    breadcrumbs: {
+      home: ['Gestão', 'Painel'],
+      'config-usuarios': ['Equipe', 'Equipe operacional']
+    },
+    sectionHeaders: {
+      'config-usuarios': ['Equipe Operacional', 'Usuários de Atendente, Caixa e Cozinha']
+    },
+    scopeBanners: {
+      'config-usuarios': 'Você gerencia apenas usuários de Atendente, Caixa e Cozinha. Administradores e Gerentes são mantidos pelo Administrador do sistema.',
+      'config-restaurante': 'Modo consulta: os dados do restaurante são mantidos pelo Administrador do sistema.',
+      'config-integracao': 'Modo consulta: as integrações são mantidas pelo Administrador do sistema.'
+    }
+  }
+};
+
+function applyPanelIdentity() {
+  const identity = PANEL_IDENTITY[CURRENT_PANEL_ROLE];
+  if (!identity) return;
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+
+  document.title = identity.title;
+  setText('moduleNavPainel', identity.moduleLabel);
+  setText('headerUserRole', identity.headerRole);
+  setText('panelRoleRibbonIcon', identity.ribbonIcon);
+  setText('panelRoleRibbonTag', identity.ribbonTag);
+  setText('panelRoleRibbonText', identity.ribbonText);
+  const ribbon = document.getElementById('panelRoleRibbon');
+  if (ribbon) ribbon.hidden = false;
+
+  Object.entries(identity.groupLabels).forEach(([group, label]) => {
+    const span = document.querySelector(`.shortcut-group[data-group="${group}"] .shortcut-group-label span`);
+    if (span) span.textContent = label;
+  });
+
+  Object.entries(identity.sectionHeaders).forEach(([sectionId, [title, subtitle]]) => {
+    const header = document.querySelector(`#${sectionId} .section-header`);
+    if (!header) return;
+    const h1 = header.querySelector('h1');
+    const p = header.querySelector('p');
+    if (h1) h1.textContent = title;
+    if (p) p.textContent = subtitle;
+  });
+
+  Object.entries(identity.scopeBanners).forEach(([sectionId, message]) => {
+    const header = document.querySelector(`#${sectionId} .section-header`);
+    if (!header || header.nextElementSibling?.classList.contains('role-scope-banner')) return;
+    const banner = document.createElement('div');
+    banner.className = 'role-scope-banner';
+    banner.setAttribute('role', 'note');
+    banner.innerHTML = `<strong>${escapeHtml(identity.ribbonTag)}</strong><span>${escapeHtml(message)}</span>`;
+    header.insertAdjacentElement('afterend', banner);
+  });
 }
 
 const WS_BASE_URL = (() => {
@@ -117,13 +341,29 @@ async function apiFetch(endpoint, options = {}) {
     headers
   });
 
-  // Sessao ausente, invalida ou expirada: volta para o login (uma unica vez)
-  if (response.status === 401 && !_encerrandoSessao) {
+  // Sessao invalida ou expirada: volta para o login (uma unica vez).
+  // Sem token (modo demonstracao) a API recusa, mas a tela permanece.
+  if (response.status === 401 && token && !_encerrandoSessao) {
     _encerrandoSessao = true;
     window.logoutAdmin();
   }
 
+  // Perfil sem permissao: avisa com a mensagem do backend (ou "Acesso negado")
+  if (response.status === 403) {
+    const body = await readResponseBody(response.clone()).catch(() => null);
+    showToast(extractErrorMessage(body, 'Acesso negado'));
+  }
+
   return response;
+}
+
+// Erros 4xx trazem a mensagem do backend; demais incluem o endpoint para diagnostico.
+async function buildRequestError(response, endpoint, fallback) {
+  const body = await readResponseBody(response).catch(() => null);
+  const message = extractErrorMessage(body, response.status === 403 ? 'Acesso negado' : fallback);
+  const error = new Error(response.status >= 400 && response.status < 500 ? message : `${message} (${endpoint})`);
+  error.status = response.status;
+  return error;
 }
 
 function showSuccessModal(title, message, duration = 4000) {
@@ -213,6 +453,11 @@ function showToast(message, type = 'error') {
     document.body.appendChild(container);
   }
 
+  // Evita a mesma mensagem duplicada (ex.: 403 avisado pelo apiFetch e pelo chamador)
+  const now = Date.now();
+  if (showToast._last && showToast._last.message === message && now - showToast._last.at < 2500) return;
+  showToast._last = { message, at: now };
+
   const toast = document.createElement('div');
   toast.textContent = message;
   toast.style.cssText = `padding:12px 14px;border-radius:8px;color:#fff;box-shadow:0 10px 30px rgba(15,23,42,.18);font:500 14px/1.35 Inter,system-ui,sans-serif;background:${type === 'success' ? '#16a34a' : '#dc2626'};`;
@@ -250,14 +495,9 @@ function readAdminSession() {
 
 function applyAdminSession() {
   const session = readAdminSession();
-  if (!session) return;
+  if (!session || !PANEL_ACCESS_ALLOWED) return;
 
-  const isLegacyCashier = session.userKey === 'chefe'
-    || session.initials === 'CC'
-    || session.name === 'Chefe de Caixa';
-  const userKey = isLegacyCashier ? 'atendente' : session.userKey || Object.keys(ADMIN_PANEL_USERS).find((key) =>
-    ADMIN_PANEL_USERS[key].initials === session.initials
-  ) || 'gerente';
+  const userKey = CURRENT_PANEL_ROLE;
   // Sessao com token (login real): os dados do usuario vem do backend e prevalecem.
   // Sessao sem token (modo demonstracao): valem os perfis fixos do painel.
   const demoProfile = ADMIN_PANEL_USERS[userKey] || {};
@@ -277,34 +517,24 @@ function applyAdminSession() {
   const profileSummaryCpf = document.querySelector('#profileModal .profile-summary span');
   const profileAvatar = document.querySelector('#profileModal .user-avatar-large');
 
-  if (headerName) headerName.textContent = normalizedSession.name || 'Gerente Principal';
+  const fallbackRole = userKey === 'admin' ? 'Administrador' : 'Gerente';
+  if (headerName) headerName.textContent = normalizedSession.name || fallbackRole;
   if (headerAvatar) headerAvatar.textContent = normalizedSession.initials || 'AD';
-  if (headerRole) headerRole.textContent = normalizedSession.role || 'Administrador';
-  if (footerName) footerName.textContent = normalizedSession.name || 'Gerente Principal';
-  if (footerRole) footerRole.textContent = normalizedSession.role || 'Administrador';
+  if (headerRole) headerRole.textContent = normalizedSession.role || fallbackRole;
+  if (footerName) footerName.textContent = normalizedSession.name || fallbackRole;
+  if (footerRole) footerRole.textContent = normalizedSession.role || fallbackRole;
   if (footerAvatar) footerAvatar.textContent = normalizedSession.initials || 'AD';
-  if (profileName) profileName.value = normalizedSession.name || 'Administrador';
+  if (profileName) profileName.value = normalizedSession.name || fallbackRole;
   if (profileCpf) profileCpf.value = normalizedSession.cpf || '';
-  if (profileRole) profileRole.value = normalizedSession.role || 'Administrador';
-  if (profileSummaryName) profileSummaryName.textContent = normalizedSession.name || 'Administrador';
+  if (profileRole) profileRole.value = normalizedSession.role || fallbackRole;
+  if (profileSummaryName) profileSummaryName.textContent = normalizedSession.name || fallbackRole;
   if (profileSummaryCpf) profileSummaryCpf.textContent = normalizedSession.cpf || '';
   if (profileAvatar) profileAvatar.textContent = normalizedSession.initials || 'AD';
-  if (isLegacyCashier || session.userKey !== userKey) {
+  if (session.userKey !== userKey) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(normalizedSession));
   }
 
-  // Controle de visibilidade por role
-  const backendRole = normalizedSession.backendRole || '';
-  const isAdmin = backendRole === 'ADMIN' || normalizedSession.userKey === 'gerente';
-  if (!isAdmin) {
-    document.querySelectorAll('[data-role="admin"]').forEach((el) => {
-      el.style.display = 'none';
-    });
-    // tambem oculta atalhos da home que exigem admin
-    document.querySelectorAll('.home-shortcut[data-role="admin"]').forEach((el) => {
-      el.style.display = 'none';
-    });
-  }
+  applyRoleVisibility();
 }
 
 window.logoutAdmin = function() {
@@ -323,9 +553,7 @@ async function postJson(endpoint, payload) {
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    const body = await readResponseBody(response);
-    const message = extractErrorMessage(body, 'Nao foi possivel salvar os dados.');
-    throw new Error(`${message} (${endpoint})`);
+    throw await buildRequestError(response, endpoint, 'Nao foi possivel salvar os dados.');
   }
   return readResponseBody(response);
 }
@@ -337,9 +565,19 @@ async function putJson(endpoint, payload) {
     body: JSON.stringify(payload)
   });
   if (!response.ok) {
-    const body = await readResponseBody(response);
-    const message = extractErrorMessage(body, 'Nao foi possivel atualizar.');
-    throw new Error(`${message} (${endpoint})`);
+    throw await buildRequestError(response, endpoint, 'Nao foi possivel atualizar.');
+  }
+  return readResponseBody(response);
+}
+
+async function patchJson(endpoint, payload) {
+  const response = await apiFetch(endpoint, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!response.ok) {
+    throw await buildRequestError(response, endpoint, 'Nao foi possivel atualizar.');
   }
   return readResponseBody(response);
 }
@@ -347,9 +585,7 @@ async function putJson(endpoint, payload) {
 async function deleteJson(endpoint) {
   const response = await apiFetch(endpoint, { method: 'DELETE' });
   if (!response.ok) {
-    const body = await readResponseBody(response);
-    const message = extractErrorMessage(body, 'Nao foi possivel excluir.');
-    throw new Error(`${message} (${endpoint})`);
+    throw await buildRequestError(response, endpoint, 'Nao foi possivel excluir.');
   }
   return readResponseBody(response);
 }
@@ -357,9 +593,7 @@ async function deleteJson(endpoint) {
 async function getJson(endpoint) {
   const response = await apiFetch(endpoint);
   if (!response.ok) {
-    const body = await readResponseBody(response);
-    const message = extractErrorMessage(body, 'Erro ao carregar dados.');
-    throw new Error(`${message} (${endpoint})`);
+    throw await buildRequestError(response, endpoint, 'Erro ao carregar dados.');
   }
   return readResponseBody(response);
 }
@@ -368,9 +602,22 @@ async function getJson(endpoint) {
 // NAVIGATION: Section Switching
 // =============================================
 
-function navigateTo(sectionId) {
+const adminNavigationHistory = [];
+let currentAdminSection = 'home';
+let adminNavigationInitialized = false;
+
+function navigateTo(sectionId, options = {}) {
   // Links antigos do dashboard continuam abrindo a nova tela inicial.
   if (sectionId === 'dashboard') sectionId = 'home';
+
+  if (!document.getElementById(sectionId)) sectionId = 'home';
+  // Secao nao permitida para o perfil: volta ao dashboard
+  if (!canAccessSection(sectionId)) sectionId = 'home';
+  if (adminNavigationInitialized && sectionId !== currentAdminSection && options.addToHistory !== false) {
+    adminNavigationHistory.push(currentAdminSection);
+  } else if (!adminNavigationInitialized && sectionId !== 'home') {
+    adminNavigationHistory.push('home');
+  }
 
   // Hide all sections
   document.querySelectorAll('.content-section').forEach(section => {
@@ -440,8 +687,9 @@ function navigateTo(sectionId) {
   // Atualizar breadcrumb no header
   const bc = document.getElementById('headerBreadcrumb');
   if (bc) {
-    if (navInfo) {
-      bc.innerHTML = `<span>${navInfo[0]}</span><span class="bc-sep">›</span><span class="bc-current">${navInfo[1]}</span>`;
+    const bcInfo = PANEL_IDENTITY[CURRENT_PANEL_ROLE]?.breadcrumbs[sectionId] || navInfo;
+    if (bcInfo) {
+      bc.innerHTML = `<span>${bcInfo[0]}</span><span class="bc-sep">›</span><span class="bc-current">${bcInfo[1]}</span>`;
     } else {
       bc.innerHTML = '';
     }
@@ -455,7 +703,7 @@ function navigateTo(sectionId) {
 
   // Load data for the section being shown
   const sectionLoaders = {
-    home:           carregarRelatorios,
+    home:           isAdminRole() ? () => { carregarPainelAdministrador(); carregarRelatorios(); } : carregarRelatorios,
     clientes:       carregarClientes,
     funcionarios:   carregarFuncionarios,
     fornecedores:   carregarFornecedores,
@@ -474,8 +722,23 @@ function navigateTo(sectionId) {
     insumos: carregarInsumos
   };
   if (sectionLoaders[sectionId]) sectionLoaders[sectionId]();
+
+  currentAdminSection = sectionId;
+  adminNavigationInitialized = true;
 }
 window.navigateTo = navigateTo;
+
+function navigateBack() {
+  const activeModal = document.querySelector('.modal.active');
+  if (activeModal) {
+    closeModal(activeModal.id);
+    return;
+  }
+
+  const previousSection = adminNavigationHistory.pop() || 'home';
+  navigateTo(previousSection, { addToHistory: false });
+}
+window.navigateBack = navigateBack;
 
 function openDashboardCard(sectionId, filterValue = '') {
   const today = new Date();
@@ -540,9 +803,10 @@ function findAdminRoute(value) {
   const term = normalizeRouteSearch(value);
   if (!term) return null;
 
-  return ADMIN_HOME_ROUTES.find((route) =>
+  const routes = ADMIN_HOME_ROUTES.filter((route) => canAccessSection(route.id));
+  return routes.find((route) =>
     route.labels.some((label) => normalizeRouteSearch(label) === term)
-  ) || ADMIN_HOME_ROUTES.find((route) =>
+  ) || routes.find((route) =>
     route.labels.some((label) => normalizeRouteSearch(label).includes(term) || term.includes(normalizeRouteSearch(label)))
   ) || null;
 }
@@ -565,7 +829,9 @@ function initAdminHomeSearch() {
     const route = findAdminRoute(sourceInput.value);
     if (!route) {
       if (shouldShowHint && hint) {
-        hint.textContent = 'Tela não encontrada. Tente Clientes, Cardápio, Mesas, Cozinha ou Dashboard.';
+        hint.textContent = isAdminRole()
+          ? 'Tela não encontrada. Tente Dashboard, Pedidos, Relatórios ou Usuários.'
+          : 'Tela não encontrada. Tente Clientes, Cardápio, Mesas, Cozinha ou Dashboard.';
         hint.classList.add('is-error');
       }
       sourceInput.focus();
@@ -677,6 +943,7 @@ window.openAddUserModal = () => {
     form.reset();
     resetUserFormMode(form);
   }
+  carregarFuncionariosUsuario();
   window.openModal('addUserModal');
 };
 
@@ -865,7 +1132,9 @@ function configureField(field) {
     field.required = true;
   }
 
-  if (key.includes('cpf')) {
+  if (field.dataset.mask === 'none') {
+    // Campo livre: sem mascara automatica (ex.: chave PIX aceita CPF, CNPJ, email ou chave aleatoria)
+  } else if (key.includes('cpf')) {
     field.classList.add('masked-input');
     field.inputMode = 'numeric';
     field.maxLength = 14;
@@ -1149,6 +1418,8 @@ document.addEventListener('click', (e) => {
     resetCrudForm(form, modalId);
     if (modalId === 'addClientModal') configureClientPersonType(form);
     if (modalId === 'addUserModal') resetUserFormMode(form);
+    if (modalId === 'addUserModal') carregarFuncionariosUsuario();
+    if (modalId === 'addInsumoModal') carregarFornecedoresInsumo();
     if (modalId === 'addDishModal') {
       window.__produtoAtivoId = null;
       const secFT = document.getElementById('fichaTecnicaSection');
@@ -1755,25 +2026,38 @@ window.abrirQRCodeMesa = function(tableId) {
   }
   const menuUrl = new URL('user.html', window.location.href);
   const qrEndpoint = `/mesas/${table.id}/qrcode.svg?url=${encodeURIComponent(menuUrl.href)}`;
-  const qrImageUrl = `${API_BASE_URL}${qrEndpoint}`;
   const modal = document.getElementById('tableQrModal');
   const title = document.getElementById('tableQrTitle');
   const image = document.getElementById('tableQrImage');
   const download = document.getElementById('tableQrDownload');
   if (!modal || !title || !image || !download) return;
 
+  // O endpoint exige token: a imagem e baixada via apiFetch e exibida como blob
+  async function fetchQrBlob() {
+    const response = await apiFetch(qrEndpoint);
+    if (!response.ok) {
+      const body = await readResponseBody(response);
+      throw new Error(extractErrorMessage(body, 'Não foi possível gerar o QR Code desta mesa.'));
+    }
+    return response.blob();
+  }
+
   title.textContent = `QR Code — Mesa ${table.number}`;
-  image.src = qrImageUrl;
+  if (image.dataset.objectUrl) URL.revokeObjectURL(image.dataset.objectUrl);
+  image.removeAttribute('src');
+  image.dataset.objectUrl = '';
   image.alt = `QR Code exclusivo da Mesa ${table.number}`;
-  image.onerror = () => showToast('Não foi possível gerar o QR Code desta mesa.');
+  image.onerror = null;
+  fetchQrBlob()
+    .then((blob) => {
+      const objectUrl = URL.createObjectURL(blob);
+      image.dataset.objectUrl = objectUrl;
+      image.src = objectUrl;
+    })
+    .catch((error) => showToast(error.message || 'Não foi possível gerar o QR Code desta mesa.'));
   download.onclick = async () => {
     try {
-      const response = await apiFetch(qrEndpoint);
-      if (!response.ok) {
-        const body = await readResponseBody(response);
-        throw new Error(extractErrorMessage(body, 'Não foi possível baixar o QR Code.'));
-      }
-      const imageBlob = await response.blob();
+      const imageBlob = await fetchQrBlob();
       const objectUrl = URL.createObjectURL(imageBlob);
       const anchor = document.createElement('a');
       anchor.href = objectUrl;
@@ -1890,9 +2174,9 @@ async function carregarPedidosProntos() {
     lista.innerHTML = prontos.map(p =>
       `<span style="margin-right:12px">
         <strong>#${p.id}</strong> - ${pedidoOrigemLabel(p)}
-        <button class="btn-small" style="margin-left:6px;background:#16a34a;color:#fff;border:none" onclick="alterarStatusPedido(${p.id},'ENTREGUE');carregarPedidosProntos()">
-          Entregar
-        </button>
+        ${p.numeroMesa ? `<button class="btn-small" style="margin-left:6px;background:#16a34a;color:#fff;border:none" onclick="alterarStatusPedido(${p.id},'SERVIDO')">
+          Confirmar entrega
+        </button>` : '<span style="margin-left:6px;opacity:.8">(entrega no caixa)</span>'}
       </span>`
     ).join('');
 
@@ -1915,6 +2199,7 @@ async function carregarConsumoMesa(numeroMesa) {
     const pedidos = await getJson(`/pedidos/mesa/${numeroMesa}`);
     const ativos = (pedidos || []).filter(p => !['CANCELADO', 'ENTREGUE'].includes(p.status));
     const historico = (pedidos || []).filter(p => ['ENTREGUE'].includes(p.status));
+    panel.dataset.numeroMesa = String(numeroMesa);
 
     if (!ativos.length && !historico.length) {
       panel.innerHTML = '<div style="color:#94a3b8;font-size:13px">Nenhum pedido nesta mesa.</div>';
@@ -1940,7 +2225,7 @@ async function carregarConsumoMesa(numeroMesa) {
           <strong>${formatCurrency(p.valorTotal)}</strong>
         </div>
         ${renderItens(p)}
-        ${p.status === 'PRONTO' ? `<button class="btn-small" style="margin-top:8px;width:100%" onclick="alterarStatusPedido(${p.id},'ENTREGUE');carregarConsumoMesa(${numeroMesa})">Confirmar Entrega</button>` : ''}
+        ${p.status === 'PRONTO' ? `<button class="btn-small" style="margin-top:8px;width:100%" onclick="alterarStatusPedido(${p.id},'SERVIDO')">Confirmar Entrega</button>` : ''}
       </div>`;
 
     panel.innerHTML = `
@@ -2020,10 +2305,11 @@ function validateTableForm(form) {
 
   const fd = new FormData(form);
   const id = Number(fd.get('id')) || null;
+  const isReservaMode = form.dataset.mode === 'reserva';
   const number = Number(fd.get('number'));
-  const status = fd.get('status');
+  const status = isReservaMode ? 'reservada' : fd.get('status');
   const tables = getTables();
-  const duplicate = tables.some((table) => Number(table.number) === number && table.id !== id);
+  const duplicate = !isReservaMode && tables.some((table) => Number(table.number) === number && table.id !== id);
 
   if (duplicate) {
     const numberField = form.querySelector('[name="number"]');
@@ -2059,11 +2345,24 @@ function validateTableForm(form) {
   return true;
 }
 
+// Campos do cadastro da mesa (bloqueados quando o formulario abre so para reserva)
+const TABLE_CADASTRO_FIELDS = ['number', 'seats', 'status', 'area', 'reference'];
+
+function setTableFormMode(form, mode) {
+  if (!form) return;
+  form.dataset.mode = mode;
+  TABLE_CADASTRO_FIELDS.forEach((name) => {
+    const field = form.querySelector(`[name="${name}"]`);
+    if (field) field.disabled = mode === 'reserva';
+  });
+}
+
 window.openTableModal = function(tableId) {
   const table = tableId ? getTables().find((item) => item.id === tableId) : null;
   const title = document.getElementById('tableModalTitle');
   if (title) title.textContent = table ? `Editar Mesa ${table.number}` : 'Nova Mesa';
   fillTableForm(table);
+  setTableFormMode(document.getElementById('tableForm'), 'cadastro');
   window.openModal('tableModal');
 };
 
@@ -2073,7 +2372,10 @@ window.reserveTable = function(tableId) {
   window.openTableModal(tableId);
   const form = document.getElementById('tableForm');
   if (!form) return;
+  const title = document.getElementById('tableModalTitle');
+  if (title) title.textContent = `Reserva da Mesa ${table.number}`;
   form.querySelector('[name="status"]').value = 'reservada';
+  setTableFormMode(form, 'reserva');
   const dateField = form.querySelector('[name="reservationDate"]');
   if (!dateField.value || isReservationInPast(dateField.value)) {
     dateField.value = nextReservationSlot();
@@ -2081,31 +2383,42 @@ window.reserveTable = function(tableId) {
   updateTableReservationFields();
 };
 
+// Somente o status (PATCH /mesas/{id}/status); nao altera capacidade, localizacao nem reserva
+function alterarStatusMesa(tableId, status) {
+  return patchJson(`/mesas/${tableId}/status`, { status: uiStatusToApiStatus(status) });
+}
+
+// Todos os campos nulos cancelam a reserva (status reservada volta a livre no backend)
+function cancelarReservaMesa(tableId) {
+  return patchJson(`/mesas/${tableId}/reserva`, {
+    reservaNome: null,
+    reservaTelefone: null,
+    reservaDataHora: null
+  });
+}
+
 window.occupyTable = function(tableId) {
-  const tables = getTables();
-  const table = tables.find((item) => item.id === tableId);
+  const table = getTables().find((item) => item.id === tableId);
   if (!table) return;
-  table.status = 'ocupada';
-  saveTables(tables);
-  putJson(`/mesas/${tableId}`, tableToMesaPayload(table))
+  alterarStatusMesa(tableId, 'ocupada')
     .then(() => showToast(`Mesa ${table.number} marcada como ocupada.`, 'success'))
     .catch((err) => showToast(err.message || 'Erro ao atualizar mesa.'))
     .finally(carregarMesas);
 };
 
-window.releaseTable = function(tableId) {
-  const tables = getTables();
-  const table = tables.find((item) => item.id === tableId);
+window.releaseTable = async function(tableId) {
+  const table = getTables().find((item) => item.id === tableId);
   if (!table) return;
-  table.status = 'disponivel';
-  table.reservationName = '';
-  table.reservationPhone = '';
-  table.reservationDate = '';
-  saveTables(tables);
-  putJson(`/mesas/${tableId}`, tableToMesaPayload(table))
-    .then(() => showToast(`Mesa ${table.number} liberada.`, 'success'))
-    .catch((err) => showToast(err.message || 'Erro ao atualizar mesa.'))
-    .finally(carregarMesas);
+  const temReserva = Boolean(table.reservationName || table.reservationPhone || table.reservationDate);
+  try {
+    if (table.status !== 'reservada') await alterarStatusMesa(tableId, 'disponivel');
+    if (table.status === 'reservada' || temReserva) await cancelarReservaMesa(tableId);
+    showToast(`Mesa ${table.number} liberada.`, 'success');
+  } catch (err) {
+    showToast(err.message || 'Erro ao atualizar mesa.');
+  } finally {
+    carregarMesas();
+  }
 };
 
 window.deleteTable = async function(tableId) {
@@ -2136,6 +2449,27 @@ document.getElementById('tableForm')?.addEventListener('submit', (event) => {
   if (!validateTableForm(form)) return;
 
   const fd = new FormData(form);
+
+  // Reserva de mesa existente: PATCH /mesas/{id}/reserva (backend define status reservada)
+  if (form.dataset.mode === 'reserva' && Number(fd.get('id'))) {
+    const mesaId = Number(fd.get('id'));
+    const notes = String(fd.get('notes') || '').trim();
+    patchJson(`/mesas/${mesaId}/reserva`, {
+      reservaNome: String(fd.get('reservationName') || '').trim() || null,
+      reservaTelefone: String(fd.get('reservationPhone') || '').trim() || null,
+      reservaDataHora: String(fd.get('reservationDate') || '').trim() || null,
+      observacoes: notes || null
+    })
+      .then(() => {
+        selectedTableId = mesaId;
+        closeModal('tableModal');
+        showToast('Reserva salva com sucesso!', 'success');
+        carregarMesas();
+      })
+      .catch((err) => showToast(err.message || 'Erro ao salvar reserva.'));
+    return;
+  }
+
   const id = Number(fd.get('id')) || Date.now();
   const status = fd.get('status');
   const table = {
@@ -2224,34 +2558,10 @@ document.getElementById('securityForm')?.addEventListener('submit', (e) => {
   e.target.reset();
 });
 
+// Trocar usuario exige novo login (sem troca de perfil sem senha)
 document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
-  const selectedUser = e.target.querySelector('input[name="user"]:checked');
-  const selectedOption = selectedUser?.closest('.switch-user-option');
-  const userKey = selectedUser?.value || 'gerente';
-  const user = ADMIN_PANEL_USERS[userKey] || {
-    name: selectedOption?.querySelector('strong')?.textContent || 'Gerente Principal',
-    initials: selectedOption?.querySelector('.user-avatar-small')?.textContent || 'GP',
-    cpf: '',
-    role: selectedOption?.querySelector('small')?.textContent || 'Administrador'
-  };
-  const currentSession = readAdminSession() || {};
-
-  sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
-    ...currentSession,
-    ...user,
-    userKey,
-    switchedAt: new Date().toISOString()
-  }));
-
-  if (userKey === 'cozinha') {
-    window.location.href = 'cozinha.html';
-    return;
-  }
-
-  applyAdminSession();
-
-  closeModal('switchUserModal');
+  window.logoutAdmin();
 });
 
 // =============================================
@@ -2278,14 +2588,80 @@ window.marcarUrgente = function(pedidoId) {
   closeModal('orderDetailsModal');
 };
 
-window.alterarStatusPedido = function(pedidoId, novoStatus) {
-  putJson(`/pedidos/${pedidoId}/status`, { status: novoStatus })
+// ENTREGUE nao e marcado pelo painel: so ocorre no pagamento (PDV) com formaPagamento.
+window.alterarStatusPedido = function(pedidoId, novoStatus, extra = {}) {
+  return putJson(`/pedidos/${pedidoId}/status`, { status: novoStatus, ...extra })
     .then(() => {
       showToast('Status atualizado com sucesso!', 'success');
-      carregarCozinha();
-      carregarPedidos(_pedidosPage);
+      atualizarTelasPedido();
     })
     .catch((err) => showToast(err.message || 'Erro ao atualizar status.'));
+};
+
+function atualizarTelasPedido() {
+  if (currentAdminSection === 'cozinha') carregarCozinha();
+  if (currentAdminSection === 'pedidos') carregarPedidos(_pedidosPage);
+  if (currentAdminSection === 'cancelamentos') carregarCancelamentos();
+  if (currentAdminSection === 'mesas') {
+    carregarPedidosProntos();
+    const numeroMesa = document.getElementById('mesaConsumoPanel')?.dataset.numeroMesa;
+    if (numeroMesa) carregarConsumoMesa(numeroMesa);
+  }
+}
+
+// Modal de motivo obrigatorio (cancelamento - RN-AC41)
+function showMotivoModal(title, message) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.innerHTML = `
+      <div class="confirm-box">
+        <button type="button" class="confirm-close-btn" aria-label="Fechar">&#x2715;</button>
+        <h3 class="confirm-title">${escapeHtml(title)}</h3>
+        <p class="confirm-message">${message}</p>
+        <textarea class="motivo-input" rows="3" maxlength="255" placeholder="Informe o motivo" style="width:100%;box-sizing:border-box;margin:8px 0;padding:8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;resize:vertical"></textarea>
+        <small class="motivo-erro" style="display:block;color:#dc2626;min-height:16px"></small>
+        <div class="confirm-actions">
+          <button type="button" class="btn-secondary confirm-cancel-btn">Voltar</button>
+          <button type="button" class="btn-danger confirm-ok-btn">Cancelar pedido</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector('.motivo-input');
+    const erro = overlay.querySelector('.motivo-erro');
+    window.setTimeout(() => input.focus(), 0);
+
+    function close(result) {
+      overlay.style.opacity = '0';
+      overlay.style.transition = 'opacity 0.18s';
+      window.setTimeout(() => overlay.remove(), 180);
+      resolve(result);
+    }
+
+    overlay.querySelector('.confirm-ok-btn').addEventListener('click', () => {
+      const motivo = input.value.trim();
+      if (!motivo) {
+        erro.textContent = 'O motivo do cancelamento e obrigatorio.';
+        input.focus();
+        return;
+      }
+      close(motivo);
+    });
+    overlay.querySelector('.confirm-cancel-btn').addEventListener('click', () => close(null));
+    overlay.querySelector('.confirm-close-btn').addEventListener('click', () => close(null));
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(null); });
+    overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(null); });
+  });
+}
+
+window.cancelarPedido = async function(pedidoId) {
+  const motivo = await showMotivoModal('Cancelar pedido?', `Informe o motivo do cancelamento do pedido <strong>#${Number(pedidoId)}</strong>.`);
+  if (!motivo) return;
+  closeModal('orderDetailsModal');
+  window.alterarStatusPedido(pedidoId, 'CANCELADO', { motivo });
 };
 
 // =============================================
@@ -2914,16 +3290,6 @@ document.addEventListener('click', (e) => {
     window.exportTable(format, button);
     return;
   }
-
-  if (/salvar/i.test(label)) {
-    const configForm = button.closest('.config-form');
-    if (configForm) {
-      e.preventDefault();
-      if (!validateContainer(configForm)) return;
-      showToast('Alterações salvas com sucesso!', 'success');
-      return;
-    }
-  }
 });
 
 document.addEventListener('submit', (e) => {
@@ -2962,11 +3328,21 @@ let websocketRetryTimer = null;
 let websocketRetryDelay = 1000;
 let wsAdminLoadTimer = null;
 
+function buildAdminWebSocketUrl(token) {
+  const separator = WS_BASE_URL.includes('?') ? '&' : '?';
+  return `${WS_BASE_URL}${separator}token=${encodeURIComponent(token)}`;
+}
+
 function connectAdminWebSocket() {
   if (adminSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(adminSocket.readyState)) return adminSocket;
 
+  // Eventos de pedido sao operacionais: so o Gerente recebe (Administrador e recusado com 1008)
+  const session = readAdminSession();
+  const token = session?.token || session?.accessToken;
+  if (!isGerenteRole() || !token) return null;
+
   try {
-    adminSocket = new WebSocket(WS_BASE_URL);
+    adminSocket = new WebSocket(buildAdminWebSocketUrl(token));
 
     adminSocket.addEventListener('open', () => {
       websocketRetryDelay = 1000;
@@ -2994,8 +3370,13 @@ function connectAdminWebSocket() {
       }
     });
 
-    adminSocket.addEventListener('close', () => {
+    adminSocket.addEventListener('close', (event) => {
       window.clearTimeout(websocketRetryTimer);
+      // 1008 = token invalido/expirado ou perfil recusado: nao insiste na reconexao
+      if (event.code === 1008) {
+        console.warn('WebSocket recusado pelo servidor (1008).');
+        return;
+      }
       websocketRetryTimer = window.setTimeout(connectAdminWebSocket, websocketRetryDelay);
       websocketRetryDelay = Math.min(websocketRetryDelay * 2, 30000);
     });
@@ -3019,13 +3400,13 @@ window.connectAdminWebSocket = connectAdminWebSocket;
 // =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Perfil sem acesso ao painel ja esta sendo redirecionado
+  if (!PANEL_ACCESS_ALLOWED) return;
+
   const initialSection = window.location.hash.slice(1);
   applyAdminSession();
 
-  // Atendente comeca direto nas mesas (visao operacional do salao)
-  const _sess = readAdminSession();
-  const _defaultSection = (_sess?.userKey === 'atendente' && !initialSection) ? 'mesas' : (initialSection || 'home');
-  navigateTo(_defaultSection);
+  navigateTo(initialSection || 'home');
   initAdminHomeSearch();
   initDashboardDisclosures();
   initClientForm();
@@ -3141,6 +3522,7 @@ const pedidoStatusLabel = {
   RECEBIDO: 'Recebido',
   EM_PREPARO: 'Preparando',
   PRONTO: 'Pronto',
+  SERVIDO: 'Servido',
   ENTREGUE: 'Entregue',
   CANCELADO: 'Cancelado'
 };
@@ -3149,6 +3531,7 @@ const pedidoBadgeClass = {
   RECEBIDO: 'badge-info',
   EM_PREPARO: 'badge-warning',
   PRONTO: 'badge-success',
+  SERVIDO: 'badge-pgto',
   ENTREGUE: 'badge-active',
   CANCELADO: 'badge-danger'
 };
@@ -3309,6 +3692,8 @@ function carregarHomeStats() {
     })
     .catch((err) => console.error('[home-resumo]', err));
 
+  // Mesas: somente perfis operacionais e Gerente
+  if (!isGerenteRole()) return;
   getJson('/mesas')
     .then((mesas) => {
       const lista      = mesas || [];
@@ -3334,8 +3719,8 @@ function carregarRelatorios() {
   // Grafico de vendas por hora do dashboard
   carregarSalesChartDashboard();
 
-  // Alerta de estoque baixo
-  verificarEstoqueBaixo();
+  // Alerta de estoque baixo (insumos: somente Gerente)
+  if (isGerenteRole()) verificarEstoqueBaixo();
 }
 
 function carregarUltimosPedidosDashboard() {
@@ -3633,10 +4018,10 @@ function buildLinhaFuncionario(f) {
     <td>${f.salario ? formatCurrency(f.salario) : '-'}</td>
     <td><span class="badge badge-active">${f.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(f.criadoEm)}</td>
-    <td>
+    <td>${isGerenteRole() ? `
       <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarFuncionario(${f.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
       <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirFuncionario(${f.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
-    </td>
+    ` : '-'}</td>
   </tr>`;
 }
 
@@ -3960,6 +4345,7 @@ function buildLinhaPedido(p) {
   return `<tr>
     <td><strong>#${p.id}</strong></td>
     <td>${pedidoOrigemLabel(p)}</td>
+    <td>${escapeHtml(p.clienteNome || '-')}</td>
     <td>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</td>
     <td>${qtd} item(s)</td>
     <td>${formatCurrency(p.valorTotal)}</td>
@@ -3988,6 +4374,7 @@ window.abrirDetalhesPedido = function(id) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:16px;font-size:13px">
           <div><span style="color:#64748b;font-weight:600">ID</span><br/><strong>#${p.id}</strong></div>
           <div><span style="color:#64748b;font-weight:600">Origem</span><br/>${pedidoOrigemLabel(p)}</div>
+          <div><span style="color:#64748b;font-weight:600">Cliente</span><br/>${escapeHtml(p.clienteNome || 'Não identificado')}</div>
           <div><span style="color:#64748b;font-weight:600">Status</span><br/>${pedidoStatusBadge(p.status)}</div>
           <div><span style="color:#64748b;font-weight:600">Data/Hora</span><br/>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</div>
         </div>
@@ -3998,11 +4385,11 @@ window.abrirDetalhesPedido = function(id) {
         <div style="text-align:right;margin-top:12px;font-size:15px;font-weight:700">
           Total: ${formatCurrency(p.valorTotal)}
         </div>
-        <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">
-          ${p.status === 'PRONTO' ? `<button class="btn-primary" type="button" onclick="alterarStatusPedido(${p.id},'ENTREGUE');closeModal('orderDetailsModal')">Confirmar Entrega</button>` : ''}
+        ${isGerenteRole() ? `<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">
+          ${p.status === 'PRONTO' && p.numeroMesa ? `<button class="btn-primary" type="button" onclick="alterarStatusPedido(${p.id},'SERVIDO');closeModal('orderDetailsModal')">Confirmar Entrega</button>` : ''}
           ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#f59e0b;border-color:#fde68a" type="button" onclick="marcarUrgente(${p.id})">Urgente</button>` : ''}
-          ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#dc2626;border-color:#fecaca" type="button" onclick="alterarStatusPedido(${p.id},'CANCELADO');closeModal('orderDetailsModal')">Cancelar Pedido</button>` : ''}
-        </div>`;
+          ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#dc2626;border-color:#fecaca" type="button" onclick="cancelarPedido(${p.id})">Cancelar Pedido</button>` : ''}
+        </div>` : ''}`;
     })
     .catch(err => {
       content.innerHTML = `<div class="modal-description" style="color:#dc2626">Erro ao carregar pedido: ${escapeHtml(err.message || 'tente novamente.')}</div>`;
@@ -4192,8 +4579,12 @@ function carregarCozinha() {
         ? p.itens.map(i => `${i.quantidade}x ${i.nomeProduto}`).join(', ')
         : 'Sem itens';
 
-      const proximoStatus = { RECEBIDO: 'EM_PREPARO', EM_PREPARO: 'PRONTO', PRONTO: 'ENTREGUE' }[p.status];
-      const labelBotao   = { RECEBIDO: 'Iniciar Preparo', EM_PREPARO: 'Marcar Pronto', PRONTO: 'Entregar' }[p.status];
+      // Fluxo do KDS: RECEBIDO -> EM_PREPARO -> PRONTO; PRONTO -> SERVIDO ("Confirmar entrega").
+      // ENTREGUE so no pagamento (PDV). Balcao pronto e entregue pelo Caixa (PRONTO -> ENTREGUE).
+      const proximoStatus = p.status === 'PRONTO' && !p.numeroMesa
+        ? null
+        : { RECEBIDO: 'EM_PREPARO', EM_PREPARO: 'PRONTO', PRONTO: 'SERVIDO' }[p.status];
+      const labelBotao   = { RECEBIDO: 'Iniciar Preparo', EM_PREPARO: 'Marcar Pronto', PRONTO: 'Confirmar entrega' }[p.status];
 
       // Calcula há quantos minutos o pedido foi criado
   const dataPedido = p.dataHora
@@ -4246,12 +4637,12 @@ function carregarCozinha() {
   : ''}
   </div>
 
-  <button
+  ${proximoStatus ? `<button
     class="btn-small"
     onclick="alterarStatusPedido(${p.id}, '${proximoStatus}')"
   >
     ${labelBotao}
-  </button>
+  </button>` : '<div class="card-time">Entrega no caixa</div>'}
 `;
 
 col.appendChild(card);
@@ -4304,6 +4695,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.__insumos = [];
 
+function carregarFornecedoresInsumo(selectedFornecedores = []) {
+  const select = document.querySelector('#addInsumoForm [name="fornecedorIds"]');
+  if (!select) return;
+  const fornecedoresAtuais = Array.isArray(selectedFornecedores) ? selectedFornecedores : [];
+  const ids = new Set(fornecedoresAtuais.map((fornecedor) => Number(
+    typeof fornecedor === 'object' ? fornecedor.id : fornecedor
+  )));
+  select.innerHTML = '<option value="">Carregando fornecedores...</option>';
+  getJson('/fornecedores')
+    .then((list) => {
+      window.__fornecedores = list || [];
+      const ativos = window.__fornecedores.map((fornecedor) =>
+        `<option value="${Number(fornecedor.id)}"${ids.has(Number(fornecedor.id)) ? ' selected' : ''}>${escapeHtml(fornecedor.razaoSocial)}</option>`
+      );
+      const ativosIds = new Set(window.__fornecedores.map((fornecedor) => Number(fornecedor.id)));
+      const inativosVinculados = fornecedoresAtuais
+        .filter((fornecedor) => typeof fornecedor === 'object' && fornecedor.ativo === false && !ativosIds.has(Number(fornecedor.id)))
+        .map((fornecedor) => `<option value="${Number(fornecedor.id)}" selected disabled>${escapeHtml(fornecedor.razaoSocial)} (inativo)</option>`);
+      select.innerHTML = [...ativos, ...inativosVinculados].join('')
+        || '<option value="" disabled>Nenhum fornecedor cadastrado</option>';
+    })
+    .catch(() => {
+      select.innerHTML = '<option value="" disabled>Não foi possível carregar fornecedores</option>';
+    });
+}
+
 function buildLinhaInsumo(i) {
   const qtd    = Number(i.quantidadeAtual || 0);
   const minima = Number(i.quantidadeMinima || 0);
@@ -4320,6 +4737,7 @@ function buildLinhaInsumo(i) {
     <td>${Number(i.quantidadeMinima).toFixed(3)}</td>
     <td>${formatCurrency(i.custoUnitario)}</td>
     <td>${status}</td>
+    <td>${(i.fornecedores || []).length ? (i.fornecedores || []).map(f => escapeHtml(f.razaoSocial)).join(', ') : '-'}</td>
     <td>
       <button class="btn-icon btn-icon-edit" title="Editar" onclick="editarInsumo(${i.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
       <button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirInsumo(${i.id}, '${escapeHtml(i.nome)}')"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
@@ -4354,6 +4772,7 @@ window.editarInsumo = function(id) {
   form.querySelector('[name="quantidadeMinima"]').value = insumo.quantidadeMinima || '';
   form.querySelector('[name="custoUnitario"]').value = insumo.custoUnitario
     ? formatCurrencyInput(floatToInputDigits(insumo.custoUnitario)) : '';
+  carregarFornecedoresInsumo(insumo.fornecedores || []);
   atualizarAlertaEstoqueInsumo(form);
   const header = document.querySelector('#addInsumoModal .modal-header');
   if (header) header.textContent = 'Editar Insumo';
@@ -4392,7 +4811,10 @@ window.excluirInsumo = async function(id, nome) {
         unidade: fd.get('unidade'),
         quantidadeAtual: Number(fd.get('quantidadeAtual')),
         quantidadeMinima: Number(fd.get('quantidadeMinima')),
-        custoUnitario: parseCurrencyValue(fd.get('custoUnitario')) ?? Number(fd.get('custoUnitario'))
+        custoUnitario: parseCurrencyValue(fd.get('custoUnitario')) ?? Number(fd.get('custoUnitario')),
+        fornecedorIds: Array.from(form.querySelector('[name="fornecedorIds"]').selectedOptions)
+          .filter((option) => option.value !== '')
+          .map((option) => Number(option.value)).filter(Number.isInteger)
       };
 
       try {
@@ -4406,6 +4828,7 @@ window.excluirInsumo = async function(id, nome) {
         closeModal('addInsumoModal');
         form.reset();
         form.querySelector('[name="id"]').value = '';
+        carregarFornecedoresInsumo();
         atualizarAlertaEstoqueInsumo(form);
         const header = document.querySelector('#addInsumoModal .modal-header');
         if (header) header.textContent = 'Novo Insumo';
@@ -4688,6 +5111,10 @@ function carregarNotificacoes() {
 
     document.getElementById('formIntegracao')?.addEventListener('submit', (e) => {
       e.preventDefault();
+      if (!isAdminRole()) {
+        showToast('Somente o Administrador altera as integrações.', 'error');
+        return;
+      }
       const fd = new FormData(e.target);
       const data = {};
       fd.forEach((v, k) => { if (v) data[k] = v; });
@@ -4783,6 +5210,10 @@ function carregarConfiguracaoRestaurante() {
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!isAdminRole()) {
+        showToast('Somente o Administrador altera os dados do restaurante.');
+        return;
+      }
       const fd = new FormData(form);
       const payload = {
         nome: fd.get('nomeRestaurante') || '',
@@ -4802,33 +5233,109 @@ function carregarConfiguracaoRestaurante() {
 })();
 
 // =============================================
-// CONFIG USUARIOS - CRUD completo (rotas /api/usuarios, somente ADMIN)
+// CONFIG USUARIOS - CRUD (rotas /api/usuarios: ADMIN todos os perfis; GERENTE so operacionais)
 // =============================================
 
-const USER_ROLE_LABEL = { ADMIN: 'Administrador', FUNCIONARIO: 'Operacional', COZINHA: 'Cozinha' };
-const USER_ROLE_CLASS = { ADMIN: 'badge-info', FUNCIONARIO: 'badge-active', COZINHA: 'badge-warning' };
+const USER_ROLE_LABEL = {
+  ADMIN: 'Administrador',
+  GERENTE: 'Gerente',
+  FUNCIONARIO: 'Atendente',
+  CAIXA: 'Caixa',
+  COZINHA: 'Cozinha'
+};
+const USER_ROLE_CLASS = {
+  ADMIN: 'badge-info',
+  GERENTE: 'badge-pgto',
+  FUNCIONARIO: 'badge-active',
+  CAIXA: 'badge-success',
+  COZINHA: 'badge-warning'
+};
+const USER_ROLE_MODULES = {
+  ADMIN: 'Sistema, usuários e relatórios',
+  GERENTE: 'Gestão, cadastros e operação',
+  FUNCIONARIO: 'Atendimento (salão)',
+  CAIXA: 'PDV e pagamentos',
+  COZINHA: 'Cozinha'
+};
 // Texto do <select name="accessType"> -> role do backend
 const USER_ACCESS_TYPE_TO_ROLE = {
   'Administrador': 'ADMIN',
-  'Gerente': 'ADMIN',
-  'Operacional': 'FUNCIONARIO',
-  'Visualização': 'FUNCIONARIO',
+  'Gerente': 'GERENTE',
+  'Atendente': 'FUNCIONARIO',
+  'Caixa': 'CAIXA',
   'Cozinha': 'COZINHA'
 };
+const USER_OPERATIONAL_ROLES = ['FUNCIONARIO', 'CAIXA', 'COZINHA'];
+
+// Perfis que o usuario logado pode atribuir (RN-AC21 / RN-AC22)
+function getAssignableUserRoles() {
+  if (isAdminRole()) return ['ADMIN', 'GERENTE', ...USER_OPERATIONAL_ROLES];
+  if (isGerenteRole()) return [...USER_OPERATIONAL_ROLES];
+  return [];
+}
+
+function renderUserRoleOptions(form, currentRole = null) {
+  const select = form?.querySelector('[name="accessType"]');
+  if (!select) return;
+  const roles = getAssignableUserRoles();
+  if (currentRole && USER_ROLE_LABEL[currentRole] && !roles.includes(currentRole)) roles.unshift(currentRole);
+  select.innerHTML = roles
+    .map((role) => `<option value="${escapeHtml(USER_ROLE_LABEL[role])}">${escapeHtml(USER_ROLE_LABEL[role])}</option>`)
+    .join('');
+  if (currentRole && USER_ROLE_LABEL[currentRole]) select.value = USER_ROLE_LABEL[currentRole];
+}
+
+function getSessionUserId() {
+  const id = readAdminSession()?.backendUserId;
+  return id == null ? null : Number(id);
+}
+
+function isCurrentUser(u) {
+  const id = getSessionUserId();
+  return id != null && Number(u?.id) === id;
+}
 
 function buildLinhaUsuario(u) {
+  const ativo = u.ativo !== false;
+  const proprio = isCurrentUser(u);
+  const toggleButton = proprio
+    ? ''
+    : `<button class="btn-small" type="button" onclick="alternarSituacaoUsuario(${Number(u.id)})">${ativo ? 'Inativar' : 'Ativar'}</button>`;
+  const deleteButton = isAdminRole() && !proprio
+    ? `<button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirUsuario(${Number(u.id)})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>`
+    : '';
   return `<tr>
-    <td><strong>${escapeHtml(u.nome)}</strong></td>
+    <td><strong>${escapeHtml(u.nome)}</strong>${proprio ? ' <small style="color:#64748b">(você)</small>' : ''}</td>
     <td>${escapeHtml(u.cpf ? formatCpf(u.cpf) : '-')}</td>
+    <td>${escapeHtml(u.funcionarioNome || '-')}</td>
     <td><span class="badge ${USER_ROLE_CLASS[u.role] || 'badge-active'}">${escapeHtml(USER_ROLE_LABEL[u.role] || u.role || '-')}</span></td>
-    <td>${u.role === 'ADMIN' ? 'Todos os módulos' : u.role === 'COZINHA' ? 'Cozinha' : 'Operações'}</td>
-    <td><span class="badge badge-active">Ativo</span></td>
+    <td>${escapeHtml(USER_ROLE_MODULES[u.role] || '-')}</td>
+    <td><span class="badge ${ativo ? 'badge-active' : 'badge-danger'}">${ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>-</td>
     <td>
-      <button class="btn-icon btn-icon-edit" title="Editar" onclick="editarUsuario(${u.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
-      <button class="btn-icon btn-icon-delete" title="Excluir" onclick="excluirUsuario(${u.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
+      <button class="btn-icon btn-icon-edit" title="Editar" onclick="editarUsuario(${Number(u.id)})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
+      ${toggleButton}
+      ${deleteButton}
     </td>
   </tr>`;
+}
+
+function carregarFuncionariosUsuario(selectedId = null) {
+  const select = document.querySelector('#addUserForm [name="funcionarioId"]');
+  if (!select) return;
+  select.innerHTML = '<option value="">Sem associação</option>';
+  getJson('/funcionarios')
+    .then((list) => {
+      const funcionarios = list || [];
+      window.__funcionarios = funcionarios;
+      select.innerHTML = '<option value="">Sem associação</option>' + funcionarios.map((funcionario) =>
+        `<option value="${Number(funcionario.id)}">${escapeHtml(funcionario.nome)}${funcionario.cpf ? ` · ${escapeHtml(funcionario.cpf)}` : ''}</option>`
+      ).join('');
+      select.value = selectedId == null ? '' : String(selectedId);
+    })
+    .catch(() => {
+      select.innerHTML = '<option value="">Não foi possível carregar funcionários</option>';
+    });
 }
 
 function carregarUsuarios() {
@@ -4845,6 +5352,86 @@ function carregarUsuarios() {
     });
 }
 
+// Tela inicial do Administrador: visao dos usuarios e perfis (sem dados operacionais)
+const PAINEL_ADMIN_PERFIS = [
+  { role: 'ADMIN', tela: 'Painel · Administração', resp: 'Usuários, perfis e configurações do sistema' },
+  { role: 'GERENTE', tela: 'Painel · Gestão', resp: 'Cardápio, estoque, equipe, salão e relatórios' },
+  { role: 'FUNCIONARIO', tela: 'Atendente', resp: 'Pedidos de mesa, reservas e entrega' },
+  { role: 'CAIXA', tela: 'PDV', resp: 'Vendas, pagamentos e fechamento de contas' },
+  { role: 'COZINHA', tela: 'Cozinha', resp: 'Fila de preparo dos pedidos' }
+];
+
+function carregarPainelAdministrador() {
+  const setText = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  const perfisTbody = document.getElementById('adminPerfisTbody');
+  const usuariosTbody = document.getElementById('adminUsuariosResumoTbody');
+  const ordemPerfil = Object.fromEntries(PAINEL_ADMIN_PERFIS.map((p, i) => [p.role, i]));
+
+  getJson('/usuarios')
+    .then((list) => {
+      const usuarios = list || [];
+      const ativos = usuarios.filter((u) => u.ativo !== false);
+      const contar = (role) => ativos.filter((u) => u.role === role).length;
+
+      setText('adminStatAtivos', String(ativos.length));
+      setText('adminStatAtivosDetalhe', `${usuarios.length} usuário(s) cadastrado(s)`);
+      setText('adminStatInativos', String(usuarios.length - ativos.length));
+      setText('adminStatGestores', `${contar('ADMIN')} / ${contar('GERENTE')}`);
+
+      if (perfisTbody) {
+        perfisTbody.innerHTML = PAINEL_ADMIN_PERFIS.map((p) => `<tr>
+          <td><span class="badge ${USER_ROLE_CLASS[p.role] || 'badge-active'}">${escapeHtml(USER_ROLE_LABEL[p.role])}</span></td>
+          <td><strong>${contar(p.role)}</strong></td>
+          <td>${escapeHtml(p.tela)}</td>
+          <td>${escapeHtml(p.resp)}</td>
+        </tr>`).join('');
+      }
+
+      if (usuariosTbody) {
+        const ordenados = [...usuarios].sort((a, b) =>
+          (ordemPerfil[a.role] ?? 99) - (ordemPerfil[b.role] ?? 99) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+        usuariosTbody.innerHTML = ordenados.length
+          ? ordenados.map((u) => {
+            const ativo = u.ativo !== false;
+            return `<tr>
+              <td><strong>${escapeHtml(u.nome)}</strong>${isCurrentUser(u) ? ' <small style="color:#64748b">(você)</small>' : ''}</td>
+              <td>${escapeHtml(u.cpf ? formatCpf(u.cpf) : '-')}</td>
+              <td><span class="badge ${USER_ROLE_CLASS[u.role] || 'badge-active'}">${escapeHtml(USER_ROLE_LABEL[u.role] || u.role || '-')}</span></td>
+              <td>${escapeHtml(u.funcionarioNome || '-')}</td>
+              <td><span class="badge ${ativo ? 'badge-active' : 'badge-danger'}">${ativo ? 'Ativo' : 'Inativo'}</span></td>
+            </tr>`;
+          }).join('')
+          : '<tr><td colspan="5" style="text-align:center;color:#94a3b8">Nenhum usuário cadastrado</td></tr>';
+      }
+    })
+    .catch((err) => {
+      const msg = escapeHtml(err.message || 'Erro ao carregar usuários.');
+      ['adminStatAtivos', 'adminStatInativos', 'adminStatGestores'].forEach((id) => setText(id, '-'));
+      if (perfisTbody) perfisTbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#dc2626">${msg}</td></tr>`;
+      if (usuariosTbody) usuariosTbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626">${msg}</td></tr>`;
+      console.error('[painel-admin]', err);
+    });
+
+  getJson('/funcionarios')
+    .then((list) => {
+      const funcionarios = list || [];
+      setText('adminStatFuncionarios', String(funcionarios.filter((f) => f.ativo).length));
+      setText('adminStatFuncionariosDetalhe', `${funcionarios.length} cadastrado(s) pelo Gerente`);
+    })
+    .catch((err) => {
+      setText('adminStatFuncionarios', '-');
+      console.error('[painel-admin-funcionarios]', err);
+    });
+}
+
+window.abrirNovoUsuarioPainel = function() {
+  navigateTo('config-usuarios');
+  document.querySelector('#config-usuarios [data-open-modal="addUserModal"]')?.click();
+};
+
 window.__usuarioEditando = null;
 
 // Volta o formulario para o modo "Novo Usuario"
@@ -4854,6 +5441,13 @@ function resetUserFormMode(form) {
 
   const idField = form.querySelector('[name="id"]');
   if (idField) idField.value = '';
+
+  renderUserRoleOptions(form);
+  const roleSelect = form.querySelector('[name="accessType"]');
+  if (roleSelect) {
+    roleSelect.disabled = false;
+    roleSelect.title = '';
+  }
 
   const pwField = form.querySelector('[name="temporaryPassword"]');
   if (pwField) {
@@ -4889,8 +5483,14 @@ window.editarUsuario = function(id) {
   const emailField = form.querySelector('[name="email"]');
   if (emailField) emailField.value = u.email || '';
 
-  const sel = form.querySelector('[name="accessType"]');
-  if (sel) sel.value = USER_ROLE_LABEL[u.role] || 'Operacional';
+  renderUserRoleOptions(form, u.role);
+  // RN-AC23: ninguem altera o proprio perfil
+  const roleSelect = form.querySelector('[name="accessType"]');
+  if (roleSelect) {
+    roleSelect.disabled = isCurrentUser(u);
+    roleSelect.title = isCurrentUser(u) ? 'Você não pode alterar o próprio perfil.' : '';
+  }
+  carregarFuncionariosUsuario(u.funcionarioId);
 
   const pwField = form.querySelector('[name="temporaryPassword"]');
   if (pwField) {
@@ -4909,7 +5509,32 @@ window.editarUsuario = function(id) {
   window.openModal('addUserModal');
 };
 
+// RN-AC25: inativacao em vez de exclusao (funcionarioId omitido mantem a associacao)
+window.alternarSituacaoUsuario = async function(id) {
+  const u = (window.__usuarios || []).find((item) => item.id === id);
+  if (!u) return;
+  const ativo = u.ativo !== false;
+  const ok = await showConfirmModal(
+    ativo ? 'Inativar usuário?' : 'Ativar usuário?',
+    `Deseja ${ativo ? 'inativar' : 'ativar'} o usuário <strong>${escapeHtml(u.nome)}</strong>?`
+  );
+  if (!ok) return;
+  putJson(`/usuarios/${id}`, {
+    nome: u.nome,
+    cpf: u.cpf,
+    email: u.email || null,
+    role: u.role,
+    ativo: !ativo
+  })
+    .then(() => { showToast(ativo ? 'Usuário inativado.' : 'Usuário ativado.', 'success'); carregarUsuarios(); })
+    .catch((err) => showToast(err.message || 'Erro ao alterar a situação do usuário.'));
+};
+
 window.excluirUsuario = async function(id) {
+  if (!isAdminRole()) {
+    showToast('Gerente nao exclui usuarios; use a inativacao');
+    return;
+  }
   const u = (window.__usuarios || []).find((item) => item.id === id);
   const nome = u?.nome || 'este usuário';
   const ok = await showConfirmModal('Excluir usuário?', `Deseja excluir o usuário <strong>${escapeHtml(nome)}</strong>?`);
@@ -4924,6 +5549,8 @@ function initUserForm() {
   const form = document.getElementById('addUserForm');
   if (!form) return;
 
+  renderUserRoleOptions(form);
+
   const pwField = form.querySelector('[name="temporaryPassword"]');
   if (pwField) {
     pwField.dataset.originalPlaceholder = pwField.placeholder;
@@ -4932,16 +5559,40 @@ function initUserForm() {
     pwField.title = 'A senha deve ter de 8 a 64 caracteres.';
   }
 
+  // Erros de regra (400/403/409) mostram a mensagem do backend; duplicidade de CPF destaca o campo
+  function mostrarErroUsuario(err, fallback) {
+    const message = err?.message || fallback;
+    if ([400, 403].includes(err?.status) || (err?.status === 409 && !/cpf/i.test(message))) {
+      showToast(message);
+      return;
+    }
+    mostrarErroCpf(form, message);
+  }
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     if (!validateForm(form)) return;
 
     const fd = new FormData(form);
-    const role = USER_ACCESS_TYPE_TO_ROLE[fd.get('accessType')] || 'FUNCIONARIO';
-    const editingId = window.__usuarioEditando?.id ?? null;
+    const editing = window.__usuarioEditando;
+    const editingId = editing?.id ?? null;
+    const role = editing && isCurrentUser(editing)
+      ? editing.role
+      : USER_ACCESS_TYPE_TO_ROLE[fd.get('accessType')];
+
+    if (!role || (!getAssignableUserRoles().includes(role) && role !== editing?.role)) {
+      showToast('Perfil nao permitido para o seu acesso.');
+      return;
+    }
 
     if (editingId) {
-      const payload = { nome: fd.get('name'), cpf: fd.get('cpf'), email: fd.get('email'), role };
+      const payload = {
+        nome: fd.get('name'),
+        cpf: fd.get('cpf'),
+        email: fd.get('email'),
+        role,
+        funcionarioId: fd.get('funcionarioId') ? Number(fd.get('funcionarioId')) : null
+      };
       const newPassword = String(fd.get('temporaryPassword') || '');
       if (newPassword) payload.senha = newPassword;
       putJson(`/usuarios/${editingId}`, payload)
@@ -4952,7 +5603,7 @@ function initUserForm() {
           resetUserFormMode(form);
           carregarUsuarios();
         })
-        .catch((err) => mostrarErroCpf(form, err.message || 'Erro ao atualizar usuário.'));
+        .catch((err) => mostrarErroUsuario(err, 'Erro ao atualizar usuário.'));
       return;
     }
 
@@ -4961,7 +5612,8 @@ function initUserForm() {
       cpf: fd.get('cpf'),
       email: fd.get('email'),
       senha: fd.get('temporaryPassword'),
-      role
+      role,
+      funcionarioId: fd.get('funcionarioId') ? Number(fd.get('funcionarioId')) : null
     };
     postJson('/usuarios', payload)
       .then(() => {
@@ -4971,6 +5623,6 @@ function initUserForm() {
         resetUserFormMode(form);
         carregarUsuarios();
       })
-      .catch((err) => mostrarErroCpf(form, err.message || 'Erro ao criar usuário.'));
+      .catch((err) => mostrarErroUsuario(err, 'Erro ao criar usuário.'));
   });
 }

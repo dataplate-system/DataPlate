@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.models import PasswordResetToken, User
-from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthRefreshRequest, AuthRegisterRequest, AuthResponse
+from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthRefreshRequest, AuthRegisterRequest, AuthResponse, DemoContactEmailRequest
 from app.security import create_access_token, create_refresh_token, decode_refresh_token, hash_password, verify_password
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     if _get_user_by_cpf(db, cpf) is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"CPF ja cadastrado: {cpf}")
 
-    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role)
+    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role.value)
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -110,6 +110,25 @@ def reset_password(db: Session, request: AuthPasswordResetRequest) -> None:
     db.commit()
 
 
+def send_demo_contact_email(request: DemoContactEmailRequest) -> None:
+    message = EmailMessage()
+    message["Subject"] = "DataPlate - recebemos seu pedido de demonstração"
+    message["To"] = request.email
+    message.set_content(
+        f"Olá, {request.nome}!\n\n"
+        "Recebemos seu interesse em conhecer o DataPlate. "
+        "Nossa equipe entrará em contato em breve para apresentar a solução.\n\n"
+        "Atenciosamente,\n"
+        "Equipe DataPlate"
+    )
+    _send_smtp_email(
+        message,
+        "Envio de e-mail indisponível. Verifique a configuração SMTP.",
+        "Não foi possível enviar a mensagem. Tente novamente.",
+        "Falha ao enviar confirmação de solicitação de demonstração.",
+    )
+
+
 def _only_digits(value: str) -> str:
     return "".join(c for c in (value or "") if c.isdigit())
 
@@ -134,22 +153,39 @@ def _send_password_reset_email(email: str | None, code: str) -> None:
     settings = get_settings()
     if settings.password_reset_debug_code:
         return
-    if not email or not settings.smtp_user or not settings.smtp_password:
+    if not email:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Envio de e-mail de recuperação não configurado")
     message = EmailMessage()
     message["Subject"] = "DataPlate - código para redefinir sua senha"
-    message["From"] = settings.smtp_from_email or settings.smtp_user
     message["To"] = email
     message.set_content(f"Seu código de recuperação DataPlate é: {code}\n\nEle expira em 10 minutos.")
+    _send_smtp_email(
+        message,
+        "Envio de e-mail de recuperação não configurado",
+        "Não foi possível enviar o e-mail de recuperação. Verifique as configurações SMTP.",
+        "Falha ao enviar o e-mail de recuperação de senha.",
+    )
+
+
+def _send_smtp_email(
+    message: EmailMessage,
+    configuration_error: str,
+    failure_detail: str,
+    failure_log: str,
+) -> None:
+    settings = get_settings()
+    if not settings.smtp_user or not settings.smtp_password:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=configuration_error)
+    message["From"] = settings.smtp_from_email or settings.smtp_user
     try:
         with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as smtp:
             smtp.login(settings.smtp_user, settings.smtp_password)
             smtp.send_message(message)
     except (OSError, smtplib.SMTPException):
-        logger.exception("Falha ao enviar o e-mail de recuperação de senha.")
+        logger.exception(failure_log)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Não foi possível enviar o e-mail de recuperação. Verifique as configurações SMTP.",
+            detail=failure_detail,
         ) from None
 
 

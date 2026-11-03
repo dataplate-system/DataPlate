@@ -80,6 +80,63 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   gap: 32px;
 }
 
+.admin-back-button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.admin-back-button:hover {
+  border-color: var(--color-primary);
+  background: #fff7f2;
+  color: var(--color-primary);
+}
+
+.admin-back-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.header-brand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 900px) {
+  .header-left {
+    position: absolute;
+    top: 15px;
+    left: 12px;
+    z-index: 2;
+  }
+
+  .header-brand {
+    position: static;
+    flex: 1 1 100%;
+    transform: none;
+    margin: 0 auto;
+  }
+
+  .admin-header .header-brand {
+    justify-content: center !important;
+  }
+}
+
 .logo-area {
   display: flex;
   align-items: center;
@@ -2250,7 +2307,7 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
 
   .header-left {
     gap: 16px;
-    width: 100%;
+    width: auto;
     margin-bottom: 12px;
   }
 

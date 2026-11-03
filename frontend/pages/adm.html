@@ -12,28 +12,33 @@
   <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261021-pedidos-visibility" />
   <link rel="stylesheet" href="../Css/mobile.css?v=20261005-clean-header" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/role-theme.css?v=20261103-perfis-v2" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
+  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
 </head>
 <body>
   <div class="admin-container">
     <!-- HEADER -->
     <header class="admin-header">
       <div class="header-left">
-        <div class="logo-area">
-          <button type="button" class="logo-text dataplate-brand" onclick="navigateTo('home')">
-            <span class="dataplate-brand-name">DataPlate</span>
-            <span class="dataplate-brand-mark" aria-hidden="true">
-              <img src="../images/brand/logo-dataplate.png" alt="" />
-            </span>
-          </button>
-        </div>
+        <button type="button" class="admin-back-button" onclick="navigateBack()" aria-label="Voltar para a tela anterior" title="Voltar">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M19 12H5m0 0 7 7m-7-7 7-7" />
+          </svg>
+        </button>
       </div>
+      <button type="button" class="logo-text dataplate-brand header-brand" onclick="navigateTo('home')" aria-label="DataPlate - Início">
+        <span class="dataplate-brand-name">DataPlate</span>
+        <span class="dataplate-brand-mark" aria-hidden="true">
+          <img src="../images/brand/logo-dataplate.png" alt="" />
+        </span>
+      </button>
       <nav class="module-nav app-module-nav" aria-label="Modulos DataPlate">
-        <a href="adm.html" class="is-active">Admin</a>
-        <a href="atendente.html">Atendente</a>
-        <a href="cozinha.html">Cozinha</a>
-        <a href="pdv.html">PDV</a>
+        <a href="adm.html" class="is-active" id="moduleNavPainel">Admin</a>
+        <a href="atendente.html" data-roles="gerente">Atendente</a>
+        <a href="cozinha.html" data-roles="gerente">Cozinha</a>
+        <a href="pdv.html" data-roles="gerente">PDV</a>
         <a href="user.html">Cardapio</a>
       </nav>
       <nav class="main-nav admin-section-nav" aria-label="Areas administrativas">
@@ -42,7 +47,7 @@
         </div>
 
         <!-- Cadastros -->
-        <div class="nav-item dropdown" data-role="admin">
+        <div class="nav-item dropdown">
           <button type="button" class="nav-button" id="mobileAdminCadastros">Cadastros</button>
           <div class="dropdown-menu">
             <a href="#clientes" class="dropdown-link" onclick="navigateTo('clientes')">Clientes</a>
@@ -57,7 +62,7 @@
         <div class="nav-item dropdown">
           <button type="button" class="nav-button" id="mobileAdminOperacoes">Operações</button>
           <div class="dropdown-menu">
-            <a href="pdv.html" class="dropdown-link">PDV Caixa</a>
+            <a href="pdv.html" class="dropdown-link" data-roles="gerente">PDV Caixa</a>
             <a href="#pedidos" class="dropdown-link" onclick="navigateTo('pedidos')">Pedidos</a>
             <a href="#cancelamentos" class="dropdown-link" onclick="navigateTo('cancelamentos')">Cancelamentos</a>
             <a href="#pagamentos" class="dropdown-link" onclick="navigateTo('pagamentos')">Pagamentos</a>
@@ -67,7 +72,7 @@
         </div>
 
         <!-- Relatórios -->
-        <div class="nav-item dropdown" data-role="admin">
+        <div class="nav-item dropdown">
           <button type="button" class="nav-button" id="mobileAdminRelatorios">Relatórios</button>
           <div class="dropdown-menu">
             <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
@@ -77,7 +82,7 @@
         </div>
 
         <!-- Configurações -->
-        <div class="nav-item dropdown" data-role="admin">
+        <div class="nav-item dropdown">
           <button type="button" class="nav-button" id="mobileAdminConfiguracoes">Configurações</button>
           <div class="dropdown-menu">
             <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
@@ -102,6 +107,13 @@
       </div>
     </header>
 
+    <!-- Faixa do perfil: deixa explicito se o painel e de Administracao do sistema ou de Gestao do restaurante -->
+    <div class="panel-role-ribbon" id="panelRoleRibbon" hidden>
+      <span class="panel-role-ribbon-icon" id="panelRoleRibbonIcon" aria-hidden="true"></span>
+      <strong class="panel-role-ribbon-tag" id="panelRoleRibbonTag"></strong>
+      <span class="panel-role-ribbon-text" id="panelRoleRibbonText"></span>
+    </div>
+
     <!-- MAIN CONTENT -->
     <div class="main-content">
 
@@ -116,11 +128,63 @@
             </summary>
           <aside class="home-shortcuts home-shortcuts-left" aria-label="Atalhos do sistema">
 
-            <div class="shortcut-group" data-group="operacoes">
+            <!-- Administrador: administracao do sistema -->
+            <div class="shortcut-group" data-group="sistema" data-roles="admin">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('sistema')">
+                <span>Sistema</span><span class="group-chevron">▾</span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-usuarios')">
+                <span class="shortcut-icon">⊙</span>
+                <span><strong>Usuários e perfis</strong><small>Criar usuários e definir acessos</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-restaurante')">
+                <span class="shortcut-icon">◎</span>
+                <span><strong>Restaurante</strong><small>Dados cadastrais da empresa</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-integracao')">
+                <span class="shortcut-icon">⊕</span>
+                <span><strong>Integrações</strong><small>iFood, PIX, APIs</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-notificacoes')">
+                <span class="shortcut-icon">◌</span>
+                <span><strong>Notificações</strong><small>Alertas do sistema</small></span>
+              </button>
+            </div>
+
+            <div class="shortcut-group" data-group="pessoas" data-roles="admin">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('pessoas')">
+                <span>Pessoas</span><span class="group-chevron">▾</span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('funcionarios')">
+                <span class="shortcut-icon">👤</span>
+                <span><strong>Funcionários</strong><small>Consulta da equipe</small></span>
+              </button>
+            </div>
+
+            <div class="shortcut-group" data-group="consultas" data-roles="admin">
+              <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('consultas')">
+                <span>Consultas</span><span class="group-chevron">▾</span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('pedidos')">
+                <span class="shortcut-icon">◉</span>
+                <span><strong>Pedidos</strong><small>Histórico (somente leitura)</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('pagamentos')">
+                <span class="shortcut-icon">$</span>
+                <span><strong>Pagamentos</strong><small>Recebimentos (somente leitura)</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('cancelamentos')">
+                <span class="shortcut-icon">✕</span>
+                <span><strong>Cancelamentos</strong><small>Histórico (somente leitura)</small></span>
+              </button>
+            </div>
+
+            <!-- Gerente: gestao do restaurante -->
+            <div class="shortcut-group" data-group="operacoes" data-roles="gerente">
               <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('operacoes')">
                 <span>Operações</span><span class="group-chevron">▾</span>
               </button>
-              <a href="pdv.html" class="home-shortcut" style="text-decoration:none">
+              <a href="pdv.html" class="home-shortcut" style="text-decoration:none" data-roles="gerente">
                 <span class="shortcut-icon">🖥️</span>
                 <span><strong>PDV Caixa</strong><small>Venda direta no balcão</small></span>
               </a>
@@ -146,7 +210,7 @@
               </button>
             </div>
 
-            <div class="shortcut-group" data-group="cadastros">
+            <div class="shortcut-group" data-group="cadastros" data-roles="gerente">
               <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('cadastros')">
                 <span>Cadastros</span><span class="group-chevron">▾</span>
               </button>
@@ -194,17 +258,17 @@
               </button>
             </div>
 
-            <div class="shortcut-group" data-group="configuracoes">
+            <div class="shortcut-group" data-group="configuracoes" data-roles="gerente">
               <button type="button" class="shortcut-group-label" onclick="toggleShortcutGroup('configuracoes')">
-                <span>Configurações</span><span class="group-chevron">▾</span>
-              </button>
-              <button type="button" class="home-shortcut" onclick="navigateTo('config-restaurante')">
-                <span class="shortcut-icon">◎</span>
-                <span><strong>Restaurante</strong><small>Dados e horários</small></span>
+                <span>Equipe e restaurante</span><span class="group-chevron">▾</span>
               </button>
               <button type="button" class="home-shortcut" onclick="navigateTo('config-usuarios')">
                 <span class="shortcut-icon">⊙</span>
-                <span><strong>Usuários</strong><small>Acessos e permissões</small></span>
+                <span><strong>Equipe operacional</strong><small>Usuários de Atendente, Caixa e Cozinha</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('config-restaurante')">
+                <span class="shortcut-icon">◎</span>
+                <span><strong>Restaurante</strong><small>Dados (somente leitura)</small></span>
               </button>
               <button type="button" class="home-shortcut" onclick="navigateTo('config-integracao')">
                 <span class="shortcut-icon">⊕</span>
@@ -247,12 +311,121 @@
               <p id="adminHomeSearchHint">Digite o nome de uma tela e pressione Enter.</p>
             </form>
 
-            <div id="dashboard" class="home-dashboard" aria-label="Dashboard do gerente">
-              <div class="dashboard-hero">
+            <!-- Tela inicial do ADMINISTRADOR: administracao do sistema (sem operacao do restaurante) -->
+            <div id="adminSystemHome" class="home-dashboard admin-system-home" data-roles="admin" aria-label="Painel do Administrador">
+              <div class="dashboard-hero role-hero">
                 <div>
-                  <span class="dashboard-eyebrow">Visão geral</span>
-                  <h1>Dashboard DataPlate</h1>
-                  <p>Acompanhe pedidos, mesas, cozinha e resultados do restaurante em uma única tela.</p>
+                  <span class="dashboard-eyebrow">Administração do sistema</span>
+                  <h1>Painel do Administrador</h1>
+                  <p>Usuários, perfis de acesso e configurações do DataPlate. A operação e a gestão do restaurante (cardápio, estoque, salão, caixa) são responsabilidade do Gerente.</p>
+                </div>
+                <div class="dashboard-actions">
+                  <button type="button" onclick="abrirNovoUsuarioPainel()">+ Novo usuário</button>
+                  <button type="button" class="btn-secondary" onclick="navigateTo('config-usuarios')">Usuários e perfis</button>
+                </div>
+              </div>
+
+              <div class="stats-grid dashboard-stats">
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="navigateTo('config-usuarios')">
+                  <div class="stat-label">Usuários ativos</div>
+                  <div class="stat-value" id="adminStatAtivos">Carregando...</div>
+                  <div class="stat-change" id="adminStatAtivosDetalhe">Com acesso ao sistema</div>
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="navigateTo('config-usuarios')">
+                  <div class="stat-label">Usuários inativos</div>
+                  <div class="stat-value" id="adminStatInativos">Carregando...</div>
+                  <div class="stat-change">Acesso bloqueado</div>
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="navigateTo('config-usuarios')">
+                  <div class="stat-label">Administradores / Gerentes</div>
+                  <div class="stat-value" id="adminStatGestores">Carregando...</div>
+                  <div class="stat-change">Mínimo de 1 ativo de cada</div>
+                </button>
+                <button type="button" class="stat-card dashboard-stat-card dashboard-card-action" onclick="navigateTo('funcionarios')">
+                  <div class="stat-label">Funcionários</div>
+                  <div class="stat-value" id="adminStatFuncionarios">Carregando...</div>
+                  <div class="stat-change" id="adminStatFuncionariosDetalhe">Cadastrados pelo Gerente</div>
+                </button>
+              </div>
+
+              <div class="dashboard-layout admin-home-layout">
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Usuários por perfil</h3>
+                    <span>Perfis de acesso do sistema</span>
+                  </div>
+                  <div class="table-container">
+                    <table class="data-table">
+                      <thead>
+                        <tr><th>Perfil</th><th>Ativos</th><th>Tela inicial</th><th>Responsabilidade</th></tr>
+                      </thead>
+                      <tbody id="adminPerfisTbody">
+                        <tr><td colspan="4" style="text-align:center;color:#94a3b8">Carregando...</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="report-section dashboard-panel">
+                  <div class="panel-heading">
+                    <h3>Separação de responsabilidades</h3>
+                    <span>RN-AC30 / RN-AC31</span>
+                  </div>
+                  <div class="role-split">
+                    <div class="role-split-col role-split-admin">
+                      <strong>Administrador (você)</strong>
+                      <ul>
+                        <li>Cria usuários e define perfis</li>
+                        <li>Ativa e inativa qualquer usuário</li>
+                        <li>Mantém dados do restaurante e integrações</li>
+                        <li>Consulta relatórios e históricos</li>
+                        <li class="role-split-no">Não lança pedidos, não vende e não altera cardápio, estoque ou preços</li>
+                      </ul>
+                    </div>
+                    <div class="role-split-col role-split-gerente">
+                      <strong>Gerente</strong>
+                      <ul>
+                        <li>Cardápio, preços, estoque e fornecedores</li>
+                        <li>Funcionários, clientes, mesas e reservas</li>
+                        <li>Autoriza cancelamentos e descontos acima de 10%</li>
+                        <li>Gerencia apenas usuários de Atendente, Caixa e Cozinha</li>
+                        <li>Acessa PDV, Atendente e Cozinha</li>
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <section class="report-section dashboard-panel">
+                <div class="panel-heading">
+                  <h3>Usuários do sistema</h3>
+                  <button type="button" class="btn-small" onclick="navigateTo('config-usuarios')">Gerenciar</button>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr><th>Usuário</th><th>CPF</th><th>Perfil</th><th>Funcionário</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="adminUsuariosResumoTbody">
+                      <tr><td colspan="5" style="text-align:center;color:#94a3b8">Carregando...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </div>
+
+            <!-- Tela inicial do GERENTE: gestao e operacao do restaurante -->
+            <!-- Administrador ve os indicadores em modo consulta (cards operacionais ficam ocultos por perfil) -->
+            <div id="dashboard" class="home-dashboard" data-roles="admin gerente" aria-label="Dashboard do restaurante">
+              <div class="panel-heading" data-roles="admin">
+                <h3>Indicadores do restaurante</h3>
+                <span>Consulta · hoje</span>
+              </div>
+              <div class="dashboard-hero role-hero" data-roles="gerente">
+                <div>
+                  <span class="dashboard-eyebrow">Gestão do restaurante</span>
+                  <h1>Painel do Gerente</h1>
+                  <p>Pedidos, mesas, cozinha, estoque e resultados do restaurante em uma única tela.</p>
                 </div>
                 <div class="dashboard-actions">
                   <button type="button" id="verdash" onclick="navigateTo('pedidos')">Ver Pedidos</button>
@@ -350,7 +523,7 @@
                   </div>
                 </section>
 
-                <section class="report-section dashboard-panel">
+                <section class="report-section dashboard-panel" data-roles="gerente">
                   <div class="panel-heading">
                     <h3>Ocupação das mesas</h3>
                     <span>Status do salão</span>
@@ -362,7 +535,7 @@
               </div>
 
               <div class="dashboard-layout dashboard-layout-wide">
-                <section class="report-section dashboard-panel">
+                <section class="report-section dashboard-panel" data-roles="gerente">
                   <div class="panel-heading">
                     <h3>Atalhos rápidos</h3>
                     <span>Acesso direto</span>
@@ -492,7 +665,7 @@
           </div>
 
           <div class="section-toolbar">
-            <button type="button" class="btn-primary" onclick="openModal('addFunctModal')" data-open-modal="addFunctModal">+ Novo Funcionário</button>
+            <button type="button" class="btn-primary" onclick="openModal('addFunctModal')" data-open-modal="addFunctModal" data-roles="gerente">+ Novo Funcionário</button>
             <div class="toolbar-filters">
               <input type="text" placeholder="Pesquisar por nome..." class="filter-input" data-table-search data-section="funcionarios" />
               <select class="filter-select toolbar-filter-select" aria-label="Filtrar funcionários" data-table-filter data-section="funcionarios">
@@ -662,6 +835,7 @@
                 <tr>
                   <th>ID Pedido</th>
                   <th>Origem</th>
+                  <th>Cliente</th>
                   <th>Data/Hora</th>
                   <th>Itens</th>
                   <th>Total</th>
@@ -772,10 +946,11 @@
                 <option value="">Filtrar</option>
                 <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
                 <option value="total" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
-                <option value="ativos" data-filter-column="5" data-filter-values="recebido,preparando,pronto" data-pedido-status="RECEBIDO,EM_PREPARO,PRONTO">Ativos</option>
+                <option value="ativos" data-filter-column="5" data-filter-values="recebido,preparando,pronto,servido" data-pedido-status="RECEBIDO,EM_PREPARO,PRONTO,SERVIDO">Ativos</option>
                 <option value="recebido" data-filter-column="5" data-filter-match="exact" data-pedido-status="RECEBIDO">Recebido</option>
                 <option value="preparando" data-filter-column="5" data-filter-match="exact" data-pedido-status="EM_PREPARO">Preparando</option>
                 <option value="pronto" data-filter-column="5" data-filter-match="exact" data-pedido-status="PRONTO">Pronto</option>
+                <option value="servido" data-filter-column="5" data-filter-match="exact" data-pedido-status="SERVIDO">Servido</option>
                 <option value="entregue" data-filter-column="5" data-filter-match="exact" data-pedido-status="ENTREGUE">Entregue</option>
                 <option value="cancelado" data-filter-column="5" data-filter-match="exact" data-pedido-status="CANCELADO">Cancelado</option>
               </select>
@@ -1221,6 +1396,7 @@
                   <th>Qtd. Mínima</th>
                   <th>Custo Unitário</th>
                   <th>Status</th>
+                  <th>Fornecedores</th>
                   <th>Ações</th>
                 </tr>
               </thead>
@@ -1272,7 +1448,7 @@
             </div>
 
             <div class="form-actions">
-              <button type="submit" class="btn-primary">Salvar Alterações</button>
+              <button type="submit" class="btn-primary" data-roles="admin">Salvar Alterações</button>
               <button type="button" class="btn-secondary" onclick="carregarConfiguracaoRestaurante()">Recarregar</button>
             </div>
           </form>
@@ -1295,6 +1471,7 @@
                 <tr>
                   <th>Usuário</th>
                   <th>CPF</th>
+                  <th>Funcionário associado</th>
                   <th>Tipo de Acesso</th>
                   <th>Módulos</th>
                   <th>Status</th>
@@ -1320,11 +1497,11 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Token de Integração iFood</label>
-                  <input type="text" name="ifoodToken" placeholder="Token fornecido pelo iFood" autocomplete="off" />
+                  <input type="text" name="ifoodToken" data-optional="true" placeholder="Token fornecido pelo iFood" autocomplete="off" />
                 </div>
                 <div class="form-group">
                   <label>ID do Restaurante (iFood)</label>
-                  <input type="text" name="ifoodRestauranteId" placeholder="Ex: abc123" autocomplete="off" />
+                  <input type="text" name="ifoodRestauranteId" data-optional="true" placeholder="Ex: abc123" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -1334,11 +1511,11 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Chave PIX</label>
-                  <input type="text" name="chavePix" placeholder="CPF, CNPJ, email ou chave aleatória" />
+                  <input type="text" name="chavePix" data-optional="true" data-mask="none" placeholder="CPF, CNPJ, email ou chave aleatória" />
                 </div>
                 <div class="form-group">
                   <label>Token PagSeguro</label>
-                  <input type="text" name="pagseguroToken" placeholder="Token da conta PagSeguro" autocomplete="off" />
+                  <input type="text" name="pagseguroToken" data-optional="true" placeholder="Token da conta PagSeguro" autocomplete="off" />
                 </div>
               </div>
             </div>
@@ -1348,17 +1525,17 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Chave Google Maps API</label>
-                  <input type="text" name="googleMapsKey" placeholder="AIza..." autocomplete="off" />
+                  <input type="text" name="googleMapsKey" data-optional="true" placeholder="AIza..." autocomplete="off" />
                 </div>
                 <div class="form-group">
                   <label>Email de marketing (remetente)</label>
-                  <input type="email" name="emailMarketing" placeholder="marketing@seurestaurante.com" />
+                  <input type="email" name="emailMarketing" data-optional="true" placeholder="marketing@seurestaurante.com" />
                 </div>
               </div>
             </div>
 
             <div class="form-actions">
-              <button type="submit" class="btn-primary">Salvar Integrações</button>
+              <button type="submit" class="btn-primary" data-roles="admin">Salvar Integrações</button>
               <button type="button" class="btn-secondary" onclick="carregarIntegracao()">Recarregar</button>
             </div>
           </form>
@@ -1896,11 +2073,21 @@
           <div class="form-group">
             <label>Tipo de Acesso</label>
             <select name="accessType" required>
-              <option>Administrador</option>
-              <option>Operacional</option>
-              <option>Cozinha</option>
+              <option value="Administrador">Administrador</option>
+              <option value="Gerente">Gerente</option>
+              <option value="Atendente">Atendente</option>
+              <option value="Caixa">Caixa</option>
+              <option value="Cozinha">Cozinha</option>
             </select>
           </div>
+          <div class="form-group">
+            <label>Funcionário associado</label>
+            <select name="funcionarioId">
+              <option value="">Sem associação</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
           <div class="form-group">
             <label>Senha <span id="userPasswordHint"></span></label>
             <input type="password" name="temporaryPassword" placeholder="••••••••" autocomplete="new-password" minlength="8" required />
@@ -1960,6 +2147,11 @@
           <div class="form-group">
             <label>Custo Unitário (R$)</label>
             <input type="text" name="custoUnitario" placeholder="R$ 0,00" required />
+          </div>
+          <div class="form-group">
+            <label>Fornecedores</label>
+            <select name="fornecedorIds" multiple size="4" aria-describedby="fornecedorInsumoHint"></select>
+            <small id="fornecedorInsumoHint">Opcional. Use Ctrl (Windows) ou Command (Mac) para selecionar vários.</small>
           </div>
         </div>
         <div class="form-actions">
@@ -2051,35 +2243,10 @@
       <button type="button" class="modal-close" onclick="closeModal('switchUserModal')">✕</button>
       <div class="modal-header">Trocar de Usuário</div>
       <form id="switchUserForm">
-        <div class="switch-user-list">
-          <label class="switch-user-option">
-            <input type="radio" name="user" value="gerente" checked />
-            <span class="user-avatar-small">GP</span>
-            <span>
-              <strong>Gerente Principal</strong>
-              <small>Administrador</small>
-            </span>
-          </label>
-          <label class="switch-user-option">
-            <input type="radio" name="user" value="atendente" />
-            <span class="user-avatar-small">AT</span>
-            <span>
-              <strong>Atendente</strong>
-              <small>Operacional</small>
-            </span>
-          </label>
-          <label class="switch-user-option">
-            <input type="radio" name="user" value="cozinha" />
-            <span class="user-avatar-small">CZ</span>
-            <span>
-              <strong>Cozinha</strong>
-              <small>Pedidos e preparo</small>
-            </span>
-          </label>
-        </div>
+        <p class="modal-description">Para entrar com outro usuário, a sessão atual será encerrada e será necessário fazer login novamente com CPF e senha.</p>
         <div class="form-actions">
           <button type="button" class="btn-secondary" onclick="closeModal('switchUserModal')">Cancelar</button>
-          <button type="submit" class="btn-primary">Trocar Usuário</button>
+          <button type="submit" class="btn-primary">Encerrar sessão e ir ao login</button>
         </div>
       </form>
     </div>
@@ -2203,6 +2370,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261021-manager-navigation" defer></script>
+  <script src="../JavaScript/adm.js?v=20261103-integrado" defer></script>
 </body>
 </html>

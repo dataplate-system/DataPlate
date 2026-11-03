@@ -19,8 +19,30 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     return `http://${h}:8081/api`;
   })();
 
-const CATEGORIA_SLUG  = { 1:'hamburguer', 2:'massas', 3:'principais', 4:'entradas', 5:'sobremesas', 6:'bebidas' };
-const CATEGORIA_EMOJI = { 1:'🍔', 2:'🍝', 3:'🍽️', 4:'🥗', 5:'🍰', 6:'🥤' };
+const WS_BASE_URL = (() => {
+  const apiUrl = API_BASE_URL.startsWith('http')
+    ? API_BASE_URL
+    : `${window.location.origin}${API_BASE_URL}`;
+  return apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
+})();
+
+const DEMO_MODE = false; // Login sempre validado pelo backend.
+
+// Perfis (RN-AC): PDV liberado para CAIXA e GERENTE
+const ROLE_TO_PERFIL = { ADMIN: 'admin', GERENTE: 'gerente', FUNCIONARIO: 'atendente', CAIXA: 'caixa', COZINHA: 'cozinha' };
+const TELA_INICIAL = { admin: 'adm.html', gerente: 'adm.html', atendente: 'atendente.html', caixa: 'pdv.html', cozinha: 'cozinha.html' };
+const PERFIS_PDV = new Set(['caixa', 'gerente']);
+
+// Limite de desconto do Caixa (acima disso exige Gerente)
+const LIMITE_DESCONTO_CAIXA_PERCENTUAL = 10;
+const MSG_DESCONTO_LIMITE = `Desconto acima do limite de ${LIMITE_DESCONTO_CAIXA_PERCENTUAL}% exige o perfil Gerente`;
+
+// Fechamento de conta: so pedidos ja preparados podem ser cobrados
+const STATUS_COBRAVEIS = new Set(['PRONTO', 'SERVIDO']);
+const STATUS_EM_PRODUCAO = new Set(['RECEBIDO', 'EM_PREPARO']);
+
+let categoriasCatalogo = [];
+const normalizarBusca = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // -- ESTADO -------------------------------------------------------
 let cart            = [];
@@ -41,10 +63,57 @@ function readSession() {
   catch (_) { return null; }
 }
 
+function perfilDaSessao(session) {
+  if (!session) return null;
+  if (session.backendRole) return ROLE_TO_PERFIL[String(session.backendRole).toUpperCase()] || null;
+  // Sessao sem perfil do backend so e aceita no modo demonstracao
+  if (DEMO_MODE && TELA_INICIAL[session.userKey]) return session.userKey;
+  return null;
+}
+
+function encerrarSessao() {
+  try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch (_) {}
+  window.location.replace('adm-login.html');
+}
+
+// Retorna o perfil se o acesso ao PDV for permitido; senao redireciona e retorna null
+function verificarAcessoPdv() {
+  const session = readSession();
+  if (!session || (!session.token && !DEMO_MODE)) { encerrarSessao(); return null; }
+
+  const perfil = perfilDaSessao(session);
+  if (!perfil) { encerrarSessao(); return null; }
+
+  if (!PERFIS_PDV.has(perfil)) {
+    window.location.replace(TELA_INICIAL[perfil]);
+    return null;
+  }
+  return perfil;
+}
+
+const PERFIL_ATUAL = verificarAcessoPdv();
+
 function pdvVoltarAoDashboard() {
   window.clearInterval(_cobrancasTimer);
   _cobrancasTimer = null;
-  window.location.replace('adm.html');
+  if (PERFIL_ATUAL === 'gerente') {
+    window.location.replace('adm.html');
+    return;
+  }
+  encerrarSessao();
+}
+
+function aplicarPermissoesTela() {
+  document.querySelectorAll('[data-roles]').forEach(el => {
+    const roles = String(el.dataset.roles || '').split(/\s+/).filter(Boolean);
+    el.hidden = !roles.includes(PERFIL_ATUAL);
+  });
+
+  const brand = document.querySelector('.pdv-brand-link');
+  if (brand) brand.setAttribute('href', TELA_INICIAL[PERFIL_ATUAL] || 'pdv.html');
+
+  const voltarBtn = document.getElementById('pdvLogoutBtn');
+  if (voltarBtn) voltarBtn.textContent = PERFIL_ATUAL === 'gerente' ? 'Voltar ao painel' : 'Sair';
 }
 
 // ── HISTÓRICO DE VENDAS ──────────────────────────────────────────
@@ -79,6 +148,7 @@ async function carregarHistorico() {
             <span class="historico-pedido">#${p.id} · ${origem}</span>
             <span class="historico-hora">${hora}</span>
           </div>
+          ${p.clienteNome ? `<div class="historico-itens">Cliente: ${esc(p.clienteNome)}</div>` : ''}
           <div class="historico-itens">${esc(itens)}${extra}</div>
           <div class="historico-total-row">
             <span class="historico-total">${formatBRL(p.valorTotal)}</span>
@@ -95,6 +165,39 @@ async function carregarHistorico() {
 let _pdvPgtoMesa = null;
 let _pdvPgtoSelecionado = '';
 let _cobrancasTimer = null;
+let pendingTables = 0;
+let pendingCounter = 0;
+
+function updatePendingSummary() {
+  document.getElementById('pendingCount').textContent = String(pendingTables + pendingCounter);
+  document.getElementById('tablesPendingCount').textContent = String(pendingTables);
+  document.getElementById('counterReadyCount').textContent = String(pendingCounter);
+  document.getElementById('pendingSummary').textContent = `${pendingTables} conta(s) a receber · ${pendingCounter} retirada(s) pronta(s)`;
+  document.getElementById('pendingEmpty').hidden = pendingTables + pendingCounter !== 0;
+  filterPendingCards();
+}
+
+function filterPendingCards() {
+  const search = normalizarBusca(document.getElementById('pendingSearch').value.trim());
+  let count = 0;
+  document.querySelectorAll('#vistaPendencias .pendente-card').forEach(card => {
+    card.hidden = !normalizarBusca(card.textContent).includes(search);
+    if (!card.hidden) count++;
+  });
+  document.getElementById('pendingSearchEmpty').hidden = !search || count > 0 || pendingTables + pendingCounter === 0;
+}
+
+function mostrarVistaPdv(vista) {
+  document.querySelectorAll('.pdv-top-tab').forEach(button => {
+    const active = button.dataset.top === vista;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  document.getElementById('vistaPdv').hidden = vista !== 'pdv';
+  document.getElementById('vistaPendencias').hidden = vista !== 'pendencias';
+  document.getElementById('vistaHistorico').hidden = vista !== 'historico';
+  if (vista === 'historico') carregarHistorico();
+}
 
 async function verificarCobrancas() {
   try {
@@ -106,9 +209,12 @@ async function verificarCobrancas() {
     const section = document.getElementById('pendentesSection');
     const grid    = document.getElementById('pendentesGrid');
     if (!section || !grid) return;
+    pendingTables = pendentes.length;
 
     if (!pendentes.length) {
       section.hidden = true;
+      grid.innerHTML = '';
+      updatePendingSummary();
       return;
     }
 
@@ -117,10 +223,12 @@ async function verificarCobrancas() {
     // Busca totais das mesas pendentes
     const cards = await Promise.all(pendentes.map(async m => {
       let total = 0;
+      let semPedidos = false;
       try {
         const pedidos = await apiGet(`/pedidos/mesa/${m.numero}`);
         const ativos  = (pedidos || []).filter(p => !['CANCELADO','ENTREGUE'].includes(p.status));
         total = ativos.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+        semPedidos = ativos.length === 0;
       } catch (_) {}
 
       const info = pendStore[String(m.numero)];
@@ -134,14 +242,44 @@ async function verificarCobrancas() {
             <span class="pendente-total">${formatBRL(total)}</span>
           </div>
           ${pgtoLabel ? `<div class="pendente-pgto">${pgtoLabel}</div>` : ''}
-          <button class="pendente-btn">Processar pagamento</button>
+          ${semPedidos
+            ? `<button type="button" class="pendente-btn" onclick="event.stopPropagation();liberarMesaPendente(${m.id},${m.numero},this)">Liberar mesa (sem pedidos)</button>`
+            : '<button class="pendente-btn">Processar pagamento</button>'}
         </div>`;
     }));
 
     grid.innerHTML = cards.join('');
     section.hidden = false;
+    updatePendingSummary();
   } catch (_) {}
 }
+
+function removerPagamentoPendente(numeroMesa) {
+  const pendStore = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
+  delete pendStore[String(numeroMesa)];
+  localStorage.setItem('dataplate:pgto_pendente', JSON.stringify(pendStore));
+}
+
+// Mesa aguardando pagamento cujos pedidos foram cancelados: o Caixa so libera.
+window.liberarMesaPendente = async function(mesaId, numeroMesa, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Liberando...'; }
+  try {
+    const pedidos = await apiGet(`/pedidos/mesa/${numeroMesa}`);
+    const ativos  = (pedidos || []).filter(p => !['CANCELADO','ENTREGUE'].includes(p.status));
+    const resultado = await liquidarContaMesa(mesaId, ativos, null);
+    if (!resultado.semCobranca) {
+      showToast('A mesa possui pedidos em aberto; processe o pagamento.', 'error');
+      return;
+    }
+    removerPagamentoPendente(numeroMesa);
+    showToast(`Mesa ${numeroMesa} liberada (sem pedidos a cobrar).`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Erro ao liberar mesa.', 'error');
+  } finally {
+    atualizarPendencias();
+    carregarMesas();
+  }
+};
 
 window.abrirPagamentoMesa = async function(mesaId, numeroMesa, localizacao) {
   _pdvPgtoMesa = { id: mesaId, numero: numeroMesa, localizacao };
@@ -155,7 +293,8 @@ window.abrirPagamentoMesa = async function(mesaId, numeroMesa, localizacao) {
     document.getElementById('pdvPgtoTitulo').textContent = `Mesa ${numeroMesa}`;
     document.getElementById('pdvPgtoTotal').textContent  = `Total a cobrar: ${formatBRL(total)}`;
     document.getElementById('pdvPgtoConfirmar').disabled = true;
-    document.querySelectorAll('.pdv-pgto-opt').forEach(b => b.classList.remove('is-selected'));
+    document.getElementById('pdvPgtoEscolhido').textContent = 'Selecione uma forma de pagamento';
+    document.querySelectorAll('.pdv-pgto-opt').forEach(b => { b.classList.remove('is-selected'); b.setAttribute('aria-pressed', 'false'); b.querySelector('.pgto-opt-arrow').textContent = '›'; });
 
     // Pre-selecionar forma preferida do atendente
     const pendStore = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
@@ -174,8 +313,11 @@ window.abrirPagamentoMesa = async function(mesaId, numeroMesa, localizacao) {
 
 window.selecionarPdvPgto = function(tipo, btn) {
   _pdvPgtoSelecionado = tipo;
-  document.querySelectorAll('.pdv-pgto-opt').forEach(b => b.classList.remove('is-selected'));
+  document.querySelectorAll('.pdv-pgto-opt').forEach(b => { b.classList.remove('is-selected'); b.setAttribute('aria-pressed', 'false'); b.querySelector('.pgto-opt-arrow').textContent = '›'; });
   btn.classList.add('is-selected');
+  btn.setAttribute('aria-pressed', 'true');
+  btn.querySelector('.pgto-opt-arrow').textContent = '✓';
+  document.getElementById('pdvPgtoEscolhido').textContent = `Selecionado: ${pgtoLabel(tipo)}`;
   const confirmar = document.getElementById('pdvPgtoConfirmar');
   if (confirmar) confirmar.disabled = false;
 };
@@ -195,48 +337,152 @@ window.confirmarPagamentoMesa = async function() {
   try {
     const pedidos = await apiGet(`/pedidos/mesa/${_pdvPgtoMesa.numero}`);
     const ativos  = (pedidos || []).filter(p => !['CANCELADO','ENTREGUE'].includes(p.status));
-    const total   = ativos.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
 
-    // Marcar todos os pedidos como ENTREGUE gravando a forma de pagamento
-    await Promise.all(ativos.map(p => apiPut(`/pedidos/${p.id}/status`, {
-      status: 'ENTREGUE',
-      formaPagamento: _pdvPgtoSelecionado
-    })));
-
-    // Mesa volta a LIVRE
-    await apiPut(`/mesas/${_pdvPgtoMesa.id}`, {
-      numero:      _pdvPgtoMesa.numero,
-      capacidade:  4,
-      status:      'livre',
-      localizacao: _pdvPgtoMesa.localizacao || ''
-    });
+    const resultado = await liquidarContaMesa(_pdvPgtoMesa.id, ativos, _pdvPgtoSelecionado);
 
     // Remove do storage local
-    const pendStore = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
-    delete pendStore[String(_pdvPgtoMesa.numero)];
-    localStorage.setItem('dataplate:pgto_pendente', JSON.stringify(pendStore));
+    removerPagamentoPendente(_pdvPgtoMesa.numero);
+
+    if (resultado.semCobranca) {
+      const numLiberada = _pdvPgtoMesa.numero;
+      fecharPdvPgtoModal();
+      if (btn) { btn.textContent = 'Confirmar Pagamento'; }
+      atualizarPendencias();
+      carregarMesas();
+      showToast(`Mesa ${numLiberada} liberada (sem pedidos a cobrar).`, 'success');
+      return;
+    }
 
     _reciboAtual = {
       origem: `Mesa ${_pdvPgtoMesa.numero}`,
-      pedidos: ativos,
-      total,
+      pedidos: resultado.pedidos,
+      total: resultado.total,
       formaPagamento: _pdvPgtoSelecionado
     };
 
     const numMesa = _pdvPgtoMesa.numero;
     const pgtoStr = pgtoLabel(_pdvPgtoSelecionado);
     fecharPdvPgtoModal();
-    verificarCobrancas();
+    if (btn) { btn.textContent = 'Confirmar Pagamento'; }
+    atualizarPendencias();
+    carregarMesas();
+    if (resultado.avisoMesa) showToast(resultado.avisoMesa, 'error');
     mostrarSucesso({
       titulo: `Mesa ${numMesa} — pagamento confirmado`,
-      mensagem: `Total cobrado: <strong>${formatBRL(total)}</strong> via ${pgtoStr}`,
+      mensagem: `Total cobrado: <strong>${formatBRL(resultado.total)}</strong> via ${pgtoStr}`,
       temRecibo: true
     });
   } catch (e) {
     showToast(e.message || 'Erro ao confirmar pagamento.', 'error');
     if (btn) { btn.disabled = false; btn.textContent = 'Confirmar Pagamento'; }
+    atualizarPendencias();
   }
 };
+
+// Cobra os pedidos da mesa (PRONTO/SERVIDO -> ENTREGUE) e libera a mesa.
+// Pedidos ainda na cozinha impedem o fechamento. Sem pedidos em aberto, so libera a mesa.
+async function liquidarContaMesa(mesaId, pedidos, formaPagamento) {
+  const lista = pedidos || [];
+  if (lista.every(p => ['CANCELADO', 'ENTREGUE'].includes(p.status))) {
+    await apiPatch(`/mesas/${mesaId}/status`, { status: 'livre' });
+    return { pedidos: [], total: 0, avisoMesa: '', semCobranca: true };
+  }
+  const emProducao = lista.filter(p => STATUS_EM_PRODUCAO.has(p.status));
+  if (emProducao.length) {
+    const ids = emProducao.map(p => `#${p.id} (${statusPedidoLabel(p.status)})`).join(', ');
+    throw new Error(`Conta nao pode ser fechada: pedidos ainda na cozinha: ${ids}.`);
+  }
+
+  const cobraveis = lista.filter(p => STATUS_COBRAVEIS.has(p.status));
+  if (!cobraveis.length) throw new Error('Nenhum pedido pronto para cobranca nesta mesa.');
+
+  const resultados = await Promise.allSettled(cobraveis.map(p =>
+    apiPut(`/pedidos/${p.id}/status`, { status: 'ENTREGUE', formaPagamento })
+  ));
+  const falhas = resultados
+    .map((r, i) => (r.status === 'rejected' ? `#${cobraveis[i].id}: ${r.reason?.message || 'erro'}` : null))
+    .filter(Boolean);
+
+  if (falhas.length) {
+    const pagos = cobraveis.length - falhas.length;
+    const parcial = pagos ? `${pagos} de ${cobraveis.length} pedidos foram pagos. ` : '';
+    throw new Error(`${parcial}Falha ao registrar pagamento (${falhas.join('; ')}). A mesa nao foi liberada.`);
+  }
+
+  const total = cobraveis.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
+  let avisoMesa = '';
+  try {
+    await apiPatch(`/mesas/${mesaId}/status`, { status: 'livre' });
+  } catch (e) {
+    avisoMesa = `Pagamento registrado, mas a mesa nao foi liberada: ${e.message}`;
+  }
+  return { pedidos: cobraveis, total, avisoMesa };
+}
+
+// ── BALCAO PRONTO PARA ENTREGA ───────────────────────────────────
+// Venda de balcao ja paga; ao entregar ao cliente o Caixa conclui (PRONTO/SERVIDO -> ENTREGUE).
+const _balcaoProntosMap = new Map();
+
+async function verificarBalcaoProntos() {
+  const section = document.getElementById('balcaoProntosSection');
+  const grid    = document.getElementById('balcaoProntosGrid');
+  if (!section || !grid) return;
+
+  try {
+    const ativos = await apiGet('/pedidos/ativos');
+    // SERVIDO incluso: pedidos de balcao despachados por engano ainda precisam ser concluidos aqui
+    const prontos = (ativos || []).filter(p => !p.numeroMesa && ['PRONTO', 'SERVIDO'].includes(p.status));
+    pendingCounter = prontos.length;
+
+    _balcaoProntosMap.clear();
+    prontos.forEach(p => _balcaoProntosMap.set(p.id, p));
+
+    if (!prontos.length) {
+      section.hidden = true;
+      grid.innerHTML = '';
+      updatePendingSummary();
+      return;
+    }
+
+    grid.innerHTML = prontos.map(p => {
+      const pgto = extrairPagamentoObs(p.observacoes);
+      return `
+        <div class="pendente-card">
+          <div class="pendente-card-header">
+            <span class="pendente-mesa">Balcao #${Number(p.id)}</span>
+            <span class="pendente-total">${formatBRL(p.valorTotal)}</span>
+          </div>
+          ${p.clienteNome ? `<div class="pendente-pgto">${esc(p.clienteNome)}</div>` : ''}
+          ${pgto ? `<div class="pendente-pgto">${esc(pgtoLabel(pgto))}</div>` : ''}
+          <button type="button" class="pendente-btn" data-entregar-balcao="${Number(p.id)}">Entregar ao cliente</button>
+        </div>`;
+    }).join('');
+    section.hidden = false;
+    updatePendingSummary();
+  } catch (_) {}
+}
+
+async function entregarPedidoBalcao(pedidoId, btn) {
+  const pedido = _balcaoProntosMap.get(pedidoId);
+  if (!pedido) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Entregando...'; }
+  try {
+    await apiPut(`/pedidos/${pedidoId}/status`, {
+      status: 'ENTREGUE',
+      formaPagamento: extrairPagamentoObs(pedido.observacoes) || 'NAO_INFORMADO'
+    });
+    showToast(`Balcao #${pedidoId} entregue.`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Erro ao concluir entrega.', 'error');
+  } finally {
+    verificarBalcaoProntos();
+  }
+}
+
+function atualizarPendencias() {
+  verificarCobrancas();
+  verificarBalcaoProntos();
+}
 
 function getAuthHeader() {
   const s = readSession();
@@ -245,32 +491,61 @@ function getAuthHeader() {
 
 // -- API ----------------------------------------------------------
 async function apiFetch(path, opts = {}) {
-  return fetch(`${API_BASE_URL}${path}`, {
+  const r = await fetch(`${API_BASE_URL}${path}`, {
     ...opts,
     headers: { 'Content-Type': 'application/json', ...getAuthHeader(), ...(opts.headers || {}) }
   });
+  // Sessao expirada/invalida: volta ao login (sessao demo sem token nao e encerrada)
+  if (r.status === 401 && readSession()?.token) encerrarSessao();
+  return r;
 }
 
-async function apiGet(path) {
-  const r = await apiFetch(path);
-  if (!r.ok) throw new Error(`GET ${path} -> ${r.status}`);
-  return r.json();
+// FastAPI usa "detail"; o handler de banco usa "mensagem"
+function readErrorMessage(body) {
+  if (!body) return '';
+  if (typeof body === 'string') return body;
+  if (typeof body.detail === 'string') return body.detail;
+  if (Array.isArray(body.detail)) {
+    return body.detail
+      .map(item => String(item?.msg || '').replace(/^Value error,\s*/i, ''))
+      .filter(Boolean)
+      .join('; ');
+  }
+  return body.mensagem || body.message || body.erro || '';
 }
 
-async function apiPost(path, body) {
-  const r = await apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
+async function apiRequest(path, opts = {}) {
+  const r = await apiFetch(path, opts);
   const text = await r.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!r.ok) throw new Error(data?.message || data?.mensagem || data?.erro || `Erro ${r.status}`);
+  let data = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch (_) { data = text; }
+  }
+  if (!r.ok) {
+    let msg = readErrorMessage(data);
+    if (r.status === 401) msg = 'Sessao expirada. Entre novamente.';
+    else if (r.status === 403 && !msg) msg = 'Acesso negado';
+    const error = new Error(msg || `Erro ${r.status}`);
+    error.status = r.status;
+    throw error;
+  }
   return data;
 }
 
-async function apiPut(path, body) {
-  const r = await apiFetch(path, { method: 'PUT', body: JSON.stringify(body) });
-  const text = await r.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!r.ok) throw new Error(data?.message || data?.mensagem || data?.erro || `Erro ${r.status}`);
-  return data;
+function apiGet(path) {
+  return apiRequest(path);
+}
+
+function apiPost(path, body) {
+  return apiRequest(path, { method: 'POST', body: JSON.stringify(body) });
+}
+
+function apiPut(path, body) {
+  return apiRequest(path, { method: 'PUT', body: JSON.stringify(body) });
+}
+
+function apiPatch(path, body) {
+  return apiRequest(path, { method: 'PATCH', body: JSON.stringify(body) });
 }
 
 // -- HELPERS ------------------------------------------------------
@@ -309,6 +584,14 @@ function calcularTotalPagar() {
   return Math.max(0, calcularTotalCarrinho() - calcularDesconto());
 }
 
+// Caixa: desconto limitado a 10% do subtotal (Gerente sem limite). Comparacao em centavos.
+function descontoExcedeLimite() {
+  if (PERFIL_ATUAL !== 'caixa') return false;
+  const descontoCentavos = Math.round(calcularDesconto() * 100);
+  const limiteCentavos = calcularTotalCarrinho() * LIMITE_DESCONTO_CAIXA_PERCENTUAL;
+  return descontoCentavos > limiteCentavos + 1e-6;
+}
+
 function atualizarResumoCaixa() {
   const totalPagar = calcularTotalPagar();
   const recebido = moneyInputValue('valorRecebidoInput');
@@ -317,10 +600,16 @@ function atualizarResumoCaixa() {
   const totalPagarEl = document.getElementById('totalPagar');
   const trocoEl = document.getElementById('trocoValor');
   const cashRow = document.getElementById('cashRow');
+  const avisoDesconto = document.getElementById('descontoAviso');
 
   if (totalPagarEl) totalPagarEl.textContent = formatBRL(totalPagar);
   if (trocoEl) trocoEl.textContent = formatBRL(troco);
   if (cashRow) cashRow.hidden = pagamentoVenda !== 'DINHEIRO';
+  if (avisoDesconto) {
+    const excede = descontoExcedeLimite();
+    avisoDesconto.hidden = !excede;
+    avisoDesconto.textContent = excede ? MSG_DESCONTO_LIMITE : '';
+  }
 }
 
 function aplicarModoPDV(modo) {
@@ -366,12 +655,13 @@ async function carregarMesas() {
 
 function popularSelectMesas() {
   const sel = document.getElementById('mesaSelect');
+  const selecionadaAntes = sel.value;
   // mantém placeholder
   while (sel.options.length > 1) sel.remove(1);
 
   todasAsMesas.forEach(m => {
     const st = normalizeStatus(m.status);
-    const statusTexto = { livre: 'livre', ocupada: 'ocupada', reservada: 'reservada', manutencao: 'manutencao' }[st] || st;
+    const statusTexto = { livre: 'livre', ocupada: 'ocupada', reservada: 'reservada', manutencao: 'manutencao', aguardando_pagamento: 'aguardando pagamento' }[st] || st;
     const opt = document.createElement('option');
     opt.value = m.id;
     opt.dataset.numero   = m.numero;
@@ -380,6 +670,16 @@ function popularSelectMesas() {
     opt.textContent = `Mesa ${m.numero}${m.localizacao ? ' · ' + m.localizacao : ''}  (${statusTexto})`;
     sel.appendChild(opt);
   });
+
+  // Mantem a mesa selecionada apos recarregar (ex.: depois de fechar a conta)
+  if (selecionadaAntes && todasAsMesas.some(m => String(m.id) === selecionadaAntes)) {
+    sel.value = selecionadaAntes;
+    if (mesaSelecionada && String(mesaSelecionada.id) === selecionadaAntes) {
+      mesaSelecionada = todasAsMesas.find(m => String(m.id) === selecionadaAntes);
+      atualizarDotStatus(normalizeStatus(mesaSelecionada.status));
+      atualizarInfoMesa(mesaSelecionada);
+    }
+  }
 }
 
 function atualizarDotStatus(st) {
@@ -393,7 +693,7 @@ function atualizarInfoMesa(mesa) {
   if (!el) return;
   if (!mesa) { el.textContent = ''; return; }
 
-  const statusMap = { livre: 'Livre', ocupada: 'Ocupada', reservada: 'Reservada', manutencao: 'Em manutenção' };
+  const statusMap = { livre: 'Livre', ocupada: 'Ocupada', reservada: 'Reservada', manutencao: 'Em manutenção', aguardando_pagamento: 'Aguardando pagamento' };
   const partes = [`Status: ${statusMap[normalizeStatus(mesa.status)] || mesa.status}`];
   if (mesa.capacidade) partes.push(`${mesa.capacidade} lugares`);
   el.textContent = partes.join(' · ');
@@ -552,8 +852,14 @@ async function carregarProdutos() {
   const loading = document.getElementById('produtosLoading');
   loading.classList.remove('hidden');
   try {
-    const data = await apiGet('/produtos');
+    const [data, categorias] = await Promise.all([apiGet('/produtos'), apiGet('/categorias')]);
+    categoriasCatalogo = categorias || [];
     todosOsProdutos = (data || []).filter(p => p.ativo !== false);
+    const filtros = categoriasCatalogo.map(c => ({ id: String(c.id), nome: c.nome }));
+    if (todosOsProdutos.some(p => !categoriasCatalogo.some(c => c.id === p.idCategoria))) filtros.push({ id: 'outros', nome: 'Outros' });
+    if (categoriaAtual !== 'todos' && !filtros.some(c => c.id === categoriaAtual)) categoriaAtual = 'todos';
+    document.getElementById('categoriasFiltro').innerHTML = [{ id: 'todos', nome: 'Todos' }, ...filtros]
+      .map(c => `<button type="button" class="cat-btn${categoriaAtual === c.id ? ' is-active' : ''}" data-cat="${esc(c.id)}" aria-pressed="${categoriaAtual === c.id}">${esc(c.nome)}</button>`).join('');
     renderProdutos();
   } catch (_) {
     showToast('Não foi possível carregar o cardápio.', 'error');
@@ -562,11 +868,29 @@ async function carregarProdutos() {
   }
 }
 
+async function carregarClientesPedido() {
+  const select = document.getElementById('clientePedidoSelect');
+  if (!select) return;
+  try {
+    const clientes = await apiGet('/clientes');
+    select.innerHTML = '<option value="">Venda sem cliente vinculado</option>'
+      + (clientes || []).map(cliente =>
+        `<option value="${Number(cliente.id)}">${esc(cliente.nome)} · ${esc(cliente.cpf || '')}</option>`
+      ).join('');
+  } catch (error) {
+    select.innerHTML = '<option value="">Cadastro de clientes indisponível</option>';
+    console.error('[clientes do pedido]', error);
+  }
+}
+
 function getProdutosVisiveis() {
   return todosOsProdutos.filter(p => {
-    const slug = CATEGORIA_SLUG[p.idCategoria] || 'principais';
-    return (categoriaAtual === 'todos' || slug === categoriaAtual)
-      && (!termoBusca || p.nome.toLowerCase().includes(termoBusca));
+    const categoria = categoriasCatalogo.some(c => c.id === p.idCategoria) ? String(p.idCategoria) : 'outros';
+    return (categoriaAtual === 'todos' || categoria === categoriaAtual)
+      && (!termoBusca || normalizarBusca(`${p.nome} ${p.codigo || ''}`).includes(normalizarBusca(termoBusca)));
+  }).sort((a, b) => {
+    const rank = id => { const index = categoriasCatalogo.findIndex(c => c.id === id); return index < 0 ? 9999 : index; };
+    return rank(a.idCategoria) - rank(b.idCategoria) || a.nome.localeCompare(b.nome, 'pt-BR');
   });
 }
 
@@ -588,7 +912,7 @@ function renderProdutos() {
     const card = document.createElement('article');
     card.className = 'produto-card';
 
-    const emoji   = CATEGORIA_EMOJI[p.idCategoria] || '🍽️';
+    const emoji   = '🍽️';
     const imgSrc  = p.imagem;
     const imgHtml = imgSrc
       ? `<img class="produto-img" src="${esc(imgSrc)}" alt="${esc(p.nome)}" loading="lazy"
@@ -599,6 +923,7 @@ function renderProdutos() {
     card.innerHTML = `
       ${imgHtml}
       <div class="produto-info">
+        <span class="produto-categoria">${esc(categoriasCatalogo.find(c => c.id === p.idCategoria)?.nome || 'Outros')}</span>
         <span class="produto-nome">${esc(p.nome)}</span>
         <span class="produto-preco">${formatBRL(p.preco)}</span>
         <button class="btn-add">+ Adicionar</button>
@@ -617,6 +942,7 @@ function renderProdutos() {
 
 // -- CARRINHO -----------------------------------------------------
 function adicionarAoCarrinho(produtoId, nome, preco) {
+  mostrarVistaPdv('pdv');
   const item = cart.find(i => i.produtoId === produtoId);
   if (item) { item.quantidade++; } else { cart.push({ produtoId, nome, preco, quantidade: 1 }); }
   renderCarrinho();
@@ -682,16 +1008,18 @@ function renderCarrinho() {
 function selecionarPagamento(tipo, grupo) {
   if (grupo === 'venda') {
     pagamentoVenda = tipo;
-    document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b =>
-      b.classList.toggle('is-selected', b.dataset.pgto === tipo)
-    );
+    document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b => {
+      b.classList.toggle('is-selected', b.dataset.pgto === tipo);
+      b.setAttribute('aria-pressed', String(b.dataset.pgto === tipo));
+    });
     atualizarResumoCaixa();
     atualizarBotaoFinalizar();
   } else {
     pagamentoConta = tipo;
-    document.querySelectorAll('.pgto-btn.pgto-conta').forEach(b =>
-      b.classList.toggle('is-selected', b.dataset.pgto === tipo)
-    );
+    document.querySelectorAll('.pgto-btn.pgto-conta').forEach(b => {
+      b.classList.toggle('is-selected', b.dataset.pgto === tipo);
+      b.setAttribute('aria-pressed', String(b.dataset.pgto === tipo));
+    });
     atualizarBotaoFecharConta();
   }
 }
@@ -706,11 +1034,19 @@ function atualizarBotaoFinalizar() {
 
   const totalPagar = calcularTotalPagar();
   const dinheiroOk = pagamentoVenda !== 'DINHEIRO' || moneyInputValue('valorRecebidoInput') >= totalPagar;
-  btn.disabled = !(cart.length && pagamentoVenda && dinheiroOk);
+  btn.disabled = !(cart.length && pagamentoVenda && dinheiroOk && !descontoExcedeLimite());
+}
+
+function mesaSoParaLiberar() {
+  return Boolean(mesaSelecionada) && !pedidosAbertos.length
+    && ['ocupada', 'aguardando_pagamento'].includes(normalizeStatus(mesaSelecionada.status));
 }
 
 function atualizarBotaoFecharConta() {
-  document.getElementById('fecharContaBtn').disabled = !(mesaSelecionada && pedidosAbertos.length && pagamentoConta);
+  const btn = document.getElementById('fecharContaBtn');
+  const soLiberar = mesaSoParaLiberar();
+  btn.textContent = soLiberar ? 'Liberar mesa' : 'Fechar Conta';
+  btn.disabled = !(soLiberar || (mesaSelecionada && pedidosAbertos.length && pagamentoConta));
 }
 
 // -- CRIAR PEDIDO -------------------------------------------------
@@ -721,6 +1057,10 @@ async function finalizarPedido() {
   if (vendaCaixa && !pagamentoVenda)  { showToast('Selecione a forma de pagamento.', 'error'); return; }
   if (vendaCaixa && pagamentoVenda === 'DINHEIRO' && moneyInputValue('valorRecebidoInput') < calcularTotalPagar()) {
     showToast('Valor recebido insuficiente.', 'error');
+    return;
+  }
+  if (vendaCaixa && descontoExcedeLimite()) {
+    showToast(MSG_DESCONTO_LIMITE, 'error');
     return;
   }
 
@@ -746,6 +1086,9 @@ async function finalizarPedido() {
       const payload = {
         vendaCaixa: true,
         formaPagamento: pagamentoVenda,
+        ...(document.getElementById('clientePedidoSelect')?.value && {
+          clienteId: Number(document.getElementById('clientePedidoSelect').value)
+        }),
         ...(desconto > 0 && { desconto }),
         itens: cart.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
         ...(observacoes && { observacoes })
@@ -778,6 +1121,7 @@ async function finalizarPedido() {
       cart = [];
       pagamentoVenda = '';
       document.getElementById('pedidoObs').value = '';
+      document.getElementById('clientePedidoSelect').value = '';
       document.getElementById('descontoInput').value = '';
       document.getElementById('valorRecebidoInput').value = '';
       document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b => b.classList.remove('is-selected'));
@@ -790,6 +1134,9 @@ async function finalizarPedido() {
       vendaCaixa: false,
       numeroMesa: mesaSelecionada.numero,
       mesaId: mesaSelecionada.id,
+      ...(document.getElementById('clientePedidoSelect')?.value && {
+        clienteId: Number(document.getElementById('clientePedidoSelect').value)
+      }),
       ...(observacoes && { observacoes })
     };
 
@@ -822,6 +1169,19 @@ async function finalizarPedido() {
       pedidosCriados.push({ id: p.id, tipo: 'pronto', total: p.valorTotal });
     }
 
+    // Mesa passa a ocupada (so o status; capacidade/reserva nao sao alteradas)
+    if (['livre', 'reservada'].includes(normalizeStatus(mesaSelecionada.status))) {
+      try {
+        await apiPatch(`/mesas/${mesaSelecionada.id}/status`, { status: 'ocupada' });
+        mesaSelecionada.status = 'ocupada';
+        atualizarDotStatus('ocupada');
+        atualizarInfoMesa(mesaSelecionada);
+        carregarMesas();
+      } catch (e) {
+        showToast(`Pedido registrado, mas o status da mesa nao foi atualizado: ${e.message}`, 'error');
+      }
+    }
+
     const linhas = pedidosCriados.map(pc =>
       pc.tipo === 'cozinha'
         ? `Pedido <strong>#${pc.id}</strong> enviado para a cozinha.`
@@ -835,6 +1195,7 @@ async function finalizarPedido() {
     cart = [];
     pagamentoVenda = '';
     document.getElementById('pedidoObs').value = '';
+    document.getElementById('clientePedidoSelect').value = '';
     document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b => b.classList.remove('is-selected'));
     renderCarrinho();
     await carregarPedidosAbertos();
@@ -848,45 +1209,62 @@ async function finalizarPedido() {
 // -- FECHAR CONTA -------------------------------------------------
 async function fecharConta() {
   if (!mesaSelecionada)       { showToast('Selecione uma mesa.', 'error'); return; }
-  if (!pedidosAbertos.length) { showToast('Nenhum pedido aberto nesta mesa.', 'error'); return; }
+  if (!pedidosAbertos.length) {
+    // Mesa ocupada/aguardando sem pedidos (ex.: pedido cancelado): apenas libera
+    if (mesaSoParaLiberar()) {
+      try {
+        await liquidarContaMesa(mesaSelecionada.id, [], null);
+        removerPagamentoPendente(mesaSelecionada.numero);
+        mesaSelecionada.status = 'livre';
+        showToast(`Mesa ${mesaSelecionada.numero} liberada (sem pedidos a cobrar).`, 'success');
+        atualizarDotStatus('livre');
+        atualizarBotaoFecharConta();
+        carregarMesas();
+        atualizarPendencias();
+      } catch (e) {
+        showToast(e.message || 'Erro ao liberar mesa.', 'error');
+      }
+      return;
+    }
+    showToast('Nenhum pedido aberto nesta mesa.', 'error');
+    return;
+  }
   if (!pagamentoConta)        { showToast('Selecione a forma de pagamento.', 'error'); return; }
 
   const btn = document.getElementById('fecharContaBtn');
   btn.disabled = true;
   btn.textContent = 'Fechando...';
 
-  const total = calcularTotalConta();
-
   try {
-    await Promise.all(
-      pedidosAbertos.map(p => apiPut(`/pedidos/${p.id}/status`, {
-        status: 'ENTREGUE',
-        formaPagamento: pagamentoConta
-      }))
-    );
+    const resultado = await liquidarContaMesa(mesaSelecionada.id, pedidosAbertos, pagamentoConta);
 
     _reciboAtual = {
       origem: `Mesa ${mesaSelecionada.numero}`,
-      pedidos: pedidosAbertos,
-      total,
+      pedidos: resultado.pedidos,
+      total: resultado.total,
       formaPagamento: pagamentoConta
     };
 
+    if (!resultado.avisoMesa) mesaSelecionada.status = 'livre';
     mostrarSucesso({
       titulo: 'Conta fechada!',
       mensagem: `Mesa <strong>${mesaSelecionada.numero}</strong> encerrada.<br>
-                 Total: <strong>${formatBRL(total)}</strong> · ${pgtoLabel(pagamentoConta)}`,
+                 Total: <strong>${formatBRL(resultado.total)}</strong> · ${pgtoLabel(pagamentoConta)}`,
       temRecibo: true
     });
+    if (resultado.avisoMesa) showToast(resultado.avisoMesa, 'error');
 
     pedidosAbertos = [];
     pagamentoConta = '';
     document.querySelectorAll('.pgto-btn.pgto-conta').forEach(b => b.classList.remove('is-selected'));
     renderContaMesa();
+    carregarMesas();
+    atualizarPendencias();
   } catch (e) {
     showToast(e.message || 'Erro ao fechar a conta.', 'error');
-    btn.disabled = false;
     btn.textContent = 'Fechar Conta';
+    // Recarrega para refletir pagamentos parciais
+    await carregarPedidosAbertos();
   }
 }
 
@@ -1028,8 +1406,64 @@ function fecharSucesso() {
   atualizarBotaoFecharConta();
 }
 
+// -- WEBSOCKET -----------------------------------------------------
+const PDV_WS_EVENTOS = new Set(['PEDIDO_ATUALIZADO', 'NOVO_PEDIDO', 'VENDA_CAIXA']);
+let pdvSocket = null;
+let pdvWsRetryTimer = null;
+let pdvWsRetryDelay = 1000;
+let pdvWsReloadTimer = null;
+
+function pdvWsUrl(token) {
+  const sep = WS_BASE_URL.includes('?') ? '&' : '?';
+  return `${WS_BASE_URL}${sep}token=${encodeURIComponent(token)}`;
+}
+
+function agendarReconexaoWs() {
+  window.clearTimeout(pdvWsRetryTimer);
+  pdvWsRetryTimer = window.setTimeout(connectPdvWebSocket, pdvWsRetryDelay);
+  pdvWsRetryDelay = Math.min(pdvWsRetryDelay * 2, 30000);
+}
+
+function connectPdvWebSocket() {
+  const token = readSession()?.token;
+  if (!token) return; // modo demo: sem token o servidor recusa; fica so o polling
+  if (pdvSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(pdvSocket.readyState)) return;
+
+  try {
+    pdvSocket = new WebSocket(pdvWsUrl(token));
+
+    pdvSocket.addEventListener('open', () => { pdvWsRetryDelay = 1000; });
+
+    pdvSocket.addEventListener('message', (event) => {
+      let payload = null;
+      try { payload = JSON.parse(event.data); } catch (_) { return; }
+      if (!PDV_WS_EVENTOS.has(payload?.type)) return;
+
+      window.clearTimeout(pdvWsReloadTimer);
+      pdvWsReloadTimer = window.setTimeout(() => {
+        atualizarPendencias();
+        if (modoAtual === 'mesa' && mesaSelecionada) carregarPedidosAbertos();
+      }, 500);
+    });
+
+    pdvSocket.addEventListener('close', (event) => {
+      // 1008 = token invalido/perfil sem acesso: nao insiste
+      if (event.code === 1008) return;
+      agendarReconexaoWs();
+    });
+
+    pdvSocket.addEventListener('error', () => { pdvSocket.close(); });
+  } catch (error) {
+    console.error('Erro ao conectar WebSocket:', error);
+    agendarReconexaoWs();
+  }
+}
+
 // -- INIT ----------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
+  if (!PERFIL_ATUAL) return;
+  aplicarPermissoesTela();
+
   const mobileProducts = document.getElementById('pdvMobileProducts');
   const mobileOrder = document.getElementById('pdvMobileOrder');
   const setMobilePdvView = (view) => {
@@ -1047,7 +1481,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pdvLogoutBtn')?.addEventListener('click', pdvVoltarAoDashboard);
 
   const session = readSession();
-  if (!session) { window.location.replace('adm-login.html'); return; }
 
   const op = document.getElementById('operatorLabel');
   if (op && session.name) op.textContent = session.name;
@@ -1065,8 +1498,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const _urlModoMesa = _urlParams.get('modo') === 'mesa';
   const _urlNumeroMesa = _urlParams.get('mesa');
 
-  verificarCobrancas();
-  _cobrancasTimer = window.setInterval(verificarCobrancas, 15000);
+  atualizarPendencias();
+  _cobrancasTimer = window.setInterval(atualizarPendencias, 15000);
+  connectPdvWebSocket();
+
+  document.getElementById('balcaoProntosGrid')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-entregar-balcao]');
+    if (!btn) return;
+    entregarPedidoBalcao(Number(btn.dataset.entregarBalcao), btn);
+  });
 
   carregarMesas().then(() => {
     if (_urlModoMesa && _urlNumeroMesa) {
@@ -1081,6 +1521,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   carregarProdutos();
+  carregarClientesPedido();
   initCodigoInput();
   aplicarModoPDV(_urlModoMesa ? 'mesa' : 'caixa');
 
@@ -1095,8 +1536,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('categoriasFiltro').addEventListener('click', e => {
     const btn = e.target.closest('.cat-btn');
     if (!btn) return;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('is-active'));
+    document.querySelectorAll('.cat-btn').forEach(b => { b.classList.remove('is-active'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('is-active');
+    btn.setAttribute('aria-pressed', 'true');
     categoriaAtual = btn.dataset.cat;
     renderProdutos();
   });
@@ -1142,15 +1584,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === e.currentTarget) fecharSucesso();
   });
 
-  // Abas de alto nível (Venda / Histórico)
+  document.getElementById('pendingSearch').addEventListener('input', filterPendingCards);
+  // A venda atual permanece intacta ao consultar pendencias ou historico.
   document.querySelectorAll('.pdv-top-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.pdv-top-tab').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      const vista = btn.dataset.top;
-      document.getElementById('vistaPdv').hidden      = vista !== 'pdv';
-      document.getElementById('vistaHistorico').hidden = vista !== 'historico';
-      if (vista === 'historico') carregarHistorico();
+      mostrarVistaPdv(btn.dataset.top);
     });
   });
 

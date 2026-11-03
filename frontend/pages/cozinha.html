@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
+  <link rel="stylesheet" href="../Css/operacao.css?v=20261103-3" />
+  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
 </head>
 <body>
   <div class="kitchen-shell">
@@ -30,11 +32,11 @@
       </button>
 
       <nav class="module-nav" aria-label="Modulos DataPlate">
-        <a href="adm.html">Admin</a>
-        <a href="atendente.html">Atendente</a>
+        <a href="adm.html" data-roles="gerente" hidden>Admin</a>
+        <a href="atendente.html" data-roles="gerente" hidden>Atendente</a>
         <a href="cozinha.html" class="is-active">Cozinha</a>
-        <a href="pdv.html">PDV</a>
-        <a href="user.html">Cardapio</a>
+        <a href="pdv.html" data-roles="gerente" hidden>PDV</a>
+        <a href="user.html" data-roles="gerente" hidden>Cardapio</a>
       </nav>
 
       <form class="global-search" role="search">
@@ -158,7 +160,7 @@
 
         <article class="kitchen-column column-pronto">
           <div class="column-header">
-            <span>Pronto para entrega</span>
+            <span>Pronto (aguardando retirada)</span>
             <strong id="countPronto">0</strong>
           </div>
           <div class="column-list" id="listPronto"></div>
@@ -166,7 +168,7 @@
 
         <article class="kitchen-column column-finalizados">
           <div class="column-header">
-            <span>Finalizados</span>
+            <span>Servidos / finalizados</span>
             <strong id="countFinalizados">0</strong>
           </div>
           <div class="column-list" id="listFinalizados"></div>
@@ -207,8 +209,20 @@
     </main>
   </div>
 
+  <dialog id="editOrderDialog" class="order-edit-dialog" aria-labelledby="editOrderTitle">
+    <form id="editOrderForm">
+      <div class="edit-heading"><h2 id="editOrderTitle">Alterar pedido</h2><button type="button" id="closeEditOrder" class="secondary-button" aria-label="Fechar edição">Fechar</button></div>
+      <p>Atualize os itens conforme solicitado pelo cliente. Pedidos prontos voltam ao preparo para conferência.</p>
+      <div id="editOrderItems" class="edit-items"></div>
+      <div class="edit-add"><label class="control-field"><span>Adicionar produto</span><select id="editProductSelect"></select></label><button type="button" id="addEditItem" class="secondary-button">Adicionar</button></div>
+      <label class="control-field"><span>Observações do pedido</span><textarea id="editOrderNotes" maxlength="2000" rows="3"></textarea></label>
+      <label class="control-field"><span>Motivo da alteração</span><input id="editOrderReason" required minlength="3" maxlength="255" placeholder="Ex.: cliente trocou o acompanhamento" /></label>
+      <div class="edit-heading"><strong id="editOrderTotal"></strong><button id="saveEditOrder" type="submit" class="action-button">Salvar alteração</button></div>
+      <p id="editOrderError" role="alert"></p>
+    </form>
+  </dialog>
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script src="../JavaScript/cozinha.js?v=20261005-clean-header" defer></script>
+  <script src="../JavaScript/cozinha.js?v=20261103-atendimento-3" defer></script>
 </body>
 </html>

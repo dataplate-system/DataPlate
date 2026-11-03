@@ -5,11 +5,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Fornecedor
+from app.models import Fornecedor, Role
 from app.schemas import FornecedorRequest, FornecedorResponse
+from app.security import exigir_perfis
 
 
-router = APIRouter(prefix="/api/fornecedores", tags=["fornecedores"])
+router = APIRouter(
+    prefix="/api/fornecedores",
+    tags=["fornecedores"],
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 
 
 @router.get("", response_model=list[FornecedorResponse])

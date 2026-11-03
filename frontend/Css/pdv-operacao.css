@@ -1,0 +1,56 @@
+/* Estado de selecao e organizacao do caixa, depois do tema compartilhado. */
+body .pdv-pgto-opt.is-selected,
+body .pgto-btn.is-selected {
+  position: relative;
+  background: #eaf2ff !important;
+  border: 2px solid #2563eb !important;
+  color: #173c88 !important;
+  box-shadow: 0 0 0 3px #2563eb20 !important;
+}
+body .pdv-pgto-opt.is-selected *, body .pgto-btn.is-selected * { color: #173c88 !important; }
+body .pgto-btn.is-selected::after { content: '✓'; position: absolute; right: 7px; top: 5px; color: #1d4ed8; font-weight: 900; }
+body .pdv-pgto-opt .pgto-opt-arrow { font-size: 20px; }
+.payment-choice-summary { margin-top: 14px; padding: 10px 12px; border-radius: 6px; background: #eff6ff; color: #1e40af; font-size: 13px; font-weight: 700; }
+body .pdv-top-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 12px; flex-shrink: 0; border-bottom: 1px solid #e2e8f0; }
+body .pdv-top-tabs .pdv-top-tab { min-width: 0; padding: 8px 4px; font-size: 12px; letter-spacing: 0; text-transform: none; }
+body .pdv-right .pdv-top-tab.is-active, body .pdv-right .mode-btn.is-active, body .pdv-right .order-tab.is-active {
+  background: #1d4ed8 !important; color: #fff !important; border-color: #1d4ed8 !important;
+}
+.pending-count { display: inline-grid; place-items: center; min-width: 19px; height: 19px; padding: 0 4px; border-radius: 20px; background: #fff0d9; color: #92400e; font-size: 11px; margin-left: 3px; }
+body .pdv-top-tab.is-active .pending-count { background: #ffffff2e; color: #fff; }
+body .pdv-right #vistaPdv,
+body .pdv-right #vistaPendencias,
+body .pdv-right #vistaHistorico {
+  flex: 1 1 0; min-height: 0; overflow-y: auto !important; overflow-x: hidden !important;
+  overscroll-behavior: contain;
+}
+body .pdv-right #vistaPdv { display: flex; flex-direction: column; }
+body .pdv-right #vistaPendencias { padding: 14px; }
+body .pdv-right #vistaPdv[hidden], body .pdv-right #vistaPendencias[hidden], body .pdv-right #vistaHistorico[hidden],
+body .pdv-right .pendente-card[hidden], body .pdv-right #pendingEmpty[hidden], body .pdv-right #pendingSearchEmpty[hidden] { display: none !important; }
+.pending-toolbar { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.pending-toolbar strong { font-size: 16px; }
+.pending-toolbar p { margin-top: 5px; color: #64748b; font-size: 12px; line-height: 1.5; }
+.pending-search-label { display: block; margin-bottom: 6px; font-size: 11px; color: #64748b; font-weight: 700; }
+body #pendingSearch { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; font: inherit; font-size: 13px; margin-bottom: 16px; }
+body #vistaPendencias .pendentes-header { padding: 14px 0 8px; }
+body #vistaPendencias .pendentes-title { font-size: 12px; color: #334155; }
+body #vistaPendencias .pendentes-title > span { padding: 3px 7px; border-radius: 20px; background: #e2e8f0; margin-left: 5px; }
+body #vistaPendencias .pendentes-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 0 0 16px; max-height: none !important; overflow: visible !important; }
+body #vistaPendencias .pendente-card { display: flex; flex-direction: column; gap: 8px; padding: 14px; min-width: 0; background: #fff !important; border: 1px solid #e2e8f0 !important; border-left: 4px solid #d97706 !important; box-shadow: none; }
+body #balcaoProntosGrid .pendente-card { border-left-color: #16a34a !important; }
+body #vistaPendencias .pendente-card-header { gap: 10px; flex-wrap: wrap; }
+body #vistaPendencias .pendente-total { color: #0f172a; font-size: 15px; white-space: nowrap; }
+body #vistaPendencias .pendente-btn { margin-top: 2px; min-height: 38px; }
+.pending-search-empty { color: #64748b; padding: 12px 0; font-size: 13px; }
+body .pdv-right #vistaPdv .order-panel { flex: 1 0 auto; min-height: auto; overflow: visible !important; }
+body .pdv-right #vistaPdv .order-items { flex: 0 0 auto; min-height: 100px; overflow: visible !important; }
+body .pdv-right #vistaPdv .order-footer { flex: 0 0 auto; overflow: visible !important; padding: 14px; gap: 12px; }
+body .pdv-right #vistaPdv .order-footer .section { padding: 12px !important; }
+body #finalizarBtn, body #fecharContaBtn { position: static; min-height: 44px !important; }
+body .pdv-right #vistaPdv .pdv-mode-selector { position: sticky; top: 0; z-index: 3; flex-shrink: 0; }
+@media (min-width: 1100px) { body .pdv-layout { grid-template-columns: minmax(0, 1fr) 400px; } }
+@media (max-width: 900px) {
+  body .pdv-right #vistaPdv, body .pdv-right #vistaPendencias, body .pdv-right #vistaHistorico { flex: none; overflow: visible !important; }
+  body #finalizarBtn, body #fecharContaBtn { position: static; }
+}

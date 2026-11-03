@@ -6,8 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Produto
+from app.models import Produto, Role, User
 from app.schemas import ProdutoRequest, ProdutoResponse
+from app.security import exigir_perfis, get_usuario_opcional
 
 
 PRECO_MAXIMO = Decimal("999999.99")
@@ -22,18 +23,27 @@ def listar_produtos(db: Session = Depends(get_db)) -> list[ProdutoResponse]:
 
 
 @router.get("/{produto_id}", response_model=ProdutoResponse)
-def obter_produto(produto_id: int, db: Session = Depends(get_db)) -> ProdutoResponse:
+def obter_produto(
+    produto_id: int,
+    db: Session = Depends(get_db),
+    usuario: User | None = Depends(get_usuario_opcional),
+) -> ProdutoResponse:
     if produto_id <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID invalido")
 
     produto = db.get(Produto, produto_id)
-    if produto is None:
+    if produto is None or (usuario is None and not produto.ativo):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto nao encontrado")
 
     return _to_response(produto)
 
 
-@router.post("", response_model=ProdutoResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ProdutoResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def criar_produto(request: ProdutoRequest, db: Session = Depends(get_db)) -> ProdutoResponse:
     erro = _validar_produto(request)
     if erro is not None:
@@ -64,7 +74,11 @@ def criar_produto(request: ProdutoRequest, db: Session = Depends(get_db)) -> Pro
     return _to_response(produto)
 
 
-@router.put("/{produto_id}", response_model=ProdutoResponse)
+@router.put(
+    "/{produto_id}",
+    response_model=ProdutoResponse,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def atualizar_produto(produto_id: int, request: ProdutoRequest, db: Session = Depends(get_db)) -> ProdutoResponse:
     if produto_id <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID invalido")
@@ -105,7 +119,11 @@ def atualizar_produto(produto_id: int, request: ProdutoRequest, db: Session = De
     return _to_response(produto)
 
 
-@router.delete("/{produto_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{produto_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def deletar_produto(produto_id: int, db: Session = Depends(get_db)) -> Response:
     if produto_id <= 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID invalido")

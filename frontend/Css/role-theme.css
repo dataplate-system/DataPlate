@@ -1,0 +1,228 @@
+/* Identidade visual por perfil do painel (adm.html).
+   Administrador = administracao do sistema (indigo); Gerente = gestao do restaurante (laranja da marca).
+   O perfil vem de <html data-panel-role="admin|gerente">, definido em adm.js. */
+
+:root[data-panel-role="admin"] {
+  --role-accent: #4338ca;
+  --role-accent-dark: #1e1b4b;
+  --role-accent-soft: #eef2ff;
+  --role-accent-border: #c7d2fe;
+  --role-page-bg: #f4f5fb;
+  /* destaques e botoes primarios do painel (design-system.css) */
+  --ds-secondary: #4338ca;
+  --ds-tertiary: #6d28d9;
+}
+
+:root[data-panel-role="gerente"] {
+  --role-accent: #ea580c;
+  --role-accent-dark: #7c2d12;
+  --role-accent-soft: #fff7ed;
+  --role-accent-border: #fed7aa;
+  --role-page-bg: #f8f6f3;
+  --ds-secondary: #ea580c;
+  --ds-tertiary: #b45309;
+}
+
+:root[data-panel-role] body,
+:root[data-panel-role] .main-content {
+  background: var(--role-page-bg);
+}
+
+/* Cabecalho: barra superior na cor do perfil */
+:root[data-panel-role] .admin-header {
+  box-shadow: inset 0 5px 0 var(--role-accent) !important;
+}
+
+:root[data-panel-role] .header-session-info .user-avatar-small {
+  background: var(--role-accent) !important;
+  color: #fff !important;
+}
+
+:root[data-panel-role] #headerUserRole {
+  color: var(--role-accent) !important;
+  font-weight: 700;
+}
+
+/* Faixa do perfil logo abaixo do cabecalho */
+.panel-role-ribbon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  background: linear-gradient(90deg, var(--role-accent-dark), var(--role-accent));
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.panel-role-ribbon[hidden] {
+  display: none;
+}
+
+.panel-role-ribbon-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 14px;
+}
+
+.panel-role-ribbon-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--role-accent-dark);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.panel-role-ribbon-text {
+  opacity: 0.92;
+}
+
+/* Hero da tela inicial na cor do perfil (design-system.css usa !important no .dashboard-hero) */
+:root[data-panel-role] #home .role-hero {
+  background-color: var(--role-accent-dark) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+:root[data-panel-role="admin"] #home .role-hero {
+  background-image:
+    linear-gradient(135deg, rgba(30, 27, 75, 0.96), rgba(67, 56, 202, 0.9)),
+    url("../images/landing/painel-administrativo.png") !important;
+}
+
+:root[data-panel-role="gerente"] #home .role-hero {
+  background-image:
+    linear-gradient(135deg, rgba(124, 45, 18, 0.94), rgba(234, 88, 12, 0.88)),
+    url("../images/landing/painel-administrativo.png") !important;
+}
+
+:root[data-panel-role] #home .role-hero h1,
+:root[data-panel-role] #home .role-hero p,
+:root[data-panel-role] #home .role-hero .dashboard-eyebrow {
+  color: #fff !important;
+}
+
+:root[data-panel-role] #home .role-hero .dashboard-actions button:not(.btn-secondary) {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: var(--role-accent-dark) !important;
+}
+
+/* Menu lateral e cards na cor do perfil */
+:root[data-panel-role] #home .dashboard-navigation > summary {
+  border-left-color: var(--role-accent);
+}
+
+:root[data-panel-role] .shortcut-group-label {
+  color: var(--role-accent-dark);
+}
+
+:root[data-panel-role] #home .home-shortcut {
+  border-left-color: var(--role-accent) !important;
+}
+
+:root[data-panel-role] #home .dashboard-stat-card {
+  border-top-color: var(--role-accent) !important;
+}
+
+:root[data-panel-role] .header-breadcrumb .bc-current {
+  color: var(--role-accent) !important;
+}
+
+/* Aviso de escopo do perfil dentro das secoes (modo consulta, limites do perfil) */
+.role-scope-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--role-accent-border, #cbd5e1);
+  border-left: 4px solid var(--role-accent, #475569);
+  border-radius: 6px;
+  background: var(--role-accent-soft, #f8fafc);
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.role-scope-banner strong {
+  color: var(--role-accent-dark, #0f172a);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Tela inicial do Administrador */
+.admin-system-home .admin-home-layout {
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+}
+
+.role-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.role-split-col {
+  padding: 12px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.role-split-col strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.role-split-col ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.role-split-admin {
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #1e1b4b;
+}
+
+.role-split-gerente {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+.role-split-no {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .panel-role-ribbon {
+    flex-wrap: wrap;
+    padding: 8px 16px;
+  }
+
+  .admin-system-home .admin-home-layout,
+  .role-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Elementos ocultos por perfil (applyRoleVisibility) vencem regras com !important do dashboard */
+#home [hidden] {
+  display: none !important;
+}

@@ -11,6 +11,25 @@
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
+const LOGIN_PAGE = 'adm-login.html';
+const ROLE_TO_KEY = {
+  ADMIN: 'admin',
+  GERENTE: 'gerente',
+  FUNCIONARIO: 'atendente',
+  CAIXA: 'caixa',
+  COZINHA: 'cozinha'
+};
+const HOME_BY_KEY = {
+  admin: 'adm.html',
+  gerente: 'adm.html',
+  atendente: 'atendente.html',
+  caixa: 'pdv.html',
+  cozinha: 'cozinha.html'
+};
+const ALLOWED_KEYS = ['cozinha', 'gerente'];
+const CLOSED_STATUSES = ['ENTREGUE', 'CANCELADO'];
+const KITCHEN_CLOSED_KEY = 'dataplate:kitchenClosedOrders';
+const MAX_CLOSED_ORDERS = 60;
 
 function origemPedido(order) {
   return order.numeroMesa ? `Mesa ${order.numeroMesa}` : `Balcao #${order.id}`;
@@ -41,15 +60,25 @@ const STATUS_META = {
     actionLabel: 'Marcar pronto',
     actionClass: 'ready'
   },
+  // A cozinha encerra o fluxo em PRONTO; servir e cobrar ficam com atendente/caixa
   PRONTO: {
     label: 'Pronto',
     badgeClass: 'status-pronto',
     listId: 'listPronto',
     countId: 'countPronto',
     statId: 'statPronto',
-    nextStatus: 'ENTREGUE',
-    actionLabel: 'Finalizar pedido',
-    actionClass: 'deliver'
+    nextStatus: null,
+    actionLabel: null,
+    actionClass: ''
+  },
+  SERVIDO: {
+    label: 'Servido',
+    badgeClass: 'status-finalizado',
+    listId: 'listFinalizados',
+    countId: 'countFinalizados',
+    nextStatus: null,
+    actionLabel: null,
+    actionClass: ''
   },
   ENTREGUE: {
     label: 'Finalizado',
@@ -116,6 +145,7 @@ let fallbackNoticeShown = false;
 let urgentOrderIds = new Set();
 let checklistState = {};
 const updatingOrderIds = new Set();
+let closedOrders = new Map();
 
 function readSession() {
   try {
@@ -140,31 +170,104 @@ function writeJsonStorage(key, value) {
 function loadOperationalState() {
   urgentOrderIds = new Set(readJsonStorage(KITCHEN_URGENT_KEY, []));
   checklistState = readJsonStorage(KITCHEN_CHECKLIST_KEY, {});
+  const hoje = new Date().toDateString();
+  closedOrders = new Map(
+    normalizeOrders(readClosedOrders())
+      .filter((order) => CLOSED_STATUSES.includes(order.status)
+        && new Date(order.dataHora).toDateString() === hoje)
+      .map((order) => [orderKey(order.id), order])
+  );
+}
+
+// backendRole manda; sem ele (modo demo, sem token) vale o userKey
+function sessionRoleKey(session) {
+  if (!session?.token) return null;
+  if (session.backendRole) return ROLE_TO_KEY[session.backendRole] || null;
+  return null;
 }
 
 function ensureSession() {
   const session = readSession();
-  if (!session) {
-    window.location.replace('adm-login.html');
+  const roleKey = sessionRoleKey(session);
+  if (!roleKey) {
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    window.location.replace(LOGIN_PAGE);
+    return null;
+  }
+  if (!ALLOWED_KEYS.includes(roleKey)) {
+    window.location.replace(HOME_BY_KEY[roleKey]);
     return null;
   }
   return session;
+}
+
+function applyNavVisibility(session) {
+  const roleKey = sessionRoleKey(session);
+  document.querySelectorAll('[data-roles]').forEach((el) => {
+    const roles = String(el.dataset.roles || '').split(/\s+/).filter(Boolean);
+    const visible = roles.includes(roleKey);
+    el.hidden = !visible;
+    el.style.display = visible ? '' : 'none';
+  });
 }
 
 function applySession(session) {
   document.getElementById('sessionInitials').textContent = session.initials || 'CZ';
   document.getElementById('sessionName').textContent = session.name || 'Cozinha';
   document.getElementById('sessionRole').textContent = session.role || 'Pedidos e preparo';
+  applyNavVisibility(session);
 }
 
-function logout() {
+function stopRealtime() {
   window.clearTimeout(websocketRetryTimer);
   window.clearTimeout(wsKitchenLoadTimer);
   window.clearInterval(autoRefreshTimer);
   websocketRetryTimer = null; wsKitchenLoadTimer = null; autoRefreshTimer = null;
   if (kitchenSocket) { kitchenSocket.onclose = null; kitchenSocket.close(); kitchenSocket = null; }
+}
+
+function logout() {
+  stopRealtime();
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
-  window.location.replace('adm-login.html');
+  window.location.replace(LOGIN_PAGE);
+}
+
+let sessionExpiredHandled = false;
+function handleSessionExpired() {
+  if (sessionExpiredHandled) return;
+  sessionExpiredHandled = true;
+  showToast('Sessao expirada. Entre novamente.', 'warning');
+  stopRealtime();
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  window.setTimeout(() => window.location.replace(LOGIN_PAGE), 1200);
+}
+
+function readClosedOrders() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(KITCHEN_CLOSED_KEY) || '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function writeClosedOrders() {
+  try {
+    sessionStorage.setItem(KITCHEN_CLOSED_KEY, JSON.stringify(Array.from(closedOrders.values())));
+  } catch (_) { /* armazenamento indisponivel: segue so em memoria */ }
+}
+
+function rememberClosedOrder(order) {
+  if (!order || order.id == null || !CLOSED_STATUSES.includes(order.status)) return;
+  closedOrders.set(orderKey(order.id), order);
+  const hoje = new Date().toDateString();
+  Array.from(closedOrders.entries()).forEach(([key, item]) => {
+    if (new Date(item.dataHora).toDateString() !== hoje) closedOrders.delete(key);
+  });
+  while (closedOrders.size > MAX_CLOSED_ORDERS) {
+    closedOrders.delete(closedOrders.keys().next().value);
+  }
+  writeClosedOrders();
 }
 
 async function readResponseBody(response) {
@@ -180,6 +283,7 @@ async function readResponseBody(response) {
 function extractErrorMessage(body, fallback) {
   if (!body) return fallback;
   if (typeof body === 'string') return body || fallback;
+  if (typeof body.detail === 'string') return body.detail;
   return body.message || body.mensagem || body.erro || fallback;
 }
 
@@ -189,18 +293,27 @@ async function apiFetch(endpoint, options = {}) {
   if (session?.token && !headers.Authorization) {
     headers.Authorization = `Bearer ${session.token}`;
   }
-  return fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers
   });
+  if (response.status === 401 && session?.token) handleSessionExpired();
+  return response;
+}
+
+async function responseError(response, fallback) {
+  const body = await readResponseBody(response);
+  const message = response.status === 403
+    ? extractErrorMessage(body, 'Acesso negado')
+    : extractErrorMessage(body, fallback);
+  const error = new Error(message);
+  error.status = response.status;
+  return error;
 }
 
 async function getJson(endpoint) {
   const response = await apiFetch(endpoint);
-  if (!response.ok) {
-    const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Erro ao carregar dados.'));
-  }
+  if (!response.ok) throw await responseError(response, 'Erro ao carregar dados.');
   return readResponseBody(response);
 }
 
@@ -210,10 +323,7 @@ async function putJson(endpoint, payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  if (!response.ok) {
-    const body = await readResponseBody(response);
-    throw new Error(extractErrorMessage(body, 'Não foi possível atualizar o pedido.'));
-  }
+  if (!response.ok) throw await responseError(response, 'Não foi possível atualizar o pedido.');
   return readResponseBody(response);
 }
 
@@ -250,10 +360,13 @@ function formatElapsed(value) {
   const minutes = elapsedMinutes(value);
   if (minutes < 1) return 'agora';
   if (minutes === 1) return '1 min';
-  return `${minutes} min`;
+  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;
+  return `${Math.floor(minutes / 1440)}d ${Math.floor(minutes % 1440 / 60)}h`;
 }
 
 function getSlaState(order) {
+  if (!ACTIVE_STATUSES.includes(order.status)) return { level: 'ok', label: 'Encerrado', minutes: 0 };
   const limits = SLA_LIMITS[order.status] || SLA_LIMITS.RECEBIDO;
   const minutes = elapsedMinutes(order.dataHora);
   if (minutes >= limits.late) return { level: 'late', label: 'Atrasado', minutes };
@@ -351,15 +464,6 @@ function getFilteredOrders() {
   const priority = document.getElementById('priorityFilter')?.value || '';
   const sort = document.getElementById('sortFilter')?.value || 'oldest';
 
-  console.log({
-    search,
-    status,
-    priority,
-    sort,
-    pedidos: kitchenOrders
-  });
-
-
   return kitchenOrders
     .filter((order) => ACTIVE_STATUSES.includes(order.status))
     .filter((order) => !status || order.status === status)
@@ -455,7 +559,7 @@ function buildCard(order) {
         <div class="card-topline">
           <strong>Pedido #${escapeHtml(order.id)} - ${escapeHtml(origemPedido(order))}</strong>
           <span class="status-badge ${meta.badgeClass || ''}">${escapeHtml(meta.label || order.status)}</span>
-          <span class="time-chip sla-${sla.level}">${formatElapsed(order.dataHora)}</span>
+          ${ACTIVE_STATUSES.includes(order.status) ? `<span class="time-chip sla-${sla.level}">${formatElapsed(order.dataHora)}</span>` : ''}
         </div>
         <div class="card-items">
           ${
@@ -477,7 +581,9 @@ function buildCard(order) {
           <span class="card-time-label">${formatTime(order.dataHora)} &bull; ${formatCurrency(order.valorTotal)}</span>
         </div>` : ''}
       </div>
-      <div class="card-actions">${getAction(order)}</div>
+      <div class="card-actions">${getAction(order)}
+        ${ACTIVE_STATUSES.includes(order.status) && !fallbackMode ? `<button type="button" class="secondary-button" data-edit-order="${order.id}">Alterar pedido</button>` : ''}
+      </div>
     </article>
   `;
 }
@@ -509,12 +615,11 @@ function renderStats(activeOrders) {
 function renderNextOrder(filteredOrders) {
   const strip = document.getElementById('nextOrderStrip');
   const nextOrder = filteredOrders.find((order) => order.status === 'RECEBIDO')
-    || filteredOrders.find((order) => order.status === 'EM_PREPARO')
-    || filteredOrders[0];
+    || filteredOrders.find((order) => order.status === 'EM_PREPARO');
 
   if (!nextOrder) {
     strip.className = 'next-order-strip is-empty';
-    strip.innerHTML = '<div class="next-order-main"><span>Pedido da vez</span><strong>Nenhum pedido ativo</strong></div>';
+    strip.innerHTML = '<div class="next-order-main"><span>Pedido da vez</span><strong>Nenhum pedido aguardando preparo</strong></div>';
     return;
   }
 
@@ -662,7 +767,7 @@ function renderCancelados() {
 
 function renderFinalizados() {
   const finalizados = kitchenOrders
-    .filter((order) => order.status === 'ENTREGUE')
+    .filter((order) => order.status === 'SERVIDO' || order.status === 'ENTREGUE')
     .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
 
   const countEl = document.getElementById('countFinalizados');
@@ -711,11 +816,32 @@ function getFallbackOrders() {
   return normalizeOrders(fallbackOrders);
 }
 
+// /pedidos/ativos nao traz encerrados: busca o estado final de quem saiu da fila
+async function resolveVanishedOrders(ativos) {
+  const ativosIds = new Set(ativos.map((order) => orderKey(order.id)));
+  const vanished = kitchenOrders.filter((order) =>
+    !CLOSED_STATUSES.includes(order.status)
+    && !ativosIds.has(orderKey(order.id))
+    && !closedOrders.has(orderKey(order.id))
+  );
+  await Promise.all(vanished.map(async (order) => {
+    try {
+      const [atual] = normalizeOrders([await getJson(`/pedidos/${encodeURIComponent(order.id)}`)]);
+      if (atual) rememberClosedOrder(atual);
+    } catch (_) { /* sem detalhe: o pedido apenas sai da fila */ }
+  }));
+}
+
 async function loadOrders({ silent = false } = {}) {
   if (!silent) setLoadingState();
 
   try {
-    const novos = normalizeOrders(await getJson('/pedidos'));
+    const ativos = normalizeOrders(await getJson('/pedidos/ativos'));
+    if (!fallbackMode) await resolveVanishedOrders(ativos);
+    const ativosIds = new Set(ativos.map((order) => orderKey(order.id)));
+    const novos = ativos.concat(
+      Array.from(closedOrders.values()).filter((order) => !ativosIds.has(orderKey(order.id)))
+    );
     verificarNovosPedidosAudio(novos);
     verificarCancelamentos(novos);
     kitchenOrders = novos;
@@ -723,6 +849,12 @@ async function loadOrders({ silent = false } = {}) {
     fallbackNoticeShown = false;
   } catch (error) {
     console.error('[cozinha]', error);
+    if (error.status === 401 && readSession()?.token) return;
+    if (error.status === 403) {
+      showToast(error.message || 'Acesso negado');
+      renderKitchen();
+      return;
+    }
     if (!fallbackMode || kitchenOrders.length === 0) kitchenOrders = getFallbackOrders();
     fallbackMode = true;
     if (!fallbackNoticeShown) {
@@ -738,6 +870,7 @@ async function changeOrderStatus(orderId, nextStatus) {
   const id = Number(orderId);
   const order = kitchenOrders.find((item) => Number(item.id) === id);
   if (!order || updatingOrderIds.has(orderKey(id))) return;
+  if (!nextStatus || STATUS_META[order.status]?.nextStatus !== nextStatus) return;
 
   updatingOrderIds.add(orderKey(id));
   renderKitchen();
@@ -757,7 +890,9 @@ async function changeOrderStatus(orderId, nextStatus) {
     if (!fallbackMode) await loadOrders({ silent: true });
   } catch (error) {
     console.error('[cozinha-status]', error);
+    if (error.status === 401 && readSession()?.token) return;
     showToast(error.message || 'Não foi possível atualizar o pedido.');
+    if (error.status === 409 && !fallbackMode) loadOrders({ silent: true });
   } finally {
     updatingOrderIds.delete(orderKey(id));
     renderKitchen();
@@ -842,29 +977,42 @@ function startAutoRefresh() {
   autoRefreshTimer = window.setInterval(() => loadOrders({ silent: true }), AUTO_REFRESH_MS);
 }
 
-function connectKitchenWebSocket() {
+function buildKitchenWebSocketUrl(token) {
   const apiUrl = API_BASE_URL.startsWith('http')
     ? API_BASE_URL
     : `${window.location.origin}${API_BASE_URL}`;
-  const wsBaseUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
+  const wsUrl = new URL(apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '/ws'));
+  wsUrl.searchParams.set('token', token);
+  return wsUrl.toString();
+}
+
+function connectKitchenWebSocket() {
+  const token = readSession()?.token;
+  // Sem token (modo demo) o backend recusa a conexao; fica so o polling
+  if (!token || sessionExpiredHandled) return null;
 
   if (kitchenSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(kitchenSocket.readyState)) {
     return kitchenSocket;
   }
 
   try {
-    kitchenSocket = new WebSocket(wsBaseUrl);
-    kitchenSocket.addEventListener('open', () => {
+    const socket = new WebSocket(buildKitchenWebSocketUrl(token));
+    kitchenSocket = socket;
+    socket.addEventListener('open', () => {
       websocketRetryDelay = 1000;
       window.clearInterval(autoRefreshTimer);
       autoRefreshTimer = null;
     });
-    kitchenSocket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event) => {
       let payload = event.data;
       try {
         payload = JSON.parse(event.data);
       } catch (_) {
         payload = { type: event.data };
+      }
+      if (payload?.pedido) {
+        const [pedido] = normalizeOrders([payload.pedido]);
+        rememberClosedOrder(pedido);
       }
       if (payload?.type === 'NOVO_PEDIDO') {
         tocarNotificacaoNovoPedido();
@@ -875,15 +1023,23 @@ function connectKitchenWebSocket() {
         wsKitchenLoadTimer = window.setTimeout(() => loadOrders({ silent: true }), 300);
       }
     });
-    kitchenSocket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
+      if (kitchenSocket !== socket) return;
+      kitchenSocket = null;
       window.clearTimeout(websocketRetryTimer);
-      websocketRetryTimer = window.setTimeout(connectKitchenWebSocket, websocketRetryDelay);
-      websocketRetryDelay = Math.min(websocketRetryDelay * 2, 30000);
+      if (sessionExpiredHandled) return;
       if (!autoRefreshTimer && document.getElementById('autoRefresh')?.checked) {
         autoRefreshTimer = window.setInterval(() => loadOrders({ silent: true }), AUTO_REFRESH_MS);
       }
+      // 1008 = token recusado: nao insiste; o polling detecta sessao expirada (401)
+      if (event.code === 1008) {
+        loadOrders({ silent: true });
+        return;
+      }
+      websocketRetryTimer = window.setTimeout(connectKitchenWebSocket, websocketRetryDelay);
+      websocketRetryDelay = Math.min(websocketRetryDelay * 2, 30000);
     });
-    kitchenSocket.addEventListener('error', () => kitchenSocket.close());
+    socket.addEventListener('error', () => socket.close());
   } catch (error) {
     console.error('[cozinha-ws]', error);
     window.clearTimeout(websocketRetryTimer);
@@ -893,7 +1049,88 @@ function connectKitchenWebSocket() {
   return kitchenSocket;
 }
 
+let editDraft = null;
+let editProducts = [];
+
+async function openOrderEdit(id) {
+  if (fallbackMode) return;
+  try {
+    const [order, products] = await Promise.all([getJson(`/pedidos/${id}`), getJson('/produtos')]);
+    if (!ACTIVE_STATUSES.includes(order.status)) throw new Error('Este pedido já saiu da fila da cozinha.');
+    editDraft = { ...order, itens: order.itens.map(item => ({ ...item })) };
+    editProducts = products;
+    document.getElementById('editOrderTitle').textContent = `Alterar pedido #${order.id} · ${origemPedido(order)}`;
+    document.getElementById('editOrderNotes').value = order.observacoes || '';
+    document.getElementById('editOrderReason').value = '';
+    document.getElementById('editOrderError').textContent = '';
+    document.getElementById('editProductSelect').innerHTML = products.map(p => `<option value="${p.id}">${escapeHtml(p.nome)} · ${formatCurrency(p.preco)}</option>`).join('');
+    renderEditItems();
+    document.getElementById('editOrderDialog').showModal();
+  } catch (error) { showToast(error.message || 'Não foi possível abrir o pedido.', 'error'); }
+}
+
+function renderEditItems() {
+  document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
+    <div class="edit-item"><span>${escapeHtml(item.nomeProduto)}<small>${formatCurrency(item.precoUnitario)} / unidade</small></span>
+    <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.nomeProduto)}" /></label>
+    <button type="button" class="secondary-button" data-remove-edit-item="${index}" aria-label="Remover ${escapeHtml(item.nomeProduto)}">Remover</button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+  renderEditTotal();
+}
+
+function renderEditTotal() {
+  const originalSubtotal = editDraft.itensOriginalSubtotal ?? editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0);
+  editDraft.itensOriginalSubtotal = originalSubtotal;
+  const discount = Math.max(0, originalSubtotal - editDraft.valorTotal);
+  const total = Math.max(0, editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0) - discount);
+  document.getElementById('editOrderTotal').textContent = `Novo total: ${formatCurrency(total)}`;
+}
+
+async function saveOrderEdit(event) {
+  event.preventDefault();
+  const button = document.getElementById('saveEditOrder');
+  const errorEl = document.getElementById('editOrderError');
+  if (button.disabled) return;
+  if (!editDraft.itens.length) { errorEl.textContent = 'Adicione ao menos um produto.'; return; }
+  button.disabled = true;
+  errorEl.textContent = '';
+  try {
+    await putJson(`/pedidos/${editDraft.id}/itens`, {
+      atualizadoEm: editDraft.atualizadoEm,
+      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      observacoes: document.getElementById('editOrderNotes').value,
+      motivo: document.getElementById('editOrderReason').value.trim()
+    });
+    cleanupOrderState(editDraft.id);
+    document.getElementById('editOrderDialog').close();
+    showToast('Pedido alterado. Atendimento e caixa recebem a atualização.', 'success');
+    await loadOrders({ silent: true });
+  } catch (error) { errorEl.textContent = error.message || 'Não foi possível salvar a alteração.'; }
+  finally { button.disabled = false; }
+}
+
 function bindEvents() {
+  document.getElementById('editOrderForm').addEventListener('submit', saveOrderEdit);
+  document.getElementById('closeEditOrder').addEventListener('click', () => document.getElementById('editOrderDialog').close());
+  document.getElementById('addEditItem').addEventListener('click', () => {
+    const id = Number(document.getElementById('editProductSelect').value);
+    const product = editProducts.find(p => p.id === id);
+    if (!product) return;
+    const existing = editDraft.itens.find(i => i.produtoId === id);
+    if (existing) existing.quantidade++;
+    else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-remove-edit-item]');
+    if (!button) return;
+    editDraft.itens.splice(Number(button.dataset.removeEditItem), 1);
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    if (!event.target.matches('[data-edit-quantity]')) return;
+    editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
+    renderEditTotal();
+  });
   document.getElementById('logoutButton')?.addEventListener('click', logout);
   document.getElementById('reloadKitchen')?.addEventListener('click', () => loadOrders());
   document.getElementById('clearFilters')?.addEventListener('click', () => {
@@ -910,6 +1147,8 @@ function bindEvents() {
   document.getElementById('autoRefresh')?.addEventListener('change', startAutoRefresh);
 
   document.addEventListener('click', (event) => {
+    const edit = event.target.closest('[data-edit-order]');
+    if (edit) { openOrderEdit(Number(edit.dataset.editOrder)); return; }
     const urgent = event.target.closest('[data-toggle-urgent]');
     if (urgent) {
       event.preventDefault();
