@@ -20,13 +20,39 @@ const DEMO_MODE = window.DATAPLATE_DEMO_MODE === true
 
 const adminAuth = window.DataPlateAdminAuth;
 
+const ROLE_TO_USER_KEY = {
+  ADMIN: 'admin',
+  GERENTE: 'gerente',
+  FUNCIONARIO: 'atendente',
+  CAIXA: 'caixa',
+  COZINHA: 'cozinha'
+};
+
+const USER_KEY_HOME = {
+  admin: 'adm.html',
+  gerente: 'adm.html',
+  atendente: 'atendente.html',
+  caixa: 'pdv.html',
+  cozinha: 'cozinha.html'
+};
+
+const UNKNOWN_PROFILE_MESSAGE = 'Perfil sem acesso';
+
 const fallbackDemoAdmins = {
+  admin: {
+    name: 'Administrador',
+    initials: 'AD',
+    cpf: '000.000.001-91',
+    password: 'admin123',
+    role: 'Administrador',
+    userKey: 'admin'
+  },
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
     cpf: '000.000.000-01',
     password: 'admin123',
-    role: 'Administrador',
+    role: 'Gerente',
     userKey: 'gerente'
   },
   atendente: {
@@ -71,12 +97,15 @@ function setLoginError(message, type = 'error') {
   error.classList.toggle('is-success', type === 'success');
 }
 
+// Tela inicial do perfil; null para perfil desconhecido (sem fallback)
 function redirectForUserKey(userKey) {
-  const redirectMap = { cozinha: 'cozinha.html', atendente: 'atendente.html', caixa: 'pdv.html' };
-  return redirectMap[userKey] || 'adm.html';
+  return USER_KEY_HOME[userKey] || null;
 }
 
 function startSession(admin, remember, auth = {}) {
+  const target = redirectForUserKey(admin?.userKey);
+  if (!target) throw new Error(UNKNOWN_PROFILE_MESSAGE);
+
   const session = {
     name: admin.name,
     initials: admin.initials,
@@ -92,7 +121,7 @@ function startSession(admin, remember, auth = {}) {
   };
 
   sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session));
-  window.location.href = redirectForUserKey(admin.userKey);
+  window.location.href = target;
 }
 
 function findAdmin(cpf, password) {
@@ -123,12 +152,6 @@ async function loginBackend(cpf, password) {
 
   const url = `${API_BASE_URL}/auth/login`;
 
-  console.log('[adm-login] URL:', url);
-  console.log(
-    '[adm-login] CPF enviado:',
-    String(cpf || '').replace(/\D/g, '')
-  );
-
   try {
     response = await fetch(url, {
       method: 'POST',
@@ -147,14 +170,10 @@ async function loginBackend(cpf, password) {
     throw error;
   }
 
-  console.log('[adm-login] HTTP STATUS:', response.status);
-
   const body = await response.json().catch(error => {
     console.error('[adm-login] erro lendo JSON:', error);
     return null;
   });
-
-  console.log('[adm-login] resposta:', body);
 
   if (!response.ok) {
     throw new Error(
@@ -173,10 +192,8 @@ async function loginBackend(cpf, password) {
 }   
 
 function userKeyFromRole(role) {
-  if (role === 'COZINHA') return 'cozinha';
-  if (role === 'FUNCIONARIO') return 'atendente';
-  if (role === 'CAIXA') return 'caixa';
-  return 'gerente';
+  if (adminAuth?.userKeyFromRole) return adminAuth.userKeyFromRole(role);
+  return ROLE_TO_USER_KEY[String(role || '').toUpperCase()] || null;
 }
 
 function initialsFromName(name) {
@@ -192,7 +209,12 @@ function initialsFromName(name) {
 
 function adminFromAuth(auth) {
   const userKey = userKeyFromRole(auth.role);
-  const fallback = getDemoAdmin(userKey) || fallbackDemoAdmins.gerente;
+  if (!userKey) {
+    const error = new Error(UNKNOWN_PROFILE_MESSAGE);
+    error.unknownProfile = true;
+    throw error;
+  }
+  const fallback = getDemoAdmin(userKey) || fallbackDemoAdmins[userKey];
   return {
     ...fallback,
     name: auth.nome || fallback.name,
@@ -332,8 +354,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const session = JSON.parse(existingSession);
       // Sessao sem token so vale no modo demo; caso contrario e uma sessao antiga/falsa
-      if (session?.token || DEMO_MODE) {
-        window.location.replace(redirectForUserKey(session?.userKey));
+      const sessionUserKey = session?.token
+        ? userKeyFromRole(session.backendRole)
+        : session?.userKey;
+      const target = redirectForUserKey(sessionUserKey);
+      if ((session?.token || DEMO_MODE) && target) {
+        window.location.replace(target);
         return;
       }
       sessionStorage.removeItem(ADMIN_SESSION_KEY);
@@ -405,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.warn('[adm-login] falha no login backend:', error);
 
-      if (!DEMO_MODE) {
+      if (!DEMO_MODE || error?.unknownProfile) {
         // Sem fallback local: nunca cria sessao sem token
         setLoginError(error.message || 'Nao foi possivel entrar. Tente novamente.');
         if (submitButton) submitButton.disabled = false;
@@ -422,6 +448,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    startSession(admin, remember);
+    try {
+      startSession(admin, remember);
+    } catch (error) {
+      setLoginError(error.message || UNKNOWN_PROFILE_MESSAGE);
+      if (submitButton) submitButton.disabled = false;
+    }
   });
 });

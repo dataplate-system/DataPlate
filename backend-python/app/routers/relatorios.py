@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import PedidoStatusNome
+from app.models import PedidoStatusNome, Role
 from app.schemas import (
     RelatorioCardapioItem,
     RelatorioCardapioResponse,
@@ -18,6 +18,7 @@ from app.schemas import (
     VendasPorDiaItem,
     VendasTimelineItem,
 )
+from app.security import exigir_perfis
 
 
 STATUS_RECEBIDO_ID = 1
@@ -26,7 +27,11 @@ STATUS_PRONTO_ID = 3
 STATUS_ENTREGUE_ID = 4
 STATUS_CANCELADO_ID = 5
 
-router = APIRouter(prefix="/api/relatorios", tags=["relatorios"])
+router = APIRouter(
+    prefix="/api/relatorios",
+    tags=["relatorios"],
+    dependencies=[Depends(exigir_perfis(Role.ADMIN, Role.GERENTE))],
+)
 
 
 @router.get("/resumo", response_model=RelatorioResumoResponse)

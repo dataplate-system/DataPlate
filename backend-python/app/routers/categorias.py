@@ -3,8 +3,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Categoria, Restaurante
+from app.models import Categoria, Restaurante, Role
 from app.schemas import CategoriaRequest, CategoriaResponse
+from app.security import exigir_perfis
 
 
 router = APIRouter(prefix="/api/categorias", tags=["categorias"])
@@ -20,7 +21,12 @@ def listar_categorias(db: Session = Depends(get_db)) -> list[CategoriaResponse]:
     return [_to_response(categoria) for categoria in categorias]
 
 
-@router.post("", response_model=CategoriaResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CategoriaResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def criar_categoria(request: CategoriaRequest, db: Session = Depends(get_db)) -> CategoriaResponse:
     nome = request.nome.strip()
     if not nome:
@@ -53,7 +59,11 @@ def criar_categoria(request: CategoriaRequest, db: Session = Depends(get_db)) ->
     return _to_response(categoria)
 
 
-@router.delete("/{categoria_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{categoria_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def excluir_categoria(categoria_id: int, db: Session = Depends(get_db)) -> Response:
     categoria = db.get(Categoria, categoria_id)
     if categoria is None:

@@ -5,13 +5,37 @@
   const DEFAULT_DEMO_ADMIN_KEY = 'gerente';
   const PASSWORD_MIN_LENGTH = 8;
 
+  const ROLE_TO_USER_KEY = {
+    ADMIN: 'admin',
+    GERENTE: 'gerente',
+    FUNCIONARIO: 'atendente',
+    CAIXA: 'caixa',
+    COZINHA: 'cozinha'
+  };
+  const USER_KEY_HOME = {
+    admin: 'adm.html',
+    gerente: 'adm.html',
+    atendente: 'atendente.html',
+    caixa: 'pdv.html',
+    cozinha: 'cozinha.html'
+  };
+
   const defaultAdmins = {
+    admin: {
+      name: 'Administrador',
+      initials: 'AD',
+      cpf: '000.000.001-91',
+      password: 'admin123',
+      role: 'Administrador',
+      userKey: 'admin',
+      recoveryContact: 'e-mail a*****r@dataplate.local'
+    },
     gerente: {
       name: 'Gerente Principal',
       initials: 'GP',
       cpf: '000.000.000-01',
       password: 'admin123',
-      role: 'Administrador',
+      role: 'Gerente',
       userKey: 'gerente',
       recoveryContact: 'e-mail g*****e@dataplate.local'
     },
@@ -43,6 +67,14 @@
       recoveryContact: 'SMS final 3333'
     }
   };
+
+  function userKeyFromRole(role) {
+    return ROLE_TO_USER_KEY[String(role || '').toUpperCase()] || null;
+  }
+
+  function homePageForUserKey(userKey) {
+    return USER_KEY_HOME[userKey] || null;
+  }
 
   function safelyParseJson(value, fallback) {
     try {
@@ -207,6 +239,10 @@
     ADMIN_SESSION_KEY,
     ADMIN_PASSWORDS_KEY,
     DEFAULT_DEMO_ADMIN_KEY,
+    ROLE_TO_USER_KEY,
+    USER_KEY_HOME,
+    userKeyFromRole,
+    homePageForUserKey,
     formatCpf,
     getAdmin,
     getAdmins,

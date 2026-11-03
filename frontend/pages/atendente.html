@@ -31,10 +31,10 @@
       </button>
 
       <nav class="module-nav" aria-label="Modulos DataPlate">
-        <a href="adm.html">Admin</a>
-        <a href="atendente.html" class="is-active">Atendente</a>
-        <a href="cozinha.html">Cozinha</a>
-        <a href="pdv.html">PDV</a>
+        <a href="adm.html" data-roles="gerente">Admin</a>
+        <a href="atendente.html" class="is-active" data-roles="atendente gerente">Atendente</a>
+        <a href="cozinha.html" data-roles="gerente">Cozinha</a>
+        <a href="pdv.html" data-roles="gerente">PDV</a>
         <a href="user.html">Cardapio</a>
       </nav>
 
@@ -229,13 +229,14 @@
       </div>
       <div style="padding:16px 20px 20px">
         <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">
-          <strong style="color:#dc2626">Atencao:</strong> O cancelamento deve ser realizado somente com
-          autorizacao do superior ou da cozinha. Esta acao nao pode ser desfeita.
+          <strong style="color:#dc2626">Atencao:</strong> Pedidos ainda nao iniciados pela cozinha podem ser
+          cancelados informando o motivo. Apos o inicio do preparo, somente o Gerente pode cancelar.
+          Esta acao nao pode ser desfeita.
         </div>
         <label style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em">
           Motivo do cancelamento (obrigatorio)
         </label>
-        <textarea id="cancelarObs" rows="3"
+        <textarea id="cancelarObs" rows="3" maxlength="255"
           style="width:100%;margin-top:6px;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:none;font-family:inherit;outline:none"
           placeholder="Ex: Cliente desistiu, erro no pedido, autorizacao do gerente..."></textarea>
         <div style="display:flex;gap:8px;margin-top:14px">
@@ -252,6 +253,6 @@
     </div>
   </div>
 
-  <script src="../JavaScript/atendente.js?v=20261026-mesas-cards" defer></script>
+  <script src="../JavaScript/atendente.js?v=20261103-rbac" defer></script>
 </body>
 </html>

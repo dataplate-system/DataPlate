@@ -12,13 +12,14 @@
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="manifest" href="../manifest.webmanifest" />
+  <style>[data-roles][hidden] { display: none !important; }</style>
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
 </head>
 <body>
 
   <!-- TOPBAR -->
   <header class="pdv-topbar">
-    <a href="adm.html" class="pdv-brand-link">
+    <a href="pdv.html" class="pdv-brand-link">
       <span>
         <span class="dataplate-brand">
           <strong class="dataplate-brand-name">DataPlate</strong>
@@ -30,7 +31,7 @@
       </span>
     </a>
 
-    <nav class="module-nav" aria-label="Modulos DataPlate">
+    <nav class="module-nav" aria-label="Modulos DataPlate" data-roles="gerente" hidden>
       <a href="adm.html">Admin</a>
       <a href="atendente.html">Atendente</a>
       <a href="cozinha.html">Cozinha</a>
@@ -160,9 +161,18 @@
       <div id="pendentesSection" hidden>
         <div class="pendentes-header">
           <span class="pendentes-title">Aguardando pagamento</span>
-          <button class="pendentes-refresh" onclick="verificarCobrancas()">Atualizar</button>
+          <button class="pendentes-refresh" onclick="atualizarPendencias()">Atualizar</button>
         </div>
         <div id="pendentesGrid" class="pendentes-grid"></div>
+      </div>
+
+      <!-- Vendas de balcao prontas para entrega -->
+      <div id="balcaoProntosSection" hidden>
+        <div class="pendentes-header">
+          <span class="pendentes-title">Balcao pronto para entrega</span>
+          <button class="pendentes-refresh" onclick="atualizarPendencias()">Atualizar</button>
+        </div>
+        <div id="balcaoProntosGrid" class="pendentes-grid"></div>
       </div>
 
       <!-- Vista PDV -->
@@ -208,6 +218,7 @@
           <div class="checkout-summary" id="checkoutSummary">
             <label class="section-label" for="descontoInput">Desconto</label>
             <input id="descontoInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" />
+            <small id="descontoAviso" class="desconto-aviso" role="alert" hidden style="color:#dc2626;font-size:12px;font-weight:700;margin-top:4px"></small>
             <div class="checkout-line">
               <span>A pagar</span>
               <strong id="totalPagar">R$ 0,00</strong>
@@ -220,6 +231,12 @@
                 <strong id="trocoValor">R$ 0,00</strong>
               </div>
             </div>
+          </div>
+          <div class="section">
+            <label class="section-label" for="clientePedidoSelect">Cliente cadastrado (opcional)</label>
+            <select id="clientePedidoSelect">
+              <option value="">Venda sem cliente vinculado</option>
+            </select>
           </div>
           <div class="section" id="pagamentoVendaSection">
             <label class="section-label">Pagamento</label>
@@ -342,6 +359,6 @@
 
   <div id="toastArea" aria-live="polite"></div>
 
-  <script src="../JavaScript/pdv.js?v=20261020-compact-window"></script>
+  <script src="../JavaScript/pdv.js?v=20261103-rbac"></script>
 </body>
 </html>

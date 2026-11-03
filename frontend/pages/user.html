@@ -23,7 +23,7 @@
   <span id="badgePedido" class="cart-badge" style="display:none"></span>
 </button>
 
-<!-- SELETOR DE MESA (demo) -->
+<!-- AVISO: MESA SOMENTE VIA QR CODE -->
 <div id="mesaSelectorOverlay" class="dp-mesa-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
   <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div class="client-app-brand selector-brand">
@@ -39,12 +39,10 @@
     </div>
     <img src="../images/brand/logo-emp.png" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:12px;margin-bottom:16px">
     <h2 style="font-size:22px;font-weight:900;margin-bottom:4px;color:#111">Raizes do Sabor</h2>
-    <p style="font-size:14px;color:#64748b;margin-bottom:24px">Selecione sua mesa para acessar o cardapio</p>
-    <select id="mesaSelectorPicklist" style="width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:12px;font-size:16px;font-weight:600;background:#f8fafc;color:#111;margin-bottom:16px;appearance:auto">
-      <option value="">Carregando mesas...</option>
-    </select>
-    <button onclick="confirmarMesaSelecionada()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">
-      Entrar no Cardapio
+    <p style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">Leia o QR Code da mesa para fazer o pedido</p>
+    <p style="font-size:14px;color:#64748b;margin-bottom:24px">Sem o QR Code da mesa o cardapio fica disponivel apenas para consulta.</p>
+    <button type="button" onclick="fecharAvisoMesa()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">
+      Ver cardapio
     </button>
   </div>
 </div>
@@ -775,6 +773,6 @@
   
 
 
-<script src="../JavaScript/user.js?v=20261025-order-bar"></script>
+<script src="../JavaScript/user.js?v=20261103-rbac"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.security import exigir_admin
 from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthPasswordResetVerifyRequest, AuthRefreshRequest, AuthRegisterRequest, AuthResponse
 from app.services import identify_password_reset, login, refresh, register, request_password_reset, reset_password, verify_password_reset_code
 
@@ -19,7 +20,12 @@ def auth_refresh(request: AuthRefreshRequest, db: Session = Depends(get_db)) -> 
     return refresh(db, request)
 
 
-@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(exigir_admin)],
+)
 def auth_register(request: AuthRegisterRequest, db: Session = Depends(get_db)) -> AuthResponse:
     return register(db, request)
 

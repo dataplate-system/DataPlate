@@ -50,7 +50,7 @@ def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     if _get_user_by_cpf(db, cpf) is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"CPF ja cadastrado: {cpf}")
 
-    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role)
+    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role.value)
     db.add(user)
     db.commit()
     db.refresh(user)

@@ -29,11 +29,20 @@ async function readResponseBody(response) {
 function extractErrorMessage(body, fallback) {
   if (!body) return fallback;
   if (typeof body === "string") return body || fallback;
+  if (typeof body.detail === "string") return body.detail;
   return body.message || body.mensagem || body.erro || fallback;
 }
 
 let pedidoEmAndamento = localStorage.getItem("pedidoAtivo") === "true";
 let pedidoAtivoId = localStorage.getItem("pedidoAtivoId") || "";
+let pedidoAtivoToken = localStorage.getItem("pedidoAtivoToken") || "";
+// Pedido salvo sem token de acesso (versao anterior) nao pode mais ser consultado
+if (pedidoAtivoId && !pedidoAtivoToken) {
+  localStorage.removeItem("pedidoAtivo");
+  localStorage.removeItem("pedidoAtivoId");
+  pedidoEmAndamento = false;
+  pedidoAtivoId = "";
+}
 let pedidoStatusTimer = null;
 let pedidoStatusSocket = null;
 
@@ -69,24 +78,14 @@ function formatarPreco(valor) {
   return "R$ " + Number(valor || 0).toFixed(2).replace(".", ",");
 }
 
+const MENSAGEM_LER_QR = "Leia o QR Code da mesa para fazer o pedido";
+
+// A mesa do cliente vem exclusivamente do token do QR Code (RN-AC36)
 let mesaQrContext = null;
+localStorage.removeItem("mesaId");
+localStorage.removeItem("numeroMesa");
 
-function getMesaDoPedido() {
-  if (mesaQrToken && mesaQrContext) return mesaQrContext;
-
-  const params = new URLSearchParams(window.location.search);
-  const mesaIdRaw     = params.get("mesaId")     || localStorage.getItem("mesaId")     || null;
-  const numeroMesaRaw = params.get("mesa")        || params.get("numeroMesa")
-                     || localStorage.getItem("numeroMesa") || null;
-  const mesaId     = mesaIdRaw     ? Number(mesaIdRaw)     : null;
-  const numeroMesa = numeroMesaRaw ? Number(numeroMesaRaw) : null;
-  return {
-    mesaId:     mesaId     > 0 ? mesaId     : null,
-    numeroMesa: numeroMesa > 0 ? numeroMesa : null
-  };
-}
-
-const mesaQrToken = new URLSearchParams(window.location.search).get('mesaToken');
+const mesaQrToken = (new URLSearchParams(window.location.search).get('mesaToken') || '').trim() || null;
 let mesaQrResolucaoFalhou = false;
 const mesaQrPronto = mesaQrToken
   ? fetch(`${API_BASE_URL}/mesas/por-token/${encodeURIComponent(mesaQrToken)}`)
@@ -101,15 +100,21 @@ const mesaQrPronto = mesaQrToken
         throw new Error('A resposta da mesa vinculada ao QR Code é inválida.');
       }
       mesaQrContext = { mesaId, numeroMesa: numero };
-      localStorage.setItem('mesaId', String(mesaId));
-      localStorage.setItem('numeroMesa', String(numero));
     })
     .catch((error) => {
       mesaQrResolucaoFalhou = true;
       console.error('Erro ao identificar mesa pelo QR Code:', error);
-      mostrarNotificacao('erro', 'Não foi possível identificar a mesa', error.message);
+      mostrarNotificacao('erro', 'Não foi possível identificar a mesa', MENSAGEM_LER_QR);
     })
   : Promise.resolve();
+
+function mesaQrValida() {
+  return Boolean(mesaQrToken && mesaQrContext && !mesaQrResolucaoFalhou);
+}
+
+function avisarMesaSemQr() {
+  mostrarNotificacao("aviso", "Mesa não identificada", MENSAGEM_LER_QR);
+}
 
 function escaparHtml(valor) {
   const div = document.createElement("div");
@@ -507,7 +512,7 @@ async function carregarCardapio() {
 
 // pagamento
 
-function confirmarPedido() {
+async function confirmarPedido() {
   const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
 
   if (!carrinho.length) {
@@ -516,6 +521,12 @@ function confirmarPedido() {
      "Carrinho vazio",
      "Adicione produtos antes de continuar."
   );
+    return;
+  }
+
+  await mesaQrPronto;
+  if (!mesaQrValida()) {
+    avisarMesaSemQr();
     return;
   }
 
@@ -549,17 +560,18 @@ async function pagamentoAprovado() {
       "Carrinho vazio",
       "Adicione produtos antes de continuar."
     );
-    return;
+    return false;
   }
 
   await mesaQrPronto;
-  if (mesaQrResolucaoFalhou) return;
+  if (!mesaQrValida()) {
+    avisarMesaSemQr();
+    return false;
+  }
 
-  const mesa = getMesaDoPedido();
   const obs = document.getElementById('observacaoPedido')?.value.trim() || null;
   const pedido = {
-    numeroMesa: mesa.numeroMesa,
-    mesaId: mesa.mesaId,
+    mesaToken: mesaQrToken,
     formaPagamento: pagamentoSelecionado || null,
     ...(obs && { observacoes: obs }),
     itens: carrinho.map(item => ({
@@ -583,8 +595,10 @@ async function pagamentoAprovado() {
     }
     const pedidoCriado = await response.json();
     pedidoAtivoId = String(pedidoCriado.id || "");
+    pedidoAtivoToken = String(pedidoCriado.tokenAcesso || "");
     if (pedidoAtivoId) {
       localStorage.setItem("pedidoAtivoId", pedidoAtivoId);
+      localStorage.setItem("pedidoAtivoToken", pedidoAtivoToken);
       const numEl = document.getElementById("pedidoNumero");
       if (numEl) numEl.textContent = `Pedido #${pedidoAtivoId}`;
     }
@@ -595,7 +609,7 @@ async function pagamentoAprovado() {
       "Erro",
       error.message
     );
-    return;
+    return false;
   }
 
   localStorage.setItem("pedidoAtivo", "true");
@@ -611,6 +625,7 @@ async function pagamentoAprovado() {
 
   iniciarAcompanhamentoPedidoReal();
   atualizarBarraFlutuante();
+  return true;
 }
 
 function voltarPagamento() {
@@ -652,7 +667,7 @@ function selecionarPagamento(elemento, tipo) {
 }
 
 // finalizar pagamento
-function finalizarPagamento(){
+async function finalizarPagamento(){
 
   if(pagamentoSelecionado === "Pix"){
 
@@ -666,13 +681,14 @@ function finalizarPagamento(){
 
   else if(pagamentoSelecionado === "CartaoMesa"){
 
-    pagamentoAprovado();
-
-    mostrarNotificacao(
-     "info",
-     "Pagamento no cartão",
-     "A maquininha será levada até sua mesa."
-);
+    // So avisa da maquininha se o pedido foi realmente criado
+    if (await pagamentoAprovado()) {
+      mostrarNotificacao(
+        "info",
+        "Pagamento no cartão",
+        "A maquininha será levada até sua mesa."
+      );
+    }
 
   }
 
@@ -726,8 +742,10 @@ function novoPedido() {
 
   localStorage.removeItem("pedidoAtivo");
   localStorage.removeItem("pedidoAtivoId");
+  localStorage.removeItem("pedidoAtivoToken");
   pedidoEmAndamento = false;
   pedidoAtivoId = "";
+  pedidoAtivoToken = "";
   pararAcompanhamentoPedido();
 
   document.querySelectorAll(".step").forEach(el => {
@@ -801,12 +819,14 @@ function pararAcompanhamentoPedido() {
 }
 
 function conectarAtualizacoesPedido() {
-  if (!pedidoAtivoId || pedidoStatusSocket) return;
+  if (!pedidoAtivoId || !pedidoAtivoToken || pedidoStatusSocket) return;
   try {
     const wsUrl = new URL(API_BASE_URL, window.location.href);
     wsUrl.protocol = wsUrl.protocol === "https:" ? "wss:" : "ws:";
     wsUrl.pathname = "/ws";
     wsUrl.search = "";
+    wsUrl.searchParams.set("pedido", pedidoAtivoId);
+    wsUrl.searchParams.set("pedidoToken", pedidoAtivoToken);
     pedidoStatusSocket = new WebSocket(wsUrl.toString());
     pedidoStatusSocket.onmessage = ({ data }) => {
       try {
@@ -824,7 +844,7 @@ function conectarAtualizacoesPedido() {
 }
 
 function iniciarAcompanhamentoPedidoReal() {
-  if (!pedidoAtivoId) {
+  if (!pedidoAtivoId || !pedidoAtivoToken) {
     definirAtualizacaoPedido("Não foi possível identificar este pedido.", "erro");
     return;
   }
@@ -834,7 +854,14 @@ function iniciarAcompanhamentoPedidoReal() {
 
   const carregarStatus = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/pedidos/${pedidoAtivoId}`);
+      const response = await fetch(
+        `${API_BASE_URL}/pedidos/${encodeURIComponent(pedidoAtivoId)}?token=${encodeURIComponent(pedidoAtivoToken)}`
+      );
+      if (response.status === 404) {
+        pararAcompanhamentoPedido();
+        definirAtualizacaoPedido("Não foi possível acompanhar este pedido.", "erro");
+        return "INDISPONIVEL";
+      }
       if (!response.ok) throw new Error("Status indisponivel");
       const pedido = await response.json();
       aplicarStatusPedidoReal(pedido.status);
@@ -850,7 +877,7 @@ function iniciarAcompanhamentoPedidoReal() {
   conectarAtualizacoesPedido();
   pedidoStatusTimer = setInterval(async () => {
     const status = await carregarStatus();
-    if (["ENTREGUE", "CANCELADO", "SERVIDO"].includes(status) || !pedidoAtivoId) {
+    if (["ENTREGUE", "CANCELADO", "SERVIDO", "INDISPONIVEL"].includes(status) || !pedidoAtivoId) {
       if (pedidoStatusTimer) window.clearInterval(pedidoStatusTimer);
       pedidoStatusTimer = null;
     }
@@ -869,50 +896,20 @@ function atualizarBotaoPedido() {
   }
 }
 
-// Seletor de mesa (substitui QR code para demonstrações)
-async function mostrarSeletorMesa() {
+// Sem QR Code valido o cardapio fica disponivel apenas para consulta
+function mostrarAvisoMesaSemQr() {
   const overlay = document.getElementById('mesaSelectorOverlay');
-  if (!overlay) return;
-  overlay.style.display = 'flex';
-
-  const select = document.getElementById('mesaSelectorPicklist');
-  try {
-    const resp  = await fetch(`${API_BASE_URL}/mesas`);
-    const mesas = resp.ok ? await resp.json() : [];
-    const ativas = (mesas || [])
-      .filter(m => m.ativo !== false && ['livre', 'disponivel'].includes((m.status || '').toLowerCase()))
-      .sort((a, b) => a.numero - b.numero);
-
-    select.innerHTML = '<option value="">Selecione sua mesa...</option>' +
-      ativas.map(m => {
-        const local = m.localizacao ? ` — ${m.localizacao}` : '';
-        return `<option value="${m.numero}|${m.id || ''}">Mesa ${m.numero}${local}</option>`;
-      }).join('');
-  } catch (_) {
-    // fallback sem API
-    select.innerHTML = '<option value="">Selecione sua mesa...</option>' +
-      Array.from({ length: 15 }, (_, i) =>
-        `<option value="${i + 1}|">Mesa ${i + 1}</option>`
-      ).join('');
-  }
+  if (overlay) overlay.style.display = 'flex';
 }
 
-window.confirmarMesaSelecionada = function() {
-  const select = document.getElementById('mesaSelectorPicklist');
-  const val    = (select?.value || '').trim();
-  if (!val) { select?.focus(); return; }
-  const [numero, id] = val.split('|');
-  localStorage.setItem('numeroMesa', numero);
-  if (id) localStorage.setItem('mesaId', id);
+window.fecharAvisoMesa = function() {
   const overlay = document.getElementById('mesaSelectorOverlay');
   if (overlay) overlay.style.display = 'none';
 };
 
 (async function verificarMesa() {
   await mesaQrPronto;
-  if (mesaQrToken) return;
-  const { numeroMesa } = getMesaDoPedido();
-  if (!numeroMesa) mostrarSeletorMesa();
+  if (!mesaQrValida()) mostrarAvisoMesaSemQr();
 })();
 
 // roda ao abrir app

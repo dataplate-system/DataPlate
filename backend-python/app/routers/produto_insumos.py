@@ -3,14 +3,19 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Insumo, Produto, ProdutoInsumo
+from app.models import Insumo, Produto, ProdutoInsumo, Role
 from app.schemas import ProdutoInsumoRequest, ProdutoInsumoResponse
+from app.security import exigir_perfis
 
 
 router = APIRouter(prefix="/api/produtos/{produto_id}/insumos", tags=["produto-insumos"])
 
 
-@router.get("", response_model=list[ProdutoInsumoResponse])
+@router.get(
+    "",
+    response_model=list[ProdutoInsumoResponse],
+    dependencies=[Depends(exigir_perfis(Role.GERENTE, Role.COZINHA))],
+)
 def listar_produto_insumos(produto_id: int, db: Session = Depends(get_db)) -> list[ProdutoInsumoResponse]:
     itens = db.scalars(
         select(ProdutoInsumo)
@@ -20,7 +25,12 @@ def listar_produto_insumos(produto_id: int, db: Session = Depends(get_db)) -> li
     return [_to_response(item) for item in itens]
 
 
-@router.post("", response_model=ProdutoInsumoResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ProdutoInsumoResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def adicionar_produto_insumo(
     produto_id: int,
     request: ProdutoInsumoRequest,
@@ -41,7 +51,11 @@ def adicionar_produto_insumo(
     return _to_response(item)
 
 
-@router.delete("/{insumo_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{insumo_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def remover_produto_insumo(produto_id: int, insumo_id: int, db: Session = Depends(get_db)) -> Response:
     db.execute(delete(ProdutoInsumo).where(ProdutoInsumo.produto_id == produto_id, ProdutoInsumo.insumo_id == insumo_id))
     db.commit()

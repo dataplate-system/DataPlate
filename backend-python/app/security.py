@@ -110,7 +110,38 @@ def get_usuario_atual(
     return usuario
 
 
+def get_usuario_opcional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    if credentials is None:
+        return None
+    return get_usuario_atual(credentials, db)
+
+
+def exigir_perfis(*perfis: Role):
+    permitidos = {p.value for p in perfis}
+
+    def _verificar(usuario_atual: User = Depends(get_usuario_atual)) -> User:
+        if usuario_atual.role not in permitidos:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+        return usuario_atual
+
+    return _verificar
+
+
 def exigir_admin(usuario_atual: User = Depends(get_usuario_atual)) -> User:
     if usuario_atual.role != Role.ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
     return usuario_atual
+
+
+def usuario_por_access_token(db: Session, token: str) -> User | None:
+    try:
+        cpf = decode_access_token(token)
+    except jwt.InvalidTokenError:
+        return None
+    usuario = db.scalar(select(User).where(User.cpf == cpf))
+    if usuario is None or not usuario.ativo:
+        return None
+    return usuario

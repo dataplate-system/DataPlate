@@ -69,8 +69,11 @@ CREATE TABLE IF NOT EXISTS pedido (
     data_hora TIMESTAMP NOT NULL DEFAULT now(),
     observacoes TEXT,
     valor_total NUMERIC(10, 2) NOT NULL DEFAULT 0,
-    atualizado_em TIMESTAMP NOT NULL DEFAULT now()
+    atualizado_em TIMESTAMP NOT NULL DEFAULT now(),
+    token_acesso UUID NOT NULL DEFAULT gen_random_uuid()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_pedido_token_acesso ON pedido (token_acesso);
 
 CREATE TABLE IF NOT EXISTS item_pedido (
     id_item_pedido INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -126,7 +129,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     senha VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,
     email VARCHAR(255) UNIQUE,
-    ativo BOOLEAN NOT NULL DEFAULT TRUE
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    CONSTRAINT chk_usuarios_role CHECK (role IN ('ADMIN', 'GERENTE', 'FUNCIONARIO', 'CAIXA', 'COZINHA'))
 );
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -162,6 +166,13 @@ CREATE TABLE IF NOT EXISTS produto_insumos (
     quantidade NUMERIC(12, 3) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS fornecedor_insumos (
+    fornecedor_id BIGINT NOT NULL REFERENCES fornecedores(id) ON DELETE CASCADE,
+    insumo_id BIGINT NOT NULL REFERENCES insumos(id) ON DELETE CASCADE,
+    PRIMARY KEY (fornecedor_id, insumo_id)
+);
+CREATE INDEX IF NOT EXISTS idx_fornecedor_insumos_insumo ON fornecedor_insumos (insumo_id);
+
 INSERT INTO status_pedido (nome, descricao, cor, ordem)
 SELECT * FROM (VALUES
     ('RECEBIDO', 'Pedido recebido', '#2563EB', 1),
@@ -177,10 +188,39 @@ CREATE TABLE IF NOT EXISTS pedido_status_historico (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     id_pedido BIGINT NOT NULL REFERENCES pedido(id_pedido) ON DELETE CASCADE,
     status VARCHAR(30) NOT NULL,
-    registrado_em TIMESTAMP NOT NULL DEFAULT now()
+    registrado_em TIMESTAMP NOT NULL DEFAULT now(),
+    id_usuario BIGINT REFERENCES usuarios(id) ON DELETE SET NULL,
+    motivo VARCHAR(255)
 );
 
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS id_cliente BIGINT;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'fk_pedido_cliente' AND conrelid = 'pedido'::regclass
+    ) THEN
+        ALTER TABLE pedido
+            ADD CONSTRAINT fk_pedido_cliente
+            FOREIGN KEY (id_cliente) REFERENCES clientes(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_pedido_cliente ON pedido (id_cliente) WHERE id_cliente IS NOT NULL;
+
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS funcionario_id BIGINT;
+DO $$ BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'fk_usuarios_funcionario' AND conrelid = 'usuarios'::regclass
+    ) THEN
+        ALTER TABLE usuarios
+            ADD CONSTRAINT fk_usuarios_funcionario
+            FOREIGN KEY (funcionario_id) REFERENCES funcionarios(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_funcionario_id ON usuarios (funcionario_id);
+
 CREATE INDEX IF NOT EXISTS idx_psh_pedido ON pedido_status_historico (id_pedido);
+CREATE INDEX IF NOT EXISTS idx_psh_usuario ON pedido_status_historico (id_usuario) WHERE id_usuario IS NOT NULL;
 
 INSERT INTO restaurante (nome, cnpj, telefone, endereco, email)
 SELECT 'DataPlate Restaurante', '00.000.000/0001-00', '(11) 99999-9999', 'Rua Principal, 1', 'contato@dataplate.com'

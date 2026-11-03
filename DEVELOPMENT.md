@@ -143,6 +143,14 @@ O schema inicial fica em `database/schema.sql`.
 Quando criar ou alterar tabelas, atualize esse arquivo. O Postgres local executa o schema apenas na primeira criacao do volume Docker.
 
 Para bancos existentes, aplique manualmente a migracao correspondente em `database/migrations/` antes de usar as novas colunas. A migracao `002_mesa_qr_code_token.sql` adiciona o token exclusivo usado nos QR Codes das mesas.
+Para habilitar o vínculo opcional entre pedidos e clientes, usuários e funcionários, e a associação entre fornecedores e insumos, aplique `003_relacionamentos_clientes_usuarios_fornecedores.sql` em bancos existentes.
+A migracao `006_perfil_gerente.sql` (idempotente) cria o perfil `GERENTE`: promove o usuario de teste `00000000001` de `ADMIN` para `GERENTE`, adiciona o CHECK `chk_usuarios_role`, as colunas `id_usuario` e `motivo` em `pedido_status_historico` e o `token_acesso` (UUID unico) em `pedido`. Aplique em bancos existentes:
+
+```powershell
+Get-Content database\migrations\006_perfil_gerente.sql | docker compose -f backend-python\docker-compose.yml exec -T db psql -U postgres -d dataplate
+```
+
+Revise o `UPDATE` do CPF `00000000001` antes de rodar fora do ambiente de desenvolvimento. Ao iniciar, a API tambem cria as colunas que faltarem (sem o CHECK).
 
 Para recriar o banco local do zero:
 
@@ -167,35 +175,58 @@ docker compose -f backend-python\docker-compose.yml up -d --build
 ## Auth
 
 - Login: `POST /api/auth/login`
-- Registro: `POST /api/auth/register`
+- Registro: `POST /api/auth/register` (exige `ADMIN`)
 - Refresh: `POST /api/auth/refresh`
 - Reset de senha: `POST /api/auth/reset-password`
 - Header padrao: `Authorization: Bearer <token>`
-- Roles: `ADMIN`, `COZINHA`, `FUNCIONARIO`, `CAIXA`
+- Roles: `ADMIN`, `GERENTE`, `FUNCIONARIO` (Atendente), `CAIXA`, `COZINHA`. Cliente nao tem conta.
 
 O Docker local cria automaticamente estes acessos de teste, todos com senha `admin123`:
 
 | Perfil | CPF | Tela inicial |
 |---|---|---|
-| Gerente / Administrador | `000.000.000-01` | `adm.html` |
+| Administrador (`ADMIN`, admin padrao) | `000.000.001-91` | `adm.html` |
+| Gerente (`GERENTE`) | `000.000.000-01` | `adm.html` |
 | Atendente | `000.000.000-02` | `atendente.html` |
 | Cozinha | `000.000.000-03` | `cozinha.html` |
 | Caixa | `000.000.000-04` | `pdv.html` |
 
 Esses CPFs simplificados sao exclusivos dos acessos de teste; o cadastro normal continua validando CPF.
 O administrador padrao `000.000.001-91` e os usuarios existentes continuam disponiveis.
-O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados.
-`DEFAULT_TEST_USERS_ENABLED=true` habilita esses quatro acessos (configurado no Docker local).
+O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados. Excecao: com os acessos de teste habilitados, o `000.000.000-01` que ainda for `ADMIN` passa a `GERENTE`.
+`DEFAULT_TEST_USERS_ENABLED=true` habilita os quatro acessos `000.000.000-0x` (configurado no Docker local); o administrador padrao e criado mesmo sem ele.
 Fora do Docker local, esse seed de teste fica desligado por padrao.
 `DEFAULT_ADMIN_ENABLED=false` desliga toda a criacao automatica de acessos.
 
+### Controle de acesso
+
+Regras completas em `docs/Requisitos/RegrasNegocioAcessos.md`.
+
+| Perfil | Tela inicial | Telas permitidas |
+|---|---|---|
+| `ADMIN` | `adm.html` | `adm.html` (sistema: usuarios, restaurante, integracoes; dashboard, relatorios e funcionarios em leitura) |
+| `GERENTE` | `adm.html` | `adm.html`, `pdv.html`, `atendente.html`, `cozinha.html` |
+| `FUNCIONARIO` | `atendente.html` | `atendente.html` |
+| `CAIXA` | `pdv.html` | `pdv.html` |
+| `COZINHA` | `cozinha.html` | `cozinha.html` |
+
+- Backend: rotas protegidas com `Depends(exigir_perfis(Role.X, ...))` (`app/security.py`). Sem token: 401; perfil fora: 403 "Acesso negado". O perfil e lido do banco a cada requisicao. Publicos: login/refresh/recuperacao de senha, cardapio (so itens ativos), `GET /api/mesas/por-token/{token}`, criacao de pedido pelo cliente, `GET /api/restaurante` (sem CNPJ), CEP e `/actuator/health`.
+- `/api/usuarios`: `ADMIN` gerencia todos; `GERENTE` so `FUNCIONARIO`/`CAIXA`/`COZINHA` e nao exclui (usa `ativo`). Ninguem altera o proprio perfil/situacao; o ultimo `ADMIN` ou `GERENTE` ativo nao pode ser removido (409).
+- Status de pedido: maquina de estados em `routers/pedidos.py` (`TRANSICOES_STATUS`). Cancelamento exige `motivo`; `ENTREGUE` (pago) exige `formaPagamento`.
+- Mesas: cadastro via `PUT /api/mesas/{id}` (Gerente); status via `PATCH /api/mesas/{id}/status`; reserva via `PATCH /api/mesas/{id}/reserva`.
+- Fluxo do cliente (`user.html`): a mesa vem so do QR Code (`?mesaToken=`). `POST /api/pedidos` envia `mesaToken` e devolve `tokenAcesso`; o acompanhamento usa `GET /api/pedidos/{id}?token=<tokenAcesso>`. Sem `mesaToken` valido, o pedido anonimo recebe 403.
+- Frontend: a sessao guarda `backendRole`; cada tela confere o perfil ao carregar e redireciona para a tela inicial do perfil. Perfil desconhecido nao entra. Ocultar menus e so usabilidade: a autorizacao real e do backend.
+
 ## WebSocket
 
-Endpoint:
+Endpoint (conexao sem parametros validos e fechada com codigo 1008):
 
 ```text
-ws://localhost:8081/ws
+ws://localhost:8081/ws?token=<access JWT>                         # GERENTE, FUNCIONARIO, CAIXA, COZINHA: todos os eventos
+ws://localhost:8081/ws?pedido=<id>&pedidoToken=<tokenAcesso>      # cliente: so eventos do proprio pedido
 ```
+
+`ADMIN` nao recebe eventos operacionais. Os eventos nao incluem `tokenAcesso`.
 
 Eventos publicados:
 
