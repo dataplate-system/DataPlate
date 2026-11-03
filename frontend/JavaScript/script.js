@@ -101,6 +101,86 @@ if (telefoneInput) {
   });
 }
 
+const leadForm = document.getElementById('demonstracao');
+const leadContactDialog = document.getElementById('leadContactDialog');
+const leadContactEmail = document.getElementById('leadContactEmail');
+const leadContactEmailValue = document.getElementById('leadContactEmailValue');
+const leadContactPhone = document.getElementById('leadContactPhone');
+const leadContactPhoneValue = document.getElementById('leadContactPhoneValue');
+const leadContactClose = document.getElementById('leadContactClose');
+const leadContactMessage = document.getElementById('leadContactMessage');
+const leadApiBaseUrl =
+  window.DATAPLATE_API_BASE_URL ||
+  localStorage.getItem('DATAPLATE_API_BASE_URL') ||
+  `http://${location.hostname || 'localhost'}:8081/api`;
+
+if (
+  leadForm &&
+  leadContactDialog &&
+  leadContactEmail &&
+  leadContactEmailValue &&
+  leadContactPhone &&
+  leadContactPhoneValue &&
+  leadContactClose &&
+  leadContactMessage
+) {
+  leadForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const email = document.getElementById('leadEmail').value.trim();
+    const telefone = telefoneInput.value.trim();
+
+    leadContactEmailValue.textContent = email;
+    leadContactPhone.href = `tel:${telefone.replace(/\D/g, '')}`;
+    leadContactPhoneValue.textContent = telefone;
+    leadContactMessage.textContent = '';
+    leadContactDialog.hidden = false;
+    leadContactEmail.focus();
+  });
+
+  leadContactEmail.addEventListener('click', async function () {
+    leadContactEmail.disabled = true;
+    leadContactMessage.textContent = 'Enviando mensagem...';
+
+    try {
+      const response = await fetch(`${leadApiBaseUrl}/leads/demo-contact-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: document.getElementById('leadNome').value.trim(),
+          email: document.getElementById('leadEmail').value.trim()
+        })
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        const detail = result?.detail;
+        throw new Error(typeof detail === 'string' ? detail : 'Não foi possível enviar a mensagem. Tente novamente.');
+      }
+
+      leadContactMessage.textContent = 'Mensagem enviada para seu e-mail.';
+    } catch (error) {
+      leadContactMessage.textContent = error instanceof TypeError
+        ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+        : error.message;
+    } finally {
+      leadContactEmail.disabled = false;
+    }
+  });
+
+  leadContactClose.addEventListener('click', function () {
+    leadContactDialog.hidden = true;
+    document.querySelector('.cont').focus();
+  });
+
+  leadContactDialog.addEventListener('click', function (event) {
+    if (event.target === leadContactDialog) {
+      leadContactDialog.hidden = true;
+      document.querySelector('.cont').focus();
+    }
+  });
+}
+
 const cnpjInput = document.getElementById('cnpj');
 if (cnpjInput) {
   cnpjInput.addEventListener('input', function (e) {

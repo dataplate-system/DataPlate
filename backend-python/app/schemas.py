@@ -39,6 +39,16 @@ class AuthPasswordResetVerifyRequest(BaseModel):
     codigo: str = Field(pattern=r"^\d{6}$")
 
 
+class DemoContactEmailRequest(BaseModel):
+    nome: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=5, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+    @field_validator("nome", "email", mode="before")
+    @classmethod
+    def remover_espacos_externos(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+
 class AuthPasswordResetStartResponse(BaseModel):
     resetToken: UUID | None = None
     # Disponivel somente no Docker local, para permitir testar o fluxo sem SMTP/SMS.

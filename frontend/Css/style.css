@@ -262,6 +262,78 @@ body {
     box-shadow: 0 16px 30px rgba(242, 109, 0, 0.25);
 }
 
+.lead-contact-dialog {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 1.75rem;
+    background: rgba(8, 12, 18, 0.62);
+    backdrop-filter: blur(3px);
+}
+
+.lead-contact-dialog[hidden] {
+    display: none;
+}
+
+.lead-contact-card {
+    width: min(440px, 100%);
+    padding: 1.75rem;
+    border-radius: 20px;
+    background: #fff;
+    color: #172033;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.lead-contact-card h2 {
+    margin: 0 0 1.25rem;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.lead-contact-option {
+    display: block;
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 12px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    overflow-wrap: anywhere;
+    text-align: left;
+    cursor: pointer;
+}
+
+.lead-contact-option:hover {
+    border-color: #e76b12;
+    background: rgba(242, 109, 0, 0.06);
+}
+
+.lead-contact-option:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
+
+#leadContactMessage {
+    margin: 0.75rem 0 0;
+    color: #172033;
+    font-size: 0.92rem;
+}
+
+.lead-contact-close {
+    display: block;
+    margin: 1.25rem 0 0 auto;
+    padding: 0.65rem 1rem;
+    border: 0;
+    border-radius: 10px;
+    background: #172033;
+    color: #fff;
+    cursor: pointer;
+}
+
 .container2 {
     min-height: 520px;
     padding: clamp(3.5rem, 7vw, 6rem) 6vw;

@@ -28,7 +28,7 @@
         </ul> 
       </div>
 
-      <form class="card-nav" id="demonstracao" novalidate>
+      <form class="card-nav" id="demonstracao">
         <h2 class="demonst">Solicite uma demonstração</h2>
 
         <label for="leadNome">Nome: </label>
@@ -52,6 +52,20 @@
         <button class="cont" type="submit">Quero saber mais</button>
       </form>
     </section>
+
+    <div class="lead-contact-dialog" id="leadContactDialog" role="dialog" aria-modal="true" aria-labelledby="leadContactTitle" hidden>
+      <div class="lead-contact-card">
+        <h2 id="leadContactTitle">Por onde prefere contato conosco?</h2>
+        <button class="lead-contact-option" id="leadContactEmail" type="button">
+          E-mail: <span id="leadContactEmailValue"></span>
+        </button>
+        <p id="leadContactMessage" aria-live="polite"></p>
+        <a class="lead-contact-option" id="leadContactPhone" href="">
+          Telefone: <span id="leadContactPhoneValue"></span>
+        </a>
+        <button class="lead-contact-close" id="leadContactClose" type="button">Fechar</button>
+      </div>
+    </div>
 
     <section class="container2" aria-label="Depoimentos de clientes">
       <div class="depoimentos">
@@ -296,6 +310,6 @@
     <p>©DataPlate - Sistema de Gestão para o Setor Alimentício</p>
   </footer>
 
-  <script src="../JavaScript/script.js"></script>
+  <script src="../JavaScript/script.js?v=20261103-contact-email"></script>
 </body>
 </html>

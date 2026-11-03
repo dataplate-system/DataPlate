@@ -27,6 +27,7 @@ from app.routers import (
     fornecedores,
     funcionarios,
     insumos,
+    leads,
     mesas,
     pedidos,
     produto_insumos,
@@ -73,6 +74,7 @@ app.include_router(clientes.router)
 app.include_router(fornecedores.router)
 app.include_router(funcionarios.router)
 app.include_router(insumos.router)
+app.include_router(leads.router)
 app.include_router(mesas.router)
 app.include_router(pedidos.router)
 app.include_router(produto_insumos.router)
