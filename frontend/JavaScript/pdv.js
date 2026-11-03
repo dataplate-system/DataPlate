@@ -26,8 +26,7 @@ const WS_BASE_URL = (() => {
   return apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
 })();
 
-const DEMO_MODE = window.DATAPLATE_DEMO_MODE === true
-  || localStorage.getItem('DATAPLATE_DEMO_MODE') === 'true';
+const DEMO_MODE = false; // Login sempre validado pelo backend.
 
 // Perfis (RN-AC): PDV liberado para CAIXA e GERENTE
 const ROLE_TO_PERFIL = { ADMIN: 'admin', GERENTE: 'gerente', FUNCIONARIO: 'atendente', CAIXA: 'caixa', COZINHA: 'cozinha' };
@@ -42,8 +41,8 @@ const MSG_DESCONTO_LIMITE = `Desconto acima do limite de ${LIMITE_DESCONTO_CAIXA
 const STATUS_COBRAVEIS = new Set(['PRONTO', 'SERVIDO']);
 const STATUS_EM_PRODUCAO = new Set(['RECEBIDO', 'EM_PREPARO']);
 
-const CATEGORIA_SLUG  = { 1:'hamburguer', 2:'massas', 3:'principais', 4:'entradas', 5:'sobremesas', 6:'bebidas' };
-const CATEGORIA_EMOJI = { 1:'🍔', 2:'🍝', 3:'🍽️', 4:'🥗', 5:'🍰', 6:'🥤' };
+let categoriasCatalogo = [];
+const normalizarBusca = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 // -- ESTADO -------------------------------------------------------
 let cart            = [];
@@ -166,6 +165,39 @@ async function carregarHistorico() {
 let _pdvPgtoMesa = null;
 let _pdvPgtoSelecionado = '';
 let _cobrancasTimer = null;
+let pendingTables = 0;
+let pendingCounter = 0;
+
+function updatePendingSummary() {
+  document.getElementById('pendingCount').textContent = String(pendingTables + pendingCounter);
+  document.getElementById('tablesPendingCount').textContent = String(pendingTables);
+  document.getElementById('counterReadyCount').textContent = String(pendingCounter);
+  document.getElementById('pendingSummary').textContent = `${pendingTables} conta(s) a receber · ${pendingCounter} retirada(s) pronta(s)`;
+  document.getElementById('pendingEmpty').hidden = pendingTables + pendingCounter !== 0;
+  filterPendingCards();
+}
+
+function filterPendingCards() {
+  const search = normalizarBusca(document.getElementById('pendingSearch').value.trim());
+  let count = 0;
+  document.querySelectorAll('#vistaPendencias .pendente-card').forEach(card => {
+    card.hidden = !normalizarBusca(card.textContent).includes(search);
+    if (!card.hidden) count++;
+  });
+  document.getElementById('pendingSearchEmpty').hidden = !search || count > 0 || pendingTables + pendingCounter === 0;
+}
+
+function mostrarVistaPdv(vista) {
+  document.querySelectorAll('.pdv-top-tab').forEach(button => {
+    const active = button.dataset.top === vista;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  document.getElementById('vistaPdv').hidden = vista !== 'pdv';
+  document.getElementById('vistaPendencias').hidden = vista !== 'pendencias';
+  document.getElementById('vistaHistorico').hidden = vista !== 'historico';
+  if (vista === 'historico') carregarHistorico();
+}
 
 async function verificarCobrancas() {
   try {
@@ -177,9 +209,12 @@ async function verificarCobrancas() {
     const section = document.getElementById('pendentesSection');
     const grid    = document.getElementById('pendentesGrid');
     if (!section || !grid) return;
+    pendingTables = pendentes.length;
 
     if (!pendentes.length) {
       section.hidden = true;
+      grid.innerHTML = '';
+      updatePendingSummary();
       return;
     }
 
@@ -215,6 +250,7 @@ async function verificarCobrancas() {
 
     grid.innerHTML = cards.join('');
     section.hidden = false;
+    updatePendingSummary();
   } catch (_) {}
 }
 
@@ -257,7 +293,8 @@ window.abrirPagamentoMesa = async function(mesaId, numeroMesa, localizacao) {
     document.getElementById('pdvPgtoTitulo').textContent = `Mesa ${numeroMesa}`;
     document.getElementById('pdvPgtoTotal').textContent  = `Total a cobrar: ${formatBRL(total)}`;
     document.getElementById('pdvPgtoConfirmar').disabled = true;
-    document.querySelectorAll('.pdv-pgto-opt').forEach(b => b.classList.remove('is-selected'));
+    document.getElementById('pdvPgtoEscolhido').textContent = 'Selecione uma forma de pagamento';
+    document.querySelectorAll('.pdv-pgto-opt').forEach(b => { b.classList.remove('is-selected'); b.setAttribute('aria-pressed', 'false'); b.querySelector('.pgto-opt-arrow').textContent = '›'; });
 
     // Pre-selecionar forma preferida do atendente
     const pendStore = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
@@ -276,8 +313,11 @@ window.abrirPagamentoMesa = async function(mesaId, numeroMesa, localizacao) {
 
 window.selecionarPdvPgto = function(tipo, btn) {
   _pdvPgtoSelecionado = tipo;
-  document.querySelectorAll('.pdv-pgto-opt').forEach(b => b.classList.remove('is-selected'));
+  document.querySelectorAll('.pdv-pgto-opt').forEach(b => { b.classList.remove('is-selected'); b.setAttribute('aria-pressed', 'false'); b.querySelector('.pgto-opt-arrow').textContent = '›'; });
   btn.classList.add('is-selected');
+  btn.setAttribute('aria-pressed', 'true');
+  btn.querySelector('.pgto-opt-arrow').textContent = '✓';
+  document.getElementById('pdvPgtoEscolhido').textContent = `Selecionado: ${pgtoLabel(tipo)}`;
   const confirmar = document.getElementById('pdvPgtoConfirmar');
   if (confirmar) confirmar.disabled = false;
 };
@@ -392,6 +432,7 @@ async function verificarBalcaoProntos() {
     const ativos = await apiGet('/pedidos/ativos');
     // SERVIDO incluso: pedidos de balcao despachados por engano ainda precisam ser concluidos aqui
     const prontos = (ativos || []).filter(p => !p.numeroMesa && ['PRONTO', 'SERVIDO'].includes(p.status));
+    pendingCounter = prontos.length;
 
     _balcaoProntosMap.clear();
     prontos.forEach(p => _balcaoProntosMap.set(p.id, p));
@@ -399,6 +440,7 @@ async function verificarBalcaoProntos() {
     if (!prontos.length) {
       section.hidden = true;
       grid.innerHTML = '';
+      updatePendingSummary();
       return;
     }
 
@@ -416,6 +458,7 @@ async function verificarBalcaoProntos() {
         </div>`;
     }).join('');
     section.hidden = false;
+    updatePendingSummary();
   } catch (_) {}
 }
 
@@ -809,8 +852,14 @@ async function carregarProdutos() {
   const loading = document.getElementById('produtosLoading');
   loading.classList.remove('hidden');
   try {
-    const data = await apiGet('/produtos');
+    const [data, categorias] = await Promise.all([apiGet('/produtos'), apiGet('/categorias')]);
+    categoriasCatalogo = categorias || [];
     todosOsProdutos = (data || []).filter(p => p.ativo !== false);
+    const filtros = categoriasCatalogo.map(c => ({ id: String(c.id), nome: c.nome }));
+    if (todosOsProdutos.some(p => !categoriasCatalogo.some(c => c.id === p.idCategoria))) filtros.push({ id: 'outros', nome: 'Outros' });
+    if (categoriaAtual !== 'todos' && !filtros.some(c => c.id === categoriaAtual)) categoriaAtual = 'todos';
+    document.getElementById('categoriasFiltro').innerHTML = [{ id: 'todos', nome: 'Todos' }, ...filtros]
+      .map(c => `<button type="button" class="cat-btn${categoriaAtual === c.id ? ' is-active' : ''}" data-cat="${esc(c.id)}" aria-pressed="${categoriaAtual === c.id}">${esc(c.nome)}</button>`).join('');
     renderProdutos();
   } catch (_) {
     showToast('Não foi possível carregar o cardápio.', 'error');
@@ -836,9 +885,12 @@ async function carregarClientesPedido() {
 
 function getProdutosVisiveis() {
   return todosOsProdutos.filter(p => {
-    const slug = CATEGORIA_SLUG[p.idCategoria] || 'principais';
-    return (categoriaAtual === 'todos' || slug === categoriaAtual)
-      && (!termoBusca || p.nome.toLowerCase().includes(termoBusca));
+    const categoria = categoriasCatalogo.some(c => c.id === p.idCategoria) ? String(p.idCategoria) : 'outros';
+    return (categoriaAtual === 'todos' || categoria === categoriaAtual)
+      && (!termoBusca || normalizarBusca(`${p.nome} ${p.codigo || ''}`).includes(normalizarBusca(termoBusca)));
+  }).sort((a, b) => {
+    const rank = id => { const index = categoriasCatalogo.findIndex(c => c.id === id); return index < 0 ? 9999 : index; };
+    return rank(a.idCategoria) - rank(b.idCategoria) || a.nome.localeCompare(b.nome, 'pt-BR');
   });
 }
 
@@ -860,7 +912,7 @@ function renderProdutos() {
     const card = document.createElement('article');
     card.className = 'produto-card';
 
-    const emoji   = CATEGORIA_EMOJI[p.idCategoria] || '🍽️';
+    const emoji   = '🍽️';
     const imgSrc  = p.imagem;
     const imgHtml = imgSrc
       ? `<img class="produto-img" src="${esc(imgSrc)}" alt="${esc(p.nome)}" loading="lazy"
@@ -871,6 +923,7 @@ function renderProdutos() {
     card.innerHTML = `
       ${imgHtml}
       <div class="produto-info">
+        <span class="produto-categoria">${esc(categoriasCatalogo.find(c => c.id === p.idCategoria)?.nome || 'Outros')}</span>
         <span class="produto-nome">${esc(p.nome)}</span>
         <span class="produto-preco">${formatBRL(p.preco)}</span>
         <button class="btn-add">+ Adicionar</button>
@@ -889,6 +942,7 @@ function renderProdutos() {
 
 // -- CARRINHO -----------------------------------------------------
 function adicionarAoCarrinho(produtoId, nome, preco) {
+  mostrarVistaPdv('pdv');
   const item = cart.find(i => i.produtoId === produtoId);
   if (item) { item.quantidade++; } else { cart.push({ produtoId, nome, preco, quantidade: 1 }); }
   renderCarrinho();
@@ -954,16 +1008,18 @@ function renderCarrinho() {
 function selecionarPagamento(tipo, grupo) {
   if (grupo === 'venda') {
     pagamentoVenda = tipo;
-    document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b =>
-      b.classList.toggle('is-selected', b.dataset.pgto === tipo)
-    );
+    document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b => {
+      b.classList.toggle('is-selected', b.dataset.pgto === tipo);
+      b.setAttribute('aria-pressed', String(b.dataset.pgto === tipo));
+    });
     atualizarResumoCaixa();
     atualizarBotaoFinalizar();
   } else {
     pagamentoConta = tipo;
-    document.querySelectorAll('.pgto-btn.pgto-conta').forEach(b =>
-      b.classList.toggle('is-selected', b.dataset.pgto === tipo)
-    );
+    document.querySelectorAll('.pgto-btn.pgto-conta').forEach(b => {
+      b.classList.toggle('is-selected', b.dataset.pgto === tipo);
+      b.setAttribute('aria-pressed', String(b.dataset.pgto === tipo));
+    });
     atualizarBotaoFecharConta();
   }
 }
@@ -1480,8 +1536,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('categoriasFiltro').addEventListener('click', e => {
     const btn = e.target.closest('.cat-btn');
     if (!btn) return;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('is-active'));
+    document.querySelectorAll('.cat-btn').forEach(b => { b.classList.remove('is-active'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('is-active');
+    btn.setAttribute('aria-pressed', 'true');
     categoriaAtual = btn.dataset.cat;
     renderProdutos();
   });
@@ -1527,15 +1584,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === e.currentTarget) fecharSucesso();
   });
 
-  // Abas de alto nível (Venda / Histórico)
+  document.getElementById('pendingSearch').addEventListener('input', filterPendingCards);
+  // A venda atual permanece intacta ao consultar pendencias ou historico.
   document.querySelectorAll('.pdv-top-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.pdv-top-tab').forEach(b => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      const vista = btn.dataset.top;
-      document.getElementById('vistaPdv').hidden      = vista !== 'pdv';
-      document.getElementById('vistaHistorico').hidden = vista !== 'historico';
-      if (vista === 'historico') carregarHistorico();
+      mostrarVistaPdv(btn.dataset.top);
     });
   });
 

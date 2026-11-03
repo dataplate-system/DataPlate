@@ -20,13 +20,13 @@ const ADMIN_PANEL_USERS = {
   admin: {
     name: 'Administrador',
     initials: 'AD',
-    cpf: '000.000.001-91',
+    cpf: '910.000.001-92',
     role: 'Administrador'
   },
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
-    cpf: '000.000.000-01',
+    cpf: '910.000.002-73',
     role: 'Gerente'
   },
   atendente: {
@@ -69,6 +69,7 @@ const PANEL_HOME_BY_ROLE = {
 function resolvePanelRole(session) {
   if (!session) return null;
   const token = session.token || session.accessToken;
+  if (!token) return null;
   if (session.backendRole) return PANEL_ROLE_BY_BACKEND_ROLE[session.backendRole] || null;
   if (token) return null;
   return Object.prototype.hasOwnProperty.call(PANEL_HOME_BY_ROLE, session.userKey) ? session.userKey : null;

@@ -144,13 +144,13 @@ Quando criar ou alterar tabelas, atualize esse arquivo. O Postgres local executa
 
 Para bancos existentes, aplique manualmente a migracao correspondente em `database/migrations/` antes de usar as novas colunas. A migracao `002_mesa_qr_code_token.sql` adiciona o token exclusivo usado nos QR Codes das mesas.
 Para habilitar o vínculo opcional entre pedidos e clientes, usuários e funcionários, e a associação entre fornecedores e insumos, aplique `003_relacionamentos_clientes_usuarios_fornecedores.sql` em bancos existentes.
-A migracao `006_perfil_gerente.sql` (idempotente) cria o perfil `GERENTE`: promove o usuario de teste `00000000001` de `ADMIN` para `GERENTE`, adiciona o CHECK `chk_usuarios_role`, as colunas `id_usuario` e `motivo` em `pedido_status_historico` e o `token_acesso` (UUID unico) em `pedido`. Aplique em bancos existentes:
+A migracao `006_perfil_gerente.sql` (idempotente) cria o perfil `GERENTE`: promove o usuario de teste `91000000273` de `ADMIN` para `GERENTE`, adiciona o CHECK `chk_usuarios_role`, as colunas `id_usuario` e `motivo` em `pedido_status_historico` e o `token_acesso` (UUID unico) em `pedido`. Aplique em bancos existentes:
 
 ```powershell
 Get-Content database\migrations\006_perfil_gerente.sql | docker compose -f backend-python\docker-compose.yml exec -T db psql -U postgres -d dataplate
 ```
 
-Revise o `UPDATE` do CPF `00000000001` antes de rodar fora do ambiente de desenvolvimento. Ao iniciar, a API tambem cria as colunas que faltarem (sem o CHECK).
+Revise o `UPDATE` do CPF `91000000273` antes de rodar fora do ambiente de desenvolvimento. Ao iniciar, a API tambem cria as colunas que faltarem (sem o CHECK).
 
 Para recriar o banco local do zero:
 
@@ -181,20 +181,20 @@ docker compose -f backend-python\docker-compose.yml up -d --build
 - Header padrao: `Authorization: Bearer <token>`
 - Roles: `ADMIN`, `GERENTE`, `FUNCIONARIO` (Atendente), `CAIXA`, `COZINHA`. Cliente nao tem conta.
 
-O Docker local cria automaticamente estes acessos de teste, todos com senha `admin123`:
+O Docker local cria estes acessos de teste com senhas distintas:
 
-| Perfil | CPF | Tela inicial |
-|---|---|---|
-| Administrador (`ADMIN`, admin padrao) | `000.000.001-91` | `adm.html` |
-| Gerente (`GERENTE`) | `000.000.000-01` | `adm.html` |
-| Atendente | `000.000.000-02` | `atendente.html` |
-| Cozinha | `000.000.000-03` | `cozinha.html` |
-| Caixa | `000.000.000-04` | `pdv.html` |
+| Perfil | CPF | Senha local | Tela inicial |
+|---|---|---|---|
+| Administrador | `910.000.001-92` | `Admin123` | `adm.html` |
+| Gerente | `910.000.002-73` | `Gerente123` | `adm.html` |
+| Atendente | `910.000.003-54` | `Atendente123` | `atendente.html` |
+| Cozinha | `910.000.004-35` | `Cozinha123` | `cozinha.html` |
+| Caixa | `910.000.005-16` | `Caixa123` | `pdv.html` |
 
-Esses CPFs simplificados sao exclusivos dos acessos de teste; o cadastro normal continua validando CPF.
-O administrador padrao `000.000.001-91` e os usuarios existentes continuam disponiveis.
-O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados. Excecao: com os acessos de teste habilitados, o `000.000.000-01` que ainda for `ADMIN` passa a `GERENTE`.
-`DEFAULT_TEST_USERS_ENABLED=true` habilita os quatro acessos `000.000.000-0x` (configurado no Docker local); o administrador padrao e criado mesmo sem ele.
+Esses CPFs sao sinteticos, com digitos verificadores validos; nao identificam pessoas fornecidas para este projeto.
+O administrador padrao `910.000.001-92` e os usuarios existentes continuam disponiveis.
+O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados. Excecao: com os acessos de teste habilitados, o `910.000.002-73` que ainda for `ADMIN` passa a `GERENTE`.
+`DEFAULT_TEST_USERS_ENABLED=true` habilita os quatro acessos operacionais acima (configurado no Docker local); o administrador padrao e criado mesmo sem ele.
 Fora do Docker local, esse seed de teste fica desligado por padrao.
 `DEFAULT_ADMIN_ENABLED=false` desliga toda a criacao automatica de acessos.
 
@@ -241,3 +241,31 @@ Eventos publicados:
 - Nao depender de Python instalado manualmente no PC de cada pessoa para rodar a aplicacao.
 - Nao usar Fly.io ou Render no fluxo local.
 - Nao editar dados diretamente sem refletir mudancas estruturais em `database/schema.sql`.
+
+
+## Edicao operacional de pedidos
+
+Cozinha e Gerente podem usar `PUT /api/pedidos/{id}/itens` para pedidos
+RECEBIDO, EM_PREPARO ou PRONTO. Enviar `itens`, `observacoes`, `motivo` e a
+versao `atualizadoEm` retornada pela consulta. Edicao de PRONTO retorna ao
+preparo; versao desatualizada retorna 409. O servidor recalcula o total e
+publica PEDIDO_ATUALIZADO. A espera do atendente exclui pedidos SERVIDO.
+
+A migracao `007_fotos_catalogo_demo.sql` corrige fotos dos produtos de teste;
+o Docker Compose ja a executa na inicializacao. Fontes das fotografias:
+`frontend/images/menu/FONTES.md`.
+
+Teste visual e funcional das tres telas (servicos locais em execucao):
+
+```powershell
+node scripts/check-operacao.mjs
+```
+
+Teste transacional de edicao no PostgreSQL local:
+
+```powershell
+docker cp backend-python/tests/test_edicao_pedido.py backend-python-api-1:/tmp/test_edicao_pedido.py
+docker exec -e PYTHONPATH=/app backend-python-api-1 python /tmp/test_edicao_pedido.py
+```
+
+Analise e sugestoes priorizadas: `docs/analise-melhorias-operacao.md`.

@@ -14,6 +14,9 @@
   <link rel="manifest" href="../manifest.webmanifest" />
   <style>[data-roles][hidden] { display: none !important; }</style>
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
+  <link rel="stylesheet" href="../Css/operacao.css?v=20261103-3" />
+  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <link rel="stylesheet" href="../Css/pdv-operacao.css?v=20261103-1" />
 </head>
 <body>
 
@@ -65,7 +68,7 @@
   <div id="pdvCobrancasBanner" hidden></div>
 
   <!-- MODAL PROCESSAR PAGAMENTO -->
-  <div id="pdvPgtoModal" class="pgto-modal-overlay" hidden>
+  <div id="pdvPgtoModal" class="pgto-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pdvPgtoTitulo" hidden>
     <div class="pgto-modal-box">
       <div class="pgto-modal-header">
         <div>
@@ -99,6 +102,7 @@
         </button>
       </div>
 
+      <p id="pdvPgtoEscolhido" class="payment-choice-summary" aria-live="polite">Selecione uma forma de pagamento</p>
       <div class="pgto-modal-actions">
         <button id="pdvPgtoConfirmar" class="btn-action btn-success pgto-confirm-btn" disabled onclick="confirmarPagamentoMesa()">
           Confirmar Pagamento
@@ -130,13 +134,7 @@
           <input type="search" id="produtoSearch" placeholder="Buscar produto..." autocomplete="off" />
         </div>
         <nav class="categorias-bar" id="categoriasFiltro">
-          <button class="cat-btn is-active" data-cat="todos">Todos</button>
-          <button class="cat-btn" data-cat="hamburguer">Lanches</button>
-          <button class="cat-btn" data-cat="massas">Massas</button>
-          <button class="cat-btn" data-cat="principais">Principais</button>
-          <button class="cat-btn" data-cat="entradas">Entradas</button>
-          <button class="cat-btn" data-cat="sobremesas">Sobremesas</button>
-          <button class="cat-btn" data-cat="bebidas">Bebidas</button>
+          <button type="button" class="cat-btn is-active" data-cat="todos">Todos</button>
         </nav>
       </div>
 
@@ -153,15 +151,22 @@
 
       <!-- Abas de alto nível -->
       <div class="pdv-top-tabs">
-        <button class="pdv-top-tab is-active" data-top="pdv">Venda</button>
-        <button class="pdv-top-tab" data-top="historico">Historico</button>
+        <button class="pdv-top-tab is-active" data-top="pdv" aria-pressed="true">Nova venda</button>
+        <button class="pdv-top-tab" data-top="pendencias" aria-pressed="false">Pendências <span id="pendingCount" class="pending-count">0</span></button>
+        <button class="pdv-top-tab" data-top="historico" aria-pressed="false">Histórico</button>
       </div>
+
+      <div id="vistaPendencias" hidden>
+        <div class="pending-toolbar"><div><strong>Operação do caixa</strong><p id="pendingSummary" aria-live="polite">Carregando pendências...</p></div><button type="button" class="pendentes-refresh" onclick="atualizarPendencias()" aria-label="Atualizar todas as pendências">Atualizar</button></div>
+        <label class="pending-search-label" for="pendingSearch">Buscar mesa, pedido ou cliente</label>
+        <input id="pendingSearch" type="search" placeholder="Ex.: mesa 107 ou nome do cliente" />
+        <div id="pendingEmpty" class="order-empty" hidden><p>Nenhuma pendência no momento.</p></div>
+        <p id="pendingSearchEmpty" class="pending-search-empty" hidden>Nenhuma pendência corresponde à busca.</p>
 
       <!-- Contas aguardando pagamento -->
       <div id="pendentesSection" hidden>
         <div class="pendentes-header">
-          <span class="pendentes-title">Aguardando pagamento</span>
-          <button class="pendentes-refresh" onclick="atualizarPendencias()">Atualizar</button>
+          <span class="pendentes-title">Contas a receber <span id="tablesPendingCount">0</span></span>
         </div>
         <div id="pendentesGrid" class="pendentes-grid"></div>
       </div>
@@ -169,11 +174,12 @@
       <!-- Vendas de balcao prontas para entrega -->
       <div id="balcaoProntosSection" hidden>
         <div class="pendentes-header">
-          <span class="pendentes-title">Balcao pronto para entrega</span>
-          <button class="pendentes-refresh" onclick="atualizarPendencias()">Atualizar</button>
+          <span class="pendentes-title">Retiradas no balcão <span id="counterReadyCount">0</span></span>
         </div>
         <div id="balcaoProntosGrid" class="pendentes-grid"></div>
       </div>
+
+      </div><!-- /vistaPendencias -->
 
       <!-- Vista PDV -->
       <div id="vistaPdv">
@@ -359,6 +365,6 @@
 
   <div id="toastArea" aria-live="polite"></div>
 
-  <script src="../JavaScript/pdv.js?v=20261103-rbac"></script>
+  <script src="../JavaScript/pdv.js?v=20261103-pdv-4"></script>
 </body>
 </html>

@@ -45,8 +45,8 @@ Login do banco no Adminer:
 
 Usuario de teste ja criado no banco local:
 
-- CPF: `00000000000`
-- Senha: `admin123`
+- Gerente: CPF `91000000273`, senha `Gerente123`.
+- Demais perfis e roteiro: [Teste local](docs/teste-local.md).
 
 ## Estrutura
 

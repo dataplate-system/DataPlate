@@ -301,6 +301,13 @@ class PedidoStatusUpdateRequest(BaseModel):
     motivo: str | None = Field(default=None, max_length=255)
 
 
+class PedidoEditRequest(BaseModel):
+    itens: list[PedidoItemRequest] = Field(min_length=1, max_length=100)
+    observacoes: str | None = Field(default=None, max_length=2000)
+    motivo: str = Field(min_length=3, max_length=255)
+    atualizadoEm: datetime
+
+
 class PedidoItemResponse(BaseModel):
     produtoId: int
     nomeProduto: str
@@ -317,6 +324,7 @@ class PedidoResponse(BaseModel):
     origem: str
     status: PedidoStatusNome
     dataHora: datetime
+    atualizadoEm: datetime | None = None
     valorTotal: float
     observacoes: str | None
     itens: list[PedidoItemResponse]

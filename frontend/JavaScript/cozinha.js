@@ -181,9 +181,8 @@ function loadOperationalState() {
 
 // backendRole manda; sem ele (modo demo, sem token) vale o userKey
 function sessionRoleKey(session) {
-  if (!session) return null;
+  if (!session?.token) return null;
   if (session.backendRole) return ROLE_TO_KEY[session.backendRole] || null;
-  if (!session.token && HOME_BY_KEY[session.userKey]) return session.userKey;
   return null;
 }
 
@@ -361,10 +360,13 @@ function formatElapsed(value) {
   const minutes = elapsedMinutes(value);
   if (minutes < 1) return 'agora';
   if (minutes === 1) return '1 min';
-  return `${minutes} min`;
+  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ${minutes % 60}min`;
+  return `${Math.floor(minutes / 1440)}d ${Math.floor(minutes % 1440 / 60)}h`;
 }
 
 function getSlaState(order) {
+  if (!ACTIVE_STATUSES.includes(order.status)) return { level: 'ok', label: 'Encerrado', minutes: 0 };
   const limits = SLA_LIMITS[order.status] || SLA_LIMITS.RECEBIDO;
   const minutes = elapsedMinutes(order.dataHora);
   if (minutes >= limits.late) return { level: 'late', label: 'Atrasado', minutes };
@@ -462,15 +464,6 @@ function getFilteredOrders() {
   const priority = document.getElementById('priorityFilter')?.value || '';
   const sort = document.getElementById('sortFilter')?.value || 'oldest';
 
-  console.log({
-    search,
-    status,
-    priority,
-    sort,
-    pedidos: kitchenOrders
-  });
-
-
   return kitchenOrders
     .filter((order) => ACTIVE_STATUSES.includes(order.status))
     .filter((order) => !status || order.status === status)
@@ -566,7 +559,7 @@ function buildCard(order) {
         <div class="card-topline">
           <strong>Pedido #${escapeHtml(order.id)} - ${escapeHtml(origemPedido(order))}</strong>
           <span class="status-badge ${meta.badgeClass || ''}">${escapeHtml(meta.label || order.status)}</span>
-          <span class="time-chip sla-${sla.level}">${formatElapsed(order.dataHora)}</span>
+          ${ACTIVE_STATUSES.includes(order.status) ? `<span class="time-chip sla-${sla.level}">${formatElapsed(order.dataHora)}</span>` : ''}
         </div>
         <div class="card-items">
           ${
@@ -588,7 +581,9 @@ function buildCard(order) {
           <span class="card-time-label">${formatTime(order.dataHora)} &bull; ${formatCurrency(order.valorTotal)}</span>
         </div>` : ''}
       </div>
-      <div class="card-actions">${getAction(order)}</div>
+      <div class="card-actions">${getAction(order)}
+        ${ACTIVE_STATUSES.includes(order.status) && !fallbackMode ? `<button type="button" class="secondary-button" data-edit-order="${order.id}">Alterar pedido</button>` : ''}
+      </div>
     </article>
   `;
 }
@@ -1054,7 +1049,88 @@ function connectKitchenWebSocket() {
   return kitchenSocket;
 }
 
+let editDraft = null;
+let editProducts = [];
+
+async function openOrderEdit(id) {
+  if (fallbackMode) return;
+  try {
+    const [order, products] = await Promise.all([getJson(`/pedidos/${id}`), getJson('/produtos')]);
+    if (!ACTIVE_STATUSES.includes(order.status)) throw new Error('Este pedido já saiu da fila da cozinha.');
+    editDraft = { ...order, itens: order.itens.map(item => ({ ...item })) };
+    editProducts = products;
+    document.getElementById('editOrderTitle').textContent = `Alterar pedido #${order.id} · ${origemPedido(order)}`;
+    document.getElementById('editOrderNotes').value = order.observacoes || '';
+    document.getElementById('editOrderReason').value = '';
+    document.getElementById('editOrderError').textContent = '';
+    document.getElementById('editProductSelect').innerHTML = products.map(p => `<option value="${p.id}">${escapeHtml(p.nome)} · ${formatCurrency(p.preco)}</option>`).join('');
+    renderEditItems();
+    document.getElementById('editOrderDialog').showModal();
+  } catch (error) { showToast(error.message || 'Não foi possível abrir o pedido.', 'error'); }
+}
+
+function renderEditItems() {
+  document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
+    <div class="edit-item"><span>${escapeHtml(item.nomeProduto)}<small>${formatCurrency(item.precoUnitario)} / unidade</small></span>
+    <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.nomeProduto)}" /></label>
+    <button type="button" class="secondary-button" data-remove-edit-item="${index}" aria-label="Remover ${escapeHtml(item.nomeProduto)}">Remover</button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+  renderEditTotal();
+}
+
+function renderEditTotal() {
+  const originalSubtotal = editDraft.itensOriginalSubtotal ?? editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0);
+  editDraft.itensOriginalSubtotal = originalSubtotal;
+  const discount = Math.max(0, originalSubtotal - editDraft.valorTotal);
+  const total = Math.max(0, editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0) - discount);
+  document.getElementById('editOrderTotal').textContent = `Novo total: ${formatCurrency(total)}`;
+}
+
+async function saveOrderEdit(event) {
+  event.preventDefault();
+  const button = document.getElementById('saveEditOrder');
+  const errorEl = document.getElementById('editOrderError');
+  if (button.disabled) return;
+  if (!editDraft.itens.length) { errorEl.textContent = 'Adicione ao menos um produto.'; return; }
+  button.disabled = true;
+  errorEl.textContent = '';
+  try {
+    await putJson(`/pedidos/${editDraft.id}/itens`, {
+      atualizadoEm: editDraft.atualizadoEm,
+      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      observacoes: document.getElementById('editOrderNotes').value,
+      motivo: document.getElementById('editOrderReason').value.trim()
+    });
+    cleanupOrderState(editDraft.id);
+    document.getElementById('editOrderDialog').close();
+    showToast('Pedido alterado. Atendimento e caixa recebem a atualização.', 'success');
+    await loadOrders({ silent: true });
+  } catch (error) { errorEl.textContent = error.message || 'Não foi possível salvar a alteração.'; }
+  finally { button.disabled = false; }
+}
+
 function bindEvents() {
+  document.getElementById('editOrderForm').addEventListener('submit', saveOrderEdit);
+  document.getElementById('closeEditOrder').addEventListener('click', () => document.getElementById('editOrderDialog').close());
+  document.getElementById('addEditItem').addEventListener('click', () => {
+    const id = Number(document.getElementById('editProductSelect').value);
+    const product = editProducts.find(p => p.id === id);
+    if (!product) return;
+    const existing = editDraft.itens.find(i => i.produtoId === id);
+    if (existing) existing.quantidade++;
+    else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-remove-edit-item]');
+    if (!button) return;
+    editDraft.itens.splice(Number(button.dataset.removeEditItem), 1);
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    if (!event.target.matches('[data-edit-quantity]')) return;
+    editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
+    renderEditTotal();
+  });
   document.getElementById('logoutButton')?.addEventListener('click', logout);
   document.getElementById('reloadKitchen')?.addEventListener('click', () => loadOrders());
   document.getElementById('clearFilters')?.addEventListener('click', () => {
@@ -1071,6 +1147,8 @@ function bindEvents() {
   document.getElementById('autoRefresh')?.addEventListener('change', startAutoRefresh);
 
   document.addEventListener('click', (event) => {
+    const edit = event.target.closest('[data-edit-order]');
+    if (edit) { openOrderEdit(Number(edit.dataset.editOrder)); return; }
     const urgent = event.target.closest('[data-toggle-urgent]');
     if (urgent) {
       event.preventDefault();

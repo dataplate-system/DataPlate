@@ -2,12 +2,18 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.security import exigir_admin
+from app.security import exigir_admin, get_usuario_atual
+from app.models import User
 from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthPasswordResetVerifyRequest, AuthRefreshRequest, AuthRegisterRequest, AuthResponse
 from app.services import identify_password_reset, login, refresh, register, request_password_reset, reset_password, verify_password_reset_code
 
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+@router.get("/me")
+def auth_me(usuario: User = Depends(get_usuario_atual)) -> dict:
+    return {"id": usuario.id, "nome": usuario.nome, "cpf": usuario.cpf, "role": usuario.role}
 
 
 @router.post("/login", response_model=AuthResponse)

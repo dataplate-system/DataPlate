@@ -12,11 +12,7 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     return `http://${h}:8081/api`;
   })();
 
-// Modo demonstracao (perfis fixos, sem backend). Desligado por padrao.
-// Para ligar, rode no console: localStorage.setItem('DATAPLATE_DEMO_MODE', 'true')
-// Para desligar:              localStorage.removeItem('DATAPLATE_DEMO_MODE')
-const DEMO_MODE = window.DATAPLATE_DEMO_MODE === true
-  || localStorage.getItem('DATAPLATE_DEMO_MODE') === 'true';
+const DEMO_MODE = false; // Login sempre validado pelo backend.
 
 const adminAuth = window.DataPlateAdminAuth;
 
@@ -42,7 +38,7 @@ const fallbackDemoAdmins = {
   admin: {
     name: 'Administrador',
     initials: 'AD',
-    cpf: '000.000.001-91',
+    cpf: '910.000.001-92',
     password: 'admin123',
     role: 'Administrador',
     userKey: 'admin'
@@ -50,7 +46,7 @@ const fallbackDemoAdmins = {
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
-    cpf: '000.000.000-01',
+    cpf: '910.000.002-73',
     password: 'admin123',
     role: 'Gerente',
     userKey: 'gerente'
@@ -58,7 +54,7 @@ const fallbackDemoAdmins = {
   atendente: {
     name: 'Atendente',
     initials: 'AT',
-    cpf: '000.000.000-02',
+    cpf: '910.000.003-54',
     password: 'admin123',
     role: 'Operacional',
     userKey: 'atendente'
@@ -66,7 +62,7 @@ const fallbackDemoAdmins = {
   cozinha: {
     name: 'Cozinha',
     initials: 'CZ',
-    cpf: '000.000.000-03',
+    cpf: '910.000.004-35',
     password: 'admin123',
     role: 'Pedidos e preparo',
     userKey: 'cozinha'
@@ -74,7 +70,7 @@ const fallbackDemoAdmins = {
   caixa: {
     name: 'Caixa',
     initials: 'CX',
-    cpf: '000.000.000-04',
+    cpf: '910.000.005-16',
     password: 'admin123',
     role: 'PDV e vendas',
     userKey: 'caixa'
@@ -431,27 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (error) {
       console.warn('[adm-login] falha no login backend:', error);
 
-      if (!DEMO_MODE || error?.unknownProfile) {
-        // Sem fallback local: nunca cria sessao sem token
-        setLoginError(error.message || 'Nao foi possivel entrar. Tente novamente.');
-        if (submitButton) submitButton.disabled = false;
-        return;
-      }
-    }
-
-    // Modo demonstracao: perfis fixos, sem token do backend
-    const admin = findAdmin(cpf, password);
-
-    if (!admin) {
-      setLoginError('CPF ou senha invalidos para o acesso administrativo.');
-      if (submitButton) submitButton.disabled = false;
-      return;
-    }
-
-    try {
-      startSession(admin, remember);
-    } catch (error) {
-      setLoginError(error.message || UNKNOWN_PROFILE_MESSAGE);
+      setLoginError(error.message || 'Nao foi possivel entrar. Tente novamente.');
       if (submitButton) submitButton.disabled = false;
     }
   });

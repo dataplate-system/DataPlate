@@ -22,6 +22,14 @@ let refreshTimer = null;
 let wsLoadTimer  = null;
 let _lastOrdersHash = '';
 let _lastMesasHash  = '';
+let mesaStatusFilter = '';
+
+function observacoesOperacionais(value) {
+  return String(value || '').split('|').map(part => part.trim()
+    .replace(/^Venda no caixa - pagamento:\s*\S+(?:\s*-\s*)?/i, ''))
+    .filter(part => part && !/^(Massa de teste 2026|Demonstracao local|Demonstração local)$/i.test(part)
+      && !/^(Pagamento|Desconto):/i.test(part)).join(' · ');
+}
 
 // ── Sessao ─────────────────────────────────────────────────────────
 const ROLE_TO_USER_KEY = {
@@ -67,7 +75,7 @@ function goToLogin() {
 function ensureSession() {
   const s = readSession();
   const userKey = resolveUserKey(s);
-  if (!s || !userKey) { goToLogin(); return null; }
+  if (!s?.token || !userKey) { goToLogin(); return null; }
   if (!ALLOWED_USER_KEYS.includes(userKey)) {
     window.location.replace(HOME_BY_USER_KEY[userKey]);
     return null;
@@ -180,6 +188,7 @@ function podeCancelar(status) {
 
 // ── Card de pedido ────────────────────────────────────────────────
 function buildCard(order) {
+  const observacoes = observacoesOperacionais(order.observacoes);
   const mins = elapsedMin(order.dataHora);
   const late = (order.status === 'RECEBIDO' && mins > 15) || (order.status === 'EM_PREPARO' && mins > 25);
   const itensHtml = (order.itens || []).map(i =>
@@ -193,11 +202,11 @@ function buildCard(order) {
   const cancelBtn = podeCancelar(order.status)
     ? `<button class="action-button cancel-btn" type="button" onclick="abrirCancelarModal(${order.id})">Cancelar</button>`
     : '';
-  // Balcao pronto e entregue pelo Caixa (PRONTO -> ENTREGUE); o Atendente so serve mesas.
-  const actions = order.status === 'PRONTO' && order.numeroMesa
+  // Mesa e servida; balcao tem retirada separada, validada pelo servidor.
+  const actions = order.status === 'PRONTO'
     ? `<div class="card-actions">
         <button class="action-button deliver" type="button" onclick="despachar(${order.id})">
-          Despachar para ${esc(origem(order))}
+          ${order.numeroMesa ? `Despachar para ${esc(origem(order))}` : 'Confirmar retirada no balcão'}
         </button>
         ${cancelBtn}
       </div>`
@@ -216,7 +225,7 @@ function buildCard(order) {
           <span class="sla-chip">${formatTime(order.dataHora)}</span>
         </div>
       </div>
-      ${order.observacoes ? `<div class="card-obs">Obs: ${esc(order.observacoes)}</div>` : ''}
+      ${observacoes ? `<div class="card-obs"><strong>Observação:</strong> ${esc(observacoes)}</div>` : ''}
       ${actions}
     </article>`;
 }
@@ -295,16 +304,16 @@ function buildMesaStatusSummary(mesas) {
     return acc;
   }, {});
   return statuses.map(([status, label]) => `
-    <div class="mesa-summary-card ${status}">
+    <button type="button" class="mesa-summary-card ${status}${mesaStatusFilter === status ? ' is-selected' : ''}" data-mesa-filter="${status}" aria-pressed="${mesaStatusFilter === status}" aria-controls="mesasGrid">
       <strong>${counts[status] || 0}</strong>
       <span>${label}</span>
-    </div>`).join('');
+    </button>`).join('');
 }
 
 // -- Renderizacao ----------------------------------------------------
 function render() {
-  const ordersHash = allOrders.map(o => `${o.id}:${o.status}`).join(',');
-  const mesasHash  = allMesas.map(m => `${m.id}:${m.status}`).join(',');
+  const ordersHash = JSON.stringify(allOrders) + Math.floor(Date.now() / 60000);
+  const mesasHash  = JSON.stringify(allMesas) + mesaStatusFilter;
   if (ordersHash === _lastOrdersHash && mesasHash === _lastMesasHash) return;
   _lastOrdersHash = ordersHash;
   _lastMesasHash  = mesasHash;
@@ -324,9 +333,8 @@ function render() {
   setText('countPreparo',  preparo.length);
   setText('countPronto',   prontos.length);
 
-  // Tempo medio (inclui SERVIDO pois ainda estao na conta)
-  const servidos = allOrders.filter(p => p.status === 'SERVIDO');
-  const ativos = [...recebidos, ...preparo, ...prontos, ...servidos];
+  // A espera termina ao servir; conta em aberto nao representa espera da cozinha.
+  const ativos = [...recebidos, ...preparo, ...prontos];
   if (ativos.length) {
     const avg = Math.round(ativos.reduce((s, o) => s + elapsedMin(o.dataHora), 0) / ativos.length);
     setText('statTempo', avg + ' min');
@@ -359,9 +367,15 @@ function render() {
   // Mesas
   const grid = document.getElementById('mesasGrid');
   if (grid) {
-    grid.innerHTML = allMesas.length
-      ? allMesas.map(buildMesaCard).join('')
-      : '<div class="empty-state">Nenhuma mesa cadastrada</div>';
+    const priority = { aguardando_pagamento: 0, ocupada: 1, reservada: 2, livre: 3, manutencao: 4 };
+    const visible = allMesas.filter(m => !mesaStatusFilter || normalizarStatusMesa(m.status) === mesaStatusFilter)
+      .sort((a, b) => (priority[normalizarStatusMesa(a.status)] ?? 5) - (priority[normalizarStatusMesa(b.status)] ?? 5) || a.numero - b.numero);
+    grid.innerHTML = visible.length
+      ? visible.map(buildMesaCard).join('')
+      : '<div class="empty-state">Nenhuma mesa neste status</div>';
+    setText('mesaFilterResult', mesaStatusFilter ? `${visible.length} mesa(s) no filtro selecionado` : `Todas as ${allMesas.length} mesas · pendências de pagamento primeiro`);
+    const clear = document.getElementById('clearMesaFilter');
+    if (clear) clear.hidden = !mesaStatusFilter;
   }
   const statusSummary = document.getElementById('mesaStatusSummary');
   if (statusSummary) statusSummary.innerHTML = buildMesaStatusSummary(allMesas);
@@ -446,10 +460,12 @@ window.despachar = async function(orderId) {
     return;
   }
 
-  // Atendente so serve (PRONTO -> SERVIDO); ENTREGUE e registrado pelo caixa no pagamento
+  // Retirada de balcao usa o pagamento ja registrado; nao cobra novamente.
   try {
-    await putJson(`/pedidos/${orderId}/status`, { status: 'SERVIDO' });
-    showToast(`Pedido #${orderId} entregue na mesa.`, 'success');
+    if (!order) return;
+    if (order.numeroMesa) await putJson(`/pedidos/${orderId}/status`, { status: 'SERVIDO' });
+    else await putJson(`/pedidos/${orderId}/despacho`, {});
+    showToast(`Pedido #${orderId} ${order.numeroMesa ? 'entregue na mesa' : 'retirado no balcão'}.`, 'success');
   } catch (e) {
     showToast(e.message || 'Erro ao despachar.', 'error');
   }
@@ -945,6 +961,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('logoutButton').addEventListener('click', logout);
+  document.getElementById('mesaStatusSummary').addEventListener('click', event => {
+    const button = event.target.closest('[data-mesa-filter]');
+    if (!button) return;
+    mesaStatusFilter = mesaStatusFilter === button.dataset.mesaFilter ? '' : button.dataset.mesaFilter;
+    render();
+  });
+  document.getElementById('clearMesaFilter').addEventListener('click', () => { mesaStatusFilter = ''; render(); });
   document.getElementById('reloadPanel').addEventListener('click', () => loadData());
 
   document.getElementById('mesaModal')?.addEventListener('click', (e) => {
@@ -977,6 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateClock();
   window.setInterval(updateClock, 1000);
+  window.setInterval(render, 30000);
 
   loadData();
   refreshTimer = window.setInterval(() => loadData({ silent: true }), AUTO_REFRESH_MS);

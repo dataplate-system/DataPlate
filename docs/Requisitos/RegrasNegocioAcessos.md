@@ -562,3 +562,23 @@ O recorte abaixo já está implementado. Os itens marcados como *(funcionalidade
    - `adm.js`: o perfil vem de `session.backendRole` (no modo demonstração, do `userKey`). `SECTION_ROLES` e o atributo `data-roles` controlam menu, atalhos, busca de telas e `navigateTo`. Atendente, Caixa e Cozinha são redirecionados à própria tela inicial. Os perfis do select de usuários vêm de `USER_ACCESS_TYPE_TO_ROLE` (5 perfis; o Gerente vê só os operacionais), e a situação usa o `ativo` real.
    - `atendente.js`, `pdv.js` e `cozinha.js`: conferem o perfil ao carregar e abrem o WebSocket com `?token=`. `atendente.js` e `pdv.js` usam `PATCH` para status e reserva de mesa. A Cozinha para em PRONTO, o Atendente marca SERVIDO e o Caixa marca ENTREGUE com forma de pagamento.
    - `user.js`: a mesa vem só do `mesaToken` do QR Code; o pedido envia `mesaToken` e guarda o `tokenAcesso` para a consulta e o WebSocket.
+
+
+## Complemento operacional — 03/11/2026: edição e despacho
+
+Cozinha e Gerente podem alterar itens, quantidades e observações dos pedidos
+RECEBIDO, EM_PREPARO e PRONTO por `PUT /api/pedidos/{id}/itens`. Esta regra
+amplia as permissões da cozinha descritas acima. Os demais perfis não recebem
+essa permissão. Pedido PRONTO alterado retorna a EM_PREPARO para conferência.
+
+Motivo obrigatório e registro de usuário/data/resumo no histórico existente.
+O total é recalculado no servidor; preços já contratados e desconto absoluto
+existente são preservados. Novos produtos usam o preço atual do cadastro.
+A versão atualizadoEm é obrigatória e a gravação utiliza trava de linha;
+versão antiga ou pedido fora da fila da cozinha retorna HTTP 409.
+
+Atendente e Gerente também podem confirmar retirada de balcão já pago por
+`PUT /api/pedidos/{id}/despacho`. Exige pedido PRONTO sem mesa e pagamento
+previamente registrado pelo caixa. A operação registra ENTREGUE no histórico,
+sem alterar valor, forma de pagamento ou gerar outra cobrança. As permissões
+do endpoint geral de status para cobrança permanecem com Caixa/Gerente.

@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
+  <link rel="stylesheet" href="../Css/operacao.css?v=20261103-3" />
+  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
 </head>
 <body>
   <div class="atendente-shell">
@@ -158,6 +160,7 @@
             <span class="mesa-legend-item reservada"><i></i>Reservada</span>
             <span class="mesa-legend-item aguardando_pagamento"><i></i>Aguardando pagamento</span>
           </div>
+          <div class="mesa-filter-feedback"><span id="mesaFilterResult" aria-live="polite"></span><button id="clearMesaFilter" class="secondary-button" type="button" hidden>Mostrar todas</button></div>
           <div class="mesas-grid" id="mesasGrid"></div>
         </section>
       </div>
@@ -253,6 +256,6 @@
     </div>
   </div>
 
-  <script src="../JavaScript/atendente.js?v=20261103-rbac" defer></script>
+  <script src="../JavaScript/atendente.js?v=20261103-atendimento-3" defer></script>
 </body>
 </html>

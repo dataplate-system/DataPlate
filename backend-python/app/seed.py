@@ -6,18 +6,18 @@ no painel e criar os demais usuarios. Tambem aplica, de forma idempotente, as
 colunas exigidas pelos modelos atuais (ver database/migrations/006_perfil_gerente.sql).
 
 Credenciais padrao (apenas para desenvolvimento):
-    CPF:   000.000.001-91   (CPF de teste valido)
-    Senha: admin123
+    CPF:   910.000.001-92   (CPF de teste valido)
+    Senha: Admin123
 
 Para mudar, defina variaveis de ambiente no docker-compose ou no .env:
     DEFAULT_ADMIN_CPF, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_NOME
 O Docker local tambem habilita DEFAULT_TEST_USERS_ENABLED=true para criar:
-    000.000.000-01: Gerente   (perfil GERENTE)
-    000.000.000-02: Atendente (perfil FUNCIONARIO)
-    000.000.000-03: Cozinha   (perfil COZINHA)
-    000.000.000-04: Caixa     (perfil CAIXA)
-Todos usam admin123. Esses CPFs simplificados servem apenas para testes de login.
-Bancos antigos em que o usuario 000.000.000-01 era ADMIN sao corrigidos pela
+    910.000.002-73: Gerente   (perfil GERENTE)
+    910.000.003-54: Atendente (perfil FUNCIONARIO)
+    910.000.004-35: Cozinha   (perfil COZINHA)
+    910.000.005-16: Caixa     (perfil CAIXA)
+Senhas por perfil em DEFAULT_TEST_PASSWORDS. Os CPFs sao sinteticos com digitos verificadores validos.
+Bancos antigos em que o usuario 910.000.002-73 era ADMIN sao corrigidos pela
 migracao 006_perfil_gerente.sql.
 Para desligar (producao):
     DEFAULT_ADMIN_ENABLED=false
@@ -36,21 +36,32 @@ from app.security import hash_password
 
 logger = logging.getLogger("uvicorn.error")
 
-DEFAULT_ADMIN_CPF = "00000000191"
-DEFAULT_ADMIN_PASSWORD = "admin123"
+DEFAULT_ADMIN_CPF = "91000000192"
+LEGACY_TEST_CPFS = {
+    "91000000192": "00000000191", "91000000273": "00000000001",
+    "91000000354": "00000000002", "91000000435": "00000000003",
+    "91000000516": "00000000004",
+}
+DEFAULT_ADMIN_PASSWORD = "Admin123"
 DEFAULT_ADMIN_NOME = "Administrador"
 DEFAULT_TEST_USERS = (
-    ("Gerente", "00000000001", Role.GERENTE),
-    ("Atendente", "00000000002", Role.FUNCIONARIO),
-    ("Cozinha", "00000000003", Role.COZINHA),
-    ("Caixa", "00000000004", Role.CAIXA),
+    ("Gerente", "91000000273", Role.GERENTE),
+    ("Atendente", "91000000354", Role.FUNCIONARIO),
+    ("Cozinha", "91000000435", Role.COZINHA),
+    ("Caixa", "91000000516", Role.CAIXA),
 )
+DEFAULT_TEST_PASSWORDS = {
+    Role.GERENTE: "Gerente123",
+    Role.FUNCIONARIO: "Atendente123",
+    Role.COZINHA: "Cozinha123",
+    Role.CAIXA: "Caixa123",
+}
 # Funcionario de demonstracao vinculado a cada usuario de teste: (cpf do usuario, cargo, salario)
 DEFAULT_TEST_FUNCIONARIOS = (
-    ("00000000001", "Gerente", Decimal("5200.00")),
-    ("00000000002", "Atendente", Decimal("2100.00")),
-    ("00000000003", "Cozinheiro", Decimal("2600.00")),
-    ("00000000004", "Caixa", Decimal("2200.00")),
+    ("91000000273", "Gerente", Decimal("5200.00")),
+    ("91000000354", "Atendente", Decimal("2100.00")),
+    ("91000000435", "Cozinheiro", Decimal("2600.00")),
+    ("91000000516", "Caixa", Decimal("2200.00")),
 )
 
 # Colunas usadas pelos modelos; mesmo conteudo da migracao 006 (sem o CHECK de perfil).
@@ -121,13 +132,22 @@ def ensure_default_users() -> None:
     users = [(nome, cpf, Role.ADMIN, senha)]
     test_users_enabled = os.getenv("DEFAULT_TEST_USERS_ENABLED", "false").strip().lower() in {"1", "true", "yes"}
     if test_users_enabled:
-        users.extend((nome, cpf, role, DEFAULT_ADMIN_PASSWORD) for nome, cpf, role in DEFAULT_TEST_USERS)
+        users.extend((nome, cpf, role, DEFAULT_TEST_PASSWORDS[role]) for nome, cpf, role in DEFAULT_TEST_USERS)
 
     generator = get_db()
     db = next(generator)
     try:
         for user_nome, user_cpf, user_role, user_senha in users:
             if db.scalar(select(User).where(User.cpf == user_cpf)) is not None:
+                continue
+
+            antigo = db.scalar(select(User).where(User.cpf == LEGACY_TEST_CPFS.get(user_cpf, "")))
+            if antigo is not None:
+                antigo.cpf = user_cpf
+                antigo.senha_hash = hash_password(user_senha)
+                if antigo.funcionario is not None:
+                    antigo.funcionario.cpf = _format_cpf(user_cpf)
+                db.commit()
                 continue
 
             db.add(
@@ -146,7 +166,7 @@ def ensure_default_users() -> None:
             # O usuario de teste "Gerente" era criado como ADMIN em versoes anteriores.
             db.execute(
                 text("UPDATE usuarios SET role = :novo WHERE cpf = :cpf AND role = :antigo"),
-                {"novo": Role.GERENTE.value, "cpf": "00000000001", "antigo": Role.ADMIN.value},
+                {"novo": Role.GERENTE.value, "cpf": "91000000273", "antigo": Role.ADMIN.value},
             )
             db.commit()
             _ensure_test_funcionarios(db)

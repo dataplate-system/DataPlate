@@ -1,4 +1,5 @@
 import math
+import re
 import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -13,7 +14,7 @@ from app.db import get_db
 from app.models import Cliente, Mesa, Pedido, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto, Role, User
 from app.realtime import manager
 from app.security import exigir_perfis, get_usuario_atual, get_usuario_opcional
-from app.schemas import PedidoCreateRequest, PaginatedPedidoResponse, PedidoResponse, PedidoStatusUpdateRequest
+from app.schemas import PedidoCreateRequest, PedidoEditRequest, PaginatedPedidoResponse, PedidoResponse, PedidoStatusUpdateRequest
 
 
 STATUS_RECEBIDO_ID = 1
@@ -200,6 +201,88 @@ def obter_pedido(
     return _to_response(pedido, _mesa_map(db))
 
 
+@router.put("/{pedido_id}/itens", response_model=PedidoResponse)
+def editar_pedido(
+    pedido_id: int,
+    request: PedidoEditRequest,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.COZINHA, Role.GERENTE)),
+) -> PedidoResponse:
+    pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
+    if pedido is None:
+        raise HTTPException(status_code=404, detail="Pedido nao encontrado")
+    if pedido.id_status not in (STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID):
+        raise HTTPException(status_code=409, detail="Somente pedidos na fila da cozinha podem ser alterados")
+    if pedido.atualizado_em != request.atualizadoEm:
+        raise HTTPException(status_code=409, detail="O pedido mudou. Reabra a edicao para carregar a versao atual.")
+    if len({item.produtoId for item in request.itens}) != len(request.itens):
+        raise HTTPException(status_code=422, detail="Agrupe as quantidades de cada produto em uma unica linha")
+    motivo = request.motivo.strip()
+    if len(motivo) < 3:
+        raise HTTPException(status_code=422, detail="Informe o motivo da alteracao")
+    produtos = _resolver_produtos(db, request)
+    anteriores = {item.id_produto: item for item in pedido.itens if not item.cancelado}
+    subtotal_anterior = sum((_subtotal_do_item(item) for item in anteriores.values()), Decimal("0"))
+    desconto = max(Decimal("0"), subtotal_anterior - pedido.valor_total)
+    resumo_anterior = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in anteriores.values())
+    novas_linhas = []
+    for item in request.itens:
+        linha = _criar_item(pedido, produtos[item.produtoId], item.quantidade)
+        if item.produtoId in anteriores:
+            linha.preco_unitario = anteriores[item.produtoId].preco_unitario
+        novas_linhas.append(linha)
+    subtotal = sum((_subtotal_do_item(item) for item in novas_linhas), Decimal("0"))
+    pedido.itens = novas_linhas
+    pedido.valor_total = max(Decimal("0"), subtotal - desconto)
+    obs = _texto_ou_none(request.observacoes)
+    # Dados financeiros registrados pelo caixa nao podem desaparecer na edicao.
+    tags = [parte.strip() for parte in (pedido.observacoes or "").split("|")
+            if parte.strip().startswith(("Pagamento:", "Desconto:"))]
+    for tag in tags:
+        if tag not in (obs or ""):
+            obs = f"{obs} | {tag}" if obs else tag
+    observacoes_anteriores = pedido.observacoes
+    pedido.observacoes = obs
+    # Pedido pronto volta ao preparo para a cozinha conferir a alteracao.
+    if pedido.id_status == STATUS_PRONTO_ID:
+        pedido.id_status = STATUS_EM_PREPARO_ID
+    pedido.atualizado_em = datetime.now()
+    resumo_novo = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in novas_linhas)
+    db.add(PedidoStatusHistorico(
+        id_pedido=pedido.id, status=_to_status(pedido.id_status).value,
+        registrado_em=pedido.atualizado_em, id_usuario=usuario.id,
+        motivo=f"Edicao: {motivo}. Antes: {resumo_anterior}. Depois: {resumo_novo}. Obs anterior: {observacoes_anteriores or '-'}"[:255],
+    ))
+    db.commit()
+    response = _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
+    _publicar_evento("PEDIDO_ATUALIZADO", response)
+    return response
+
+
+@router.put("/{pedido_id}/despacho", response_model=PedidoResponse)
+def despachar_balcao(
+    pedido_id: int,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.FUNCIONARIO, Role.GERENTE)),
+) -> PedidoResponse:
+    pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
+    if pedido is None:
+        raise HTTPException(status_code=404, detail="Pedido nao encontrado")
+    if pedido.id_mesa is not None or pedido.id_status != STATUS_PRONTO_ID:
+        raise HTTPException(status_code=409, detail="Somente pedidos de balcao prontos podem ser retirados")
+    if not re.search(r"(?:Pagamento:|Venda no caixa - pagamento:)\s*(PIX|DEBITO|CREDITO|DINHEIRO)\b", pedido.observacoes or "", re.IGNORECASE):
+        raise HTTPException(status_code=409, detail="Confirme o pagamento no caixa antes de entregar o pedido")
+    pedido.id_status = STATUS_ENTREGUE_ID
+    pedido.atualizado_em = datetime.now()
+    db.add(PedidoStatusHistorico(id_pedido=pedido.id, status="ENTREGUE",
+        registrado_em=pedido.atualizado_em, id_usuario=usuario.id,
+        motivo="Retirada no balcao; pagamento ja registrado pelo caixa"))
+    db.commit()
+    response = _to_response(_get_pedido_with_itens(db, pedido.id), _mesa_map(db))
+    _publicar_evento("PEDIDO_ATUALIZADO", response)
+    return response
+
+
 @router.put("/{pedido_id}/status", response_model=PedidoResponse)
 def atualizar_status(
     pedido_id: int,
@@ -373,7 +456,7 @@ def _resolver_cliente(db: Session, cliente_id: int | None) -> Cliente | None:
     return cliente
 
 
-def _resolver_produtos(db: Session, request: PedidoCreateRequest) -> dict[int, Produto]:
+def _resolver_produtos(db: Session, request: PedidoCreateRequest | PedidoEditRequest) -> dict[int, Produto]:
     produtos: dict[int, Produto] = {}
     for item in request.itens:
         if item.produtoId in produtos:
@@ -503,6 +586,7 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
         origem="CAIXA" if pedido.id_mesa is None else "MESA",
         status=_to_status(pedido.id_status),
         dataHora=pedido.data_hora,
+        atualizadoEm=pedido.atualizado_em,
         valorTotal=float(pedido.valor_total),
         observacoes=pedido.observacoes,
         itens=itens,

@@ -14,6 +14,21 @@ const sessions = {
   caixa: { name: 'Caixa', initials: 'CX', role: 'PDV e vendas', userKey: 'caixa' }
 };
 
+// Os paineis exigem uma sessao real, inclusive nos testes responsivos.
+for (const [key, cpf, senha] of [
+  ['gerente', '91000000273', 'Gerente123'],
+  ['atendente', '91000000354', 'Atendente123'],
+  ['cozinha', '91000000435', 'Cozinha123'],
+  ['caixa', '91000000516', 'Caixa123']
+]) {
+  const response = await fetch(`${process.env.DATAPLATE_API_URL || 'http://localhost:8081/api'}/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf, senha })
+  });
+  if (!response.ok) throw new Error(`Login de teste falhou: ${key}`);
+  const user = await response.json();
+  Object.assign(sessions[key], { token: user.token, backendRole: user.role });
+}
+
 const routes = [
   { name: 'site', path: '/pages/index.html' },
   { name: 'login', path: '/pages/adm-login.html' },
