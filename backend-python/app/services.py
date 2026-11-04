@@ -111,22 +111,51 @@ def reset_password(db: Session, request: AuthPasswordResetRequest) -> None:
 
 
 def send_demo_contact_email(request: DemoContactEmailRequest) -> None:
-    message = EmailMessage()
-    message["Subject"] = "DataPlate - recebemos seu pedido de demonstração"
-    message["To"] = request.email
-    message.set_content(
+    settings = get_settings()
+    preferencia = "E-mail" if request.preferencia == "email" else "Telefone"
+
+    # Aviso para a equipe: obrigatorio, o pedido so conta como enviado se ele sair.
+    aviso = EmailMessage()
+    aviso["Subject"] = f"DataPlate - novo pedido de demonstração: {request.nome}"
+    aviso["To"] = settings.demo_leads_email or settings.smtp_from_email or settings.smtp_user or ""
+    aviso["Reply-To"] = request.email
+    aviso.set_content(
+        "Novo pedido de demonstração pela página inicial.\n\n"
+        f"Nome: {request.nome}\n"
+        f"E-mail: {request.email}\n"
+        f"Telefone: {request.telefone}\n"
+        f"Prefere contato por: {preferencia}\n"
+    )
+    _send_smtp_email(
+        aviso,
+        "Envio de e-mail indisponível. Verifique a configuração SMTP.",
+        "Não foi possível enviar a mensagem. Tente novamente.",
+        "Falha ao enviar aviso de solicitação de demonstração para a equipe.",
+    )
+
+    if request.preferencia != "email":
+        return
+
+    # Confirmacao para o interessado: se falhar, o pedido ja chegou na equipe (erro so vai para o log).
+    confirmacao = EmailMessage()
+    confirmacao["Subject"] = "DataPlate - recebemos seu pedido de demonstração"
+    confirmacao["To"] = request.email
+    confirmacao.set_content(
         f"Olá, {request.nome}!\n\n"
         "Recebemos seu interesse em conhecer o DataPlate. "
         "Nossa equipe entrará em contato em breve para apresentar a solução.\n\n"
         "Atenciosamente,\n"
         "Equipe DataPlate"
     )
-    _send_smtp_email(
-        message,
-        "Envio de e-mail indisponível. Verifique a configuração SMTP.",
-        "Não foi possível enviar a mensagem. Tente novamente.",
-        "Falha ao enviar confirmação de solicitação de demonstração.",
-    )
+    try:
+        _send_smtp_email(
+            confirmacao,
+            "Envio de e-mail indisponível. Verifique a configuração SMTP.",
+            "Não foi possível enviar a confirmação.",
+            "Falha ao enviar confirmação de solicitação de demonstração.",
+        )
+    except HTTPException:
+        pass
 
 
 def _only_digits(value: str) -> str:

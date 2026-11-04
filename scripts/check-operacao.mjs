@@ -18,7 +18,7 @@ let balcao = { ...order, id: 99103, numeroMesa: null, status: 'PRONTO', observac
 const mesas = ['livre', 'ocupada', 'reservada', 'aguardando_pagamento'].map((status, i) => ({ id: i + 1, numero: i + 1, status, localizacao: 'Salão principal', capacidade: 4 }));
 
 async function open(role, cpf, pageName) {
-  const passwords = { atendente: 'Atendente123', cozinha: 'Cozinha123', caixa: 'Caixa123' };
+  const passwords = { atendente: 'admin123', cozinha: 'admin123', caixa: 'admin123' };
   const response = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf, senha: passwords[role] }) });
   assert.equal(response.status, 200);
   const auth = await response.json();
@@ -36,7 +36,7 @@ async function open(role, cpf, pageName) {
 }
 
 try {
-  const { page: atendente, context: ac } = await open('atendente', '91000000354', 'atendente');
+  const { page: atendente, context: ac } = await open('atendente', '00000000003', 'atendente');
   await atendente.waitForFunction(() => document.getElementById('statRecebido')?.textContent === '1');
   assert.equal(await atendente.locator('#statTempo').innerText(), '0 min', 'Pedido servido antigo nao entra na media');
   assert.equal(await atendente.locator('#listRecebido .card-obs').innerText(), 'Observação: Sem cebola');
@@ -76,7 +76,7 @@ try {
   assert.equal(await atendente.locator('#statTempo').innerText(), '--', 'Sem fila, sem tempo de espera');
   await ac.close();
 
-  const { page: cozinha, context: kc } = await open('cozinha', '91000000435', 'cozinha');
+  const { page: cozinha, context: kc } = await open('cozinha', '00000000004', 'cozinha');
   await cozinha.locator('[data-edit-order]').first().click();
   await cozinha.locator('#editOrderDialog').waitFor({ state: 'visible' });
   await cozinha.locator('[data-edit-quantity]').fill('2');
@@ -100,7 +100,7 @@ try {
   }
   await kc.close();
 
-  const { page: pdv, context: pc } = await open('caixa', '91000000516', 'pdv');
+  const { page: pdv, context: pc } = await open('caixa', '00000000005', 'pdv');
   await pdv.locator('.produto-card').first().waitFor();
   await pdv.waitForFunction(() => [...document.querySelectorAll('.produto-img')].every(img => img.complete && img.naturalWidth > 0));
   assert.equal(await pdv.locator('.produto-img-placeholder:visible').count(), 0, 'Catalogo demo com fotografias reais');

@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const api = process.env.DATAPLATE_API_URL || 'http://localhost:8081/api';
 const base = process.env.DATAPLATE_FRONTEND_URL || 'http://localhost:5500';
-const login = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf: '91000000354', senha: 'Atendente123' }) });
+const login = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf: '00000000003', senha: 'admin123' }) });
 assert.equal(login.status, 200);
 const auth = await login.json();
 const headers = { Authorization: `Bearer ${auth.token}` };

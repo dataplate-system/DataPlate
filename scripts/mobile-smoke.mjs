@@ -16,10 +16,10 @@ const sessions = {
 
 // Os paineis exigem uma sessao real, inclusive nos testes responsivos.
 for (const [key, cpf, senha] of [
-  ['gerente', '91000000273', 'Gerente123'],
-  ['atendente', '91000000354', 'Atendente123'],
-  ['cozinha', '91000000435', 'Cozinha123'],
-  ['caixa', '91000000516', 'Caixa123']
+  ['gerente', '00000000002', 'admin123'],
+  ['atendente', '00000000003', 'admin123'],
+  ['cozinha', '00000000004', 'admin123'],
+  ['caixa', '00000000005', 'admin123']
 ]) {
   const response = await fetch(`${process.env.DATAPLATE_API_URL || 'http://localhost:8081/api'}/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf, senha })

@@ -7,11 +7,11 @@ from qrcode.image.svg import SvgPathImage
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from fastapi import Depends, HTTPException
-from app.security import get_usuario_atual
+
 from app.db import get_db
-from app.models import Mesa
-from app.schemas import MesaRequest, MesaResponse, StatusMesaSchema
+from app.models import Mesa, Role, User
+from app.security import exigir_perfis
+from app.schemas import MesaRequest, MesaReservaRequest, MesaResponse, MesaStatusRequest
 
 
 DEFAULT_RESTAURANTE_ID = 1
@@ -232,60 +232,3 @@ def _to_response(mesa: Mesa, ocultar_reserva: bool = False) -> MesaResponse:
         observacoes=mesa.observacoes,
         ativo=mesa.ativo,
     )
-def verificar_permissao(*perfis_permitidos):
-    def validar(usuario=Depends(get_usuario_atual)):
-        if usuario.role not in perfis_permitidos:
-            raise HTTPException(
-                status_code=403,
-                detail="Você não tem permissão para esta ação."
-            )
-
-        return usuario
-
-    return validar
-
-def _normalize_status(value: str | None) -> str:
-    status_value = "livre" if value is None else value.strip().lower()
-
-    status_map = {
-        "disponivel": "livre",
-        "disponível": "livre",
-        "livre": "livre",
-        "reservada": "reservada",
-        "reservado": "reservada",
-        "ocupada": "ocupada",
-        "ocupado": "ocupada",
-        "aguardando_pagamento": "aguardando_pagamento",
-        "manutencao": "manutencao",
-        "manutenção": "manutencao",
-    }
-
-    if status_value not in status_map:
-        raise HTTPException(
-            status_code=422,
-            detail="Status de mesa inválido."
-        )
-
-    return status_map[status_value]
-
-@router.patch("/{mesa_id}/status")
-def atualizar_status(
-    mesa_id: int,
-    dados: StatusMesaSchema,
-    db: Session = Depends(get_db),
-    usuario=Depends(verificar_permissao("ADMIN", "FUNCIONARIO"))
-):
-    mesa = db.get(Mesa, mesa_id)
-    if not mesa or not mesa.ativo:
-        raise HTTPException(status_code=404, detail="Mesa não encontrada ou inativa.")
-
-    try:
-        mesa.status = _normalize_status(dados.status)
-    except HTTPException as e:
-        raise e
-
-    db.add(mesa)
-    db.commit()
-    db.refresh(mesa)
-
-    return _to_response(mesa)

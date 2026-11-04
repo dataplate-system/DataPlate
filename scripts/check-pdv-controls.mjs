@@ -8,7 +8,7 @@ const api = process.env.DATAPLATE_API_URL || 'http://localhost:8081/api';
 const base = process.env.DATAPLATE_FRONTEND_URL || 'http://localhost:5500';
 const output = path.join(os.tmpdir(), 'dataplate-pdv-controls');
 await fs.mkdir(output, { recursive: true });
-const response = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf: '91000000516', senha: 'Caixa123' }) });
+const response = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf: '00000000005', senha: 'admin123' }) });
 assert.equal(response.status, 200);
 const auth = await response.json();
 const headers = { Authorization: `Bearer ${auth.token}` };

@@ -2,11 +2,11 @@
 
 | Perfil | CPF de teste | Senha | Responsabilidade |
 | --- | --- | --- | --- |
-| Administrador | 910.000.001-92 | `Admin123` | Usuarios e configuracoes do sistema |
-| Gerente | 910.000.002-73 | `Gerente123` | Gestao e todos os paineis operacionais |
-| Atendente | 910.000.003-54 | `Atendente123` | Salao, pedidos e despacho |
-| Cozinha | 910.000.004-35 | `Cozinha123` | Preparo e alteracao dos pedidos |
-| Caixa | 910.000.005-16 | `Caixa123` | PDV, cobranca e fechamento de mesas |
+| Administrador | 000.000.000-01 | `admin123` | Usuarios e configuracoes do sistema |
+| Gerente | 000.000.000-02 | `admin123` | Gestao e todos os paineis operacionais |
+| Atendente | 000.000.000-03 | `admin123` | Salao, pedidos e despacho |
+| Cozinha | 000.000.000-04 | `admin123` | Preparo e alteracao dos pedidos |
+| Caixa | 000.000.000-05 | `admin123` | PDV, cobranca e fechamento de mesas |
 
 Estes acessos usam CPFs sinteticos com digitos verificadores validos. O cliente continua
 acessando o cardapio pelo QR Code, sem conta de funcionario.

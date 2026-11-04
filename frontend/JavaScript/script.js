@@ -131,16 +131,20 @@ if (
     const telefone = telefoneInput.value.trim();
 
     leadContactEmailValue.textContent = email;
-    leadContactPhone.href = `tel:${telefone.replace(/\D/g, '')}`;
     leadContactPhoneValue.textContent = telefone;
     leadContactMessage.textContent = '';
+    leadContactEmail.disabled = false;
+    leadContactPhone.disabled = false;
     leadContactDialog.hidden = false;
     leadContactEmail.focus();
   });
 
-  leadContactEmail.addEventListener('click', async function () {
+  // Envia o pedido para a equipe com o canal escolhido; por e-mail o interessado tambem recebe confirmacao.
+  async function enviarPedidoDemonstracao(preferencia) {
     leadContactEmail.disabled = true;
-    leadContactMessage.textContent = 'Enviando mensagem...';
+    leadContactPhone.disabled = true;
+    leadContactMessage.textContent = 'Enviando pedido...';
+    let enviado = false;
 
     try {
       const response = await fetch(`${leadApiBaseUrl}/leads/demo-contact-email`, {
@@ -148,7 +152,9 @@ if (
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome: document.getElementById('leadNome').value.trim(),
-          email: document.getElementById('leadEmail').value.trim()
+          email: document.getElementById('leadEmail').value.trim(),
+          telefone: telefoneInput.value.trim(),
+          preferencia
         })
       });
 
@@ -158,15 +164,23 @@ if (
         throw new Error(typeof detail === 'string' ? detail : 'Não foi possível enviar a mensagem. Tente novamente.');
       }
 
-      leadContactMessage.textContent = 'Mensagem enviada para seu e-mail.';
+      enviado = true;
+      leadContactMessage.textContent = preferencia === 'email'
+        ? 'Pedido enviado! Confira a confirmação no seu e-mail.'
+        : 'Pedido enviado! Entraremos em contato pelo seu telefone.';
     } catch (error) {
       leadContactMessage.textContent = error instanceof TypeError
         ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
         : error.message;
     } finally {
-      leadContactEmail.disabled = false;
+      // Depois de enviado, mantem bloqueado para evitar pedido duplicado.
+      leadContactEmail.disabled = enviado;
+      leadContactPhone.disabled = enviado;
     }
-  });
+  }
+
+  leadContactEmail.addEventListener('click', () => enviarPedidoDemonstracao('email'));
+  leadContactPhone.addEventListener('click', () => enviarPedidoDemonstracao('telefone'));
 
   leadContactClose.addEventListener('click', function () {
     leadContactDialog.hidden = true;

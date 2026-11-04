@@ -6,18 +6,18 @@ no painel e criar os demais usuarios. Tambem aplica, de forma idempotente, as
 colunas exigidas pelos modelos atuais (ver database/migrations/006_perfil_gerente.sql).
 
 Credenciais padrao (apenas para desenvolvimento):
-    CPF:   910.000.001-92   (CPF de teste valido)
-    Senha: Admin123
+    CPF:   000.000.000-01   (CPF de teste)
+    Senha: admin123
 
 Para mudar, defina variaveis de ambiente no docker-compose ou no .env:
     DEFAULT_ADMIN_CPF, DEFAULT_ADMIN_PASSWORD, DEFAULT_ADMIN_NOME
 O Docker local tambem habilita DEFAULT_TEST_USERS_ENABLED=true para criar:
-    910.000.002-73: Gerente   (perfil GERENTE)
-    910.000.003-54: Atendente (perfil FUNCIONARIO)
-    910.000.004-35: Cozinha   (perfil COZINHA)
-    910.000.005-16: Caixa     (perfil CAIXA)
-Senhas por perfil em DEFAULT_TEST_PASSWORDS. Os CPFs sao sinteticos com digitos verificadores validos.
-Bancos antigos em que o usuario 910.000.002-73 era ADMIN sao corrigidos pela
+    000.000.000-02: Gerente   (perfil GERENTE)
+    000.000.000-03: Atendente (perfil FUNCIONARIO)
+    000.000.000-04: Cozinha   (perfil COZINHA)
+    000.000.000-05: Caixa     (perfil CAIXA)
+Todos usam a senha admin123 (DEFAULT_TEST_PASSWORDS). Os CPFs sao sinteticos.
+Bancos antigos em que o usuario 000.000.000-02 era ADMIN sao corrigidos pela
 migracao 006_perfil_gerente.sql.
 Para desligar (producao):
     DEFAULT_ADMIN_ENABLED=false
@@ -36,32 +36,33 @@ from app.security import hash_password
 
 logger = logging.getLogger("uvicorn.error")
 
-DEFAULT_ADMIN_CPF = "91000000192"
+DEFAULT_ADMIN_CPF = "00000000001"
+# CPF atual -> CPF antigo; bancos com o usuario antigo sao migrados (CPF e senha).
 LEGACY_TEST_CPFS = {
-    "91000000192": "00000000191", "91000000273": "00000000001",
-    "91000000354": "00000000002", "91000000435": "00000000003",
-    "91000000516": "00000000004",
+    "00000000001": "91000000192", "00000000002": "91000000273",
+    "00000000003": "91000000354", "00000000004": "91000000435",
+    "00000000005": "91000000516",
 }
-DEFAULT_ADMIN_PASSWORD = "Admin123"
+DEFAULT_ADMIN_PASSWORD = "admin123"
 DEFAULT_ADMIN_NOME = "Administrador"
 DEFAULT_TEST_USERS = (
-    ("Gerente", "91000000273", Role.GERENTE),
-    ("Atendente", "91000000354", Role.FUNCIONARIO),
-    ("Cozinha", "91000000435", Role.COZINHA),
-    ("Caixa", "91000000516", Role.CAIXA),
+    ("Gerente", "00000000002", Role.GERENTE),
+    ("Atendente", "00000000003", Role.FUNCIONARIO),
+    ("Cozinha", "00000000004", Role.COZINHA),
+    ("Caixa", "00000000005", Role.CAIXA),
 )
 DEFAULT_TEST_PASSWORDS = {
-    Role.GERENTE: "Gerente123",
-    Role.FUNCIONARIO: "Atendente123",
-    Role.COZINHA: "Cozinha123",
-    Role.CAIXA: "Caixa123",
+    Role.GERENTE: "admin123",
+    Role.FUNCIONARIO: "admin123",
+    Role.COZINHA: "admin123",
+    Role.CAIXA: "admin123",
 }
 # Funcionario de demonstracao vinculado a cada usuario de teste: (cpf do usuario, cargo, salario)
 DEFAULT_TEST_FUNCIONARIOS = (
-    ("91000000273", "Gerente", Decimal("5200.00")),
-    ("91000000354", "Atendente", Decimal("2100.00")),
-    ("91000000435", "Cozinheiro", Decimal("2600.00")),
-    ("91000000516", "Caixa", Decimal("2200.00")),
+    ("00000000002", "Gerente", Decimal("5200.00")),
+    ("00000000003", "Atendente", Decimal("2100.00")),
+    ("00000000004", "Cozinheiro", Decimal("2600.00")),
+    ("00000000005", "Caixa", Decimal("2200.00")),
 )
 
 # Colunas usadas pelos modelos; mesmo conteudo da migracao 006 (sem o CHECK de perfil).
@@ -166,7 +167,7 @@ def ensure_default_users() -> None:
             # O usuario de teste "Gerente" era criado como ADMIN em versoes anteriores.
             db.execute(
                 text("UPDATE usuarios SET role = :novo WHERE cpf = :cpf AND role = :antigo"),
-                {"novo": Role.GERENTE.value, "cpf": "91000000273", "antigo": Role.ADMIN.value},
+                {"novo": Role.GERENTE.value, "cpf": "00000000002", "antigo": Role.ADMIN.value},
             )
             db.commit()
             _ensure_test_funcionarios(db)

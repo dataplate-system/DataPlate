@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     smtp_user: str | None = None
     smtp_password: str | None = None
     smtp_from_email: str | None = None
+    # Caixa da equipe que recebe os pedidos de demonstracao; vazio usa smtp_from_email/smtp_user.
+    demo_leads_email: str | None = None
 
     allowed_origins: str = Field(
         default="http://localhost:5500,http://127.0.0.1:5500,"

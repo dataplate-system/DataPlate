@@ -3,7 +3,7 @@
 
 UPDATE usuarios
 SET role = 'GERENTE'
-WHERE cpf = '00000000001' AND role = 'ADMIN';
+WHERE cpf = '00000000002' AND role = 'ADMIN';
 
 ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS chk_usuarios_role;
 ALTER TABLE usuarios

@@ -20,13 +20,13 @@ const ADMIN_PANEL_USERS = {
   admin: {
     name: 'Administrador',
     initials: 'AD',
-    cpf: '910.000.001-92',
+    cpf: '000.000.000-01',
     role: 'Administrador'
   },
   gerente: {
     name: 'Gerente Principal',
     initials: 'GP',
-    cpf: '910.000.002-73',
+    cpf: '000.000.000-02',
     role: 'Gerente'
   },
   atendente: {

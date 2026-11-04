@@ -4,11 +4,11 @@ import assert from 'node:assert/strict';
 const api = process.env.DATAPLATE_API_URL || 'http://localhost:8081/api';
 const base = process.env.DATAPLATE_FRONTEND_URL || 'http://localhost:5500';
 const accounts = [
-  ['ADMIN', '91000000192', 'Admin123', 'adm.html'],
-  ['GERENTE', '91000000273', 'Gerente123', 'adm.html'],
-  ['FUNCIONARIO', '91000000354', 'Atendente123', 'atendente.html'],
-  ['COZINHA', '91000000435', 'Cozinha123', 'cozinha.html'],
-  ['CAIXA', '91000000516', 'Caixa123', 'pdv.html'],
+  ['ADMIN', '00000000001', 'admin123', 'adm.html'],
+  ['GERENTE', '00000000002', 'admin123', 'adm.html'],
+  ['FUNCIONARIO', '00000000003', 'admin123', 'atendente.html'],
+  ['COZINHA', '00000000004', 'admin123', 'cozinha.html'],
+  ['CAIXA', '00000000005', 'admin123', 'pdv.html'],
 ];
 const tokens = {};
 async function login(cpf, senha) {

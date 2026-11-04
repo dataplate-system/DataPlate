@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 from decimal import Decimal
 from uuid import UUID
 
@@ -42,8 +43,10 @@ class AuthPasswordResetVerifyRequest(BaseModel):
 class DemoContactEmailRequest(BaseModel):
     nome: str = Field(min_length=1, max_length=120)
     email: str = Field(min_length=5, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    telefone: str = Field(min_length=10, max_length=30)
+    preferencia: Literal["email", "telefone"] = "email"
 
-    @field_validator("nome", "email", mode="before")
+    @field_validator("nome", "email", "telefone", mode="before")
     @classmethod
     def remover_espacos_externos(cls, value: str) -> str:
         return value.strip() if isinstance(value, str) else value

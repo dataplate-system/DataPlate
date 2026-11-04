@@ -144,13 +144,13 @@ Quando criar ou alterar tabelas, atualize esse arquivo. O Postgres local executa
 
 Para bancos existentes, aplique manualmente a migracao correspondente em `database/migrations/` antes de usar as novas colunas. A migracao `002_mesa_qr_code_token.sql` adiciona o token exclusivo usado nos QR Codes das mesas.
 Para habilitar o vínculo opcional entre pedidos e clientes, usuários e funcionários, e a associação entre fornecedores e insumos, aplique `003_relacionamentos_clientes_usuarios_fornecedores.sql` em bancos existentes.
-A migracao `006_perfil_gerente.sql` (idempotente) cria o perfil `GERENTE`: promove o usuario de teste `91000000273` de `ADMIN` para `GERENTE`, adiciona o CHECK `chk_usuarios_role`, as colunas `id_usuario` e `motivo` em `pedido_status_historico` e o `token_acesso` (UUID unico) em `pedido`. Aplique em bancos existentes:
+A migracao `006_perfil_gerente.sql` (idempotente) cria o perfil `GERENTE`: promove o usuario de teste `00000000002` de `ADMIN` para `GERENTE`, adiciona o CHECK `chk_usuarios_role`, as colunas `id_usuario` e `motivo` em `pedido_status_historico` e o `token_acesso` (UUID unico) em `pedido`. Aplique em bancos existentes:
 
 ```powershell
 Get-Content database\migrations\006_perfil_gerente.sql | docker compose -f backend-python\docker-compose.yml exec -T db psql -U postgres -d dataplate
 ```
 
-Revise o `UPDATE` do CPF `91000000273` antes de rodar fora do ambiente de desenvolvimento. Ao iniciar, a API tambem cria as colunas que faltarem (sem o CHECK).
+Revise o `UPDATE` do CPF `00000000002` antes de rodar fora do ambiente de desenvolvimento. Ao iniciar, a API tambem cria as colunas que faltarem (sem o CHECK).
 
 Para recriar o banco local do zero:
 
@@ -185,15 +185,15 @@ O Docker local cria estes acessos de teste com senhas distintas:
 
 | Perfil | CPF | Senha local | Tela inicial |
 |---|---|---|---|
-| Administrador | `910.000.001-92` | `Admin123` | `adm.html` |
-| Gerente | `910.000.002-73` | `Gerente123` | `adm.html` |
-| Atendente | `910.000.003-54` | `Atendente123` | `atendente.html` |
-| Cozinha | `910.000.004-35` | `Cozinha123` | `cozinha.html` |
-| Caixa | `910.000.005-16` | `Caixa123` | `pdv.html` |
+| Administrador | `000.000.000-01` | `admin123` | `adm.html` |
+| Gerente | `000.000.000-02` | `admin123` | `adm.html` |
+| Atendente | `000.000.000-03` | `admin123` | `atendente.html` |
+| Cozinha | `000.000.000-04` | `admin123` | `cozinha.html` |
+| Caixa | `000.000.000-05` | `admin123` | `pdv.html` |
 
 Esses CPFs sao sinteticos, com digitos verificadores validos; nao identificam pessoas fornecidas para este projeto.
-O administrador padrao `910.000.001-92` e os usuarios existentes continuam disponiveis.
-O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados. Excecao: com os acessos de teste habilitados, o `910.000.002-73` que ainda for `ADMIN` passa a `GERENTE`.
+O administrador padrao `000.000.000-01` e os usuarios existentes continuam disponiveis.
+O seed so cria usuarios ausentes, sem substituir senhas ou perfis ja cadastrados. Excecao: com os acessos de teste habilitados, o `000.000.000-02` que ainda for `ADMIN` passa a `GERENTE`.
 `DEFAULT_TEST_USERS_ENABLED=true` habilita os quatro acessos operacionais acima (configurado no Docker local); o administrador padrao e criado mesmo sem ele.
 Fora do Docker local, esse seed de teste fica desligado por padrao.
 `DEFAULT_ADMIN_ENABLED=false` desliga toda a criacao automatica de acessos.
