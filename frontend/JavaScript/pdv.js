@@ -1413,11 +1413,6 @@ let pdvWsRetryTimer = null;
 let pdvWsRetryDelay = 1000;
 let pdvWsReloadTimer = null;
 
-function pdvWsUrl(token) {
-  const sep = WS_BASE_URL.includes('?') ? '&' : '?';
-  return `${WS_BASE_URL}${sep}token=${encodeURIComponent(token)}`;
-}
-
 function agendarReconexaoWs() {
   window.clearTimeout(pdvWsRetryTimer);
   pdvWsRetryTimer = window.setTimeout(connectPdvWebSocket, pdvWsRetryDelay);
@@ -1430,9 +1425,13 @@ function connectPdvWebSocket() {
   if (pdvSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(pdvSocket.readyState)) return;
 
   try {
-    pdvSocket = new WebSocket(pdvWsUrl(token));
+    pdvSocket = new WebSocket(WS_BASE_URL);
 
-    pdvSocket.addEventListener('open', () => { pdvWsRetryDelay = 1000; });
+    pdvSocket.addEventListener('open', () => {
+      // O token vai na primeira mensagem: URLs ficam registradas nos logs de acesso.
+      pdvSocket.send(JSON.stringify({ type: 'AUTH', token }));
+      pdvWsRetryDelay = 1000;
+    });
 
     pdvSocket.addEventListener('message', (event) => {
       let payload = null;

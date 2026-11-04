@@ -1,6 +1,8 @@
 # DataPlate
 
-Sistema web para gestao de restaurantes, com cardapio digital, pedidos em tempo real, painel de cozinha, controle de mesas, cadastros e relatorios.
+[![CI](https://github.com/dataplate-system/DataPlate/actions/workflows/ci.yml/badge.svg)](https://github.com/dataplate-system/DataPlate/actions/workflows/ci.yml)
+
+Sistema web para gestao de restaurantes, com cardapio digital, pedidos em tempo real, painel de cozinha, controle de mesas, baixa de estoque pela ficha tecnica, relatorios e Matriz BCG do cardapio.
 
 ## Stack Atual
 
@@ -47,6 +49,16 @@ Usuario de teste ja criado no banco local:
 
 - Gerente: CPF `00000000002`, senha `admin123`.
 - Demais perfis e roteiro: [Teste local](docs/teste-local.md).
+
+## Testes
+
+Com o Docker local em execucao:
+
+```powershell
+npm test
+```
+
+Requisitos ligados a telas e testes: [Rastreabilidade](docs/rastreabilidade.md).
 
 ## Estrutura
 

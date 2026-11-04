@@ -115,6 +115,7 @@ const SECTION_ROLES = {
   'rel-vendas':          ['admin', 'gerente'],
   'rel-financeiro':      ['admin', 'gerente'],
   'rel-cardapio':        ['admin', 'gerente'],
+  'rel-bcg':             ['admin', 'gerente'],
   'rel-operacional':     ['admin', 'gerente'],
   'config-restaurante':  ['admin', 'gerente'],
   'config-usuarios':     ['admin', 'gerente'],
@@ -213,6 +214,7 @@ const PANEL_IDENTITY = {
       'rel-vendas': 'Relatório em modo consulta.',
       'rel-financeiro': 'Relatório em modo consulta.',
       'rel-cardapio': 'Relatório em modo consulta.',
+      'rel-bcg': 'Relatório em modo consulta.',
       'rel-operacional': 'Relatório em modo consulta.'
     }
   },
@@ -667,6 +669,7 @@ function navigateTo(sectionId, options = {}) {
     insumos:             ['Cadastros',    'Insumos'],
     'rel-financeiro':    ['Relatórios',   'Financeiro'],
     'rel-cardapio':      ['Relatórios',   'Desempenho do Cardápio'],
+    'rel-bcg':           ['Relatórios',   'Matriz BCG'],
     'rel-operacional':   ['Relatórios',   'Operacional'],
     'config-restaurante':['Configurações','Restaurante'],
     'config-usuarios':   ['Configurações','Usuários'],
@@ -716,6 +719,7 @@ function navigateTo(sectionId, options = {}) {
     'rel-vendas':      () => { preencherDatasRelatorio('rel-vendas', 30);    const r = getRelDateRange('rel-vendas');      carregarRelVendas(r.inicio, r.fim); },
     'rel-financeiro':  () => { preencherDatasRelatorio('rel-financeiro', 30); const r = getRelDateRange('rel-financeiro');  carregarRelFinanceiro(r.inicio, r.fim); },
     'rel-cardapio':    () => { preencherDatasRelatorio('rel-cardapio', 30);   const r = getRelDateRange('rel-cardapio');    carregarRelCardapio(r.inicio, r.fim); },
+    'rel-bcg':         () => { preencherDatasRelatorio('rel-bcg', 30);        const r = getRelDateRange('rel-bcg');         carregarRelBcg(r.inicio, r.fim); },
     'rel-operacional': () => { preencherDatasRelatorio('rel-operacional', 30); const r = getRelDateRange('rel-operacional'); carregarRelOperacional(r.inicio, r.fim); },
     'config-usuarios': carregarUsuarios,
     'config-restaurante': carregarConfiguracaoRestaurante,
@@ -784,6 +788,7 @@ const ADMIN_HOME_ROUTES = [
   { id: 'rel-vendas', labels: ['relatorio de vendas', 'relatório de vendas', 'vendas'] },
   { id: 'rel-financeiro', labels: ['relatorio financeiro', 'relatório financeiro', 'financeiro'] },
   { id: 'rel-cardapio', labels: ['desempenho do cardapio', 'desempenho do cardápio', 'relatorio cardapio', 'relatório cardápio'] },
+  { id: 'rel-bcg', labels: ['matriz bcg', 'bcg', 'classificacao de produtos', 'classificação de produtos'] },
   { id: 'rel-operacional', labels: ['relatorio operacional', 'relatório operacional', 'operacional'] },
   { id: 'config-restaurante', labels: ['restaurante', 'configuracao restaurante', 'configuração restaurante'] },
   { id: 'config-usuarios', labels: ['usuarios', 'usuários', 'permissoes', 'permissões'] },
@@ -3328,11 +3333,6 @@ let websocketRetryTimer = null;
 let websocketRetryDelay = 1000;
 let wsAdminLoadTimer = null;
 
-function buildAdminWebSocketUrl(token) {
-  const separator = WS_BASE_URL.includes('?') ? '&' : '?';
-  return `${WS_BASE_URL}${separator}token=${encodeURIComponent(token)}`;
-}
-
 function connectAdminWebSocket() {
   if (adminSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(adminSocket.readyState)) return adminSocket;
 
@@ -3342,9 +3342,11 @@ function connectAdminWebSocket() {
   if (!isGerenteRole() || !token) return null;
 
   try {
-    adminSocket = new WebSocket(buildAdminWebSocketUrl(token));
+    adminSocket = new WebSocket(WS_BASE_URL);
 
     adminSocket.addEventListener('open', () => {
+      // O token vai na primeira mensagem: URLs ficam registradas nos logs de acesso.
+      adminSocket.send(JSON.stringify({ type: 'AUTH', token }));
       websocketRetryDelay = 1000;
       console.info('WebSocket conectado');
     });
@@ -3366,7 +3368,16 @@ function connectAdminWebSocket() {
           if (document.getElementById('home')?.classList.contains('active')) {
             carregarRelatorios();
           }
+          if (document.getElementById('insumos')?.classList.contains('active')) {
+            carregarInsumos();
+          }
         }, 500);
+      }
+
+      if (payload?.type === 'ESTOQUE_BAIXO' && payload.insumos?.length) {
+        const nomes = payload.insumos.map((insumo) => insumo.nome).join(', ');
+        showToast(`Estoque atingiu o mínimo: ${nomes}`);
+        verificarEstoqueBaixo();
       }
     });
 
@@ -3558,7 +3569,7 @@ function updateDashboardResumo(resumo) {
   const ativos = Number(resumo.pedidosRecebidos || 0)
     + Number(resumo.pedidosEmPreparo || 0)
     + Number(resumo.pedidosProntos || 0);
-  setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), 'Dados reais do banco');
+  setStatByLabel('dashboard', 'Faturamento de hoje', formatCurrency(resumo.faturamento), `${formatCurrency(resumo.faturamentoRecebido)} recebido · ${formatCurrency(resumo.faturamentoEmAberto)} em aberto`);
   const total = ativos + Number(resumo.pedidosEntregues || 0) + Number(resumo.pedidosCancelados || 0);
   setStatByLabel('dashboard', 'Total de pedidos', String(total), 'Todos os pedidos de hoje, incluindo cancelados');
   setStatByLabel('dashboard', 'Pedidos ativos', String(ativos), `${resumo.pedidosEmPreparo || 0} em preparo e ${resumo.pedidosProntos || 0} prontos`);
@@ -3673,7 +3684,7 @@ function carregarHomeStats() {
       // Entregues
       if (el('homeEntregues'))         el('homeEntregues').textContent         = String(entregues);
       if (el('homeEntreguesDetalhe'))  el('homeEntreguesDetalhe').textContent  = entregues > 0
-        ? `${formatCurrency(resumo.faturamento)} faturado`
+        ? `${formatCurrency(resumo.faturamentoRecebido)} recebido`
         : 'Nenhum entregue ainda';
 
       // Prontos p/ despacho
@@ -3754,8 +3765,10 @@ function carregarRelVendas(inicio, fim) {
   showTableSkeleton('rel-vendas');
   getJson(`/relatorios/vendas${params}`)
     .then((data) => {
-      setStatByLabel('rel-vendas', 'Total de Vendas', formatCurrency(data.faturamento), 'Dados reais do período');
-      setStatByLabel('rel-vendas', 'Quantidade de Pedidos', String(data.totalPedidos), 'Pedidos registrados');
+      setStatByLabel('rel-vendas', 'Total Lançado', formatCurrency(data.faturamento), 'Pedidos não cancelados');
+      setStatByLabel('rel-vendas', 'Recebido', formatCurrency(data.faturamentoRecebido), 'Pagamento registrado');
+      setStatByLabel('rel-vendas', 'Em Aberto', formatCurrency(data.faturamentoEmAberto), 'Ainda não pago');
+      setStatByLabel('rel-vendas', 'Quantidade de Pedidos', String(data.totalPedidos), `${data.pedidosCancelados || 0} cancelados (${formatCurrency(data.valorCancelado)})`);
       setStatByLabel('rel-vendas', 'Ticket Médio', formatCurrency(data.ticketMedio), 'Calculado do banco');
       const top = data.topProdutos?.[0];
       if (top) setStatByLabel('rel-vendas', 'Produto Mais Vendido', top.nome, `${Number(top.quantidadeVendida || 0)} unidades`);
@@ -3815,21 +3828,29 @@ function carregarRelFinanceiro(inicio, fim) {
   const params = buildDateParams(inicio, fim);
   getJson(`/relatorios/vendas${params}`)
     .then((data) => {
-      setStatByLabel('rel-financeiro', 'Receita Bruta', formatCurrency(data.faturamento), `${data.totalPedidos} pedidos no período`);
-      setStatByLabel('rel-financeiro', 'Despesas Totais', data.custoTotal ? formatCurrency(data.custoTotal) : 'Não integrado', data.custoTotal ? 'Calculado via insumos' : 'Vincule insumos aos produtos');
-      const lucro = data.custoTotal ? Number(data.faturamento) - Number(data.custoTotal) : null;
-      setStatByLabel('rel-financeiro', 'Lucro Líquido', lucro != null ? formatCurrency(lucro) : formatCurrency(data.faturamento), lucro != null ? 'Receita menos custos' : 'Sem dedução de custos');
-      const margem = (data.faturamento > 0 && lucro != null) ? ((lucro / Number(data.faturamento)) * 100).toFixed(1) + '%' : '-';
-      setStatByLabel('rel-financeiro', 'Margem de Lucro', margem, margem !== '-' ? 'Calculada' : 'Depende dos insumos cadastrados');
+      const lancado = Number(data.faturamento || 0);
+      const percentual = (valor) => (lancado > 0 ? formatarPercentual((Number(valor || 0) / lancado) * 100) : '—');
+      const semFicha = Number(data.produtosSemFicha || 0);
+      const avisoLucro = semFicha ? `${semFicha} produto(s) sem ficha técnica: valor superestimado` : null;
+      setStatByLabel('rel-financeiro', 'Total Lançado', formatCurrency(data.faturamento), `${data.totalPedidos} pedidos no período`);
+      setStatByLabel('rel-financeiro', 'Recebido', formatCurrency(data.faturamentoRecebido), `${percentual(data.faturamentoRecebido)} do lançado`);
+      setStatByLabel('rel-financeiro', 'Em Aberto', formatCurrency(data.faturamentoEmAberto), `${percentual(data.faturamentoEmAberto)} do lançado`);
+      setStatByLabel('rel-financeiro', 'Custo de Insumos', data.custoTotal ? formatCurrency(data.custoTotal) : 'Não integrado', data.custoTotal ? 'Calculado pela ficha técnica' : 'Vincule insumos aos produtos');
+      const lucro = data.custoTotal ? lancado - Number(data.custoTotal) : null;
+      setStatByLabel('rel-financeiro', 'Lucro Estimado', lucro != null ? formatCurrency(lucro) : '-', lucro != null ? (avisoLucro || 'Lançado menos insumos') : 'Cadastre as fichas técnicas');
+      const margem = (lancado > 0 && lucro != null) ? formatarPercentual((lucro / lancado) * 100) : '-';
+      setStatByLabel('rel-financeiro', 'Margem Estimada', margem, margem !== '-' ? (avisoLucro || 'Sobre o total lançado') : 'Depende dos insumos cadastrados');
 
       renderProfitChart(data.faturamento, data.custoTotal || 0);
 
       const tbody = document.querySelector('#rel-financeiro .data-table tbody');
       if (tbody) {
         tbody.innerHTML = `
-          <tr><td>Receita de pedidos</td><td>${formatCurrency(data.faturamento)}</td><td>100%</td><td>${data.totalPedidos} pedidos</td></tr>
-          <tr><td>Pedidos cancelados</td><td>${data.pedidosCancelados || 0}</td><td>&mdash;</td><td>Não geram receita</td></tr>
-          ${data.custoTotal ? `<tr><td>Custos operacionais</td><td>${formatCurrency(data.custoTotal)}</td><td>${((Number(data.custoTotal)/Number(data.faturamento))*100).toFixed(1)}%</td><td>Calculado via insumos</td></tr>` : `<tr><td>Custos operacionais</td><td colspan="3" style="color:#94a3b8">Vincule insumos aos produtos para calcular custos</td></tr>`}`;
+          <tr><td>Total lançado</td><td>${formatCurrency(data.faturamento)}</td><td>100%</td><td>Pedidos não cancelados</td></tr>
+          <tr><td>Recebido</td><td>${formatCurrency(data.faturamentoRecebido)}</td><td>${percentual(data.faturamentoRecebido)}</td><td>Pagamento registrado</td></tr>
+          <tr><td>Em aberto</td><td>${formatCurrency(data.faturamentoEmAberto)}</td><td>${percentual(data.faturamentoEmAberto)}</td><td>Ainda não pago</td></tr>
+          <tr><td>Cancelado</td><td>${formatCurrency(data.valorCancelado)}</td><td>&mdash;</td><td>${data.pedidosCancelados || 0} pedidos, fora do total lançado</td></tr>
+          ${data.custoTotal ? `<tr><td>Custo de insumos</td><td>${formatCurrency(data.custoTotal)}</td><td>${percentual(data.custoTotal)}</td><td>Calculado pela ficha técnica</td></tr>` : `<tr><td>Custo de insumos</td><td colspan="3" style="color:#94a3b8">Vincule insumos aos produtos para calcular custos</td></tr>`}`;
       }
     })
     .catch((err) => console.error('[rel-financeiro]', err));
@@ -3844,6 +3865,12 @@ function carregarRelCardapio(inicio, fim) {
     .then((data) => {
       const tbody = document.querySelector('#rel-cardapio .data-table tbody');
       if (!tbody) return;
+      const aviso = document.getElementById('relCardapioAviso');
+      const semFicha = Number(data.produtosSemFicha || 0);
+      if (aviso) {
+        aviso.hidden = semFicha === 0;
+        aviso.textContent = `${semFicha} produto(s) vendido(s) sem ficha técnica: o custo é desconhecido, então o lucro não é calculado. Cadastre a ficha técnica para incluí-los.`;
+      }
       if (!data.topProdutos?.length) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8">Nenhum produto vendido no período</td></tr>';
         return;
@@ -3855,7 +3882,6 @@ function carregarRelCardapio(inicio, fim) {
         const pct = totalQtd > 0 ? ((qtd / totalQtd) * 100).toFixed(1) : '0.0';
         const custoTotal = Number(p.custoTotal || 0);
         const custoMedio = qtd > 0 ? custoTotal / qtd : 0;
-        const lucro = Number(p.lucro || 0);
         return `<tr>
           <td><strong>${escapeHtml(p.nome)}</strong></td>
           <td>${escapeHtml(getCategoryLabel(p.idCategoria))}</td>
@@ -3863,13 +3889,111 @@ function carregarRelCardapio(inicio, fim) {
           <td>${formatCurrency(p.faturamento)}</td>
           <td>${pct}%</td>
           <td>${custoTotal > 0 ? formatCurrency(custoMedio) : '-'}</td>
-          <td>${formatCurrency(lucro)}</td>
+          <td>${p.temFichaTecnica ? formatCurrency(p.lucro) : '<span class="badge badge-warning">Sem ficha técnica</span>'}</td>
         </tr>`;
       }).join('');
     })
     .catch((err) => {
       console.error('[rel-cardapio]', err);
       showToast(err.message || 'Erro ao carregar desempenho do cardápio.');
+    });
+}
+
+// -- Matriz BCG --------------------------------------------------------
+const BCG_QUADRANTES = {
+  ESTRELA: { titulo: 'Estrela', eixos: 'Alta participação e em crescimento', classe: 'bcg-estrela' },
+  INTERROGACAO: { titulo: 'Interrogação', eixos: 'Baixa participação e em crescimento', classe: 'bcg-interrogacao' },
+  VACA_LEITEIRA: { titulo: 'Vaca Leiteira', eixos: 'Alta participação e sem crescimento', classe: 'bcg-vaca' },
+  ABACAXI: { titulo: 'Abacaxi', eixos: 'Baixa participação e sem crescimento', classe: 'bcg-abacaxi' }
+};
+
+function formatarPercentual(valor, casas = 1) {
+  return `${Number(valor || 0).toFixed(casas).replace('.', ',')}%`;
+}
+
+function formatarCrescimentoBcg(item) {
+  if (item.crescimento == null) return item.faturamento > 0 ? 'Novo' : 'Sem vendas';
+  const sinal = item.crescimento > 0 ? '+' : '';
+  return `${sinal}${formatarPercentual(item.crescimento)}`;
+}
+
+function formatarDataBcg(data) {
+  return new Date(`${data}T00:00:00`).toLocaleDateString('pt-BR');
+}
+
+function renderQuadranteBcg(chave, itens) {
+  const meta = BCG_QUADRANTES[chave];
+  const lista = itens.length
+    ? `<ul class="bcg-lista">${itens.map((item) => `<li>
+        <strong>${escapeHtml(item.nome)}</strong>
+        <span>${formatarPercentual(item.participacao)} · ${formatarCrescimentoBcg(item)}</span>
+      </li>`).join('')}</ul>`
+    : '';
+  return `<article class="bcg-quadrante ${meta.classe}">
+    <div class="bcg-quadrante-topo">
+      <h3>${meta.titulo}</h3>
+      <span class="bcg-contagem" aria-label="${itens.length} itens">${itens.length}</span>
+    </div>
+    <p class="bcg-eixos">${meta.eixos}</p>
+    <p class="bcg-acao">${itens.length ? escapeHtml(itens[0].acaoSugerida) : 'Nenhum item neste quadrante.'}</p>
+    ${lista}
+  </article>`;
+}
+
+function carregarRelBcg(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  showTableSkeleton('rel-bcg');
+  carregarCategorias()
+    .then(() => getJson(`/relatorios/bcg${params}`))
+    .then((data) => {
+      const matriz = document.getElementById('bcgMatriz');
+      const criterio = document.getElementById('bcgCriterio');
+      const aviso = document.getElementById('bcgAviso');
+      if (!matriz) return;
+
+      const crescimentoTotal = data.crescimentoTotal == null
+        ? 'sem base de comparação'
+        : `${data.crescimentoTotal > 0 ? '+' : ''}${formatarPercentual(data.crescimentoTotal)} sobre o período anterior`;
+      criterio.textContent = `Período de ${formatarDataBcg(data.inicio)} a ${formatarDataBcg(data.fim)}, comparado com ${formatarDataBcg(data.inicioAnterior)} a ${formatarDataBcg(data.fimAnterior)}. `
+        + `Faturamento: ${formatCurrency(data.faturamentoTotal)} (${crescimentoTotal}). `
+        + `Participação alta: ${formatarPercentual(data.limiteParticipacao, 2)} ou mais do faturamento, a média por item do cardápio. `
+        + 'Em crescimento: faturou mais do que no período anterior.';
+
+      if (!(data.faturamentoTotal > 0)) {
+        matriz.innerHTML = '<div class="bcg-vazio">Nenhuma venda no período selecionado.</div>';
+        setTableBody('rel-bcg', []);
+        if (aviso) aviso.hidden = true;
+        return;
+      }
+
+      const semFicha = data.itens.filter((item) => !item.temFichaTecnica).length;
+      if (aviso) {
+        aviso.hidden = semFicha === 0;
+        aviso.textContent = `${semFicha} item(ns) sem ficha técnica: a classificação vale, mas o lucro não é calculado.`;
+      }
+
+      matriz.innerHTML = Object.keys(BCG_QUADRANTES)
+        .map((chave) => renderQuadranteBcg(chave, data.itens.filter((item) => item.classificacao === chave)))
+        .join('');
+
+      setTableBody('rel-bcg', data.itens.map((item) => {
+        const meta = BCG_QUADRANTES[item.classificacao];
+        return `<tr>
+          <td><strong>${escapeHtml(item.nome)}</strong></td>
+          <td>${escapeHtml(getCategoryLabel(item.idCategoria))}</td>
+          <td><span class="bcg-selo ${meta.classe}">${meta.titulo}</span></td>
+          <td>${formatCurrency(item.faturamento)}</td>
+          <td>${formatarPercentual(item.participacao)}</td>
+          <td>${formatarCrescimentoBcg(item)}</td>
+          <td>${item.temFichaTecnica ? formatCurrency(item.lucro) : '<span class="badge badge-warning">Sem ficha técnica</span>'}</td>
+          <td>${escapeHtml(item.acaoSugerida)}</td>
+        </tr>`;
+      }));
+    })
+    .catch((err) => {
+      console.error('[rel-bcg]', err);
+      setTableBody('rel-bcg', [], err.message || 'Erro ao carregar a Matriz BCG.');
+      showToast(err.message || 'Erro ao carregar a Matriz BCG.');
     });
 }
 
@@ -4758,6 +4882,42 @@ function carregarInsumos() {
       setTableBody('insumos', [], msg);
       console.error('[insumos]', err);
     });
+  carregarMovimentosEstoque();
+}
+
+const ESTOQUE_TIPOS = {
+  BAIXA_PEDIDO: 'Baixa do pedido',
+  AJUSTE_PEDIDO: 'Ajuste do pedido',
+  AJUSTE_MANUAL: 'Ajuste manual'
+};
+
+function carregarMovimentosEstoque() {
+  const tbody = document.querySelector('#movimentosEstoqueTable tbody');
+  if (!tbody) return;
+  getJson('/insumos/movimentos?limite=15')
+    .then((movimentos) => {
+      if (!movimentos?.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8">Nenhuma movimentação registrada</td></tr>';
+        return;
+      }
+      tbody.innerHTML = movimentos.map((m) => {
+        const quantidade = Number(m.quantidade);
+        const unidade = escapeHtml(m.unidade);
+        return `<tr>
+          <td>${new Date(m.criadoEm).toLocaleString('pt-BR')}</td>
+          <td><strong>${escapeHtml(m.insumoNome)}</strong></td>
+          <td>${ESTOQUE_TIPOS[m.tipo] || escapeHtml(m.tipo)}</td>
+          <td class="${quantidade < 0 ? 'estoque-saida' : 'estoque-entrada'}">${quantidade > 0 ? '+' : ''}${quantidade.toFixed(3)} ${unidade}</td>
+          <td>${Number(m.saldoApos).toFixed(3)} ${unidade}</td>
+          <td>${m.pedidoId ? `Pedido #${m.pedidoId}` : escapeHtml(m.motivo || '-')}</td>
+          <td>${escapeHtml(m.usuarioNome || '-')}</td>
+        </tr>`;
+      }).join('');
+    })
+    .catch((err) => {
+      console.error('[estoque-movimentos]', err);
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626">Erro ao carregar as movimentações</td></tr>';
+    });
 }
 
 window.editarInsumo = function(id) {
@@ -5068,6 +5228,8 @@ function renderProfitChart(faturamento, custo) {
     },
     options: {
       ...chartBaseOptions,
+      // Grafico de rosca nao tem eixos.
+      scales: { x: { display: false }, y: { display: false } },
       plugins: { ...chartBaseOptions.plugins, legend: { position: 'bottom', labels: { font: { family: '"Inter", sans-serif', size: 12 }, color: '#64748b', padding: 16, usePointStyle: true } } }
     }
   });

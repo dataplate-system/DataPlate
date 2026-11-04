@@ -36,7 +36,7 @@ def listar_mesas(
 
 
 @router.get("/por-token/{token}")
-def buscar_mesa_por_token(token: UUID, db: Session = Depends(get_db)) -> dict[str, int]:
+def buscar_mesa_por_token(token: UUID, db: Session = Depends(get_db)) -> dict[str, int | bool]:
     mesa = db.scalar(
         select(Mesa).where(
             Mesa.qr_code_token == token,
@@ -46,7 +46,7 @@ def buscar_mesa_por_token(token: UUID, db: Session = Depends(get_db)) -> dict[st
     if mesa is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="QR Code de mesa invalido ou inativo.")
 
-    return {"mesaId": mesa.id, "numero": mesa.numero}
+    return {"mesaId": mesa.id, "numero": mesa.numero, "aberta": mesa.status == "ocupada"}
 
 
 @router.get("/{mesa_id}/qrcode.svg", dependencies=[Depends(exigir_perfis(Role.GERENTE))])

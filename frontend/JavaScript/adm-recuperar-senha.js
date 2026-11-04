@@ -46,9 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
     verifiedCode = '';
     preview.hidden = !result.debugCode;
     preview.textContent = result.debugCode || '';
-    hint.textContent = result.debugCode ? 'Código de desenvolvimento.' : `Código enviado para ${result.recoveryEmail || 'o e-mail cadastrado'}.`;
+    // A mensagem e a mesma para qualquer CPF, para nao revelar quem tem cadastro.
+    hint.textContent = result.debugCode ? 'Código de desenvolvimento.' : 'Se o CPF estiver cadastrado, enviaremos um código para o e-mail vinculado. Ele expira em 10 minutos.';
     document.getElementById('resendSecurityCode').textContent = 'Reenviar código';
-    message('Código enviado. Verifique seu e-mail.', true);
     code.focus();
   }
 
@@ -56,12 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault(); message('');
     if (!identify.checkValidity()) return identify.reportValidity();
     try {
-      const result = await request('/password-reset/identify', { cpf: cpf.value });
-      if (!result.recoveryEmail) return message('Não foi possível confirmar um e-mail de recuperação para este CPF.');
-      hint.textContent = `Confirma o envio para ${result.recoveryEmail}?`;
-      document.getElementById('resendSecurityCode').textContent = 'Enviar código';
+      await sendCode();
       setStep('code');
-    } catch (_) { message('Não foi possível iniciar a recuperação. Tente novamente.'); }
+    } catch (error) { message(error.message || 'Não foi possível iniciar a recuperação. Tente novamente.'); }
   });
   document.getElementById('resendSecurityCode').addEventListener('click', async () => {
     try { await sendCode(); code.value = ''; } catch (error) { message(error.message || 'Não foi possível enviar o código.'); }

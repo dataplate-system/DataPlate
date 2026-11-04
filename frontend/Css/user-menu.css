@@ -262,3 +262,18 @@ body:has(#barraFlutuante.ativa) #telaLista .conteudo { padding-bottom: calc(64px
 @media (max-width: 700px) {
   body:has(#telaLista) #barraFlutuante { left: 8px; right: 8px; }
 }
+
+.aviso-mesa-fechada {
+  display: grid;
+  gap: 2px;
+  margin: 8px 12px 12px;
+  padding: 12px 14px;
+  border: 1px solid #f3c98b;
+  border-left: 4px solid #b45309;
+  border-radius: 10px;
+  background: #fff8ec;
+  color: #7c4a03;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.aviso-mesa-fechada[hidden] { display: none; }

@@ -8,8 +8,11 @@
 | Cozinha | 000.000.000-04 | `admin123` | Preparo e alteracao dos pedidos |
 | Caixa | 000.000.000-05 | `admin123` | PDV, cobranca e fechamento de mesas |
 
-Estes acessos usam CPFs sinteticos com digitos verificadores validos. O cliente continua
+Estes acessos usam CPFs ficticios, sem digitos verificadores validos. O cliente continua
 acessando o cardapio pelo QR Code, sem conta de funcionario.
+
+Cinco senhas erradas seguidas no mesmo CPF bloqueiam o login por 5 minutos. Para liberar
+antes disso, reinicie a API: `docker compose -f backend-python\docker-compose.yml restart api`.
 
 Entrada: http://localhost:5500/pages/adm-login.html.
 Atualize as telas com Ctrl+F5 e saia da sessao anterior para testar outro perfil.
@@ -52,8 +55,14 @@ remove o filtro. Observacoes exibem instrucoes do cliente, sem marcadores da car
 6. Atendente: cancelar um pedido recebido com motivo e verificar aviso na cozinha.
 7. Administrador: conferir usuarios/perfis. Validar que um perfil operacional
    nao consegue entrar no painel de administracao.
-8. Cliente: gerar QR Code de mesa livre com o Gerente, abrir o cardapio e enviar
-   pedido. Em celular, acessar pelo IP local do computador.
+8. Cliente: gerar QR Code de mesa livre com o Gerente e abrir o cardapio. O aviso de
+   mesa fechada aparece e o pedido nao avanca. No atendente, clicar na mesa e em
+   "Abrir mesa": em ate 15 segundos o aviso some e o pedido pode ser enviado.
+   Em celular, acessar pelo IP local do computador.
+9. Gerente: em Relatorios, abrir "Matriz BCG" e conferir quadrantes e acoes sugeridas.
+   No Financeiro, conferir lancado, recebido e em aberto.
+10. Cozinha: iniciar o preparo de um pedido. Gerente: em Insumos, conferir a baixa em
+    "Ultimas Movimentacoes".
 
 Recuperacao de senha por e-mail depende de SMTP configurado; dados de teste nao
 substituem o provedor de e-mail. Os enderecos `example.com` sao ficticios.
@@ -73,6 +82,7 @@ docker exec backend-python-api-1 python -m app.local_test_data
 node scripts/check-auth-local.mjs
 node scripts/check-operacao.mjs
 node scripts/check-pdv-controls.mjs
+npm test
 ```
 
 O primeiro comando redefine **somente as cinco senhas de teste acima** para os

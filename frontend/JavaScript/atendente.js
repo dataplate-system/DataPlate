@@ -628,7 +628,7 @@ function renderGestaoMesa(mesa, temAtivos) {
 
   const botoesStatus = [];
   if (['livre', 'reservada'].includes(st)) {
-    botoesStatus.push(`<button type="button" onclick="alterarStatusMesaAtendente(${mesa.id}, 'ocupada')" style="${btnStyle};background:#2563eb;color:#fff;border:none">Marcar ocupada</button>`);
+    botoesStatus.push(`<button type="button" onclick="alterarStatusMesaAtendente(${mesa.id}, 'ocupada')" style="${btnStyle};background:#2563eb;color:#fff;border:none">Abrir mesa</button>`);
   }
   // Liberar so sem pedidos em aberto; com pedidos a mesa e liberada pelo Caixa no pagamento
   if (['ocupada', 'aguardando_pagamento'].includes(st) && !temAtivos) {
@@ -672,7 +672,7 @@ async function _aposAlterarMesa(msg) {
 window.alterarStatusMesaAtendente = async function(mesaId, status) {
   try {
     await patchJson(`/mesas/${mesaId}/status`, { status });
-    await _aposAlterarMesa(status === 'livre' ? 'Mesa liberada.' : 'Mesa marcada como ocupada.');
+    await _aposAlterarMesa(status === 'livre' ? 'Mesa liberada.' : 'Mesa aberta. O cliente já pode pedir pelo QR Code.');
   } catch (e) {
     showToast(e.message || 'Erro ao atualizar mesa.', 'error');
   }
@@ -770,12 +770,13 @@ function connectWS() {
   // Sem token (modo demo) o backend recusa o WS; fica so o polling
   if (!token) return;
   const apiUrl = API_BASE_URL.startsWith('http') ? API_BASE_URL : `${window.location.origin}${API_BASE_URL}`;
-  const baseWsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
-  const wsUrl = `${baseWsUrl}${baseWsUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+  const wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
   if (ws && [WebSocket.OPEN, WebSocket.CONNECTING].includes(ws.readyState)) return;
   try {
     ws = new WebSocket(wsUrl);
     ws.addEventListener('open', () => {
+      // O token vai na primeira mensagem: URLs ficam registradas nos logs de acesso.
+      ws.send(JSON.stringify({ type: 'AUTH', token }));
       wsRetryDelay = 1000;
       window.clearInterval(refreshTimer);
       refreshTimer = null;

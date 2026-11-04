@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS pedido (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_pedido_token_acesso ON pedido (token_acesso);
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS pago_em TIMESTAMP;
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(30);
 
 CREATE TABLE IF NOT EXISTS item_pedido (
     id_item_pedido INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -221,6 +223,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_funcionario_id ON usuarios (funcio
 
 CREATE INDEX IF NOT EXISTS idx_psh_pedido ON pedido_status_historico (id_pedido);
 CREATE INDEX IF NOT EXISTS idx_psh_usuario ON pedido_status_historico (id_usuario) WHERE id_usuario IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS estoque_movimento (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    insumo_id BIGINT NOT NULL REFERENCES insumos(id) ON DELETE CASCADE,
+    id_pedido BIGINT REFERENCES pedido(id_pedido) ON DELETE SET NULL,
+    tipo VARCHAR(20) NOT NULL,
+    quantidade NUMERIC(12, 3) NOT NULL,
+    saldo_apos NUMERIC(12, 3) NOT NULL,
+    id_usuario BIGINT REFERENCES usuarios(id) ON DELETE SET NULL,
+    motivo VARCHAR(255),
+    criado_em TIMESTAMP NOT NULL DEFAULT now(),
+    CONSTRAINT chk_estoque_movimento_tipo CHECK (tipo IN ('BAIXA_PEDIDO', 'AJUSTE_PEDIDO', 'AJUSTE_MANUAL'))
+);
+CREATE INDEX IF NOT EXISTS idx_estoque_movimento_data ON estoque_movimento (criado_em DESC);
+CREATE INDEX IF NOT EXISTS idx_estoque_movimento_pedido ON estoque_movimento (id_pedido) WHERE id_pedido IS NOT NULL;
 
 INSERT INTO restaurante (nome, cnpj, telefone, endereco, email)
 SELECT 'DataPlate Restaurante', '00.000.000/0001-00', '(11) 99999-9999', 'Rua Principal, 1', 'contato@dataplate.com'

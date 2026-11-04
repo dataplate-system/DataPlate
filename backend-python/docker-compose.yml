@@ -23,7 +23,7 @@ services:
       PGPASSWORD: dataplate_local
     volumes:
       - ../database/migrations:/migrations:ro
-    command: ["psql", "-h", "db", "-U", "postgres", "-d", "dataplate", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/001_mesa_reserva.sql", "-f", "/migrations/002_usuario_ativo.sql", "-f", "/migrations/002_mesa_qr_code_token.sql", "-f", "/migrations/003_password_reset_tokens.sql", "-f", "/migrations/004_usuario_email.sql", "-f", "/migrations/005_normalize_user_cpf.sql", "-f", "/migrations/003_relacionamentos_clientes_usuarios_fornecedores.sql", "-f", "/migrations/006_perfil_gerente.sql", "-f", "/migrations/007_fotos_catalogo_demo.sql", "-f", "/migrations/008_fotos_distintas_catalogo.sql", "-f", "/migrations/009_fotos_catalogo_prd.sql"]
+    command: ["psql", "-h", "db", "-U", "postgres", "-d", "dataplate", "-v", "ON_ERROR_STOP=1", "-f", "/migrations/001_mesa_reserva.sql", "-f", "/migrations/002_usuario_ativo.sql", "-f", "/migrations/002_mesa_qr_code_token.sql", "-f", "/migrations/003_password_reset_tokens.sql", "-f", "/migrations/004_usuario_email.sql", "-f", "/migrations/005_normalize_user_cpf.sql", "-f", "/migrations/003_relacionamentos_clientes_usuarios_fornecedores.sql", "-f", "/migrations/006_perfil_gerente.sql", "-f", "/migrations/007_fotos_catalogo_demo.sql", "-f", "/migrations/008_fotos_distintas_catalogo.sql", "-f", "/migrations/009_fotos_catalogo_prd.sql", "-f", "/migrations/010_pagamento_e_estoque.sql"]
     depends_on:
       db:
         condition: service_healthy
@@ -34,6 +34,9 @@ services:
       args:
         PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     environment:
+      APP_ENV: local
+      # Horario dos pedidos e o "hoje" dos relatorios seguem o fuso do restaurante.
+      TZ: America/Sao_Paulo
       DB_HOST: db
       DB_PORT: 5432
       PORT: 8081

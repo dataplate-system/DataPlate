@@ -76,7 +76,23 @@ SCHEMA_COLUNAS = (
     ),
     ("pedido_status_historico", "motivo", "ALTER TABLE pedido_status_historico ADD COLUMN IF NOT EXISTS motivo VARCHAR(255)"),
     ("pedido", "token_acesso", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS token_acesso UUID NOT NULL DEFAULT gen_random_uuid()"),
+    ("pedido", "pago_em", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS pago_em TIMESTAMP"),
+    ("pedido", "forma_pagamento", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(30)"),
 )
+# Fora do Docker a migracao 010 pode nao ter rodado; esta e a tabela que os modelos exigem.
+SCHEMA_ESTOQUE_MOVIMENTO = """
+CREATE TABLE IF NOT EXISTS estoque_movimento (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    insumo_id BIGINT NOT NULL REFERENCES insumos(id) ON DELETE CASCADE,
+    id_pedido BIGINT REFERENCES pedido(id_pedido) ON DELETE SET NULL,
+    tipo VARCHAR(20) NOT NULL,
+    quantidade NUMERIC(12, 3) NOT NULL,
+    saldo_apos NUMERIC(12, 3) NOT NULL,
+    id_usuario BIGINT REFERENCES usuarios(id) ON DELETE SET NULL,
+    motivo VARCHAR(255),
+    criado_em TIMESTAMP NOT NULL DEFAULT now()
+)
+"""
 SCHEMA_INDICES = (
     ("uq_pedido_token_acesso", "CREATE UNIQUE INDEX IF NOT EXISTS uq_pedido_token_acesso ON pedido (token_acesso)"),
 )
@@ -106,6 +122,8 @@ def ensure_schema() -> None:
         )
         comandos = [ddl for tabela, coluna, ddl in SCHEMA_COLUNAS if (tabela, coluna) not in colunas]
         comandos += [ddl for nome, ddl in SCHEMA_INDICES if nome not in indices]
+        if db.scalar(text("SELECT to_regclass('estoque_movimento')")) is None:
+            comandos.append(SCHEMA_ESTOQUE_MOVIMENTO)
         for comando in comandos:
             db.execute(text(comando))
         db.commit()

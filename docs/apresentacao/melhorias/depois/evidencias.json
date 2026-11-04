@@ -1,0 +1,82 @@
+{
+  "qrCode": {
+    "mesa": 20,
+    "statusRecebido": 409,
+    "mensagem": "Esta mesa não está aberta para pedidos. Chame o atendente.",
+    "pedidoCriado": false,
+    "statusMesaDepois": "livre",
+    "statusComMesaAberta": 201
+  },
+  "estoque": {
+    "produto": "Pão de Alho (porção)",
+    "unidadesVendidas": 2,
+    "statusVenda": 201,
+    "statusPreparo": 200,
+    "insumos": [
+      {
+        "nome": "Manteiga",
+        "unidade": "kg",
+        "consumoPorUnidade": 0.03,
+        "antes": 3,
+        "depois": 2.94
+      }
+    ]
+  },
+  "login": {
+    "tentativasErradas": [
+      401,
+      401,
+      401,
+      401,
+      401,
+      429,
+      429,
+      429
+    ]
+  },
+  "jwt": {
+    "sub": "usuario:3"
+  },
+  "websocket": {
+    "linhaDeLog": "\"WebSocket /ws\" [accepted]",
+    "tokenNoLog": false,
+    "subDoTokenNoLog": null
+  },
+  "recuperacaoSenha": {
+    "cpfExistente": {
+      "status": 202,
+      "recebeuToken": true,
+      "emailMascarado": null,
+      "mensagem": null
+    },
+    "cpfInexistente": {
+      "status": 202,
+      "recebeuToken": true,
+      "emailMascarado": null,
+      "mensagem": null
+    },
+    "identifyCpfExistente": {
+      "status": 404,
+      "recebeuToken": false,
+      "emailMascarado": null,
+      "mensagem": null
+    }
+  },
+  "configuracaoPadrao": {
+    "apiSubiu": false,
+    "motivo": "RuntimeError: Configuracao insegura para producao: defina JWT_SECRET com um valor proprio de pelo menos 32 caracteres; defina DEFAULT_ADMIN_PASSWORD ou use DEFAULT_ADMIN_ENABLED=false. Para desenvolvimento, use APP_ENV=local."
+  },
+  "relatorioVendas": {
+    "periodo": "2026-11-01 a 2026-11-04",
+    "faturamento": 1273.7,
+    "faturamentoRecebido": 695.1,
+    "faturamentoEmAberto": 578.6,
+    "valorCancelado": 77.7
+  },
+  "relatorioCardapio": {
+    "produtoSemFicha": "Mousse de Maracujá",
+    "faturamento": 166.8,
+    "custoTotal": 0,
+    "lucro": null
+  }
+}

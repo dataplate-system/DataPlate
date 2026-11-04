@@ -1,5 +1,10 @@
 # Avaliação do DataPlate — 03/11/2026
 
+> Atualização de 04/11/2026: já foram entregues os indicadores de recebido, em aberto e
+> cancelado, com registro próprio do pagamento no pedido, e a baixa de estoque pela ficha
+> técnica, sem o registro de perdas. Continuam pendentes o fechamento de conta em uma única
+> transação e os demais itens. Comparativo: `docs/apresentacao/melhorias/`.
+
 ## Proposta e situação atual
 
 O TAP e o README propõem integrar cardápio por QR Code, salão, cozinha e gestão,

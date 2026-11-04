@@ -6,7 +6,7 @@ import smtplib
 from secrets import randbelow
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
 from jwt import InvalidTokenError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -28,11 +28,11 @@ def login(db: Session, request: AuthLoginRequest) -> AuthResponse:
 
 def refresh(db: Session, request: AuthRefreshRequest) -> AuthResponse:
     try:
-        cpf = decode_refresh_token(request.refreshToken)
+        user_id = decode_refresh_token(request.refreshToken)
     except InvalidTokenError:
         raise _bad_credentials("Refresh token invalido") from None
 
-    user = _get_user_by_cpf(db, cpf)
+    user = db.get(User, user_id)
     if user is None or not user.ativo:
         raise _bad_credentials("Refresh token invalido")
 
@@ -57,33 +57,35 @@ def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     return _to_auth_response(user)
 
 
-def request_password_reset(db: Session, request: AuthPasswordResetStartRequest) -> AuthPasswordResetStartResponse:
+def request_password_reset(
+    db: Session,
+    request: AuthPasswordResetStartRequest,
+    background_tasks: BackgroundTasks,
+) -> AuthPasswordResetStartResponse:
+    """A resposta e igual para qualquer CPF: um token sem registro falha depois como codigo invalido.
+
+    O e-mail sai em segundo plano, para o tempo de resposta tambem nao revelar se o CPF existe.
+    """
+    settings = get_settings()
     user = _get_user_by_cpf(db, request.cpf)
-    # A resposta nao revela se o CPF existe.
-    if user is None or not user.ativo:
-        return AuthPasswordResetStartResponse()
+    reset_token = uuid4()
+    pode_receber = user is not None and user.ativo and (user.email or settings.password_reset_debug_code)
+    if not pode_receber:
+        return AuthPasswordResetStartResponse(resetToken=reset_token)
 
     code = f"{randbelow(1_000_000):06d}"
-    token = PasswordResetToken(
-        id=uuid4(),
+    db.add(PasswordResetToken(
+        id=reset_token,
         user_id=user.id,
         code_hash=_password_reset_code_hash(code),
         expires_at=datetime.utcnow() + timedelta(minutes=10),
-    )
-    db.add(token)
-    settings = get_settings()
-    _send_password_reset_email(user.email, code)
+    ))
     db.commit()
-    return AuthPasswordResetStartResponse(
-        resetToken=token.id,
-        debugCode=code if settings.password_reset_debug_code else None,
-        recoveryEmail=_mask_email(user.email),
-    )
+    if settings.password_reset_debug_code:
+        return AuthPasswordResetStartResponse(resetToken=reset_token, debugCode=code)
 
-
-def identify_password_reset(db: Session, request: AuthPasswordResetStartRequest) -> AuthPasswordResetStartResponse:
-    user = _get_user_by_cpf(db, request.cpf)
-    return AuthPasswordResetStartResponse(recoveryEmail=_mask_email(user.email) if user and user.ativo and user.email else None)
+    background_tasks.add_task(_enviar_codigo_em_segundo_plano, user.email, code)
+    return AuthPasswordResetStartResponse(resetToken=reset_token)
 
 
 def verify_password_reset_code(db: Session, reset_token: UUID, code: str) -> PasswordResetToken:
@@ -171,19 +173,14 @@ def _invalid_password_reset_code() -> HTTPException:
     return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Codigo de recuperacao invalido ou expirado")
 
 
-def _mask_email(email: str | None) -> str | None:
-    if not email or "@" not in email:
-        return None
-    name, domain = email.split("@", 1)
-    return f"{name[:1]}{'*' * max(2, len(name) - 1)}@{domain}"
+def _enviar_codigo_em_segundo_plano(email: str, code: str) -> None:
+    try:
+        _send_password_reset_email(email, code)
+    except HTTPException as error:
+        logger.error("Codigo de recuperacao nao enviado: %s", error.detail)
 
 
-def _send_password_reset_email(email: str | None, code: str) -> None:
-    settings = get_settings()
-    if settings.password_reset_debug_code:
-        return
-    if not email:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Envio de e-mail de recuperação não configurado")
+def _send_password_reset_email(email: str, code: str) -> None:
     message = EmailMessage()
     message["Subject"] = "DataPlate - código para redefinir sua senha"
     message["To"] = email

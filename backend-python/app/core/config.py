@@ -6,16 +6,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
+SEGREDO_JWT_DESENVOLVIMENTO = "DataPlateJwtSecretKeyForDevelopmentOnlyChangeMe123456789"
 
 
 class Settings(BaseSettings):
+    # Qualquer valor diferente de "local" exige configuracao segura (app/core/producao.py).
+    app_env: str = "production"
+
     db_host: str = "localhost"
     db_port: int = 5432
     db_name: str = "data_plate"
     db_user: str = "postgres"
     db_password: str = "1234"
 
-    jwt_secret: str = "DataPlateJwtSecretKeyForDevelopmentOnlyChangeMe123456789"
+    jwt_secret: str = SEGREDO_JWT_DESENVOLVIMENTO
     jwt_refresh_secret: str | None = None
     jwt_expiration_ms: int = 86_400_000
     jwt_refresh_expiration_ms: int = 604_800_000

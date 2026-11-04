@@ -1,0 +1,81 @@
+{
+  "qrCode": {
+    "mesa": 20,
+    "statusRecebido": 201,
+    "mensagem": null,
+    "pedidoCriado": true,
+    "statusMesaDepois": "ocupada"
+  },
+  "estoque": {
+    "produto": "Pão de Alho (porção)",
+    "unidadesVendidas": 2,
+    "statusVenda": 201,
+    "statusPreparo": 200,
+    "insumos": [
+      {
+        "nome": "Manteiga",
+        "unidade": "kg",
+        "consumoPorUnidade": 0.03,
+        "antes": 3,
+        "depois": 3
+      }
+    ]
+  },
+  "login": {
+    "tentativasErradas": [
+      401,
+      401,
+      401,
+      401,
+      401,
+      401,
+      401,
+      401
+    ]
+  },
+  "jwt": {
+    "sub": "00000000002"
+  },
+  "websocket": {
+    "linhaDeLog": "\"WebSocket /ws?token=eyJhbGciOiJI...\" [accepted]",
+    "tokenNoLog": true,
+    "subDoTokenNoLog": "00000000002"
+  },
+  "recuperacaoSenha": {
+    "cpfExistente": {
+      "status": 503,
+      "recebeuToken": false,
+      "emailMascarado": null,
+      "mensagem": "Envio de e-mail de recuperação não configurado"
+    },
+    "cpfInexistente": {
+      "status": 202,
+      "recebeuToken": false,
+      "emailMascarado": null,
+      "mensagem": null
+    },
+    "identifyCpfExistente": {
+      "status": 200,
+      "recebeuToken": false,
+      "emailMascarado": null,
+      "mensagem": null
+    }
+  },
+  "configuracaoPadrao": {
+    "apiSubiu": true,
+    "motivo": null
+  },
+  "relatorioVendas": {
+    "periodo": "2026-11-01 a 2026-11-04",
+    "faturamento": 1273.7,
+    "faturamentoRecebido": null,
+    "faturamentoEmAberto": null,
+    "valorCancelado": null
+  },
+  "relatorioCardapio": {
+    "produtoSemFicha": "Mousse de Maracujá",
+    "faturamento": 166.8,
+    "custoTotal": 0,
+    "lucro": 166.8
+  }
+}

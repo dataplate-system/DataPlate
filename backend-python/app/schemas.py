@@ -56,7 +56,6 @@ class AuthPasswordResetStartResponse(BaseModel):
     resetToken: UUID | None = None
     # Disponivel somente no Docker local, para permitir testar o fluxo sem SMTP/SMS.
     debugCode: str | None = None
-    recoveryEmail: str | None = None
 
 
 class AuthResponse(BaseModel):
@@ -406,7 +405,9 @@ class RelatorioCardapioItem(BaseModel):
     quantidadeVendida: float
     faturamento: float
     custoTotal: float
-    lucro: float
+    # Sem ficha tecnica nao ha custo conhecido, entao o lucro nao e informado.
+    lucro: float | None
+    temFichaTecnica: bool
 
 
 class RelatorioResumoResponse(BaseModel):
@@ -418,6 +419,9 @@ class RelatorioResumoResponse(BaseModel):
     pedidosEntregues: int
     pedidosCancelados: int
     faturamento: float
+    faturamentoRecebido: float
+    faturamentoEmAberto: float
+    valorCancelado: float
     ticketMedio: float
     topProdutos: list[TopProdutoResponse]
 
@@ -426,8 +430,12 @@ class RelatorioVendasResponse(BaseModel):
     inicio: date
     fim: date
     faturamento: float
+    faturamentoRecebido: float
+    faturamentoEmAberto: float
+    valorCancelado: float
     ticketMedio: float
     custoTotal: float
+    produtosSemFicha: int
     totalPedidos: int
     pedidosEntregues: int
     pedidosCancelados: int
@@ -441,6 +449,49 @@ class RelatorioCardapioResponse(BaseModel):
     topProdutos: list[RelatorioCardapioItem]
     totalItensVendidos: int
     faturamentoTotal: float
+    produtosSemFicha: int
+
+
+class RelatorioBcgItem(BaseModel):
+    produtoId: int
+    nome: str
+    idCategoria: int
+    quantidadeVendida: float
+    faturamento: float
+    faturamentoAnterior: float
+    participacao: float
+    crescimento: float | None
+    classificacao: str
+    acaoSugerida: str
+    lucro: float | None
+    temFichaTecnica: bool
+
+
+class RelatorioBcgResponse(BaseModel):
+    inicio: date
+    fim: date
+    inicioAnterior: date
+    fimAnterior: date
+    faturamentoTotal: float
+    faturamentoAnterior: float
+    crescimentoTotal: float | None
+    limiteParticipacao: float
+    limiteCrescimento: float
+    itens: list[RelatorioBcgItem]
+
+
+class EstoqueMovimentoResponse(BaseModel):
+    id: int
+    insumoId: int
+    insumoNome: str
+    unidade: str
+    tipo: str
+    quantidade: float
+    saldoApos: float
+    pedidoId: int | None
+    usuarioNome: str | None
+    motivo: str | None
+    criadoEm: datetime
 
 
 class RelatorioOperacionalResponse(BaseModel):

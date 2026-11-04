@@ -153,7 +153,9 @@ def populate():
             notes = notes.strip(' |') or None
             order = Pedido(id_mesa=table.id if table else None, id_cliente=clients[index % 10].id,
                            id_status=statuses[state], numero_pedido=code, data_hora=when,
-                           atualizado_em=when, observacoes=notes, valor_total=Decimal('0'))
+                           atualizado_em=when, observacoes=notes, valor_total=Decimal('0'),
+                           pago_em=when if state == 'ENTREGUE' or paid else None,
+                           forma_pagamento=payment if state == 'ENTREGUE' or paid else None)
             db.add(order)
             db.flush()
             order.itens = [_criar_item(order, products[index % len(products)], 1 + index % 2),

@@ -8,8 +8,7 @@ class ConnectionManager:
     def __init__(self) -> None:
         self._connections: dict[WebSocket, int | None] = {}
 
-    async def connect(self, websocket: WebSocket, pedido_id: int | None = None) -> None:
-        await websocket.accept()
+    def registrar(self, websocket: WebSocket, pedido_id: int | None = None) -> None:
         self._connections[websocket] = pedido_id
 
     def disconnect(self, websocket: WebSocket) -> None:

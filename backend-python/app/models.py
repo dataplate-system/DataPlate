@@ -204,6 +204,8 @@ class Pedido(Base):
     observacoes: Mapped[str | None] = mapped_column(Text)
     valor_total: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    pago_em: Mapped[datetime | None] = mapped_column(DateTime)
+    forma_pagamento: Mapped[str | None] = mapped_column(String(30))
     token_acesso: Mapped[UUID] = mapped_column(
         Uuid,
         nullable=False,
@@ -247,6 +249,24 @@ class PedidoStatusHistorico(Base):
         ForeignKey("usuarios.id", ondelete="SET NULL"),
     )
     motivo: Mapped[str | None] = mapped_column(String(255))
+
+
+class EstoqueMovimento(Base):
+    __tablename__ = "estoque_movimento"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    insumo_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("insumos.id", ondelete="CASCADE"), nullable=False)
+    id_pedido: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("pedido.id_pedido", ondelete="SET NULL"))
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    # Negativo: saida do estoque. Positivo: entrada.
+    quantidade: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    saldo_apos: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    id_usuario: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
+    motivo: Mapped[str | None] = mapped_column(String(255))
+    criado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+
+    insumo: Mapped[Insumo] = relationship()
+    usuario: Mapped[User | None] = relationship()
 
 
 class ProdutoInsumo(Base):

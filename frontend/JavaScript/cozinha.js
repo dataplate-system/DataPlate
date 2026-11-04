@@ -977,13 +977,11 @@ function startAutoRefresh() {
   autoRefreshTimer = window.setInterval(() => loadOrders({ silent: true }), AUTO_REFRESH_MS);
 }
 
-function buildKitchenWebSocketUrl(token) {
+function buildKitchenWebSocketUrl() {
   const apiUrl = API_BASE_URL.startsWith('http')
     ? API_BASE_URL
     : `${window.location.origin}${API_BASE_URL}`;
-  const wsUrl = new URL(apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '/ws'));
-  wsUrl.searchParams.set('token', token);
-  return wsUrl.toString();
+  return apiUrl.replace(/^http/, 'ws').replace(/\/api\/?$/, '/ws');
 }
 
 function connectKitchenWebSocket() {
@@ -996,9 +994,11 @@ function connectKitchenWebSocket() {
   }
 
   try {
-    const socket = new WebSocket(buildKitchenWebSocketUrl(token));
+    const socket = new WebSocket(buildKitchenWebSocketUrl());
     kitchenSocket = socket;
     socket.addEventListener('open', () => {
+      // O token vai na primeira mensagem: URLs ficam registradas nos logs de acesso.
+      socket.send(JSON.stringify({ type: 'AUTH', token }));
       websocketRetryDelay = 1000;
       window.clearInterval(autoRefreshTimer);
       autoRefreshTimer = null;

@@ -30,7 +30,10 @@ try {
     page.on('pageerror', e => errors.push(e.message));
     await page.goto(`${base}/pages/pdv.html`);
     await page.locator('.produto-card').first().waitFor();
-    await page.waitForFunction(() => [...document.querySelectorAll('.produto-img')].every(img => img.complete && img.naturalWidth > 0));
+    // As fotos tem carregamento preguicoso: so as que estao na tela precisam ter carregado.
+    await page.waitForFunction(() => [...document.querySelectorAll('.produto-img')]
+      .filter(img => img.getBoundingClientRect().top < innerHeight)
+      .every(img => img.complete && img.naturalWidth > 0));
     await page.locator('.produto-card .btn-add').first().click();
     if (width < 901) await page.locator('#pdvMobileOrder').click();
     await page.locator('#cartItems .cart-row').first().waitFor();

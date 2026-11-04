@@ -323,8 +323,8 @@ Notas:
 ## RN-AC36 - Cliente: criação de pedido
 - **Descrição:** O cliente anônimo cria pedido apenas para a mesa identificada por um token de QR Code válido.
 - **Perfis:** Cliente.
-- **Condição/Exceção:** Não envia `vendaCaixa`, desconto nem `clienteId`. Não escolhe a mesa por número ou parâmetro de URL.
-- **Comportamento do sistema:** Pedido sem token de mesa válido ou com campos restritos retorna HTTP 403. O preço de cada item é sempre recalculado no backend.
+- **Condição/Exceção:** Não envia `vendaCaixa`, desconto nem `clienteId`. Não escolhe a mesa por número ou parâmetro de URL. A mesa precisa ter sido aberta pela equipe (status `ocupada`).
+- **Comportamento do sistema:** Pedido sem token de mesa válido ou com campos restritos retorna HTTP 403. Mesa fechada retorna HTTP 409, e o limite é de 20 pedidos anônimos por mesa a cada 10 minutos (HTTP 429). O preço de cada item é sempre recalculado no backend.
 
 ## RN-AC37 - Cliente: acompanhamento do pedido
 - **Descrição:** O cliente acompanha somente os pedidos que ele mesmo criou.
@@ -481,7 +481,7 @@ Notas:
 | O cancelamento de item (`item_pedido.cancelado`) não é usado por nenhum endpoint | `models.py` | RN-AC41 | Pendente |
 | Dados pessoais e financeiros ficam públicos (clientes, funcionários com salário, reservas, pedidos, relatórios, custos de insumos) | `routers/clientes.py`, `funcionarios.py`, `mesas.py`, `pedidos.py`, `relatorios.py`, `insumos.py` | RN-AC50, RN-AC51 | Parcial: os endpoints exigem perfil e o Administrador e o Caixa recebem campos pessoais como `null`; a Cozinha ainda recebe custo e fornecedores de insumos e valores dos pedidos (notas 5 e 9, RN-AC35) |
 | O QR Code de qualquer mesa é público. Pedidos podem ser lidos por ID ou número de mesa sequencial. O cliente escolhe a mesa sem QR | `routers/mesas.py:45`, `pedidos.py:116,132`, `user.js:74,873` | RN-AC36, RN-AC37, RN-AC52 | Corrigido: QR Code exige `GERENTE`, pedido anônimo exige `mesaToken`, consulta anônima exige `?token=<tokenAcesso>` (senão 404), `user.js` só usa a mesa do QR Code |
-| O WebSocket não tem autenticação e envia todos os pedidos a qualquer conexão | `main.py`, `realtime.py` | RN-AC53 | Corrigido: `/ws?token=` (equipe, `ADMIN` recusado) ou `/ws?pedido=&pedidoToken=` (cliente, só o próprio pedido); inválido fecha com 1008. A Cozinha ainda recebe valores |
+| O WebSocket não tem autenticação e envia todos os pedidos a qualquer conexão | `main.py`, `realtime.py` | RN-AC53 | Corrigido: `/ws` com o token na primeira mensagem (equipe, `ADMIN` recusado) ou `/ws?pedido=&pedidoToken=` (cliente, só o próprio pedido); inválido fecha com 1008. A Cozinha ainda recebe valores |
 | O Administrador pode rebaixar a si mesmo ou remover o último `ADMIN`. A exclusão é física e sem auditoria | `routers/usuarios.py:51,86` | RN-AC23, RN-AC24, RN-AC25 | Corrigido: 400 ao alterar o próprio perfil/situação, 409 para o último `ADMIN`/`GERENTE` ativo e para exclusão com histórico vinculado. Auditoria pendente (RN-AC60) |
 | A recuperação de senha permite descobrir CPFs cadastrados: a identificação devolve o e-mail mascarado, e a solicitação devolve `resetToken` e `recoveryEmail` só para CPF ativo (ou HTTP 503 se não houver e-mail). Não há limite de tentativas no login | `routers/auth.py:32`, `services.py:60-81`, `services.py:84-86` | RN-AC10, RN-AC15 | Pendente |
 | As credenciais padrão (`admin123`) são criadas por padrão | `seed.py`, `DEFAULT_ADMIN_ENABLED` | RN-AC16 | Pendente: `DEFAULT_ADMIN_ENABLED` continua `true` por padrão |
@@ -555,12 +555,12 @@ O recorte abaixo já está implementado. Os itens marcados como *(funcionalidade
    - `TRANSICOES_STATUS` mapeia (origem, destino) para os perfis da RN-AC32. A ordem de checagem em `PUT /api/pedidos/{id}/status` é 404 (pedido) → 409 (transição inválida) → 403 (perfil) → 422 (motivo de cancelamento ou forma de pagamento ausentes). O cancelamento após o preparo é exclusivo do Gerente (403 "Cancelamento apos o inicio do preparo exige o perfil Gerente"), já que a autorização da RN-AC40 ainda não existe. O histórico grava `id_usuario` e `motivo`.
    - `POST /api/pedidos`: o anônimo precisa de `mesaToken` válido e não pode enviar `vendaCaixa`, desconto nem `clienteId` (403). `vendaCaixa`, desconto e `clienteId` exigem `CAIXA` ou `GERENTE`; `ADMIN` e `COZINHA` recebem 403. O Caixa tem limite de 10% do subtotal (`LIMITE_DESCONTO_PERCENTUAL`), e o Gerente não tem limite. A resposta do POST inclui `tokenAcesso`, usado pelo cliente em `GET /api/pedidos/{id}?token=<tokenAcesso>` (sem token correto: 404).
 
-6. **WebSocket** (`main.py`, `realtime.py`): `/ws?token=<access JWT>` para `GERENTE`, `FUNCIONARIO`, `CAIXA` e `COZINHA` (todos os eventos); `/ws?pedido=<id>&pedidoToken=<tokenAcesso>` para o cliente (só os eventos do próprio pedido). Sem parâmetros, token inválido ou `ADMIN`: fechamento com código 1008. Os eventos não incluem `tokenAcesso`.
+6. **WebSocket** (`main.py`, `realtime.py`): `/ws` para `GERENTE`, `FUNCIONARIO`, `CAIXA` e `COZINHA` (todos os eventos), com o access JWT na primeira mensagem, em até 5 segundos; `/ws?pedido=<id>&pedidoToken=<tokenAcesso>` para o cliente (só os eventos do próprio pedido). Token inválido ou ausente, ou `ADMIN`: fechamento com código 1008. Os eventos não incluem `tokenAcesso`.
 
 7. **Frontend**:
    - `adm-login.js`/`adm-auth.js`: `ADMIN` → `admin`, `GERENTE` → `gerente`, `FUNCIONARIO` → `atendente`, `CAIXA` → `caixa`, `COZINHA` → `cozinha`. Outro perfil não cria sessão e exibe "Perfil sem acesso". A sessão guarda `backendRole`.
    - `adm.js`: o perfil vem de `session.backendRole` (no modo demonstração, do `userKey`). `SECTION_ROLES` e o atributo `data-roles` controlam menu, atalhos, busca de telas e `navigateTo`. Atendente, Caixa e Cozinha são redirecionados à própria tela inicial. Os perfis do select de usuários vêm de `USER_ACCESS_TYPE_TO_ROLE` (5 perfis; o Gerente vê só os operacionais), e a situação usa o `ativo` real.
-   - `atendente.js`, `pdv.js` e `cozinha.js`: conferem o perfil ao carregar e abrem o WebSocket com `?token=`. `atendente.js` e `pdv.js` usam `PATCH` para status e reserva de mesa. A Cozinha para em PRONTO, o Atendente marca SERVIDO e o Caixa marca ENTREGUE com forma de pagamento.
+   - `atendente.js`, `pdv.js` e `cozinha.js`: conferem o perfil ao carregar e enviam o token na primeira mensagem do WebSocket. `atendente.js` e `pdv.js` usam `PATCH` para status e reserva de mesa. A Cozinha para em PRONTO, o Atendente marca SERVIDO e o Caixa marca ENTREGUE com forma de pagamento.
    - `user.js`: a mesa vem só do `mesaToken` do QR Code; o pedido envia `mesaToken` e guarda o `tokenAcesso` para a consulta e o WebSocket.
 
 

@@ -11,6 +11,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
+from app.estoque import sincronizar_estoque_do_pedido
+from app.limiter import exigir_disponivel, pedidos_qr_por_mesa
 from app.models import Cliente, Mesa, Pedido, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto, Role, User
 from app.realtime import manager
 from app.security import exigir_perfis, get_usuario_atual, get_usuario_opcional
@@ -27,6 +29,15 @@ STATUS_ATIVOS = (STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID, STA
 
 LIMITE_DESCONTO_PERCENTUAL = Decimal("10")
 MESA_STATUS_LIBERADOS = ("livre", "reservada")
+# So a equipe abre a mesa: um QR Code fotografado nao gera pedido com a mesa fechada.
+MESA_STATUS_ACEITA_QR = "ocupada"
+# A baixa de estoque acontece ao sair da fila e nunca e repetida (ver app/estoque.py).
+STATUS_COM_BAIXA_ESTOQUE = {
+    PedidoStatusNome.EM_PREPARO,
+    PedidoStatusNome.PRONTO,
+    PedidoStatusNome.SERVIDO,
+    PedidoStatusNome.ENTREGUE,
+}
 
 PERFIS_CRIAM_PEDIDO = {Role.GERENTE.value, Role.FUNCIONARIO.value, Role.CAIXA.value}
 PERFIS_RECURSOS_CAIXA = {Role.GERENTE.value, Role.CAIXA.value}
@@ -72,6 +83,10 @@ def criar_pedido(
     _autorizar_criacao(request, usuario, venda_caixa)
     _validar_criacao(request, venda_caixa)
     mesa = _resolver_mesa(db, request, venda_caixa, anonimo=usuario is None)
+    chave_qr = None
+    if usuario is None and mesa is not None:
+        chave_qr = str(mesa.id)
+        exigir_disponivel(pedidos_qr_por_mesa, chave_qr, "Muitos pedidos nesta mesa.")
     produtos = _resolver_produtos(db, request)
     subtotal_itens = sum(
         (produtos[item.produtoId].preco * Decimal(item.quantidade) for item in request.itens),
@@ -90,6 +105,9 @@ def criar_pedido(
         observacoes=_observacoes_pedido(request, venda_caixa),
         atualizado_em=now,
         valor_total=Decimal("0"),
+        # Venda no caixa e paga na hora; pedido de mesa so ao fechar a conta.
+        pago_em=now if venda_caixa else None,
+        forma_pagamento=_forma_pagamento(request.formaPagamento) if venda_caixa else None,
     )
     db.add(pedido)
     if mesa is not None and mesa.status in MESA_STATUS_LIBERADOS:
@@ -111,10 +129,16 @@ def criar_pedido(
             id_usuario=None if usuario is None else usuario.id,
         )
     )
+    criticos = []
+    if todos_instantaneos:
+        criticos = sincronizar_estoque_do_pedido(db, pedido.id, itens, usuario.id, "Venda no caixa")
     db.commit()
     db.refresh(pedido)
+    if chave_qr is not None:
+        pedidos_qr_por_mesa.registrar(chave_qr)
     response = _to_response(_get_pedido_with_itens(db, pedido.id), _mesa_map(db))
     _publicar_evento("VENDA_CAIXA" if todos_instantaneos else "NOVO_PEDIDO", response)
+    _publicar_estoque_baixo(criticos)
     # O token de acompanhamento so e devolvido a quem criou o pedido, nunca nos eventos.
     return response.model_copy(update={"tokenAcesso": str(pedido.token_acesso)})
 
@@ -253,9 +277,13 @@ def editar_pedido(
         registrado_em=pedido.atualizado_em, id_usuario=usuario.id,
         motivo=f"Edicao: {motivo}. Antes: {resumo_anterior}. Depois: {resumo_novo}. Obs anterior: {observacoes_anteriores or '-'}"[:255],
     ))
+    criticos = []
+    if pedido.id_status != STATUS_RECEBIDO_ID:
+        criticos = sincronizar_estoque_do_pedido(db, pedido.id, novas_linhas, usuario.id, f"Edicao: {motivo}")
     db.commit()
     response = _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
     _publicar_evento("PEDIDO_ATUALIZADO", response)
+    _publicar_estoque_baixo(criticos)
     return response
 
 
@@ -320,6 +348,9 @@ def atualizar_status(
         tag = "Pagamento: " + forma_pagamento.upper()
         if "Pagamento:" not in obs:
             pedido.observacoes = tag if not obs else f"{obs} | {tag}"
+        if pedido.pago_em is None:
+            pedido.pago_em = agora
+            pedido.forma_pagamento = _forma_pagamento(forma_pagamento)
 
     db.add(
         PedidoStatusHistorico(
@@ -331,9 +362,13 @@ def atualizar_status(
         )
     )
     db.add(pedido)
+    criticos = []
+    if destino in STATUS_COM_BAIXA_ESTOQUE:
+        criticos = sincronizar_estoque_do_pedido(db, pedido.id, pedido.itens, usuario.id, "Inicio do preparo")
     db.commit()
     response = _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
     _publicar_evento("PEDIDO_ATUALIZADO", response)
+    _publicar_estoque_baixo(criticos)
     return response
 
 
@@ -435,6 +470,11 @@ def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool,
             request.numeroMesa is not None and request.numeroMesa != mesa.numero
         ):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A mesa informada nao corresponde ao QR Code.")
+        if anonimo and mesa.status != MESA_STATUS_ACEITA_QR:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esta mesa não está aberta para pedidos. Chame o atendente.",
+            )
         return mesa
     if request.mesaId is not None:
         mesa = db.get(Mesa, request.mesaId)
@@ -477,6 +517,10 @@ def _parse_uuid(valor: str | None) -> UUID | None:
         return UUID(valor)
     except ValueError:
         return None
+
+
+def _forma_pagamento(valor: str | None) -> str | None:
+    return None if valor is None else valor.strip().upper()[:30]
 
 
 def _texto_ou_none(valor: str | None) -> str | None:
@@ -596,3 +640,8 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
 def _publicar_evento(tipo: str, pedido: PedidoResponse) -> None:
     payload = {"type": tipo, "pedido": pedido.model_dump(mode="json", exclude={"tokenAcesso"})}
     anyio.from_thread.run(manager.broadcast, payload)
+
+
+def _publicar_estoque_baixo(insumos: list[dict]) -> None:
+    if insumos:
+        anyio.from_thread.run(manager.broadcast, {"type": "ESTOQUE_BAIXO", "insumos": insumos})

@@ -1,13 +1,16 @@
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app import bcg
 from app.db import get_db
 from app.models import PedidoStatusNome, Role
 from app.schemas import (
+    RelatorioBcgItem,
+    RelatorioBcgResponse,
     RelatorioCardapioItem,
     RelatorioCardapioResponse,
     RelatorioOperacionalResponse,
@@ -38,8 +41,8 @@ router = APIRouter(
 def resumo(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db)) -> RelatorioResumoResponse:
     data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=False)
     status_counts = _counts_by_status(db, inicio_dia, fim_dia)
-    faturamento = _faturamento(db, inicio_dia, fim_dia)
-    pedidos_pagos = _count_total(db, inicio_dia, fim_dia) - status_counts.get(STATUS_CANCELADO_ID, 0)
+    valores = _valores_financeiros(db, inicio_dia, fim_dia)
+    pedidos_validos = _count_total(db, inicio_dia, fim_dia) - status_counts.get(STATUS_CANCELADO_ID, 0)
     return RelatorioResumoResponse(
         inicio=data_inicio,
         fim=data_fim,
@@ -48,8 +51,11 @@ def resumo(inicio: date | None = None, fim: date | None = None, db: Session = De
         pedidosProntos=status_counts.get(STATUS_PRONTO_ID, 0),
         pedidosEntregues=status_counts.get(STATUS_ENTREGUE_ID, 0),
         pedidosCancelados=status_counts.get(STATUS_CANCELADO_ID, 0),
-        faturamento=_float(faturamento),
-        ticketMedio=_float(_ticket_medio(faturamento, pedidos_pagos)),
+        faturamento=_float(valores["lancado"]),
+        faturamentoRecebido=_float(valores["recebido"]),
+        faturamentoEmAberto=_float(valores["em_aberto"]),
+        valorCancelado=_float(valores["cancelado"]),
+        ticketMedio=_float(_ticket_medio(valores["lancado"], pedidos_validos)),
         topProdutos=_top_produtos(db, inicio_dia, fim_dia, limit=5),
     )
 
@@ -60,15 +66,20 @@ def vendas(inicio: date | None = None, fim: date | None = None, db: Session = De
     status_counts = _counts_by_status(db, inicio_dia, fim_dia)
     total_pedidos = _count_total(db, inicio_dia, fim_dia)
     cancelados = status_counts.get(STATUS_CANCELADO_ID, 0)
-    faturamento = _faturamento(db, inicio_dia, fim_dia)
+    valores = _valores_financeiros(db, inicio_dia, fim_dia)
     custo_total = _custo_total(db, inicio_dia, fim_dia)
-    pagos = total_pedidos - cancelados
+    pedidos_validos = total_pedidos - cancelados
+    vendidos = _vendas_por_produto(db, inicio_dia, fim_dia)
     return RelatorioVendasResponse(
         inicio=data_inicio,
         fim=data_fim,
-        faturamento=_float(faturamento),
-        ticketMedio=_float(_ticket_medio(faturamento, pagos)),
+        faturamento=_float(valores["lancado"]),
+        faturamentoRecebido=_float(valores["recebido"]),
+        faturamentoEmAberto=_float(valores["em_aberto"]),
+        valorCancelado=_float(valores["cancelado"]),
+        ticketMedio=_float(_ticket_medio(valores["lancado"], pedidos_validos)),
         custoTotal=_float(custo_total),
+        produtosSemFicha=len(set(vendidos) - _produtos_com_ficha(db)),
         totalPedidos=total_pedidos,
         pedidosEntregues=status_counts.get(STATUS_ENTREGUE_ID, 0),
         pedidosCancelados=cancelados,
@@ -83,25 +94,8 @@ def vendas(inicio: date | None = None, fim: date | None = None, db: Session = De
 def cardapio(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db)) -> RelatorioCardapioResponse:
     data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=True)
     del data_inicio, data_fim
-    custos = {
-        int(row.produto_id): _decimal(row.custo_total)
-        for row in db.execute(
-            text(
-                """
-                SELECT i.id_produto AS produto_id,
-                       COALESCE(SUM(pi2.quantidade * ins.custo_unitario * i.quantidade), 0) AS custo_total
-                FROM item_pedido i
-                JOIN pedido p ON p.id_pedido = i.id_pedido
-                JOIN produto_insumos pi2 ON pi2.produto_id = i.id_produto
-                JOIN insumos ins ON ins.id = pi2.insumo_id
-                WHERE p.id_status <> :cancelado
-                  AND p.data_hora BETWEEN :inicio AND :fim
-                GROUP BY i.id_produto
-                """
-            ),
-            {"cancelado": STATUS_CANCELADO_ID, "inicio": inicio_dia, "fim": fim_dia},
-        )
-    }
+    custos = _custos_por_produto(db, inicio_dia, fim_dia)
+    com_ficha = _produtos_com_ficha(db)
     rows = db.execute(
         text(
             """
@@ -126,8 +120,11 @@ def cardapio(inicio: date | None = None, fim: date | None = None, db: Session = 
     itens: list[RelatorioCardapioItem] = []
     total_itens = 0
     faturamento_total = Decimal("0")
+    sem_ficha = 0
     for row in rows:
         custo = custos.get(int(row.produto_id), Decimal("0"))
+        tem_ficha = int(row.produto_id) in com_ficha
+        sem_ficha += 0 if tem_ficha else 1
         faturamento = _decimal(row.faturamento)
         quantidade = _decimal(row.quantidade)
         itens.append(
@@ -139,13 +136,80 @@ def cardapio(inicio: date | None = None, fim: date | None = None, db: Session = 
                 quantidadeVendida=_float(quantidade),
                 faturamento=_float(faturamento),
                 custoTotal=_float(custo),
-                lucro=_float(faturamento - custo),
+                lucro=_float(faturamento - custo) if tem_ficha else None,
+                temFichaTecnica=tem_ficha,
             )
         )
         total_itens += int(quantidade)
         faturamento_total += faturamento
 
-    return RelatorioCardapioResponse(topProdutos=itens, totalItensVendidos=total_itens, faturamentoTotal=_float(faturamento_total))
+    return RelatorioCardapioResponse(
+        topProdutos=itens,
+        totalItensVendidos=total_itens,
+        faturamentoTotal=_float(faturamento_total),
+        produtosSemFicha=sem_ficha,
+    )
+
+
+@router.get("/bcg", response_model=RelatorioBcgResponse)
+def matriz_bcg(inicio: date | None = None, fim: date | None = None, db: Session = Depends(get_db)) -> RelatorioBcgResponse:
+    data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=True)
+    dias = (data_fim - data_inicio).days + 1
+    if dias <= 0:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="A data inicial deve ser anterior à data final.")
+    # Periodo anterior: mesma duracao, imediatamente antes do selecionado.
+    fim_anterior = data_inicio - timedelta(days=1)
+    inicio_anterior = fim_anterior - timedelta(days=dias - 1)
+
+    produtos = db.execute(text("SELECT id_produto, nome, id_categoria FROM produto WHERE ativo ORDER BY nome")).all()
+    atuais = _vendas_por_produto(db, inicio_dia, fim_dia)
+    anteriores = _vendas_por_produto(db, datetime.combine(inicio_anterior, time.min), datetime.combine(fim_anterior, time.max))
+    custos = _custos_por_produto(db, inicio_dia, fim_dia)
+    com_ficha = _produtos_com_ficha(db)
+
+    zero = (Decimal("0"), Decimal("0"))
+    total_atual = sum((atuais.get(int(p.id_produto), zero)[1] for p in produtos), Decimal("0"))
+    total_anterior = sum((anteriores.get(int(p.id_produto), zero)[1] for p in produtos), Decimal("0"))
+    limite = bcg.limite_participacao(len(produtos))
+
+    itens = []
+    for produto in produtos:
+        produto_id = int(produto.id_produto)
+        quantidade, faturamento = atuais.get(produto_id, zero)
+        faturamento_anterior = anteriores.get(produto_id, zero)[1]
+        participacao = float(faturamento * 100 / total_atual) if total_atual > 0 else 0.0
+        crescimento = bcg.crescimento_percentual(faturamento, faturamento_anterior)
+        classificacao = bcg.classificar(participacao, crescimento, limite, vendeu=faturamento > 0)
+        tem_ficha = produto_id in com_ficha
+        itens.append(RelatorioBcgItem(
+            produtoId=produto_id,
+            nome=produto.nome,
+            idCategoria=int(produto.id_categoria),
+            quantidadeVendida=_float(quantidade),
+            faturamento=_float(faturamento),
+            faturamentoAnterior=_float(faturamento_anterior),
+            participacao=round(participacao, 2),
+            crescimento=None if crescimento is None else round(crescimento, 1),
+            classificacao=classificacao,
+            acaoSugerida=bcg.ACOES[classificacao],
+            lucro=_float(faturamento - custos.get(produto_id, Decimal("0"))) if tem_ficha else None,
+            temFichaTecnica=tem_ficha,
+        ))
+    itens.sort(key=lambda item: (-item.faturamento, item.nome))
+
+    crescimento_total = bcg.crescimento_percentual(total_atual, total_anterior)
+    return RelatorioBcgResponse(
+        inicio=data_inicio,
+        fim=data_fim,
+        inicioAnterior=inicio_anterior,
+        fimAnterior=fim_anterior,
+        faturamentoTotal=_float(total_atual),
+        faturamentoAnterior=_float(total_anterior),
+        crescimentoTotal=None if crescimento_total is None else round(crescimento_total, 1),
+        limiteParticipacao=round(limite, 2),
+        limiteCrescimento=bcg.LIMITE_CRESCIMENTO,
+        itens=itens,
+    )
 
 
 @router.get("/operacional", response_model=RelatorioOperacionalResponse)
@@ -233,6 +297,77 @@ def _faturamento(db: Session, inicio: datetime, fim: datetime) -> Decimal:
             {"cancelado": STATUS_CANCELADO_ID, "inicio": inicio, "fim": fim},
         )
     )
+
+
+def _valores_financeiros(db: Session, inicio: datetime, fim: datetime) -> dict[str, Decimal]:
+    """Lancado = recebido + em aberto. ENTREGUE exige pagamento, inclusive em registros antigos."""
+    linha = db.execute(
+        text(
+            """
+            SELECT
+              COALESCE(SUM(valor_total) FILTER (WHERE id_status <> :cancelado), 0) AS lancado,
+              COALESCE(SUM(valor_total) FILTER (WHERE id_status <> :cancelado AND (pago_em IS NOT NULL OR id_status = :entregue)), 0) AS recebido,
+              COALESCE(SUM(valor_total) FILTER (WHERE id_status NOT IN (:cancelado, :entregue) AND pago_em IS NULL), 0) AS em_aberto,
+              COALESCE(SUM(valor_total) FILTER (WHERE id_status = :cancelado), 0) AS cancelado
+            FROM pedido
+            WHERE data_hora BETWEEN :inicio AND :fim
+            """
+        ),
+        {"cancelado": STATUS_CANCELADO_ID, "entregue": STATUS_ENTREGUE_ID, "inicio": inicio, "fim": fim},
+    ).one()
+    return {
+        "lancado": _decimal(linha.lancado),
+        "recebido": _decimal(linha.recebido),
+        "em_aberto": _decimal(linha.em_aberto),
+        "cancelado": _decimal(linha.cancelado),
+    }
+
+
+def _produtos_com_ficha(db: Session) -> set[int]:
+    return {int(produto_id) for produto_id in db.scalars(text("SELECT DISTINCT produto_id FROM produto_insumos"))}
+
+
+def _vendas_por_produto(db: Session, inicio: datetime, fim: datetime) -> dict[int, tuple[Decimal, Decimal]]:
+    """Produto -> (quantidade, faturamento) dos pedidos nao cancelados no periodo."""
+    return {
+        int(row.id_produto): (_decimal(row.quantidade), _decimal(row.faturamento))
+        for row in db.execute(
+            text(
+                """
+                SELECT i.id_produto, SUM(i.quantidade) AS quantidade, SUM(i.subtotal) AS faturamento
+                FROM item_pedido i
+                JOIN pedido p ON p.id_pedido = i.id_pedido
+                WHERE p.id_status <> :cancelado
+                  AND NOT i.cancelado
+                  AND p.data_hora BETWEEN :inicio AND :fim
+                GROUP BY i.id_produto
+                """
+            ),
+            {"cancelado": STATUS_CANCELADO_ID, "inicio": inicio, "fim": fim},
+        )
+    }
+
+
+def _custos_por_produto(db: Session, inicio: datetime, fim: datetime) -> dict[int, Decimal]:
+    return {
+        int(row.produto_id): _decimal(row.custo_total)
+        for row in db.execute(
+            text(
+                """
+                SELECT i.id_produto AS produto_id,
+                       COALESCE(SUM(pi2.quantidade * ins.custo_unitario * i.quantidade), 0) AS custo_total
+                FROM item_pedido i
+                JOIN pedido p ON p.id_pedido = i.id_pedido
+                JOIN produto_insumos pi2 ON pi2.produto_id = i.id_produto
+                JOIN insumos ins ON ins.id = pi2.insumo_id
+                WHERE p.id_status <> :cancelado
+                  AND p.data_hora BETWEEN :inicio AND :fim
+                GROUP BY i.id_produto
+                """
+            ),
+            {"cancelado": STATUS_CANCELADO_ID, "inicio": inicio, "fim": fim},
+        )
+    }
 
 
 def _custo_total(db: Session, inicio: datetime, fim: datetime) -> Decimal:

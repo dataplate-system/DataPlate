@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
-from app.models import Fornecedor, Insumo, Role
-from app.schemas import InsumoRequest, InsumoResponse
+from app.estoque import registrar_ajuste_manual
+from app.models import EstoqueMovimento, Fornecedor, Insumo, Role, User
+from app.schemas import EstoqueMovimentoResponse, InsumoRequest, InsumoResponse
 from app.security import exigir_perfis
 
 
@@ -21,6 +24,39 @@ def listar_insumos(db: Session = Depends(get_db)) -> list[InsumoResponse]:
         select(Insumo).options(selectinload(Insumo.fornecedores)).where(Insumo.ativo.is_(True)).limit(500)
     ).all()
     return [_to_response(insumo) for insumo in insumos]
+
+
+@router.get(
+    "/movimentos",
+    response_model=list[EstoqueMovimentoResponse],
+    dependencies=[Depends(exigir_perfis(Role.GERENTE, Role.COZINHA))],
+)
+def listar_movimentos(
+    limite: int = Query(default=20, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> list[EstoqueMovimentoResponse]:
+    movimentos = db.scalars(
+        select(EstoqueMovimento)
+        .options(joinedload(EstoqueMovimento.insumo), joinedload(EstoqueMovimento.usuario))
+        .order_by(EstoqueMovimento.criado_em.desc(), EstoqueMovimento.id.desc())
+        .limit(limite)
+    ).all()
+    return [
+        EstoqueMovimentoResponse(
+            id=movimento.id,
+            insumoId=movimento.insumo_id,
+            insumoNome=movimento.insumo.nome,
+            unidade=movimento.insumo.unidade,
+            tipo=movimento.tipo,
+            quantidade=float(movimento.quantidade),
+            saldoApos=float(movimento.saldo_apos),
+            pedidoId=movimento.id_pedido,
+            usuarioNome=movimento.usuario.nome if movimento.usuario else None,
+            motivo=movimento.motivo,
+            criadoEm=movimento.criado_em,
+        )
+        for movimento in movimentos
+    ]
 
 
 @router.post(
@@ -48,16 +84,20 @@ def criar_insumo(request: InsumoRequest, db: Session = Depends(get_db)) -> Insum
 @router.put(
     "/{insumo_id}",
     response_model=InsumoResponse,
-    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
 )
-def atualizar_insumo(insumo_id: int, request: InsumoRequest, db: Session = Depends(get_db)) -> InsumoResponse:
+def atualizar_insumo(
+    insumo_id: int,
+    request: InsumoRequest,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.GERENTE)),
+) -> InsumoResponse:
     insumo = db.get(Insumo, insumo_id)
     if insumo is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Insumo nao encontrado: {insumo_id}")
 
     insumo.nome = request.nome
     insumo.unidade = request.unidade
-    insumo.quantidade_atual = request.quantidadeAtual
+    registrar_ajuste_manual(db, insumo, Decimal(str(request.quantidadeAtual)), usuario.id)
     insumo.quantidade_minima = request.quantidadeMinima
     insumo.custo_unitario = request.custoUnitario
     if "fornecedorIds" in request.model_fields_set:

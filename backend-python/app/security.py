@@ -6,7 +6,6 @@ import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -14,6 +13,8 @@ from app.db import get_db
 from app.models import Role, User
 
 bearer_scheme = HTTPBearer(auto_error=False)
+# O token identifica o usuario pelo id: CPF nao deve ficar legivel no payload do JWT.
+PREFIXO_SUBJECT = "usuario:"
 
 
 def _signing_key(secret: str) -> bytes:
@@ -41,22 +42,33 @@ def hash_password(plain_password: str) -> str:
 
 def create_access_token(user: User) -> str:
     settings = get_settings()
-    return _create_token(user.cpf, settings.jwt_expiration_ms, settings.jwt_secret, "access")
+    return _create_token(_subject(user), settings.jwt_expiration_ms, settings.jwt_secret, "access")
 
 
 def create_refresh_token(user: User) -> str:
     settings = get_settings()
-    return _create_token(user.cpf, settings.jwt_refresh_expiration_ms, settings.effective_refresh_secret, "refresh")
+    return _create_token(_subject(user), settings.jwt_refresh_expiration_ms, settings.effective_refresh_secret, "refresh")
 
 
-def decode_access_token(token: str) -> str:
+def decode_access_token(token: str) -> int:
     settings = get_settings()
-    return _decode_subject(token, settings.jwt_secret, "access")
+    return _id_do_usuario(_decode_subject(token, settings.jwt_secret, "access"))
 
 
-def decode_refresh_token(token: str) -> str:
+def decode_refresh_token(token: str) -> int:
     settings = get_settings()
-    return _decode_subject(token, settings.effective_refresh_secret, "refresh")
+    return _id_do_usuario(_decode_subject(token, settings.effective_refresh_secret, "refresh"))
+
+
+def _subject(user: User) -> str:
+    return f"{PREFIXO_SUBJECT}{user.id}"
+
+
+def _id_do_usuario(subject: str) -> int:
+    # Tokens antigos traziam o CPF: sem o prefixo nao sao aceitos e pedem novo login.
+    if not subject.startswith(PREFIXO_SUBJECT) or not subject[len(PREFIXO_SUBJECT):].isdecimal():
+        raise jwt.InvalidTokenError("Subject invalido")
+    return int(subject[len(PREFIXO_SUBJECT):])
 
 
 def _create_token(subject: str, ttl_ms: int, secret: str, token_type: str) -> str:
@@ -96,13 +108,13 @@ def get_usuario_atual(
         raise _nao_autenticado("Token ausente")
 
     try:
-        cpf = decode_access_token(credentials.credentials)
+        usuario_id = decode_access_token(credentials.credentials)
     except jwt.ExpiredSignatureError:
         raise _nao_autenticado("Token expirado")
     except jwt.InvalidTokenError:
         raise _nao_autenticado("Token invalido")
 
-    usuario = db.scalar(select(User).where(User.cpf == cpf))
+    usuario = db.get(User, usuario_id)
     if usuario is None:
         raise _nao_autenticado("Usuario do token nao encontrado")
     if not usuario.ativo:
@@ -138,10 +150,10 @@ def exigir_admin(usuario_atual: User = Depends(get_usuario_atual)) -> User:
 
 def usuario_por_access_token(db: Session, token: str) -> User | None:
     try:
-        cpf = decode_access_token(token)
+        usuario_id = decode_access_token(token)
     except jwt.InvalidTokenError:
         return None
-    usuario = db.scalar(select(User).where(User.cpf == cpf))
+    usuario = db.get(User, usuario_id)
     if usuario is None or not usuario.ativo:
         return None
     return usuario

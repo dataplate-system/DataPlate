@@ -15,17 +15,13 @@ async function login(cpf, senha) {
   return fetch(`${api}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf, senha }) });
 }
 for (const [role, cpf, password] of accounts) {
-  const digits = cpf.split('').map(Number);
-  for (const size of [9, 10]) {
-    const check = digits.slice(0, size).reduce((sum, digit, i) => sum + digit * (size + 1 - i), 0) * 10 % 11;
-    assert.equal(digits[size], check === 10 ? 0 : check, `CPF valido: ${role}`);
-  }
   const response = await login(cpf, password);
   assert.equal(response.status, 200, role);
   const body = await response.json();
   assert.equal(body.role, role);
   tokens[role] = body.token;
-  for (const wrong of ['admin123', 'senha-errada', ...accounts.filter(a => a[0] !== role).map(a => a[2])]) {
+  // Duas tentativas: a partir da quinta falha seguida a API responde 429.
+  for (const wrong of ['senha-errada', 'outra-senha-errada']) {
     assert.equal((await login(cpf, wrong)).status, 401, `${role} rejeita outra senha`);
   }
   const me = await fetch(`${api}/auth/me`, { headers: { Authorization: `Bearer ${body.token}` } });

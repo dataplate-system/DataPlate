@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="../Css/mobile.css?v=20261005-clean-header" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="stylesheet" href="../Css/role-theme.css?v=20261103-perfis-v2" />
+  <link rel="stylesheet" href="../Css/relatorios.css?v=20261104-bcg" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=1"></script>
   <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
@@ -77,6 +78,7 @@
           <div class="dropdown-menu">
             <a href="#rel-financeiro" class="dropdown-link" onclick="navigateTo('rel-financeiro')">Financeiro</a>
             <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
+            <a href="#rel-bcg" class="dropdown-link" onclick="navigateTo('rel-bcg')">Matriz BCG</a>
             <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
           </div>
         </div>
@@ -251,6 +253,10 @@
               <button type="button" class="home-shortcut" onclick="navigateTo('rel-cardapio')">
                 <span class="shortcut-icon">◬</span>
                 <span><strong>Desempenho</strong><small>Itens mais vendidos</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('rel-bcg')">
+                <span class="shortcut-icon">◫</span>
+                <span><strong>Matriz BCG</strong><small>Decisões sobre o cardápio</small></span>
               </button>
               <button type="button" class="home-shortcut" onclick="navigateTo('rel-operacional')">
                 <span class="shortcut-icon">◱</span>
@@ -1134,9 +1140,19 @@
 
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-label">Total de Vendas</div>
+              <div class="stat-label">Total Lançado</div>
               <div class="stat-value">Carregando...</div>
-              <div class="stat-change">Dados reais do período</div>
+              <div class="stat-change">Pedidos não cancelados</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Recebido</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Pagamento registrado</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Em Aberto</div>
+              <div class="stat-value">Carregando...</div>
+              <div class="stat-change">Ainda não pago</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Quantidade de Pedidos</div>
@@ -1226,22 +1242,32 @@
 
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-label">Receita Bruta</div>
-              <div class="stat-value">—</div>
-              <div class="stat-change">Clique em Gerar</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Despesas Totais</div>
+              <div class="stat-label">Total Lançado</div>
               <div class="stat-value">—</div>
               <div class="stat-change">Selecione o período</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Lucro Líquido</div>
+              <div class="stat-label">Recebido</div>
               <div class="stat-value">—</div>
               <div class="stat-change">Selecione o período</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Margem de Lucro</div>
+              <div class="stat-label">Em Aberto</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Custo de Insumos</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Lucro Estimado</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Margem Estimada</div>
               <div class="stat-value">—</div>
               <div class="stat-change">Selecione o período</div>
             </div>
@@ -1255,7 +1281,7 @@
           </div>
 
           <div class="report-section">
-            <h3>Composição de Despesas</h3>
+            <h3>Composição Financeira</h3>
             <div class="table-container">
               <table class="data-table">
                 <thead>
@@ -1294,6 +1320,8 @@
             <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
           </div>
 
+          <p class="relatorio-aviso" id="relCardapioAviso" hidden></p>
+
           <div class="report-section">
             <h3>Itens Mais Vendidos</h3>
             <div class="table-container">
@@ -1321,6 +1349,57 @@
                     <td></td>
                   </tr>
                 </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- MATRIZ BCG -->
+        <section id="rel-bcg" class="content-section">
+          <div class="section-header">
+            <h1>Matriz BCG do Cardápio</h1>
+            <p>Classifica cada item pela participação no faturamento e pelo crescimento em relação ao período anterior</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Data Inicial</label>
+              <input type="date" id="relBcgInicio" onchange="carregarRelBcg(this.value||null, document.getElementById('relBcgFim').value||null)" />
+            </div>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" id="relBcgFim" onchange="carregarRelBcg(document.getElementById('relBcgInicio').value||null, this.value||null)" />
+            </div>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
+          </div>
+
+          <p class="bcg-criterio" id="bcgCriterio"></p>
+          <p class="relatorio-aviso" id="bcgAviso" hidden></p>
+
+          <div class="bcg-grafico">
+            <div class="bcg-eixo-y">Crescimento →</div>
+            <div class="bcg-matriz" id="bcgMatriz"></div>
+            <div class="bcg-eixo-x">← Participação no faturamento</div>
+          </div>
+
+          <div class="report-section">
+            <h3>Detalhamento e Ação Sugerida</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Categoria</th>
+                    <th>Classificação</th>
+                    <th>Faturamento</th>
+                    <th>Participação</th>
+                    <th>Crescimento</th>
+                    <th>Lucro</th>
+                    <th>Ação Sugerida</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
               </table>
             </div>
           </div>
@@ -1402,6 +1481,27 @@
               </thead>
               <tbody></tbody>
             </table>
+          </div>
+
+          <div class="report-section">
+            <h3>Últimas Movimentações</h3>
+            <p class="bcg-criterio">A baixa ocorre quando o pedido entra em preparo, conforme a ficha técnica de cada produto.</p>
+            <div class="table-container">
+              <table class="data-table" id="movimentosEstoqueTable">
+                <thead>
+                  <tr>
+                    <th>Data/Hora</th>
+                    <th>Insumo</th>
+                    <th>Tipo</th>
+                    <th>Quantidade</th>
+                    <th>Saldo</th>
+                    <th>Origem</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -2370,6 +2470,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261103-integrado" defer></script>
+  <script src="../JavaScript/adm.js?v=20261104-melhorias" defer></script>
 </body>
 </html>

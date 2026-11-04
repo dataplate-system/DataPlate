@@ -79,6 +79,8 @@ function formatarPreco(valor) {
 }
 
 const MENSAGEM_LER_QR = "Leia o QR Code da mesa para fazer o pedido";
+const MENSAGEM_MESA_FECHADA = "Esta mesa não está aberta para pedidos. Chame o atendente.";
+const INTERVALO_MESA_FECHADA_MS = 15000;
 
 // A mesa do cliente vem exclusivamente do token do QR Code (RN-AC36)
 let mesaQrContext = null;
@@ -87,19 +89,52 @@ localStorage.removeItem("numeroMesa");
 
 const mesaQrToken = (new URLSearchParams(window.location.search).get('mesaToken') || '').trim() || null;
 let mesaQrResolucaoFalhou = false;
+let timerMesaFechada = null;
+
+async function consultarMesaQr() {
+  const response = await fetch(`${API_BASE_URL}/mesas/por-token/${encodeURIComponent(mesaQrToken)}`);
+  const body = await readResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, 'Este QR Code não identifica uma mesa ativa.'));
+  }
+  const mesaId = Number(body?.mesaId);
+  const numero = Number(body?.numero);
+  if (!(mesaId > 0) || !(numero > 0)) {
+    throw new Error('A resposta da mesa vinculada ao QR Code é inválida.');
+  }
+  return { mesaId, numeroMesa: numero, aberta: body?.aberta === true };
+}
+
+// O cardapio continua visivel; enquanto a mesa estiver fechada, o aviso acompanha a liberacao.
+function atualizarAvisoMesaFechada() {
+  const aberta = mesaQrContext?.aberta === true;
+  const aviso = document.getElementById("avisoMesaFechada");
+  if (aviso) aviso.hidden = aberta;
+  if (aberta) {
+    window.clearInterval(timerMesaFechada);
+    timerMesaFechada = null;
+  } else if (!timerMesaFechada) {
+    timerMesaFechada = window.setInterval(() => {
+      mesaAbertaParaPedidos();
+    }, INTERVALO_MESA_FECHADA_MS);
+  }
+}
+
+async function mesaAbertaParaPedidos() {
+  try {
+    mesaQrContext = await consultarMesaQr();
+    atualizarAvisoMesaFechada();
+  } catch (error) {
+    console.error('Erro ao consultar a mesa do QR Code:', error);
+  }
+  return mesaQrContext?.aberta === true;
+}
+
 const mesaQrPronto = mesaQrToken
-  ? fetch(`${API_BASE_URL}/mesas/por-token/${encodeURIComponent(mesaQrToken)}`)
-    .then(async (response) => {
-      const body = await readResponseBody(response);
-      if (!response.ok) {
-        throw new Error(extractErrorMessage(body, 'Este QR Code não identifica uma mesa ativa.'));
-      }
-      const mesaId = Number(body?.mesaId);
-      const numero = Number(body?.numero);
-      if (!(mesaId > 0) || !(numero > 0)) {
-        throw new Error('A resposta da mesa vinculada ao QR Code é inválida.');
-      }
-      mesaQrContext = { mesaId, numeroMesa: numero };
+  ? consultarMesaQr()
+    .then((contexto) => {
+      mesaQrContext = contexto;
+      atualizarAvisoMesaFechada();
     })
     .catch((error) => {
       mesaQrResolucaoFalhou = true;
@@ -527,6 +562,10 @@ async function confirmarPedido() {
   await mesaQrPronto;
   if (!mesaQrValida()) {
     avisarMesaSemQr();
+    return;
+  }
+  if (!(await mesaAbertaParaPedidos())) {
+    mostrarNotificacao("aviso", "Mesa não aberta", MENSAGEM_MESA_FECHADA);
     return;
   }
 

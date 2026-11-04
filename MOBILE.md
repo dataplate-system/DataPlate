@@ -27,7 +27,7 @@ flowchart LR
 | Compilacao Android | JDK 21, Android SDK e Gradle Wrapper | Gerar o APK de teste |
 | Recursos PWA | Manifest e service worker | Instalacao web e cache inicial de parte da interface |
 
-A API e um monolito modular organizado em routers, schemas e models. O mobile empacota a pasta `frontend`, definida em `webDir` no `capacitor.config.ts`. As dependencias React/Vite presentes na raiz nao fazem parte da interface empacotada por essa configuracao.
+A API e um monolito modular organizado em routers, schemas e models. O mobile empacota a pasta `frontend`, definida em `webDir` no `capacitor.config.ts`.
 
 O HTML, CSS e JavaScript sao copiados para o APK durante `cap sync android`. A API e o banco continuam no servidor; o aplicativo acessa a API por rede, e o servidor acessa o PostgreSQL.
 
