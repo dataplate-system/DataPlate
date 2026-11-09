@@ -270,7 +270,7 @@ Eventos publicados:
 
 ## Edicao operacional de pedidos
 
-Cozinha e Gerente podem usar `PUT /api/pedidos/{id}/itens` para pedidos
+Atendente, Cozinha e Gerente podem usar `PUT /api/pedidos/{id}/itens` para pedidos
 RECEBIDO, EM_PREPARO ou PRONTO. Enviar `itens`, `observacoes`, `motivo` e a
 versao `atualizadoEm` retornada pela consulta. Edicao de PRONTO retorna ao
 preparo; versao desatualizada retorna 409. O servidor recalcula o total e
@@ -299,3 +299,55 @@ O CI (`.github/workflows/ci.yml`) cria o banco do zero, roda esses testes e veri
 `scripts/check-melhorias.mjs` percorre o fluxo no navegador: QR Code bloqueado, abertura da mesa, WebSocket das quatro telas e baixa de estoque. Ele grava dados, entao exige uma API ligada a uma copia do banco. Rastreabilidade entre requisitos e testes: `docs/rastreabilidade.md`.
 
 Analise e sugestoes priorizadas: `docs/analise-melhorias-operacao.md`.
+
+## Operacao de pedidos - 09/11/2026
+
+Atendente e Cozinha podem editar e cancelar em RECEBIDO, EM_PREPARO e PRONTO.
+Edicao de PRONTO retorna a EM_PREPARO para conferencia. Cancelamento exige motivo.
+A API valida a origem pelo perfil (Gerente pode informar a tela em que operou).
+O historico existente guarda o setor como prefixo do motivo: `[Atendente]` ou
+`[Cozinha]`. A resposta apresenta `motivoCancelamento` e `origemCancelamento`;
+o gerente ve ambos na consulta de cancelamentos e nos detalhes do pedido.
+Registros antigos sem setor continuam com origem nao registrada.
+
+Normalizar nomes existentes no banco Docker local, sem criar pedidos:
+
+```powershell
+docker compose -f backend-python/docker-compose.yml exec -T api python -m app.local_demo_names
+```
+
+A carga `python -m app.local_test_data` tambem aplica os nomes naturais.
+Validacao das telas (frontend em 5500, API em 8081):
+
+```powershell
+node scripts/check-pedidos-operacao.mjs
+```
+
+O teste verifica cinco logins reais e usa pedidos simulados no navegador.
+Persistencia e permissoes sao verificadas em `test_operacao_pedidos.py`,
+com transacoes desfeitas ao final.
+
+A consulta paginada de pedidos aceita `status`, `data`, `mesa`, `cliente`,
+`numero` (ID ou codigo) e `ordem` (`recentes`, `antigos`, `total_maior`,
+`total_menor`). Filtros e ordenacao sao aplicados antes da paginacao na API.
+`canceladoEm` vem do registro de cancelamento no historico, separado de `dataHora`.
+O teste `node scripts/check-pedidos-filtros.mjs` verifica consultas reais sem
+alterar pedidos e os controles de desktop/celular, salvando capturas no TEMP.
+
+A ordenacao cronologica usa o horario de cancelamento nos CANCELADO e o de
+entrega nos ENTREGUE; pedidos em andamento usam a criacao. A coluna mostra o
+evento e tambem a data original do pedido. O filtro de data continua sendo pela
+data de criacao, conforme o rotulo "Data do pedido".
+
+Para atualizar somente motivos genericos e origens dos cenarios de demonstracao:
+`docker compose -f backend-python/docker-compose.yml exec -T api python -m app.local_demo_cancellations`.
+O comando e idempotente, limitado aos pedidos T26-/LOCAL-DEMO-, preserva horarios
+e motivos manuais e recupera a origem dos registros manuais pelo usuario autor.
+
+Para limpar e repovoar os dados operacionais do Docker local, use
+`python -m app.local_test_data --reset` no container, com a API parada e um backup
+previo. Restaurante e cardapio sao preservados; usuarios, clientes, fornecedores,
+funcionarios, mesas, insumos, fichas, pedidos e historicos sao recriados.
+A carga recria os cinco logins, nove pedidos ativos recentes, historico de trinta
+dias e cenarios naturais de cancelamento. Tempos ativos ficam entre 5 e 19 minutos
+no momento da carga e continuam aumentando conforme o tempo real passa.

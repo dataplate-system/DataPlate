@@ -1,0 +1,77 @@
+/* Shared order controls, loaded after the application themes. */
+body button.order-icon, body #orderDetailsModal .modal-close, body #cancelarModal .modal-close {
+  display: inline-flex !important; align-items: center; justify-content: center; flex: 0 0 40px !important;
+  width: 40px !important; height: 40px !important; min-width: 40px; min-height: 40px;
+  padding: 0 !important; border: 1px solid #e2e8f0 !important; border-radius: 10px !important;
+  background: #fff !important; color: #64748b !important; cursor: pointer;
+  transition: background .16s, color .16s, border-color .16s, transform .16s;
+}
+body button.order-icon svg, body #orderDetailsModal .modal-close svg, body #cancelarModal .modal-close svg {
+  width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round; pointer-events: none;
+}
+body button.order-icon:hover { background: #fff7ed !important; color: #c2410c !important; border-color: #fdba74 !important; }
+body button.order-icon.icon-close:hover, body button.order-icon.icon-remove:hover,
+body #orderDetailsModal .modal-close:hover, body #cancelarModal .modal-close:hover {
+  color: #dc2626 !important; background: #fef2f2 !important; border-color: #fca5a5 !important;
+}
+body button.order-icon.icon-add:hover { color: #15803d !important; background: #f0fdf4 !important; border-color: #86efac !important; }
+body button.order-icon:focus-visible { outline: 3px solid #fb923c; outline-offset: 3px; }
+body .kitchen-card .card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+body .kitchen-card .card-actions > .action-button:not(.order-icon) {
+  flex: 1 1 120px !important; width: auto !important; min-width: 0; min-height: 40px;
+  padding: 9px 12px !important; font-size: 13px !important; line-height: 1.25; border-radius: 9px !important;
+}
+body .kitchen-card .card-actions > .deliver { background: #15803d !important; color: #fff !important; }
+body .kitchen-card .card-actions > .deliver:hover { background: #166534 !important; }
+body dialog.order-edit-dialog {
+  box-sizing: border-box; border: 1px solid #e2e8f0 !important; border-radius: 18px !important;
+  padding: 24px !important; width: min(680px, calc(100% - 32px)); max-height: 90dvh;
+  box-shadow: 0 24px 80px #0f172a33; outline: none;
+}
+body dialog.order-edit-dialog::backdrop { background: #0f172a66; backdrop-filter: blur(3px); }
+body .order-edit-dialog .edit-heading { display: flex; align-items: center; gap: 16px; justify-content: space-between; }
+body .order-edit-dialog h2 { margin: 0; font-size: 21px !important; line-height: 1.35; }
+body .order-edit-dialog form { display: grid; gap: 18px; }
+body .order-edit-dialog .control-field { display: grid; gap: 7px; min-width: 0; }
+body .order-edit-dialog label, body #cancelarModal label { font-size: 12px; font-weight: 600; color: #475569; }
+body .order-edit-dialog textarea, body .order-edit-dialog input, body .order-edit-dialog select,
+body #cancelarModal textarea {
+  box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1 !important;
+  border-radius: 9px !important; font: inherit; background: #fff; color: #172033;
+}
+body .order-edit-dialog textarea:focus, body .order-edit-dialog input:focus, body .order-edit-dialog select:focus,
+body #cancelarModal textarea:focus { outline: 2px solid #fdba74; outline-offset: 2px; }
+body .order-edit-dialog .edit-item { grid-template-columns: minmax(0, 1fr) 72px 40px; border: 1px solid #edf2f7; border-radius: 12px; }
+body .order-edit-dialog .edit-add { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; }
+body #cancelOrderDialog { width: min(500px, calc(100% - 32px)); }
+body #cancelarModal .modal-box { width: min(500px, calc(100% - 32px)); max-width: 500px !important; border-radius: 18px; overflow: hidden; }
+body #cancelarModal .modal-header { padding: 20px 24px; gap: 16px; align-items: center; border-bottom: 1px solid #edf2f7; }
+body #cancelarModal .modal-header h3 { margin: 0; color: #172033 !important; font-size: 21px; }
+body #cancelarModal .cancel-body { padding: 20px 24px 24px; display: grid; gap: 10px; }
+body #cancelarModal .cancel-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+body #cancelarModal #cancelarConfirmarBtn, body #cancelOrderDialog #confirmCancelOrder {
+  background: #dc2626 !important; color: #fff !important; border: 1px solid #dc2626 !important;
+  border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 600; width: auto;
+}
+body #cancelarConfirmarBtn:disabled, body #confirmCancelOrder:disabled { opacity: .6; cursor: wait; }
+body #orderDetailsModal .modal-content { border-radius: 18px; padding: 28px; max-width: 780px; }
+body #orderDetailsModal .modal-header { padding-right: 56px; margin-bottom: 24px; font-size: 23px; }
+body #orderDetailsModal .modal-close { top: 22px; right: 22px; }
+body .order-cancellation-details { margin: 18px 0; padding: 16px; border: 1px solid #fecaca; border-radius: 12px; background: #fff7f7; line-height: 1.65; overflow-wrap: anywhere; }
+body .order-cancellation-details p { margin: 0; }
+body .order-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; width: 100%; }
+body .order-filters label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 600; flex: 1 1 145px; }
+body .order-filters input, body .order-filters select { width: 100%; min-width: 0; box-sizing: border-box; }
+body .order-filters .order-search-client { flex: 2 1 180px; }
+body .order-results-count { color: #64748b; font-size: 13px; margin: 0 0 12px; }
+body .order-created-date { display: block; margin-top: 4px; color: #64748b; font-size: 11px; }
+@media (max-width: 600px) {
+  body dialog.order-edit-dialog { padding: 18px !important; }
+  body .order-edit-dialog .edit-item { grid-template-columns: minmax(0, 1fr) 60px 40px; gap: 8px; }
+  body .order-edit-dialog .edit-item button { grid-column: auto; }
+  body .order-edit-dialog .edit-heading { flex-wrap: wrap; }
+  body .order-edit-dialog .edit-heading:first-child { flex-wrap: nowrap; }
+  body .order-edit-dialog h2 { font-size: 18px !important; }
+  body #orderDetailsModal .modal-content { padding: 20px; }
+}

@@ -2722,6 +2722,7 @@ function sortTableRows(rows, option) {
 }
 
 function applyToolbarFilters(sectionId) {
+  if (sectionId === "pedidos") return; // Filtering and pagination belong to the API.
   const section = document.getElementById(sectionId);
   const tbody = section?.querySelector('.data-table tbody');
   if (!section || !tbody) return;
@@ -2756,9 +2757,28 @@ document.querySelectorAll('[data-table-filter], [data-table-search], [data-table
   const eventName = element?.tagName === 'INPUT' ? 'input' : 'change';
   element?.addEventListener(eventName, () => {
     const sectionId = element.dataset.section || element.closest('.content-section')?.id;
-    if (sectionId === 'pedidos') carregarPedidos();
+    if (sectionId === 'pedidos') atualizarFiltroPedidos();
     else if (sectionId) applyToolbarFilters(sectionId);
   });
+});
+
+let pedidosFilterTimer;
+function atualizarFiltroPedidos() {
+  clearTimeout(pedidosFilterTimer);
+  carregarPedidos(0);
+}
+document.querySelectorAll('[data-order-filter]').forEach(element => {
+  element.addEventListener(element.tagName === 'INPUT' ? 'input' : 'change', () => {
+    clearTimeout(pedidosFilterTimer);
+    if (element.tagName === 'INPUT') pedidosFilterTimer = setTimeout(() => carregarPedidos(0), 250);
+    else carregarPedidos(0);
+  });
+});
+document.getElementById('limparPedidosFiltros')?.addEventListener('click', () => {
+  const section = document.getElementById('pedidos');
+  section.querySelectorAll('input').forEach(input => { input.value = ''; });
+  section.querySelectorAll('select').forEach(select => { select.selectedIndex = 0; });
+  atualizarFiltroPedidos();
 });
 
 // =============================================
@@ -4470,11 +4490,17 @@ function carregarMesas() {
 
 function buildLinhaPedido(p) {
   const qtd = p.itens ? p.itens.reduce((s, i) => s + (i.quantidade || 0), 0) : '-';
+  const encerradoEm = p.status === 'CANCELADO' ? p.canceladoEm : p.status === 'ENTREGUE' ? p.entregueEm : null;
+  const evento = p.status === 'CANCELADO' ? 'Cancelado' : 'Entregue';
+  const dataPedido = p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-';
+  const dataExibida = encerradoEm
+    ? `<span>${evento}: ${new Date(encerradoEm).toLocaleString('pt-BR')}</span><small class="order-created-date">Pedido: ${dataPedido}</small>`
+    : dataPedido;
   return `<tr>
     <td><strong>#${p.id}</strong></td>
     <td>${pedidoOrigemLabel(p)}</td>
     <td>${escapeHtml(p.clienteNome || '-')}</td>
-    <td>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</td>
+    <td>${dataExibida}</td>
     <td>${qtd} item(s)</td>
     <td>${formatCurrency(p.valorTotal)}</td>
     <td>${pedidoStatusBadge(p.status)}</td>
@@ -4504,8 +4530,9 @@ window.abrirDetalhesPedido = function(id) {
           <div><span style="color:#64748b;font-weight:600">Origem</span><br/>${pedidoOrigemLabel(p)}</div>
           <div><span style="color:#64748b;font-weight:600">Cliente</span><br/>${escapeHtml(p.clienteNome || 'Não identificado')}</div>
           <div><span style="color:#64748b;font-weight:600">Status</span><br/>${pedidoStatusBadge(p.status)}</div>
-          <div><span style="color:#64748b;font-weight:600">Data/Hora</span><br/>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</div>
+          <div><span style="color:#64748b;font-weight:600">Pedido realizado em</span><br/>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</div>
         </div>
+        ${p.status === 'CANCELADO' ? `<div class="order-cancellation-details"><p><strong>Cancelado em:</strong> ${p.canceladoEm ? new Date(p.canceladoEm).toLocaleString('pt-BR') : 'Horário não registrado'}</p><p><strong>Origem do cancelamento:</strong> ${escapeHtml(p.origemCancelamento || 'Origem não registrada')}</p><p><strong>Motivo:</strong> ${escapeHtml(p.motivoCancelamento || 'Motivo não registrado')}</p></div>` : ''}
         <table class="data-table" style="font-size:13px">
           <thead><tr><th>Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unitário</th><th style="text-align:right">Subtotal</th></tr></thead>
           <tbody>${itens || '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Sem itens</td></tr>'}</tbody>
@@ -4537,6 +4564,12 @@ function carregarPedidos(page = 0) {
   const statuses = section?.querySelector('[data-table-filter]')?.selectedOptions[0]?.dataset.pedidoStatus;
   if (date) params.set('data', date);
   statuses?.split(',').forEach(status => params.append('status', status));
+  for (const [param, id] of [['mesa', 'pedidosMesa'], ['cliente', 'pedidosCliente'], ['numero', 'pedidosNumero'], ['ordem', 'pedidosOrdem']]) {
+    const value = document.getElementById(id)?.value.trim();
+    if (value) params.set(param, value);
+  }
+  renderPedidosPaginacao(0, 0);
+  document.getElementById('pedidosResultado').textContent = 'Buscando pedidos...';
   getJson(`/pedidos?${params}`)
     .then(data => {
       if (requestId !== _pedidosRequest) return;
@@ -4544,13 +4577,17 @@ function carregarPedidos(page = 0) {
       const list = Array.isArray(data) ? data : (data.content || []);
       const totalPages = data.totalPages ?? 1;
       setTableBody('pedidos', list.map(buildLinhaPedido));
-      applyToolbarFilters('pedidos');
-      renderPedidosPaginacao(page, totalPages);
+
+      renderPedidosPaginacao(data.page ?? page, totalPages);
+      const count = data.totalElements ?? list.length;
+      document.getElementById('pedidosResultado').textContent = `${count} pedido${count === 1 ? '' : 's'} encontrado${count === 1 ? '' : 's'}`;
     })
     .catch((err) => {
       if (requestId !== _pedidosRequest) return;
       const msg = err.message || 'Erro ao carregar pedidos.';
       setTableBody('pedidos', [], msg);
+      renderPedidosPaginacao(0, 0);
+      document.getElementById('pedidosResultado').textContent = '';
       console.error('[pedidos]', err);
     });
 }
@@ -4560,7 +4597,7 @@ let _todosCancelados = [];
 
 function carregarCancelamentos() {
   const tbody = document.getElementById('cancelTbody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
 
   // Limpa filtros de data
   const ini = document.getElementById('cancelDataInicio');
@@ -4570,14 +4607,14 @@ function carregarCancelamentos() {
   if (fim) fim.value = '';
   if (busca) busca.value = '';
 
-  getJson('/pedidos?page=0&size=200')
+  getJson('/pedidos?page=0&size=200&status=CANCELADO')
     .then(raw => {
       const todos = Array.isArray(raw) ? raw : (raw.content || []);
       _todosCancelados = todos.filter(p => String(p.status).toUpperCase() === 'CANCELADO');
       renderTabelaCancelamentos(_todosCancelados);
     })
     .catch(err => {
-      if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:24px">Erro: ${escapeHtml(err.message)}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#dc2626;padding:24px">Erro: ${escapeHtml(err.message)}</td></tr>`;
     });
 }
 window.carregarCancelamentos = carregarCancelamentos;
@@ -4590,7 +4627,7 @@ window.filtrarCancelamentos = function() {
   const filtrado = _todosCancelados.filter(p => {
     if (busca) {
       const origem = pedidoOrigemLabel(p).toLowerCase();
-      if (!String(p.id).includes(busca) && !origem.includes(busca)) return false;
+      if (!String(p.id).includes(busca) && ![origem, p.origemCancelamento, p.motivoCancelamento].filter(Boolean).join(' ').toLowerCase().includes(busca)) return false;
     }
     if (ini && p.dataHora && new Date(p.dataHora) < new Date(ini)) return false;
     if (fim && p.dataHora && new Date(p.dataHora) > new Date(fim + 'T23:59:59')) return false;
@@ -4615,22 +4652,24 @@ function renderTabelaCancelamentos(lista) {
   if (el('cancelUltimos30'))  el('cancelUltimos30').textContent  = String(total30);
 
   if (!lista.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Nenhum cancelamento encontrado.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px">Nenhum cancelamento encontrado.</td></tr>';
     return;
   }
 
   tbody.innerHTML = lista
-    .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora))
+    .sort((a, b) => new Date(b.canceladoEm || b.atualizadoEm || b.dataHora) - new Date(a.canceladoEm || a.atualizadoEm || a.dataHora))
     .map(p => {
       const qtd = (p.itens || []).reduce((s, i) => s + (i.quantidade || 0), 0);
-      const obs = escapeHtml(p.observacoes || '—');
+      const obs = escapeHtml([p.origemCancelamento && `Origem: ${p.origemCancelamento}`, p.motivoCancelamento || p.observacoes].filter(Boolean).join(' \u00b7 ') || '-');
       return `<tr>
         <td><strong>#${p.id}</strong></td>
         <td>${pedidoOrigemLabel(p)}</td>
+        <td>${escapeHtml(p.clienteNome || "-")}</td>
         <td>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '—'}</td>
+        <td>${p.canceladoEm ? new Date(p.canceladoEm).toLocaleString('pt-BR') : '-'}</td>
         <td>${qtd} item(s)</td>
         <td>${formatCurrency(p.valorTotal)}</td>
-        <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${obs}">${obs}</td>
+        <td style="max-width:320px;white-space:normal;overflow-wrap:anywhere" title="${obs}">${obs}</td>
         <td><button class="btn-small" type="button" onclick="abrirDetalhesPedido(${p.id})">Ver</button></td>
       </tr>`;
     }).join('');

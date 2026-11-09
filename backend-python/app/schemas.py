@@ -310,6 +310,7 @@ class PedidoCreateRequest(BaseModel):
 
 
 class PedidoStatusUpdateRequest(BaseModel):
+    origemCancelamento: Literal["Atendente", "Cozinha", "Gerente", "Caixa"] | None = None
     status: PedidoStatusNome
     formaPagamento: str | None = None
     motivo: str | None = Field(default=None, max_length=255)
@@ -331,6 +332,11 @@ class PedidoItemResponse(BaseModel):
     tempoPreparo: int | None = None
 
 class PedidoResponse(BaseModel):
+    numeroPedido: str | None = None
+    canceladoEm: datetime | None = None
+    entregueEm: datetime | None = None
+    motivoCancelamento: str | None = None
+    origemCancelamento: str | None = None
     id: int
     numeroMesa: int | None
     clienteId: int | None = None

@@ -150,6 +150,7 @@ async function loginBackend(cpf, password) {
 
   try {
     response = await fetch(url, {
+      signal: AbortSignal.timeout(10000),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -163,7 +164,7 @@ async function loginBackend(cpf, password) {
     console.error('[adm-login] FETCH FALHOU:', error);
     console.error('[adm-login] URL utilizada:', url);
 
-    throw error;
+    throw new Error('Nao foi possivel conectar ao servidor. Verifique se a API esta ligada e confira o endereco no botao Servidor.');
   }
 
   const body = await response.json().catch(error => {

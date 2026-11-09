@@ -12,9 +12,10 @@
   <link rel="stylesheet" href="../Css/mobile.css?v=3-atendente-mesas" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="manifest" href="../manifest.webmanifest" />
-  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
+  <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <link rel="stylesheet" href="../Css/operacao.css?v=20261103-3" />
   <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <link rel="stylesheet" href="../Css/pedidos-ui.css?v=20261109-filtros" />
 </head>
 <body>
   <div class="atendente-shell">
@@ -225,37 +226,31 @@
 
   <!-- MODAL: CANCELAR PEDIDO -->
   <div class="modal-overlay" id="cancelarModal" style="display:none">
-    <div class="modal-box" style="max-width:400px">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="cancelarTitle">
       <div class="modal-header">
-        <h3 style="color:#dc2626">Cancelar Pedido</h3>
-        <button class="modal-close" onclick="fecharCancelarModal()">&#x2715;</button>
+        <h3 id="cancelarTitle">Cancelar pedido</h3>
+        <button type="button" class="modal-close order-icon icon-close" onclick="fecharCancelarModal()" title="Fechar" aria-label="Fechar cancelamento"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M6 18 18 6"/></svg></button>
       </div>
-      <div style="padding:16px 20px 20px">
-        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px">
-          <strong style="color:#dc2626">Atencao:</strong> Pedidos ainda nao iniciados pela cozinha podem ser
-          cancelados informando o motivo. Apos o inicio do preparo, somente o Gerente pode cancelar.
-          Esta acao nao pode ser desfeita.
-        </div>
-        <label style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em">
-          Motivo do cancelamento (obrigatorio)
-        </label>
-        <textarea id="cancelarObs" rows="3" maxlength="255"
-          style="width:100%;margin-top:6px;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:none;font-family:inherit;outline:none"
-          placeholder="Ex: Cliente desistiu, erro no pedido, autorizacao do gerente..."></textarea>
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button id="cancelarConfirmarBtn" onclick="confirmarCancelamento()"
-            style="flex:1;padding:11px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer">
-            Confirmar Cancelamento
-          </button>
-          <button onclick="fecharCancelarModal()"
-            style="padding:11px 16px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;font-weight:700;cursor:pointer;font-size:13px">
-            Voltar
-          </button>
-        </div>
+      <div class="cancel-body">
+        <label for="cancelarObs">Motivo do cancelamento</label>
+        <textarea id="cancelarObs" rows="3" maxlength="240" required placeholder="Ex.: cliente desistiu do pedido"></textarea>
+        <div class="cancel-footer"><button type="button" id="cancelarConfirmarBtn" onclick="confirmarCancelamento()">Confirmar cancelamento</button></div>
       </div>
     </div>
   </div>
 
-  <script src="../JavaScript/atendente.js?v=20261104-melhorias" defer></script>
+  <dialog id="editOrderDialog" class="order-edit-dialog" aria-labelledby="editOrderTitle">
+    <form id="editOrderForm">
+      <div class="edit-heading"><h2 id="editOrderTitle">Alterar pedido</h2><button type="button" id="closeEditOrder" class="order-icon icon-close" title="Fechar" aria-label="Fechar edição"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M6 18 18 6"/></svg></button></div>
+      <p>Atualize os itens conforme solicitado pelo cliente. Pedidos prontos voltam ao preparo para conferência.</p>
+      <div id="editOrderItems" class="edit-items"></div>
+      <div class="edit-add"><label class="control-field"><span>Adicionar produto</span><select id="editProductSelect"></select></label><button type="button" id="addEditItem" class="order-icon icon-add" title="Adicionar produto" aria-label="Adicionar produto"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <label class="control-field"><span>Observações do pedido</span><textarea id="editOrderNotes" maxlength="2000" rows="3"></textarea></label>
+      <label class="control-field"><span>Motivo da alteração</span><input id="editOrderReason" required minlength="3" maxlength="255" placeholder="Ex.: cliente trocou o acompanhamento" /></label>
+      <div class="edit-heading"><strong id="editOrderTotal"></strong><button id="saveEditOrder" type="submit" class="action-button">Salvar alteração</button></div>
+      <p id="editOrderError" role="alert"></p>
+    </form>
+  </dialog>
+  <script src="../JavaScript/atendente.js?v=20261109-filtros" defer></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ Reconfigura somente os cinco acessos padrao e acrescenta cenarios identificados.
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
+import argparse
 
 from sqlalchemy import create_engine, select, func, text
 from sqlalchemy.orm import Session
@@ -15,6 +16,8 @@ from app.models import (User, Role, Restaurante, Categoria, Produto, Insumo,
 from app.seed import DEFAULT_ADMIN_CPF, DEFAULT_ADMIN_PASSWORD, DEFAULT_TEST_USERS, DEFAULT_TEST_PASSWORDS
 from app.security import hash_password
 from app.routers.pedidos import _criar_item
+from app.local_demo_names import atualizar_nomes, INSUMOS
+from app.local_demo_cancellations import atualizar_cancelamentos, motivo_do_cenario
 
 
 def cpf_teste(base):
@@ -33,11 +36,15 @@ def cnpj_teste(base):
     return ''.join(map(str, digits))
 
 
-def populate():
+def populate(reset=False):
     # Endereco fixo do servico Docker, sem ler conexoes externas do .env.
     engine = create_engine('postgresql+psycopg://postgres:dataplate_local@db:5432/dataplate')
     with Session(engine) as db, db.begin():
         db.execute(text('SELECT pg_advisory_xact_lock(20261103)'))
+        if reset:
+            # Banco fixo do Docker local. Preserva restaurante, categorias e cardapio.
+            # CASCADE limpa itens, historicos, movimentos, fichas e vinculos antigos.
+            db.execute(text("TRUNCATE TABLE pedido, clientes, fornecedores, funcionarios, usuarios, mesa, insumos RESTART IDENTITY CASCADE"))
         now = db.scalar(select(func.timezone('America/Sao_Paulo', func.now()))).replace(tzinfo=None)
         for order in db.scalars(select(Pedido).where(Pedido.numero_pedido.like('T26-%'), Pedido.observacoes.is_not(None))):
             order.observacoes = ' | '.join(part.strip() for part in order.observacoes.split('|')
@@ -85,7 +92,7 @@ def populate():
             ('Massa seca', 0, 2, 8), ('Laranja', 12, 3, 5), ('Chocolate', 4, 1, 28),
         ]):
             full_name = f'Teste 2026 - {name}'
-            ingredient = db.scalar(select(Insumo).where(Insumo.nome == full_name))
+            ingredient = db.scalar(select(Insumo).where(Insumo.nome.in_([full_name, INSUMOS.get(name, name)])))
             if ingredient is None:
                 ingredient = Insumo(nome=full_name, unidade='kg', quantidade_atual=Decimal(str(stock)),
                                     quantidade_minima=Decimal(str(minimum)), custo_unitario=Decimal(str(cost)), ativo=True)
@@ -123,7 +130,7 @@ def populate():
         tables = []
         for i in range(12):
             marker = f'TESTE-2026-MESA-{i+1:02}'
-            table = db.scalar(select(Mesa).where(Mesa.observacoes == marker))
+            table = db.scalar(select(Mesa).where(Mesa.observacoes.in_([marker, f"Mesa de atendimento {i+1:02}"])))
             if table is None:
                 number = max(100, db.scalar(select(func.max(Mesa.numero)).where(Mesa.id_restaurante == restaurant.id)) or 0) + 1
                 state = 'ocupada' if i < 6 else 'aguardando_pagamento' if i < 8 else 'reservada' if i < 10 else 'livre'
@@ -163,7 +170,7 @@ def populate():
             order.valor_total = sum((line.quantidade * line.preco_unitario for line in order.itens), Decimal('0'))
             stages = [('RECEBIDO', 0)]
             if state == 'CANCELADO':
-                stages.append(('CANCELADO', 3))
+                stages.append(('CANCELADO', (35, 12, 18, 10, 5, 8, 2, 15)[index % 8]))
             elif state != 'RECEBIDO':
                 for next_state, minute in [('EM_PREPARO', 2), ('PRONTO', 8), ('SERVIDO', 10), ('ENTREGUE', 12)]:
                     stages.append((next_state, minute))
@@ -172,25 +179,34 @@ def populate():
             for stage, minute in stages:
                 order.atualizado_em = min(now, when + timedelta(minutes=minute))
                 db.add(PedidoStatusHistorico(id_pedido=order.id, status=stage, registrado_em=order.atualizado_em,
-                                            motivo='Cenario de teste local'))
+                                            motivo=motivo_do_cenario(index) if stage == 'CANCELADO' else None))
             added += 1
 
         for day in range(30):
             for i in range(4):
                 when = (now - timedelta(days=day + 1)).replace(hour=11 + i * 2, minute=15, second=0, microsecond=0)
-                add_order(f'T26-H-{when:%Y%m%d}-{i}', 'CANCELADO' if (day * 4 + i) % 13 == 0 else 'ENTREGUE', when, None, day * 4 + i)
+                table = tables[(day * 4 + i) % len(tables)] if (day * 4 + i) % 3 else None
+                add_order(f'T26-H-{when:%Y%m%d}-{i}', 'CANCELADO' if (day * 4 + i) % 13 == 0 else 'ENTREGUE', when, table, day * 4 + i)
         active_states = ['RECEBIDO', 'RECEBIDO', 'EM_PREPARO', 'EM_PREPARO', 'PRONTO', 'PRONTO', 'SERVIDO', 'SERVIDO']
         for i, state in enumerate(active_states):
             add_order(f'T26-A-{i+1:02}', state, now - timedelta(minutes=5 + i * 2), tables[i], i)
         add_order('T26-BALCAO-PAGO', 'PRONTO', now - timedelta(minutes=9), None, 4, paid=True)
         add_order('T26-CANCELADO-HOJE', 'CANCELADO', now - timedelta(minutes=8), None, 5)
         add_order('T26-VENDA-HOJE', 'ENTREGUE', now - timedelta(minutes=20), None, 6, paid=True)
+        atualizar_nomes(db)
+        atualizar_cancelamentos(db)
         db.flush()
         print(json.dumps({'pedidos_adicionados': added, 'mesas_de_teste': [t.numero for t in tables],
                           'clientes_de_teste': len(clients), 'fornecedores_de_teste': len(suppliers),
                           'insumos_de_teste': len(ingredients), 'acessos_configurados': len(accounts),
-                          'dados_existentes_preservados': True}))
+                          'dados_existentes_preservados': not reset,
+                          'cardapio_e_restaurante_preservados': True}))
+    if reset:
+        from app.seed import ensure_default_users
+        ensure_default_users()
 
 
 if __name__ == '__main__':
-    populate()
+    parser = argparse.ArgumentParser(description="Carga de demonstracao no Docker local")
+    parser.add_argument("--reset", action="store_true", help="Limpa dados operacionais locais antes de repovoar; preserva o cardapio")
+    populate(reset=parser.parse_args().reset)
