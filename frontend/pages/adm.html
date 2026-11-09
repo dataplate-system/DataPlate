@@ -15,8 +15,9 @@
   <link rel="stylesheet" href="../Css/role-theme.css?v=20261103-perfis-v2" />
   <link rel="stylesheet" href="../Css/relatorios.css?v=20261109-bcg" />
   <link rel="manifest" href="../manifest.webmanifest" />
-  <script src="../JavaScript/mobile-runtime.js?v=1"></script>
+  <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <link rel="stylesheet" href="../Css/pedidos-ui.css?v=20261109-filtros" />
 </head>
 <body>
   <div class="admin-container">
@@ -842,15 +843,15 @@
                   <th>ID Pedido</th>
                   <th>Origem</th>
                   <th>Cliente</th>
-                  <th>Data/Hora</th>
+                  <th>Pedido em</th><th>Cancelado em</th>
                   <th>Itens</th>
                   <th>Total</th>
-                  <th>Observações</th>
+                  <th>Origem e motivo do cancelamento</th>
                   <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="cancelTbody">
-                <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>
+                <tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>
               </tbody>
             </table>
           </div>
@@ -947,24 +948,31 @@
           </div>
 
           <div class="section-toolbar">
-            <div class="toolbar-filters">
-              <select class="filter-select toolbar-filter-select" aria-label="Filtrar pedidos" data-table-filter data-section="pedidos">
-                <option value="">Filtrar</option>
-                <option value="codigo" data-sort-column="0" data-sort-type="text">Código</option>
-                <option value="total" data-sort-column="4" data-sort-type="number" data-sort-direction="desc">Gasto Total</option>
-                <option value="ativos" data-filter-column="5" data-filter-values="recebido,preparando,pronto,servido" data-pedido-status="RECEBIDO,EM_PREPARO,PRONTO,SERVIDO">Ativos</option>
-                <option value="recebido" data-filter-column="5" data-filter-match="exact" data-pedido-status="RECEBIDO">Recebido</option>
-                <option value="preparando" data-filter-column="5" data-filter-match="exact" data-pedido-status="EM_PREPARO">Preparando</option>
-                <option value="pronto" data-filter-column="5" data-filter-match="exact" data-pedido-status="PRONTO">Pronto</option>
-                <option value="servido" data-filter-column="5" data-filter-match="exact" data-pedido-status="SERVIDO">Servido</option>
-                <option value="entregue" data-filter-column="5" data-filter-match="exact" data-pedido-status="ENTREGUE">Entregue</option>
-                <option value="cancelado" data-filter-column="5" data-filter-match="exact" data-pedido-status="CANCELADO">Cancelado</option>
-              </select>
-              <input type="date" class="filter-input" data-table-date data-section="pedidos" aria-label="Data dos pedidos" />
+            <div class="order-filters">
+              <label>Status<select id="pedidosStatus" class="filter-select" aria-label="Filtrar pedidos" data-table-filter data-section="pedidos">
+                <option value="">Todos os status</option>
+                <option value="ativos" data-pedido-status="RECEBIDO,EM_PREPARO,PRONTO,SERVIDO">Ativos</option>
+                <option value="recebido" data-pedido-status="RECEBIDO">Recebido</option>
+                <option value="preparando" data-pedido-status="EM_PREPARO">Em preparo</option>
+                <option value="pronto" data-pedido-status="PRONTO">Pronto</option>
+                <option value="servido" data-pedido-status="SERVIDO">Servido</option>
+                <option value="entregue" data-pedido-status="ENTREGUE">Entregue</option>
+                <option value="cancelado" data-pedido-status="CANCELADO">Cancelado</option>
+              </select></label>
+              <label>Ordenar por<select id="pedidosOrdem" class="filter-select" data-order-filter>
+                <option value="recentes">Mais recentes primeiro</option><option value="antigos">Mais antigos primeiro</option>
+                <option value="total_maior">Maior valor primeiro</option><option value="total_menor">Menor valor primeiro</option>
+              </select></label>
+              <label>Mesa<input id="pedidosMesa" type="number" min="1" step="1" class="filter-input" placeholder="Todas as mesas" data-order-filter /></label>
+              <label class="order-search-client">Cliente<input id="pedidosCliente" type="search" maxlength="100" class="filter-input" placeholder="Nome do cliente" data-order-filter /></label>
+              <label>Pedido<input id="pedidosNumero" type="search" maxlength="100" class="filter-input" placeholder="ID ou número do pedido" data-order-filter /></label>
+              <label>Data do pedido<input type="date" class="filter-input" data-table-date data-section="pedidos" aria-label="Data dos pedidos" /></label>
+              <button id="limparPedidosFiltros" type="button" class="btn-secondary">Limpar filtros</button>
             </div>
             <button type="button" class="btn-secondary" data-export-format="pdf">Exportar PDF</button>
             <button type="button" class="btn-secondary" data-export-format="excel">Exportar Excel</button>
           </div>
+          <p id="pedidosResultado" class="order-results-count" aria-live="polite"></p>
 
           <div class="table-container">
             <table class="data-table">
@@ -972,6 +980,7 @@
                 <tr>
                   <th>ID Pedido</th>
                   <th>Origem</th>
+                  <th>Cliente</th>
                   <th>Data/Hora</th>
                   <th>Itens</th>
                   <th>Total</th>
@@ -2145,7 +2154,7 @@
 
   <div class="modal" id="orderDetailsModal">
     <div class="modal-content modal-content-small order-details-modal">
-      <button type="button" class="modal-close" onclick="closeModal('orderDetailsModal')">✕</button>
+      <button type="button" class="modal-close order-icon icon-close" onclick="closeModal('orderDetailsModal')" title="Fechar" aria-label="Fechar detalhes do pedido"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M6 18 18 6"/></svg></button>
       <div class="modal-header">Detalhes do pedido</div>
       <div id="orderDetailsContent" class="order-details-content">
         <div class="modal-description">Carregando pedido...</div>
@@ -2470,6 +2479,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261109-bcg" defer></script>
+  <script src="../JavaScript/adm.js?v=20261109-bcg-pedidos" defer></script>
 </body>
 </html>

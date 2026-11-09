@@ -566,7 +566,7 @@ O recorte abaixo já está implementado. Os itens marcados como *(funcionalidade
 
 ## Complemento operacional — 03/11/2026: edição e despacho
 
-Cozinha e Gerente podem alterar itens, quantidades e observações dos pedidos
+Atendente, Cozinha e Gerente podem alterar itens, quantidades e observações dos pedidos
 RECEBIDO, EM_PREPARO e PRONTO por `PUT /api/pedidos/{id}/itens`. Esta regra
 amplia as permissões da cozinha descritas acima. Os demais perfis não recebem
 essa permissão. Pedido PRONTO alterado retorna a EM_PREPARO para conferência.
@@ -582,3 +582,17 @@ Atendente e Gerente também podem confirmar retirada de balcão já pago por
 previamente registrado pelo caixa. A operação registra ENTREGUE no histórico,
 sem alterar valor, forma de pagamento ou gerar outra cobrança. As permissões
 do endpoint geral de status para cobrança permanecem com Caixa/Gerente.
+
+## Complemento operacional - 09/11/2026: cancelamento por setor
+
+Esta revisao substitui a exigencia anterior de autorizacao do gerente para
+cancelamentos em EM_PREPARO e PRONTO: Atendente e Cozinha podem editar e cancelar
+pedidos em RECEBIDO, EM_PREPARO e PRONTO. Cancelar SERVIDO continua exclusivo do
+Gerente; ENTREGUE e CANCELADO nao permitem nova edicao ou cancelamento.
+O Caixa continua podendo cancelar apenas RECEBIDO.
+
+Todo cancelamento exige motivo. O setor de origem e validado pela API e salvo
+junto ao motivo no historico existente, preservando tambem o usuario responsavel.
+O Gerente pode usar as telas de Atendente ou Cozinha e registrar a tela de origem.
+A consulta do gerente mostra motivo e origem; registros antigos sem origem
+conhecida nao recebem um setor inventado.

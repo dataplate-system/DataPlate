@@ -18,6 +18,8 @@
 
     try {
       const parsed = new URL(address);
+      // Evita encaminhamento IPv6 de localhost indisponivel no Docker Desktop.
+      if (!nativePlatform && parsed.hostname === 'localhost') parsed.hostname = '127.0.0.1';
       if (!parsed.port) parsed.port = '8081';
       parsed.pathname = parsed.pathname.replace(/\/+$/, '');
       if (!parsed.pathname || parsed.pathname === '/') parsed.pathname = '/api';
@@ -33,6 +35,9 @@
     window.DATAPLATE_API_BASE_URL = savedServer;
   } else if (nativePlatform) {
     window.DATAPLATE_API_BASE_URL = 'http://10.0.2.2:8081/api';
+  } else if (['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)) {
+    window.DATAPLATE_API_BASE_URL = window.location.port === '8081'
+      ? '/api' : 'http://127.0.0.1:8081/api';
   }
 
   function healthUrl(apiUrl) {

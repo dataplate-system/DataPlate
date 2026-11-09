@@ -219,6 +219,7 @@ class Pedido(Base):
         cascade="all, delete-orphan",
     )
     cliente: Mapped[Cliente | None] = relationship()
+    historico: Mapped[list["PedidoStatusHistorico"]] = relationship(order_by="PedidoStatusHistorico.id")
 
 
 class PedidoItem(Base):

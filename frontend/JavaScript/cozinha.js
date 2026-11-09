@@ -582,7 +582,7 @@ function buildCard(order) {
         </div>` : ''}
       </div>
       <div class="card-actions">${getAction(order)}
-        ${ACTIVE_STATUSES.includes(order.status) && !fallbackMode ? `<button type="button" class="secondary-button" data-edit-order="${order.id}">Alterar pedido</button>` : ''}
+        ${ACTIVE_STATUSES.includes(order.status) && !fallbackMode ? `<button type="button" class="order-icon" title="Alterar pedido" aria-label="Alterar pedido" data-edit-order="${order.id}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button><button type="button" class="order-icon icon-remove" title="Cancelar pedido" aria-label="Cancelar pedido" data-cancel-order="${order.id}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M6 18 18 6"/></svg></button>` : ''}
       </div>
     </article>
   `;
@@ -1073,7 +1073,7 @@ function renderEditItems() {
   document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
     <div class="edit-item"><span>${escapeHtml(item.nomeProduto)}<small>${formatCurrency(item.precoUnitario)} / unidade</small></span>
     <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.nomeProduto)}" /></label>
-    <button type="button" class="secondary-button" data-remove-edit-item="${index}" aria-label="Remover ${escapeHtml(item.nomeProduto)}">Remover</button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${escapeHtml(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
   renderEditTotal();
 }
 
@@ -1109,6 +1109,34 @@ async function saveOrderEdit(event) {
 }
 
 function bindEvents() {
+  let cancelOrderId = null;
+  const cancelDialog = document.getElementById('cancelOrderDialog');
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-cancel-order]');
+    if (!button) return;
+    cancelOrderId = Number(button.dataset.cancelOrder);
+    document.getElementById('cancelOrderForm').reset();
+    document.getElementById('cancelOrderError').textContent = '';
+    document.getElementById('cancelOrderTitle').textContent = `Cancelar pedido #${cancelOrderId}`;
+    cancelDialog.showModal();
+  });
+  document.getElementById('closeCancelOrder').addEventListener('click', () => cancelDialog.close());
+  document.getElementById('cancelOrderForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = document.getElementById('confirmCancelOrder');
+    if (button.disabled) return;
+    const motivo = document.getElementById('cancelOrderReason').value.trim();
+    if (!motivo) return;
+    button.disabled = true;
+    try {
+      await putJson(`/pedidos/${cancelOrderId}/status`, { status: 'CANCELADO', motivo, origemCancelamento: 'Cozinha' });
+      cancelDialog.close();
+      cleanupOrderState(cancelOrderId);
+      showToast('Pedido cancelado. O gerente recebe o motivo e a origem.', 'success');
+      await loadOrders({ silent: true });
+    } catch (error) { document.getElementById('cancelOrderError').textContent = error.message; }
+    finally { button.disabled = false; }
+  });
   document.getElementById('editOrderForm').addEventListener('submit', saveOrderEdit);
   document.getElementById('closeEditOrder').addEventListener('click', () => document.getElementById('editOrderDialog').close());
   document.getElementById('addEditItem').addEventListener('click', () => {

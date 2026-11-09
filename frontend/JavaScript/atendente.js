@@ -180,10 +180,8 @@ function origem(order) {
   return order.numeroMesa ? `Mesa ${order.numeroMesa}` : `Balcao #${order.id}`;
 }
 
-// Cancelar: RECEBIDO para atendente/gerente; apos inicio do preparo so Gerente
 function podeCancelar(status) {
-  if (status === 'RECEBIDO') return true;
-  return ['EM_PREPARO', 'PRONTO', 'SERVIDO'].includes(status) && isGerente();
+  return ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(status) || (status === 'SERVIDO' && isGerente());
 }
 
 // ── Card de pedido ────────────────────────────────────────────────
@@ -199,18 +197,20 @@ function buildCard(order) {
   const chipCls = late ? ' sla-late' : '';
   const lateChip = late ? '<span class="sla-chip late-chip">Atrasado</span>' : '';
 
+  const editBtn = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(order.status)
+    ? `<button class="order-icon" type="button" title="Alterar pedido" aria-label="Alterar pedido" onclick="openOrderEdit(${order.id})"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button>` : '';
   const cancelBtn = podeCancelar(order.status)
-    ? `<button class="action-button cancel-btn" type="button" onclick="abrirCancelarModal(${order.id})">Cancelar</button>`
+    ? `<button class="order-icon icon-remove" type="button" title="Cancelar pedido" aria-label="Cancelar" onclick="abrirCancelarModal(${order.id})"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M6 18 18 6"/></svg></button>`
     : '';
   // Mesa e servida; balcao tem retirada separada, validada pelo servidor.
   const actions = order.status === 'PRONTO'
     ? `<div class="card-actions">
         <button class="action-button deliver" type="button" onclick="despachar(${order.id})">
-          ${order.numeroMesa ? `Despachar para ${esc(origem(order))}` : 'Confirmar retirada no balcão'}
+          ${order.numeroMesa ? 'Despachar' : 'Confirmar retirada'}
         </button>
-        ${cancelBtn}
+        ${editBtn}${cancelBtn}
       </div>`
-    : (cancelBtn ? `<div class="card-actions">${cancelBtn}</div>` : '');
+    : (cancelBtn || editBtn ? `<div class="card-actions">${editBtn}${cancelBtn}</div>` : '');
 
   return `
     <article class="kitchen-card${cardCls}">
@@ -423,7 +423,8 @@ window.confirmarCancelamento = async function() {
   try {
     await putJson(`/pedidos/${pedidoId}/status`, {
       status: 'CANCELADO',
-      motivo: obs
+      motivo: obs,
+      origemCancelamento: "Atendente"
     });
     showToast(`Pedido #${pedidoId} cancelado.`, 'success');
     fecharCancelarModal();
@@ -535,6 +536,7 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
         ${renderItens(p)}
         ${p.observacoes ? `<div style="font-size:11px;color:#475569;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 4px 4px 0;padding:4px 7px 4px 10px;margin-top:6px">Obs: ${esc(p.observacoes)}</div>` : ''}
         ${p.status === 'PRONTO' ? `<button onclick="despachar(${p.id})" style="width:100%;margin-top:8px;padding:8px;background:#f85b15;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer">Despachar</button>` : ''}
+        ${['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status) ? `<button type="button" class="action-button" onclick="openOrderEdit(${p.id})">Alterar pedido</button>` : ''}
         ${podeCancelar(p.status) ? `
           <button onclick="abrirCancelarModal(${p.id})"
             style="width:100%;margin-top:6px;padding:7px;background:transparent;color:#dc2626;border:1.5px solid #fecaca;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer">
@@ -1007,3 +1009,91 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshTimer = window.setInterval(() => loadData({ silent: true }), AUTO_REFRESH_MS);
   connectWS();
 });
+
+function fmtMoney(value) { return Number(value).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
+let editDraft = null;
+let editProducts = [];
+
+async function openOrderEdit(id) {
+
+  try {
+    const [order, products] = await Promise.all([getJson(`/pedidos/${id}`), getJson('/produtos')]);
+    if (!['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(order.status)) throw new Error('Este pedido já saiu da fila da cozinha.');
+    editDraft = { ...order, itens: order.itens.map(item => ({ ...item })) };
+    editProducts = products;
+    document.getElementById('editOrderTitle').textContent = `Alterar pedido #${order.id} · ${origem(order)}`;
+    document.getElementById('editOrderNotes').value = order.observacoes || '';
+    document.getElementById('editOrderReason').value = '';
+    document.getElementById('editOrderError').textContent = '';
+    document.getElementById('editProductSelect').innerHTML = products.map(p => `<option value="${p.id}">${esc(p.nome)} · ${fmtMoney(p.preco)}</option>`).join('');
+    renderEditItems();
+    document.getElementById('editOrderDialog').showModal();
+  } catch (error) { showToast(error.message || 'Não foi possível abrir o pedido.', 'error'); }
+}
+
+function renderEditItems() {
+  document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
+    <div class="edit-item"><span>${esc(item.nomeProduto)}<small>${fmtMoney(item.precoUnitario)} / unidade</small></span>
+    <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${esc(item.nomeProduto)}" /></label>
+    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${esc(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+  renderEditTotal();
+}
+
+function renderEditTotal() {
+  const originalSubtotal = editDraft.itensOriginalSubtotal ?? editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0);
+  editDraft.itensOriginalSubtotal = originalSubtotal;
+  const discount = Math.max(0, originalSubtotal - editDraft.valorTotal);
+  const total = Math.max(0, editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0) - discount);
+  document.getElementById('editOrderTotal').textContent = `Novo total: ${fmtMoney(total)}`;
+}
+
+async function saveOrderEdit(event) {
+  event.preventDefault();
+  const button = document.getElementById('saveEditOrder');
+  const errorEl = document.getElementById('editOrderError');
+  if (button.disabled) return;
+  if (!editDraft.itens.length) { errorEl.textContent = 'Adicione ao menos um produto.'; return; }
+  button.disabled = true;
+  errorEl.textContent = '';
+  try {
+    await putJson(`/pedidos/${editDraft.id}/itens`, {
+      atualizadoEm: editDraft.atualizadoEm,
+      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      observacoes: document.getElementById('editOrderNotes').value,
+      motivo: document.getElementById('editOrderReason').value.trim()
+    });
+
+    document.getElementById('editOrderDialog').close();
+    showToast('Pedido alterado. Atendimento e caixa recebem a atualização.', 'success');
+    await loadData({ silent: true });
+    await _refreshModalAtual();
+  } catch (error) { errorEl.textContent = error.message || 'Não foi possível salvar a alteração.'; }
+  finally { button.disabled = false; }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById('editOrderForm').addEventListener('submit', saveOrderEdit);
+  document.getElementById('closeEditOrder').addEventListener('click', () => document.getElementById('editOrderDialog').close());
+  document.getElementById('addEditItem').addEventListener('click', () => {
+    const id = Number(document.getElementById('editProductSelect').value);
+    const product = editProducts.find(p => p.id === id);
+    if (!product) return;
+    const existing = editDraft.itens.find(i => i.produtoId === id);
+    if (existing) existing.quantidade++;
+    else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-remove-edit-item]');
+    if (!button) return;
+    editDraft.itens.splice(Number(button.dataset.removeEditItem), 1);
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    if (!event.target.matches('[data-edit-quantity]')) return;
+    editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
+    renderEditTotal();
+  });
+});
+window.openOrderEdit = openOrderEdit;

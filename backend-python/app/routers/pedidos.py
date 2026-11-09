@@ -4,11 +4,12 @@ import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
+from typing import Literal
 
 import anyio
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import String, case, cast, func, or_, select
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
 from app.estoque import sincronizar_estoque_do_pedido
@@ -52,6 +53,7 @@ PERFIS_CONSULTA_PEDIDO = {
 _S = PedidoStatusNome
 _COZINHA_GERENTE = frozenset({Role.COZINHA.value, Role.GERENTE.value})
 _CAIXA_GERENTE = frozenset({Role.CAIXA.value, Role.GERENTE.value})
+_EQUIPE_CANCELAMENTO = frozenset({Role.GERENTE.value, Role.FUNCIONARIO.value, Role.COZINHA.value})
 _SOMENTE_GERENTE = frozenset({Role.GERENTE.value})
 # (origem, destino) -> perfis autorizados (RN-AC32, RN-AC41). Fora desta tabela: 409.
 TRANSICOES_STATUS: dict[tuple[PedidoStatusNome, PedidoStatusNome], frozenset[str]] = {
@@ -61,9 +63,9 @@ TRANSICOES_STATUS: dict[tuple[PedidoStatusNome, PedidoStatusNome], frozenset[str
     (_S.PRONTO, _S.SERVIDO): frozenset({Role.FUNCIONARIO.value, Role.GERENTE.value}),
     (_S.PRONTO, _S.ENTREGUE): _CAIXA_GERENTE,
     (_S.SERVIDO, _S.ENTREGUE): _CAIXA_GERENTE,
-    (_S.RECEBIDO, _S.CANCELADO): frozenset({Role.FUNCIONARIO.value, Role.CAIXA.value, Role.GERENTE.value}),
-    (_S.EM_PREPARO, _S.CANCELADO): _SOMENTE_GERENTE,
-    (_S.PRONTO, _S.CANCELADO): _SOMENTE_GERENTE,
+    (_S.RECEBIDO, _S.CANCELADO): _EQUIPE_CANCELAMENTO | {Role.CAIXA.value},
+    (_S.EM_PREPARO, _S.CANCELADO): _EQUIPE_CANCELAMENTO,
+    (_S.PRONTO, _S.CANCELADO): _EQUIPE_CANCELAMENTO,
     (_S.SERVIDO, _S.CANCELADO): _SOMENTE_GERENTE,
 }
 
@@ -147,6 +149,7 @@ def criar_pedido(
 def listar_ativos(db: Session = Depends(get_db)) -> list[PedidoResponse]:
     pedidos = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
         .options(joinedload(Pedido.cliente))
         .where(Pedido.id_status.in_(STATUS_ATIVOS))
@@ -161,6 +164,10 @@ def listar_pedidos(
     size: int = Query(default=50, ge=1),
     data: date | None = Query(default=None),
     status: list[PedidoStatusNome] | None = Query(default=None),
+    mesa: int | None = Query(default=None, ge=1),
+    cliente: str | None = Query(default=None, max_length=100),
+    numero: str | None = Query(default=None, max_length=100),
+    ordem: Literal["recentes", "antigos", "total_maior", "total_menor"] = "recentes",
     db: Session = Depends(get_db),
 ) -> PaginatedPedidoResponse:
     safe_size = min(size, 200)
@@ -170,13 +177,44 @@ def listar_pedidos(
         filters.extend((Pedido.data_hora >= inicio, Pedido.data_hora < inicio + timedelta(days=1)))
     if status:
         filters.append(Pedido.id_status.in_([_to_status_id(item) for item in status]))
+    if mesa is not None:
+        filters.append(Pedido.id_mesa.in_(select(Mesa.id).where(Mesa.numero == mesa)))
+    if cliente and cliente.strip():
+        filters.append(Pedido.id_cliente.in_(select(Cliente.id).where(
+            func.lower(Cliente.nome).contains(cliente.strip().lower(), autoescape=True))))
+    if numero and numero.strip():
+        termo = numero.strip().removeprefix("#")
+        filters.append(or_(cast(Pedido.id, String) == termo,
+                           func.lower(Pedido.numero_pedido).contains(termo.lower(), autoescape=True)))
     total = db.scalar(select(func.count(Pedido.id)).where(*filters)) or 0
+    total_pages = math.ceil(total / safe_size) if total else 0
+    page = min(page, max(0, total_pages - 1))
+    def horario_do_status(nome):
+        return (select(func.max(PedidoStatusHistorico.registrado_em))
+                .where(PedidoStatusHistorico.id_pedido == Pedido.id, PedidoStatusHistorico.status == nome)
+                .correlate(Pedido).scalar_subquery())
+
+    # A recencia dos pedidos encerrados e a do encerramento, nao a da criacao.
+    data_ordenacao = case(
+        (Pedido.id_status == STATUS_CANCELADO_ID,
+         func.coalesce(horario_do_status("CANCELADO"), Pedido.atualizado_em, Pedido.data_hora)),
+        (Pedido.id_status == STATUS_ENTREGUE_ID,
+         func.coalesce(horario_do_status("ENTREGUE"), Pedido.pago_em, Pedido.atualizado_em, Pedido.data_hora)),
+        else_=Pedido.data_hora,
+    )
+    ordenacao = {
+        "recentes": (data_ordenacao.desc(), Pedido.id.desc()),
+        "antigos": (data_ordenacao.asc(), Pedido.id.asc()),
+        "total_maior": (Pedido.valor_total.desc(), Pedido.id.desc()),
+        "total_menor": (Pedido.valor_total.asc(), Pedido.id.asc()),
+    }[ordem]
     pedidos = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
         .options(joinedload(Pedido.cliente))
         .where(*filters)
-        .order_by(Pedido.data_hora.desc(), Pedido.id.desc())
+        .order_by(*ordenacao)
         .offset(page * safe_size)
         .limit(safe_size)
     ).unique().all()
@@ -185,7 +223,7 @@ def listar_pedidos(
         page=page,
         size=safe_size,
         totalElements=total,
-        totalPages=math.ceil(total / safe_size) if total else 0,
+        totalPages=total_pages,
     )
 
 
@@ -197,6 +235,7 @@ def listar_por_mesa(numero_mesa: int, db: Session = Depends(get_db)) -> list[Ped
 
     pedidos = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
         .options(joinedload(Pedido.cliente))
         .where(Pedido.id_mesa == mesa.id)
@@ -230,7 +269,7 @@ def editar_pedido(
     pedido_id: int,
     request: PedidoEditRequest,
     db: Session = Depends(get_db),
-    usuario: User = Depends(exigir_perfis(Role.COZINHA, Role.GERENTE)),
+    usuario: User = Depends(exigir_perfis(Role.COZINHA, Role.GERENTE, Role.FUNCIONARIO)),
 ) -> PedidoResponse:
     pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
     if pedido is None:
@@ -339,6 +378,16 @@ def atualizar_status(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Forma de pagamento obrigatoria para finalizar o pedido",
         )
+
+    if destino == PedidoStatusNome.CANCELADO:
+        setor = {Role.FUNCIONARIO: "Atendente", Role.COZINHA: "Cozinha", Role.CAIXA: "Caixa", Role.GERENTE: "Gerente"}[usuario.role]
+        if request.origemCancelamento:
+            if usuario.role != Role.GERENTE and request.origemCancelamento != setor:
+                raise HTTPException(status_code=403, detail="Origem do cancelamento incompatível com o perfil")
+            setor = request.origemCancelamento
+        motivo = f"[{setor}] {motivo}"
+        if len(motivo) > 255:
+            raise HTTPException(status_code=422, detail="Use até 240 caracteres no motivo do cancelamento")
 
     agora = datetime.now()
     pedido.id_status = _to_status_id(destino)
@@ -544,6 +593,7 @@ def _criar_item(pedido: Pedido, produto: Produto, quantidade: int) -> PedidoItem
 def _get_pedido_with_itens(db: Session, pedido_id: int) -> Pedido:
     pedido = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
         .where(Pedido.id == pedido_id)
     ).unique().first()
@@ -622,7 +672,18 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
         }
         for item in pedido.itens
     ]
+    cancelamento = max((h for h in pedido.historico if h.status == "CANCELADO"), key=lambda h: (h.registrado_em, h.id), default=None)
+    entrega = max((h for h in pedido.historico if h.status == "ENTREGUE"), key=lambda h: (h.registrado_em, h.id), default=None)
+    motivo = cancelamento.motivo if cancelamento else None
+    setor = None
+    if motivo and motivo.startswith("[") and "] " in motivo:
+        setor, motivo = motivo[1:].split("] ", 1)
     return PedidoResponse(
+        numeroPedido=pedido.numero_pedido,
+        canceladoEm=cancelamento.registrado_em if cancelamento else None,
+        entregueEm=entrega.registrado_em if entrega else None,
+        motivoCancelamento=motivo,
+        origemCancelamento=setor,
         id=pedido.id,
         numeroMesa=_numero_mesa(pedido.id_mesa, mesas),
         clienteId=pedido.id_cliente,
