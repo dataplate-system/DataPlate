@@ -3901,10 +3901,11 @@ function carregarRelCardapio(inicio, fim) {
 
 // -- Matriz BCG --------------------------------------------------------
 const BCG_QUADRANTES = {
-  ESTRELA: { titulo: 'Estrela', eixos: 'Alta participação e em crescimento', classe: 'bcg-estrela' },
-  INTERROGACAO: { titulo: 'Interrogação', eixos: 'Baixa participação e em crescimento', classe: 'bcg-interrogacao' },
-  VACA_LEITEIRA: { titulo: 'Vaca Leiteira', eixos: 'Alta participação e sem crescimento', classe: 'bcg-vaca' },
-  ABACAXI: { titulo: 'Abacaxi', eixos: 'Baixa participação e sem crescimento', classe: 'bcg-abacaxi' }
+  // Nome simples primeiro e o termo oficial da Matriz BCG entre parenteses.
+  ESTRELA: { titulo: 'Em alta (Estrela)', eixos: 'Vende muito e está crescendo', classe: 'bcg-estrela' },
+  INTERROGACAO: { titulo: 'Promissor (Interrogação)', eixos: 'Vende pouco, mas está crescendo', classe: 'bcg-interrogacao' },
+  VACA_LEITEIRA: { titulo: 'Garantido (Vaca Leiteira)', eixos: 'Vende muito, mas parou de crescer', classe: 'bcg-vaca' },
+  ABACAXI: { titulo: 'Em queda (Abacaxi)', eixos: 'Vende pouco e está caindo', classe: 'bcg-abacaxi' }
 };
 
 function formatarPercentual(valor, casas = 1) {
@@ -3954,7 +3955,10 @@ function carregarRelBcg(inicio, fim) {
       const crescimentoTotal = data.crescimentoTotal == null
         ? 'sem base de comparação'
         : `${data.crescimentoTotal > 0 ? '+' : ''}${formatarPercentual(data.crescimentoTotal)} sobre o período anterior`;
-      criterio.textContent = `Período de ${formatarDataBcg(data.inicio)} a ${formatarDataBcg(data.fim)}, comparado com ${formatarDataBcg(data.inicioAnterior)} a ${formatarDataBcg(data.fimAnterior)}. `
+      // A BCG original usa dados de mercado; o restaurante so tem as proprias vendas.
+      criterio.textContent = 'Matriz BCG com os dados do restaurante: a participação de mercado é medida pela participação '
+        + 'de cada item no faturamento, e o crescimento do mercado, pelo crescimento das vendas do item. '
+        + `Período de ${formatarDataBcg(data.inicio)} a ${formatarDataBcg(data.fim)}, comparado com ${formatarDataBcg(data.inicioAnterior)} a ${formatarDataBcg(data.fimAnterior)}. `
         + `Faturamento: ${formatCurrency(data.faturamentoTotal)} (${crescimentoTotal}). `
         + `Participação alta: ${formatarPercentual(data.limiteParticipacao, 2)} ou mais do faturamento, a média por item do cardápio. `
         + 'Em crescimento: faturou mais do que no período anterior.';

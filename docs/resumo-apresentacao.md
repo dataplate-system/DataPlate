@@ -4,8 +4,9 @@ Comparativo antes e depois, com capturas e medições: `docs/apresentacao/melhor
 
 ## Roteiro da demonstração
 
-Antes de começar, rode `.\dev-start-python.ps1`, entre como Gerente e gere o QR Code de uma
-mesa livre. Abra o cardápio pelo QR Code no celular. Deixe abertas as telas do atendente e da
+Antes de começar, rode `.\dev-start-python.ps1`. As vendas de demonstração da Matriz BCG
+valem por duas semanas; se tiverem sido gravadas há mais tempo, rode
+`docker exec backend-python-api-1 python -m app.demo_bcg`. Entre como Gerente e gere o QR Code de uma mesa livre. Abra o cardápio pelo QR Code no celular. Deixe abertas as telas do atendente e da
 cozinha e o painel do Gerente.
 
 1. **Mesa fechada.** No celular, mostre o aviso e tente pedir: o pedido não avança.
@@ -15,16 +16,18 @@ cozinha e o painel do Gerente.
 4. **Estoque.** No Gerente, abra Insumos e mostre a baixa em "Últimas Movimentações".
 5. **Financeiro.** Em Relatórios, mostre lançado, recebido e em aberto. O novo pedido entra em
    aberto até o caixa fechar a conta.
-6. **Matriz BCG.** Em Relatórios, abra "Matriz BCG" e explique os quadrantes e as ações sugeridas.
+6. **Matriz BCG.** Em Relatórios, abra "Matriz BCG" e explique os quadrantes e as ações
+   sugeridas. Diga que, sem dados de mercado, a participação de mercado virou participação
+   no faturamento do restaurante, e o crescimento do mercado virou crescimento das vendas do item.
 
 Se errar a senha cinco vezes, o login desse CPF fica bloqueado por 5 minutos. Para liberar na
 hora, reinicie a API.
 
 ## Sugestão de fala sobre as melhorias
 
-"O Termo de Abertura previa a Matriz BCG e ela ainda não existia. Implementamos usando a
-participação no faturamento e o crescimento em relação ao período anterior, com uma ação
-sugerida para cada item. Também corrigimos o relatório financeiro, que somava como receita
+"O Termo de Abertura previa a Matriz BCG e ela ainda não existia. Como o restaurante não tem
+dados de mercado, usamos os dados dele: a participação de cada item no faturamento e o
+crescimento das vendas em relação ao mês anterior. Cada item recebe uma ação sugerida. Também corrigimos o relatório financeiro, que somava como receita
 pedidos ainda não pagos: em novembro eram R$ 578,60 de R$ 1.273,70. A venda agora baixa o estoque
 pela ficha técnica, e o QR Code só aceita pedido depois que a equipe abre a mesa. Na segurança,
 limitamos as tentativas de login e tiramos o CPF do token e dos logs. Os testes da API passaram

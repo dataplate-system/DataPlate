@@ -172,18 +172,21 @@
           <span>O relatório de cardápio só listava os itens mais vendidos, sem indicar o que fazer com cada um.</span>
         </div>
       </div>
-      <dl class="lado numeros" style="grid-template-columns: repeat(2, minmax(0, 1fr))" aria-label="Itens por quadrante">
-        <div><dt>Estrela</dt><dd>6</dd></div>
-        <div><dt>Interrogação</dt><dd>3</dd></div>
-        <div><dt>Vaca Leiteira</dt><dd>6</dd></div>
-        <div><dt>Abacaxi</dt><dd>14</dd></div>
-      </dl>
+      <div class="lado">
+        <span class="selo selo-depois">Depois</span>
+        <dl class="numeros" style="grid-template-columns: repeat(2, minmax(0, 1fr))" aria-label="Itens por quadrante">
+          <div><dt>Em alta (Estrela)</dt><dd>6</dd></div>
+          <div><dt>Promissor (Interrogação)</dt><dd>7</dd></div>
+          <div><dt>Garantido (Vaca Leiteira)</dt><dd>6</dd></div>
+          <div><dt>Em queda (Abacaxi)</dt><dd>10</dd></div>
+        </dl>
+      </div>
     </div>
     <figure class="inteira">
-      <img src="depois/matriz-bcg-quadrantes.png" alt="Matriz BCG com quatro quadrantes: Estrela, Interrogação, Vaca Leiteira e Abacaxi, cada um com ação sugerida e lista de produtos com participação e crescimento." width="1392" height="945">
-      <figcaption>Depois: vendas de 05/10 a 04/11 comparadas com 04/09 a 04/10.</figcaption>
+      <img src="depois/matriz-bcg-quadrantes.png" alt="Matriz BCG com quatro quadrantes: Em alta (Estrela), Promissor (Interrogação), Garantido (Vaca Leiteira) e Em queda (Abacaxi), cada um com ação sugerida e lista de produtos com participação e crescimento." width="1392" height="848">
+      <figcaption>Depois: vendas de 10/10 a 09/11 comparadas com 09/09 a 09/10.</figcaption>
     </figure>
-    <p>Sem dados de mercado, a matriz foi adaptada: a participação de mercado virou participação no faturamento do restaurante, e o crescimento do mercado virou a variação de cada produto em relação ao período anterior. A participação é alta a partir de 3,45%, a média por item do cardápio. O produto está em crescimento quando faturou mais do que no período anterior.</p>
+    <p>A BCG original usa dados de mercado, que o restaurante não tem. Por isso a matriz usa os dados do próprio restaurante: a participação de cada item no faturamento no lugar da participação de mercado, e o crescimento das vendas do item no lugar do crescimento do mercado. A participação é alta a partir de 3,45%, a média por item do cardápio. O item está em crescimento quando faturou mais do que no período anterior. Cada classe aparece com um nome simples e o termo oficial da BCG entre parênteses.</p>
   </section>
 
   <section class="mudanca" aria-labelledby="financeiro">
@@ -208,7 +211,7 @@
 
   <section class="mudanca" aria-labelledby="ficha">
     <h2 id="ficha">Lucro somente onde o custo é conhecido</h2>
-    <p>Sem ficha técnica, o custo era tratado como zero e todo o faturamento aparecia como lucro. A Mousse de Maracujá, por exemplo, mostrava R$ 166,80 de lucro sobre R$ 166,80 de vendas. Agora o relatório avisa que falta a ficha e não calcula o lucro.</p>
+    <p>Sem ficha técnica, o custo era tratado como zero e todo o faturamento aparecia como lucro. A Mousse de Maracujá, por exemplo, mostrava R$ 166,80 de lucro sobre R$ 166,80 de vendas. Depois destas capturas, as fichas que faltavam foram cadastradas, então hoje o aviso só aparece para itens novos sem ficha. Agorao relatório avisa que falta a ficha e não calcula o lucro.</p>
     <div class="comparacao recorte-final">
       <figure class="lado">
         <span class="selo selo-antes">Antes</span>
@@ -308,7 +311,7 @@
   <section class="mudanca" aria-labelledby="limites">
     <h2 id="limites">Limites conhecidos</h2>
     <ul>
-      <li>As vendas são dados de demonstração, então a classificação BCG ilustra o método e não descreve um restaurante real.</li>
+      <li>As vendas são dados de demonstração, gerados para que as quatro classes da BCG apareçam. A classificação ilustra o método e não descreve um restaurante real.</li>
       <li>Uma foto do QR Code ainda funciona enquanto a mesa estiver aberta. O limite de 20 pedidos por mesa a cada 10 minutos reduz o abuso, mas não o elimina.</li>
       <li>Pedido cancelado depois de iniciar o preparo não devolve o insumo, e a perda ainda não é registrada à parte.</li>
       <li>Os contadores de tentativas ficam na memória da API e valem para um único processo.</li>

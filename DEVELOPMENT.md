@@ -156,7 +156,7 @@ Get-Content database\migrations\006_perfil_gerente.sql | docker compose -f backe
 
 Revise o `UPDATE` do CPF `00000000002` antes de rodar fora do ambiente de desenvolvimento. Ao iniciar, a API tambem cria as colunas que faltarem (sem o CHECK).
 
-A migracao `010_pagamento_e_estoque.sql` (idempotente) cria `pedido.pago_em`, `pedido.forma_pagamento` e a tabela `estoque_movimento`. Os pedidos antigos entregues, ou de balcao com pagamento marcado, ficam registrados como pagos. O Docker Compose ja a executa na inicializacao.
+A migracao `011_fichas_tecnicas_demo.sql` (idempotente) cria fichas tecnicas para os produtos de demonstracao que nao tinham. A migracao `010_pagamento_e_estoque.sql` (idempotente) cria `pedido.pago_em`, `pedido.forma_pagamento` e a tabela `estoque_movimento`. Os pedidos antigos entregues, ou de balcao com pagamento marcado, ficam registrados como pagos. O Docker Compose ja a executa na inicializacao.
 
 Para recriar o banco local do zero:
 
@@ -256,7 +256,7 @@ Eventos publicados:
 
 ## Relatorios e estoque
 
-- `GET /api/relatorios/bcg`: Matriz BCG. Compara o periodo com o anterior de mesma duracao. Participacao alta e igual ou maior que a media por item ativo do cardapio; crescimento e faturar mais que no periodo anterior. Produto novo com vendas conta como crescimento.
+- `GET /api/relatorios/bcg`: Matriz BCG com dados internos, no lugar dos dados de mercado. Compara o periodo com o anterior de mesma duracao. Participacao alta: igual ou maior que a media por item ativo no faturamento; crescimento: faturar mais que no periodo anterior. Produto novo com vendas conta como crescimento. A tela mostra Em alta (Estrela), Garantido (Vaca Leiteira), Promissor (Interrogacao) e Em queda (Abacaxi).
 - `GET /api/relatorios/vendas` e `/resumo`: `faturamento` (lancado) = `faturamentoRecebido` + `faturamentoEmAberto`; `valorCancelado` fica fora do total. Recebido e pedido com `pago_em` ou entregue.
 - `GET /api/relatorios/cardapio`: sem ficha tecnica, `lucro` e `null`, pois o custo e desconhecido.
 - Estoque (`app/estoque.py`): a baixa ocorre ao sair da fila (em preparo ou pronto) ou na venda de caixa entregue na hora. Editar um pedido ja baixado ajusta so a diferenca. Cancelar antes do preparo nao movimenta; depois do preparo a baixa e mantida, pois o insumo ja foi usado. O saldo pode ficar negativo, para nao travar a cozinha. Movimentacoes em `GET /api/insumos/movimentos`.

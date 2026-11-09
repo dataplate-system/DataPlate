@@ -60,6 +60,10 @@ remove o filtro. Observacoes exibem instrucoes do cliente, sem marcadores da car
    "Abrir mesa": em ate 15 segundos o aviso some e o pedido pode ser enviado.
    Em celular, acessar pelo IP local do computador.
 9. Gerente: em Relatorios, abrir "Matriz BCG" e conferir quadrantes e acoes sugeridas.
+   A tela compara os ultimos 30 dias com os 30 anteriores. Para a massa de teste nao
+   "envelhecer", grave as vendas de demonstracao: `docker exec backend-python-api-1 python -m app.demo_bcg`.
+   A classificacao vale pelo numero de dias informado pelo comando; depois disso, rode de novo. O comando apaga as vendas
+   que ele mesmo criou (prefixo `BCG-`) antes de gravar; `--simular` so mostra o plano.
    No Financeiro, conferir lancado, recebido e em aberto.
 10. Cozinha: iniciar o preparo de um pedido. Gerente: em Insumos, conferir a baixa em
     "Ultimas Movimentacoes".

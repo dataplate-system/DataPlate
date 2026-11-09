@@ -158,9 +158,8 @@
   white-space: nowrap;
 }
 
+/* Sem cor propria: herda a da classe do quadrante (.bcg-estrela etc.). */
 .bcg-selo {
-  --bcg-cor: #475569;
-  --bcg-fundo: #f8fafc;
   display: inline-block;
   padding: 3px 8px;
   border-radius: 999px;
