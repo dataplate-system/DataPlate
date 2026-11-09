@@ -144,10 +144,16 @@ def send_demo_contact_email(request: DemoContactEmailRequest) -> None:
     confirmacao["To"] = request.email
     confirmacao.set_content(
         f"Olá, {request.nome}!\n\n"
-        "Recebemos seu interesse em conhecer o DataPlate. "
-        "Nossa equipe entrará em contato em breve para apresentar a solução.\n\n"
+        "Primeiramente, obrigado por solicitar uma demonstração do DataPlate.\n\n"
+        "É um prazer entrar em contato. Somos da equipe do DataPlate, plataforma que une cardápio digital por QR Code, pedidos em tempo real para a cozinha, controle de mesas e reservas, e um painel com indicadores para a gestão do restaurante."
+        "Gostaríamos de convidar você para uma demonstração gratuita e sem compromisso, na qual mostramos na prática como o sistema funciona no dia a dia e como ele pode se adaptar às necessidades do seu negócio.\n\n"
+        "Duração: cerca de 20 minutos\n"
+        "Formato: online ou presencial, como for mais conveniente para você\n"
+        "Opções de horário: Oque melhor encaixar na sua agenda, é só nos informar!\n\n"
+        "Agradecemos desde já a atenção e ficamos no aguardo do seu retorno.\n\n"
         "Atenciosamente,\n"
-        "Equipe DataPlate"
+        "Equipe DataPlate\n"
+        "Telefone: 99 99999-9999 / E-mail: contato@dataplate.com.br"
     )
     try:
         _send_smtp_email(
