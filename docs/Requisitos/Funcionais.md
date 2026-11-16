@@ -30,3 +30,6 @@ O sistema deve baixar os insumos pela ficha técnica quando o preparo do pedido 
 
 ## RF11 - Abertura da Mesa
 O sistema deve aceitar pedidos pelo QR Code somente depois que a equipe abrir a mesa.
+
+## RF12 - Perfil do Cliente
+O sistema deve mostrar ao gerente o perfil de cada cliente cadastrado com total gasto, número de pedidos, ticket médio, prato mais pedido, gasto por mês e os últimos pedidos, sem contar pedidos cancelados, e destacar o cliente frequente (5 pedidos ou mais nos últimos 30 dias).

@@ -17,6 +17,7 @@ Os testes `test_*.py` ficam em `backend-python/tests/` e rodam com `npm test`, t
 | RF09 Matriz BCG | `adm.html` | `GET /api/relatorios/bcg` | `test_relatorios.py`, `check-melhorias.mjs` |
 | RF10 Baixa de estoque | `adm.html`, `cozinha.html` | `PUT /api/pedidos/{id}/status`, `GET /api/insumos/movimentos` | `test_estoque.py`, `check-melhorias.mjs` |
 | RF11 Abertura da mesa | `atendente.html`, `user.html` | `PATCH /api/mesas/{id}/status`, `POST /api/pedidos` | `test_mesa_qr.py`, `check-melhorias.mjs` |
+| RF12 Perfil do cliente | `adm.html` | `GET /api/clientes/{id}/resumo` | `test_clientes.py` |
 
 ## Objetivos do TAP
 

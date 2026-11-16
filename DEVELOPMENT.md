@@ -259,6 +259,7 @@ Eventos publicados:
 - `GET /api/relatorios/bcg`: Matriz BCG com dados internos, no lugar dos dados de mercado. Compara o periodo com o anterior de mesma duracao. Participacao alta: igual ou maior que a media por item ativo no faturamento; crescimento: faturar mais que no periodo anterior. Produto novo com vendas conta como crescimento. A tela mostra Em alta (Estrela), Garantido (Vaca Leiteira), Promissor (Interrogacao) e Em queda (Abacaxi).
 - `GET /api/relatorios/vendas` e `/resumo`: `faturamento` (lancado) = `faturamentoRecebido` + `faturamentoEmAberto`; `valorCancelado` fica fora do total. Recebido e pedido com `pago_em` ou entregue.
 - `GET /api/relatorios/cardapio`: sem ficha tecnica, `lucro` e `null`, pois o custo e desconhecido.
+- `GET /api/clientes/{id}/resumo` (somente Gerente): perfil do cliente com total de pedidos, total gasto, ticket medio, prato mais pedido, primeira e ultima compra, gasto por mes nos ultimos 6 meses e os ultimos 10 pedidos. Pedidos cancelados ficam fora. `clienteFrequente` e verdadeiro com 5 pedidos ou mais nos ultimos 30 dias. Tela: Cadastros > Clientes > "Ver perfil".
 - Estoque (`app/estoque.py`): a baixa ocorre ao sair da fila (em preparo ou pronto) ou na venda de caixa entregue na hora. Editar um pedido ja baixado ajusta so a diferenca. Cancelar antes do preparo nao movimenta; depois do preparo a baixa e mantida, pois o insumo ja foi usado. O saldo pode ficar negativo, para nao travar a cozinha. Movimentacoes em `GET /api/insumos/movimentos`.
 
 ## O Que Nao Fazer

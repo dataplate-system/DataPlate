@@ -4127,6 +4127,7 @@ function buildLinhaCliente(c) {
     <td><span class="badge badge-active">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(c.criadoEm)}</td>
     <td>
+      <button class="btn-icon btn-icon-view" title="Ver perfil" onclick="verPerfilCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg></button>
       <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
       <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
@@ -4300,6 +4301,114 @@ window.excluirCliente = async function(id) {
     .then(() => { showToast('Cliente excluído com sucesso!', 'success'); carregarClientes(); })
     .catch((err) => showToast(err.message || 'Erro ao excluir cliente.'));
 };
+
+// =============================================
+// PERFIL DO CLIENTE (histórico de compras)
+// =============================================
+
+function textoPerfilCliente(id, valor) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = valor;
+}
+
+window.verPerfilCliente = async function(id) {
+  const cliente = (window.__clientes || []).find((item) => item.id === id);
+  const carregando = document.getElementById('clientePerfilCarregando');
+  const dados = document.getElementById('clientePerfilDados');
+  const vazio = document.getElementById('clientePerfilVazio');
+  const selo = document.getElementById('clientePerfilSelo');
+  if (!carregando || !dados || !vazio || !selo) return;
+
+  textoPerfilCliente('clientePerfilNome', cliente?.nome || 'Cliente');
+  textoPerfilCliente('clientePerfilCodigo', cliente ? displayCode(cliente, 'CLI') : '');
+  carregando.textContent = 'Carregando perfil...';
+  carregando.hidden = false;
+  dados.hidden = true;
+  vazio.hidden = true;
+  selo.hidden = true;
+  destroyChart('clientePerfilChart');
+  window.openModal('clientePerfilModal');
+
+  try {
+    const resumo = await getJson(`/clientes/${id}/resumo`);
+    renderPerfilCliente(resumo);
+  } catch (err) {
+    carregando.textContent = err.message || 'Erro ao carregar o perfil do cliente.';
+    console.error('[clientes] perfil', err);
+  }
+};
+
+function renderPerfilCliente(resumo) {
+  const carregando = document.getElementById('clientePerfilCarregando');
+  const dados = document.getElementById('clientePerfilDados');
+  const vazio = document.getElementById('clientePerfilVazio');
+  const selo = document.getElementById('clientePerfilSelo');
+
+  textoPerfilCliente('clientePerfilNome', resumo.nome);
+  textoPerfilCliente('clientePerfilCodigo', resumo.codigo);
+  carregando.hidden = true;
+  // Selo: 5 pedidos ou mais nos últimos 30 dias (regra do backend).
+  selo.hidden = !resumo.clienteFrequente;
+  selo.title = `${resumo.pedidosUltimos30Dias} pedido(s) nos últimos 30 dias`;
+
+  if (!resumo.totalPedidos) {
+    vazio.hidden = false;
+    dados.hidden = true;
+    return;
+  }
+
+  vazio.hidden = true;
+  dados.hidden = false;
+  textoPerfilCliente('clientePerfilGasto', formatCurrency(resumo.totalGasto));
+  textoPerfilCliente('clientePerfilPedidos', String(resumo.totalPedidos));
+  textoPerfilCliente('clientePerfilPeriodo', `Primeira compra ${formatDate(resumo.primeiraCompra)} · última ${formatDate(resumo.ultimaCompra)}`);
+  textoPerfilCliente('clientePerfilTicket', formatCurrency(resumo.ticketMedio));
+  textoPerfilCliente('clientePerfilPrato', resumo.pratoMaisPedido?.nome || '—');
+  textoPerfilCliente('clientePerfilPratoQtd', resumo.pratoMaisPedido
+    ? `${Number(resumo.pratoMaisPedido.quantidade)} unidade(s) pedida(s)`
+    : 'Nenhum item registrado');
+
+  const tbody = document.getElementById('clientePerfilPedidosBody');
+  if (tbody) {
+    tbody.innerHTML = (resumo.ultimosPedidos || []).map((p) => {
+      const quando = new Date(p.dataHora);
+      const data = `${quando.toLocaleDateString('pt-BR')} ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      const itens = (p.itens || []).map((i) => `${i.quantidade}x ${escapeHtml(i.nomeProduto)}`).join(', ') || '-';
+      return `<tr>
+        <td style="white-space:nowrap">${data}</td>
+        <td>${escapeHtml(pedidoOrigemLabel(p))}</td>
+        <td style="font-size:12px;color:#64748b">${itens}</td>
+        <td><strong>${formatCurrency(p.valorTotal)}</strong></td>
+        <td><span class="badge ${pedidoBadgeClass[p.status] || 'badge-info'}">${escapeHtml(pedidoStatusLabel[p.status] || p.status)}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  renderClientePerfilChart(resumo.gastoPorMes || []);
+}
+
+function renderClientePerfilChart(gastoPorMes) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('clientePerfilChart');
+  if (!canvas) return;
+  destroyChart('clientePerfilChart');
+
+  _charts['clientePerfilChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: gastoPorMes.map((m) => m.label),
+      datasets: [{
+        label: 'Gasto (R$)',
+        data: gastoPorMes.map((m) => Number(m.valor || 0)),
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 32
+      }]
+    },
+    options: currencyTooltipOptions()
+  });
+}
 
 window.editarFuncionario = function(id) {
   const funcionario = (window.__funcionarios || []).find((item) => item.id === id);

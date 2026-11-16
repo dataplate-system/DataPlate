@@ -192,6 +192,51 @@ class ClienteResponse(BaseModel):
     criadoEm: datetime | None
 
 
+class ClientePratoFavoritoResponse(BaseModel):
+    produtoId: int
+    nome: str
+    quantidade: float
+
+
+class ClienteGastoMensalResponse(BaseModel):
+    # Mes no formato AAAA-MM; label curto para o grafico, ex.: "nov/26".
+    mes: str
+    label: str
+    valor: float
+    pedidos: int
+
+
+class ClienteResumoPedidoItemResponse(BaseModel):
+    nomeProduto: str
+    quantidade: int
+
+
+class ClienteResumoPedidoResponse(BaseModel):
+    id: int
+    dataHora: datetime
+    origem: str
+    numeroMesa: int | None
+    status: PedidoStatusNome
+    valorTotal: float
+    itens: list[ClienteResumoPedidoItemResponse]
+
+
+class ClienteResumoResponse(BaseModel):
+    clienteId: int
+    nome: str
+    codigo: str
+    totalPedidos: int
+    totalGasto: float
+    ticketMedio: float
+    pratoMaisPedido: ClientePratoFavoritoResponse | None
+    primeiraCompra: datetime | None
+    ultimaCompra: datetime | None
+    pedidosUltimos30Dias: int
+    clienteFrequente: bool
+    gastoPorMes: list[ClienteGastoMensalResponse]
+    ultimosPedidos: list[ClienteResumoPedidoResponse]
+
+
 class FornecedorRequest(BaseModel):
     codigo: str | None = None
     razaoSocial: str = Field(min_length=1)
