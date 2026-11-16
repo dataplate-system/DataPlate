@@ -938,6 +938,31 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Turnos de caixa: abertura e fechamento registrados no PDV (somente Gerente) -->
+          <div class="report-section" id="turnosCaixaSection" data-roles="gerente" style="margin-top:24px">
+            <h3>Turnos de caixa</h3>
+            <p class="modal-description" style="margin-bottom:12px">Fechamentos registrados no PDV: total vendido no turno e diferença entre o dinheiro contado e o esperado (vermelho: falta; azul: sobra).</p>
+            <div class="table-container">
+              <table class="data-table" id="turnosCaixaTabela">
+                <thead>
+                  <tr>
+                    <th>Abertura</th>
+                    <th>Fechamento</th>
+                    <th>Responsável</th>
+                    <th>Valor inicial</th>
+                    <th>Total vendido</th>
+                    <th>Dinheiro esperado</th>
+                    <th>Contado</th>
+                    <th>Diferença</th>
+                  </tr>
+                </thead>
+                <tbody id="turnosCaixaBody">
+                  <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
 
         <!-- PEDIDOS -->
@@ -2546,6 +2571,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261116-perfil-cliente" defer></script>
+  <script src="../JavaScript/adm.js?v=20261116-caixa" defer></script>
 </body>
 </html>

@@ -158,6 +158,8 @@ Revise o `UPDATE` do CPF `00000000002` antes de rodar fora do ambiente de desenv
 
 A migracao `011_fichas_tecnicas_demo.sql` (idempotente) cria fichas tecnicas para os produtos de demonstracao que nao tinham. A migracao `010_pagamento_e_estoque.sql` (idempotente) cria `pedido.pago_em`, `pedido.forma_pagamento` e a tabela `estoque_movimento`. Os pedidos antigos entregues, ou de balcao com pagamento marcado, ficam registrados como pagos. O Docker Compose ja a executa na inicializacao.
 
+A migracao `012_turno_caixa.sql` (idempotente) cria a tabela `turno_caixa` (abertura e fechamento de caixa por turno) e o indice unico que impede dois turnos abertos ao mesmo tempo. O Docker Compose ja a executa na inicializacao; em bancos existentes, aplique-a manualmente como as anteriores.
+
 Para recriar o banco local do zero:
 
 ```powershell
@@ -261,6 +263,17 @@ Eventos publicados:
 - `GET /api/relatorios/cardapio`: sem ficha tecnica, `lucro` e `null`, pois o custo e desconhecido.
 - `GET /api/clientes/{id}/resumo` (somente Gerente): perfil do cliente com total de pedidos, total gasto, ticket medio, prato mais pedido, primeira e ultima compra, gasto por mes nos ultimos 6 meses e os ultimos 10 pedidos. Pedidos cancelados ficam fora. `clienteFrequente` e verdadeiro com 5 pedidos ou mais nos ultimos 30 dias. Tela: Cadastros > Clientes > "Ver perfil".
 - Estoque (`app/estoque.py`): a baixa ocorre ao sair da fila (em preparo ou pronto) ou na venda de caixa entregue na hora. Editar um pedido ja baixado ajusta so a diferenca. Cancelar antes do preparo nao movimenta; depois do preparo a baixa e mantida, pois o insumo ja foi usado. O saldo pode ficar negativo, para nao travar a cozinha. Movimentacoes em `GET /api/insumos/movimentos`.
+
+## Caixa por turno
+
+Rotas em `routers/caixa.py` (tabela `turno_caixa`, migracao 012):
+
+- `GET /api/caixa/turnos/atual` (Caixa, Gerente): turno aberto com os totais recebidos desde a abertura, ou `null` com o caixa fechado.
+- `POST /api/caixa/turnos` (Caixa, Gerente): abre o turno com `valorInicial` (dinheiro na gaveta). Com outro turno aberto: 409.
+- `PUT /api/caixa/turnos/{id}/fechar` (Caixa, Gerente): fecha com `valorContado`; grava os totais por forma de pagamento (PIX, debito, credito, dinheiro e outros) somando os pedidos nao cancelados com `pago_em` entre a abertura e o fechamento. `valorEsperadoDinheiro` = valor inicial + vendas em dinheiro; `diferenca` = contado - esperado (negativo: falta; positivo: sobra).
+- `GET /api/caixa/turnos` (somente Gerente): turnos fechados, do mais recente ao mais antigo. Aparecem em Operacoes > Pagamentos > "Turnos de caixa".
+
+No `pdv.html`, sem turno aberto a tela pede a abertura e nao registra venda nem fechamento de conta. "Fechar caixa" mostra os cards por forma de pagamento, o grafico de pizza, o dinheiro esperado, o campo do valor contado e a diferenca. A API continua aceitando pedidos sem turno aberto (cliente pelo QR Code, atendente e integracoes).
 
 ## O Que Nao Fazer
 

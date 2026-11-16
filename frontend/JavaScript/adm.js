@@ -1671,6 +1671,8 @@ async function carregarPagamentos() {
     fim.value = def.fim;
   }
 
+  carregarTurnosCaixa();
+
   const tbody = document.getElementById('pgtoTabelaBody');
   if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
 
@@ -1752,6 +1754,50 @@ async function carregarPagamentos() {
 }
 
 window.carregarPagamentos = carregarPagamentos;
+
+// Turnos de caixa (abertura e fechamento no PDV): o historico e so do Gerente.
+async function carregarTurnosCaixa() {
+  const tbody = document.getElementById('turnosCaixaBody');
+  if (!tbody || !isGerenteRole()) return;
+  const vazio = (msg, cor = '#94a3b8') => `<tr><td colspan="8" style="text-align:center;color:${cor};padding:24px">${msg}</td></tr>`;
+  tbody.innerHTML = vazio('Carregando...');
+
+  const quando = (iso) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  try {
+    const turnos = await getJson('/caixa/turnos?limite=100');
+    if (!turnos || !turnos.length) {
+      tbody.innerHTML = vazio('Nenhum turno de caixa fechado ainda.');
+      window._turnosCaixa = [];
+      return;
+    }
+    window._turnosCaixa = turnos;
+    tbody.innerHTML = turnos.map((t) => {
+      const diferenca = Number(t.diferenca || 0);
+      const cor = diferenca < 0 ? '#dc2626' : diferenca > 0 ? '#2563eb' : '#16a34a';
+      const texto = diferenca < 0 ? `- ${formatCurrency(-diferenca)}` : diferenca > 0 ? `+ ${formatCurrency(diferenca)}` : formatCurrency(0);
+      const responsavel = [t.abertoPor, t.fechadoPor].filter(Boolean)
+        .filter((nome, i, lista) => lista.indexOf(nome) === i).join(' / ') || '-';
+      return `<tr>
+        <td style="white-space:nowrap">${quando(t.abertoEm)}</td>
+        <td style="white-space:nowrap">${quando(t.fechadoEm)}</td>
+        <td>${escapeHtml(responsavel)}</td>
+        <td>${formatCurrency(t.valorInicial)}</td>
+        <td><strong>${formatCurrency(t.totais?.totalVendas)}</strong><br><small style="color:#64748b">${Number(t.totais?.quantidadeVendas || 0)} venda(s)</small></td>
+        <td>${formatCurrency(t.valorEsperadoDinheiro)}</td>
+        <td>${formatCurrency(t.valorContado)}</td>
+        <td><strong style="color:${cor}" title="${escapeHtml(t.observacao || '')}">${texto}</strong></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = vazio(`Erro: ${escapeHtml(e.message)}`, '#dc2626');
+  }
+}
+window.carregarTurnosCaixa = carregarTurnosCaixa;
 
 window.exportarPagamentosCSV = function() {
   const transacoes = window._pgtoTransacoes || [];

@@ -331,6 +331,7 @@ window.fecharPdvPgtoModal = function() {
 
 window.confirmarPagamentoMesa = async function() {
   if (!_pdvPgtoMesa || !_pdvPgtoSelecionado) return;
+  if (!exigirCaixaAberto()) return;
   const btn = document.getElementById('pdvPgtoConfirmar');
   if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
 
@@ -1028,13 +1029,13 @@ function selecionarPagamento(tipo, grupo) {
 function atualizarBotaoFinalizar() {
   const btn = document.getElementById('finalizarBtn');
   if (modoAtual === 'mesa') {
-    btn.disabled = !(mesaSelecionada && cart.length);
+    btn.disabled = !(caixaAberto() && mesaSelecionada && cart.length);
     return;
   }
 
   const totalPagar = calcularTotalPagar();
   const dinheiroOk = pagamentoVenda !== 'DINHEIRO' || moneyInputValue('valorRecebidoInput') >= totalPagar;
-  btn.disabled = !(cart.length && pagamentoVenda && dinheiroOk && !descontoExcedeLimite());
+  btn.disabled = !(caixaAberto() && cart.length && pagamentoVenda && dinheiroOk && !descontoExcedeLimite());
 }
 
 function mesaSoParaLiberar() {
@@ -1046,11 +1047,12 @@ function atualizarBotaoFecharConta() {
   const btn = document.getElementById('fecharContaBtn');
   const soLiberar = mesaSoParaLiberar();
   btn.textContent = soLiberar ? 'Liberar mesa' : 'Fechar Conta';
-  btn.disabled = !(soLiberar || (mesaSelecionada && pedidosAbertos.length && pagamentoConta));
+  btn.disabled = !caixaAberto() || !(soLiberar || (mesaSelecionada && pedidosAbertos.length && pagamentoConta));
 }
 
 // -- CRIAR PEDIDO -------------------------------------------------
 async function finalizarPedido() {
+  if (!exigirCaixaAberto()) return;
   const vendaCaixa = modoAtual === 'caixa';
   if (!vendaCaixa && !mesaSelecionada) { showToast('Selecione uma mesa.', 'error'); return; }
   if (!cart.length)     { showToast('Adicione ao menos um produto.', 'error'); return; }
@@ -1208,6 +1210,7 @@ async function finalizarPedido() {
 
 // -- FECHAR CONTA -------------------------------------------------
 async function fecharConta() {
+  if (!exigirCaixaAberto()) return;
   if (!mesaSelecionada)       { showToast('Selecione uma mesa.', 'error'); return; }
   if (!pedidosAbertos.length) {
     // Mesa ocupada/aguardando sem pedidos (ex.: pedido cancelado): apenas libera
@@ -1458,6 +1461,248 @@ function connectPdvWebSocket() {
   }
 }
 
+// -- CAIXA: ABERTURA E FECHAMENTO DE TURNO --------------------------
+// Sem turno aberto a tela pede a abertura e nao registra vendas.
+let turnoCaixa = null;
+let _fechamentoChart = null;
+
+function caixaAberto() {
+  return Boolean(turnoCaixa);
+}
+
+function dataHoraCurta(iso) {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function setTexto(id, valor) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = valor;
+}
+
+function valorNumerico(id) {
+  const raw = document.getElementById(id)?.value ?? '';
+  if (String(raw).trim() === '') return null;
+  const valor = Number(String(raw).replace(',', '.'));
+  return Number.isFinite(valor) ? Math.round(valor * 100) / 100 : null;
+}
+
+function formatDiferenca(valor) {
+  if (valor < 0) return `- ${formatBRL(-valor)}`;
+  if (valor > 0) return `+ ${formatBRL(valor)}`;
+  return formatBRL(0);
+}
+
+function renderStatusCaixa() {
+  const status = document.getElementById('pdvCaixaStatus');
+  const btn = document.getElementById('pdvFecharCaixaBtn');
+  if (!status || !btn) return;
+  status.hidden = false;
+  status.classList.toggle('is-fechado', !turnoCaixa);
+  if (turnoCaixa) {
+    setTexto('pdvCaixaStatusTitulo', 'Caixa aberto');
+    setTexto('pdvCaixaStatusInfo', `desde ${dataHoraCurta(turnoCaixa.abertoEm)} · inicial ${formatBRL(turnoCaixa.valorInicial)}`);
+  } else {
+    setTexto('pdvCaixaStatusTitulo', 'Caixa fechado');
+    setTexto('pdvCaixaStatusInfo', 'Abra o turno para vender');
+  }
+  btn.hidden = !turnoCaixa;
+  atualizarBotaoFinalizar();
+  atualizarBotaoFecharConta();
+}
+
+function mostrarAberturaCaixa() {
+  const overlay = document.getElementById('pdvAberturaOverlay');
+  if (!overlay) return;
+  const erro = document.getElementById('pdvAberturaErro');
+  if (erro) erro.hidden = true;
+  overlay.hidden = false;
+  window.setTimeout(() => document.getElementById('valorInicialInput')?.focus(), 50);
+}
+
+function exigirCaixaAberto() {
+  if (caixaAberto()) return true;
+  showToast('Abra o caixa antes de registrar vendas.', 'error');
+  mostrarAberturaCaixa();
+  return false;
+}
+
+async function verificarTurnoCaixa() {
+  try {
+    turnoCaixa = await apiGet('/caixa/turnos/atual');
+  } catch (e) {
+    turnoCaixa = null;
+    showToast(e.message || 'Nao foi possivel consultar o caixa.', 'error');
+  }
+  renderStatusCaixa();
+  const overlay = document.getElementById('pdvAberturaOverlay');
+  if (!turnoCaixa) mostrarAberturaCaixa();
+  else if (overlay) overlay.hidden = true;
+}
+
+async function abrirCaixa() {
+  const btn = document.getElementById('abrirCaixaBtn');
+  const erro = document.getElementById('pdvAberturaErro');
+  const valor = valorNumerico('valorInicialInput');
+  if (valor === null || valor < 0) {
+    erro.textContent = 'Informe o valor inicial em dinheiro (use 0 se a gaveta estiver vazia).';
+    erro.hidden = false;
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Abrindo...';
+  try {
+    const obs = document.getElementById('aberturaObsInput').value.trim();
+    turnoCaixa = await apiPost('/caixa/turnos', { valorInicial: valor, ...(obs && { observacao: obs }) });
+    document.getElementById('pdvAberturaOverlay').hidden = true;
+    document.getElementById('valorInicialInput').value = '';
+    document.getElementById('aberturaObsInput').value = '';
+    erro.hidden = true;
+    renderStatusCaixa();
+    showToast(`Caixa aberto com ${formatBRL(turnoCaixa.valorInicial)}.`, 'success');
+  } catch (e) {
+    if (e.status === 409) {
+      // Outro terminal abriu o turno: usa o turno existente.
+      await verificarTurnoCaixa();
+    } else {
+      erro.textContent = e.message || 'Erro ao abrir o caixa.';
+      erro.hidden = false;
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Abrir caixa';
+  }
+}
+
+function fecharModalFechamento() {
+  const modal = document.getElementById('pdvFechamentoModal');
+  if (modal) modal.hidden = true;
+}
+
+function renderDiferenca() {
+  if (!turnoCaixa) return;
+  const linha = document.getElementById('fechDiferencaLinha');
+  const texto = document.getElementById('fechDiferencaTexto');
+  linha.classList.remove('is-falta', 'is-sobra');
+  const contado = valorNumerico('valorContadoInput');
+  if (contado === null) {
+    setTexto('fechDiferenca', '—');
+    texto.textContent = 'Informe o valor contado para ver a diferença.';
+    return;
+  }
+  const diferenca = Math.round((contado - Number(turnoCaixa.valorEsperadoDinheiro || 0)) * 100) / 100;
+  setTexto('fechDiferenca', formatDiferenca(diferenca));
+  if (diferenca < 0) {
+    linha.classList.add('is-falta');
+    texto.textContent = `Faltam ${formatBRL(-diferenca)} na gaveta.`;
+  } else if (diferenca > 0) {
+    linha.classList.add('is-sobra');
+    texto.textContent = `Sobram ${formatBRL(diferenca)} na gaveta.`;
+  } else {
+    texto.textContent = 'A gaveta confere com o valor esperado.';
+  }
+}
+
+function renderGraficoFechamento(totais) {
+  const canvas = document.getElementById('fechamentoChart');
+  const wrap = document.getElementById('fechGraficoWrap');
+  if (!canvas || !wrap) return;
+  if (_fechamentoChart) { _fechamentoChart.destroy(); _fechamentoChart = null; }
+  const fatias = [
+    ['PIX', totais.pix, '#16a34a'],
+    ['Débito', totais.debito, '#2563eb'],
+    ['Crédito', totais.credito, '#f59e0b'],
+    ['Dinheiro', totais.dinheiro, '#7c3aed'],
+    ['Outros', totais.outros, '#94a3b8']
+  ].filter(f => Number(f[1]) > 0);
+  if (!fatias.length || typeof Chart === 'undefined') { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  _fechamentoChart = new Chart(canvas.getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: fatias.map(f => f[0]),
+      datasets: [{ data: fatias.map(f => Number(f[1])), backgroundColor: fatias.map(f => f[2]), borderColor: '#fff', borderWidth: 2 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { usePointStyle: true, font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${formatBRL(ctx.parsed)}` } }
+      }
+    }
+  });
+}
+
+async function abrirFechamentoCaixa() {
+  if (!caixaAberto()) { mostrarAberturaCaixa(); return; }
+  try {
+    // Totais ao vivo do turno: pedidos pagos desde a abertura.
+    const atual = await apiGet('/caixa/turnos/atual');
+    if (!atual) {
+      turnoCaixa = null;
+      renderStatusCaixa();
+      mostrarAberturaCaixa();
+      return;
+    }
+    turnoCaixa = atual;
+  } catch (e) {
+    showToast(e.message || 'Erro ao carregar o resumo do turno.', 'error');
+    return;
+  }
+  const t = turnoCaixa.totais;
+  const quem = turnoCaixa.abertoPor ? ` por ${turnoCaixa.abertoPor}` : '';
+  setTexto('pdvFechamentoSub', `Turno aberto em ${dataHoraCurta(turnoCaixa.abertoEm)}${quem} · ${t.quantidadeVendas} venda(s)`);
+  setTexto('fechPix', formatBRL(t.pix));
+  setTexto('fechDebito', formatBRL(t.debito));
+  setTexto('fechCredito', formatBRL(t.credito));
+  setTexto('fechDinheiro', formatBRL(t.dinheiro));
+  const outros = document.getElementById('fechOutros');
+  outros.hidden = !(Number(t.outros) > 0);
+  outros.textContent = `Outras formas de pagamento: ${formatBRL(t.outros)}`;
+  setTexto('fechTotal', formatBRL(t.totalVendas));
+  setTexto('fechInicial', formatBRL(turnoCaixa.valorInicial));
+  setTexto('fechEsperado', formatBRL(turnoCaixa.valorEsperadoDinheiro));
+  document.getElementById('valorContadoInput').value = '';
+  document.getElementById('fechamentoObsInput').value = '';
+  renderDiferenca();
+  const btn = document.getElementById('confirmarFechamentoBtn');
+  btn.disabled = false;
+  btn.textContent = 'Confirmar fechamento';
+  document.getElementById('pdvFechamentoModal').hidden = false;
+  renderGraficoFechamento(t);
+  window.setTimeout(() => document.getElementById('valorContadoInput')?.focus(), 50);
+}
+
+async function confirmarFechamentoCaixa() {
+  if (!turnoCaixa) return;
+  const contado = valorNumerico('valorContadoInput');
+  if (contado === null || contado < 0) { showToast('Informe o valor contado em dinheiro.', 'error'); return; }
+  const btn = document.getElementById('confirmarFechamentoBtn');
+  btn.disabled = true;
+  btn.textContent = 'Fechando...';
+  try {
+    const obs = document.getElementById('fechamentoObsInput').value.trim();
+    const fechado = await apiPut(`/caixa/turnos/${turnoCaixa.id}/fechar`, { valorContado: contado, ...(obs && { observacao: obs }) });
+    fecharModalFechamento();
+    turnoCaixa = null;
+    renderStatusCaixa();
+    const diferenca = Number(fechado.diferenca || 0);
+    const resumo = diferenca < 0 ? `Faltaram ${formatBRL(-diferenca)}.`
+      : diferenca > 0 ? `Sobraram ${formatBRL(diferenca)}.` : 'Gaveta conferida sem diferença.';
+    const ultimo = document.getElementById('pdvAberturaUltimo');
+    ultimo.textContent = `Último turno fechado em ${dataHoraCurta(fechado.fechadoEm)} · vendido ${formatBRL(fechado.totais.totalVendas)} · ${resumo}`;
+    ultimo.hidden = false;
+    showToast(`Caixa fechado. ${resumo}`, diferenca < 0 ? 'error' : 'success');
+    mostrarAberturaCaixa();
+  } catch (e) {
+    showToast(e.message || 'Erro ao fechar o caixa.', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Confirmar fechamento';
+    if (e.status === 409 || e.status === 404) verificarTurnoCaixa();
+  }
+}
+
 // -- INIT ----------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   if (!PERFIL_ATUAL) return;
@@ -1478,6 +1723,17 @@ document.addEventListener('DOMContentLoaded', () => {
   mobileProducts?.addEventListener('click', () => setMobilePdvView('products'));
   mobileOrder?.addEventListener('click', () => setMobilePdvView('order'));
   document.getElementById('pdvLogoutBtn')?.addEventListener('click', pdvVoltarAoDashboard);
+
+  // Caixa por turno: consulta o turno aberto e, se nao houver, pede a abertura.
+  verificarTurnoCaixa();
+  document.getElementById('abrirCaixaBtn')?.addEventListener('click', abrirCaixa);
+  document.getElementById('valorInicialInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') abrirCaixa(); });
+  document.getElementById('pdvFecharCaixaBtn')?.addEventListener('click', abrirFechamentoCaixa);
+  document.getElementById('confirmarFechamentoBtn')?.addEventListener('click', confirmarFechamentoCaixa);
+  document.getElementById('valorContadoInput')?.addEventListener('input', renderDiferenca);
+  document.getElementById('pdvFechamentoModal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) fecharModalFechamento();
+  });
 
   const session = readSession();
 

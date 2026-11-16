@@ -585,3 +585,42 @@ class UserCreateRequest(BaseModel):
     @classmethod
     def cpf_valido(cls, v: str) -> str:
         return _validar_cpf(v)
+
+
+class TurnoCaixaAbrirRequest(BaseModel):
+    valorInicial: Decimal = Field(ge=Decimal("0"), le=Decimal("99999999.99"))
+    observacao: str | None = Field(default=None, max_length=255)
+
+
+class TurnoCaixaFecharRequest(BaseModel):
+    valorContado: Decimal = Field(ge=Decimal("0"), le=Decimal("99999999.99"))
+    observacao: str | None = Field(default=None, max_length=255)
+
+
+class TurnoCaixaTotaisResponse(BaseModel):
+    pix: float
+    debito: float
+    credito: float
+    dinheiro: float
+    outros: float
+    totalVendas: float
+    quantidadeVendas: int
+
+
+class TurnoCaixaResponse(BaseModel):
+    id: int
+    aberto: bool
+    abertoPorId: int | None
+    abertoPor: str | None
+    abertoEm: datetime
+    valorInicial: float
+    fechadoPorId: int | None
+    fechadoPor: str | None
+    fechadoEm: datetime | None
+    valorContado: float | None
+    observacao: str | None
+    totais: TurnoCaixaTotaisResponse
+    # Dinheiro que deveria estar na gaveta: valor inicial + vendas em dinheiro.
+    valorEsperadoDinheiro: float
+    # valorContado - valorEsperadoDinheiro; negativo = falta, positivo = sobra. Nulo com o turno aberto.
+    diferenca: float | None

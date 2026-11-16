@@ -280,3 +280,28 @@ class ProdutoInsumo(Base):
 
     produto: Mapped[Produto] = relationship()
     insumo: Mapped[Insumo] = relationship()
+
+
+class TurnoCaixa(Base):
+    """Turno do caixa: abertura com o valor inicial em dinheiro e fechamento com a conferencia da gaveta."""
+
+    __tablename__ = "turno_caixa"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    aberto_por: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
+    aberto_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    valor_inicial: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=Decimal("0"))
+    fechado_por: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
+    fechado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    valor_contado: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    # Totais do turno gravados no fechamento (pedido.pago_em e pedido.forma_pagamento).
+    total_pix: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_debito: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_credito: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_dinheiro: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_outros: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    quantidade_vendas: Mapped[int | None] = mapped_column(Integer)
+    observacao: Mapped[str | None] = mapped_column(String(255))
+
+    usuario_abertura: Mapped[User | None] = relationship(foreign_keys="TurnoCaixa.aberto_por")
+    usuario_fechamento: Mapped[User | None] = relationship(foreign_keys="TurnoCaixa.fechado_por")

@@ -23,6 +23,7 @@ from app.models import Pedido, Role
 from app.realtime import manager
 from app.routers import (
     auth,
+    caixa,
     categorias,
     cep,
     clientes,
@@ -71,6 +72,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(IntegrityError, integrity_exception_handler)
 app.add_exception_handler(SQLAlchemyError, database_exception_handler)
 app.include_router(auth.router)
+app.include_router(caixa.router)
 app.include_router(categorias.router)
 app.include_router(cep.router)
 app.include_router(clientes.router)
