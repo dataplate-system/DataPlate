@@ -7,7 +7,7 @@ const API_BASE_URL = window.DATAPLATE_API_BASE_URL
     if (isLocal && window.location.port === '8081') return '/api';
     if (isLocalFile) return 'http://localhost:8081/api';
     if (isLocal) return `http://${h}:8081/api`;
-    return 'http://localhost:8081/api';
+    return `http://${h}:8081/api`;
   })();
 
 const ADMIN_SESSION_KEY = 'dataplate:adminSession';
@@ -22,43 +22,125 @@ let refreshTimer = null;
 let wsLoadTimer  = null;
 let _lastOrdersHash = '';
 let _lastMesasHash  = '';
+let mesaStatusFilter = '';
+
+function observacoesOperacionais(value) {
+  return String(value || '').split('|').map(part => part.trim()
+    .replace(/^Venda no caixa - pagamento:\s*\S+(?:\s*-\s*)?/i, ''))
+    .filter(part => part && !/^(Massa de teste 2026|Demonstracao local|Demonstração local)$/i.test(part)
+      && !/^(Pagamento|Desconto):/i.test(part)).join(' · ');
+}
 
 // ── Sessao ─────────────────────────────────────────────────────────
+const ROLE_TO_USER_KEY = {
+  ADMIN: 'admin',
+  GERENTE: 'gerente',
+  FUNCIONARIO: 'atendente',
+  CAIXA: 'caixa',
+  COZINHA: 'cozinha'
+};
+const HOME_BY_USER_KEY = {
+  admin: 'adm.html',
+  gerente: 'adm.html',
+  atendente: 'atendente.html',
+  caixa: 'pdv.html',
+  cozinha: 'cozinha.html'
+};
+const ALLOWED_USER_KEYS = ['atendente', 'gerente'];
+
+let sessionUserKey = null;
+
 function readSession() {
   try { return JSON.parse(sessionStorage.getItem(ADMIN_SESSION_KEY) || 'null'); }
   catch (_) { return null; }
 }
-function ensureSession() {
-  const s = readSession();
-  if (!s) { window.location.replace('adm-login.html'); return null; }
-  return s;
+// Perfil efetivo: backendRole quando ha token; userKey apenas no modo demo (sem token)
+function resolveUserKey(s) {
+  if (!s) return null;
+  if (s.token || s.backendRole) return ROLE_TO_USER_KEY[s.backendRole] || null;
+  return HOME_BY_USER_KEY[s.userKey] ? s.userKey : null;
 }
-function logout() {
+function stopRealtime() {
   window.clearTimeout(wsTimer);
   window.clearTimeout(wsLoadTimer);
   window.clearInterval(refreshTimer);
   wsTimer = null; wsLoadTimer = null; refreshTimer = null;
   if (ws) { ws.onclose = null; ws.close(); ws = null; }
+}
+function goToLogin() {
+  stopRealtime();
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
   window.location.replace('adm-login.html');
 }
+function ensureSession() {
+  const s = readSession();
+  const userKey = resolveUserKey(s);
+  if (!s?.token || !userKey) { goToLogin(); return null; }
+  if (!ALLOWED_USER_KEYS.includes(userKey)) {
+    window.location.replace(HOME_BY_USER_KEY[userKey]);
+    return null;
+  }
+  sessionUserKey = userKey;
+  return s;
+}
+function isGerente() {
+  return sessionUserKey === 'gerente';
+}
+function logout() {
+  goToLogin();
+}
 
 // ── API ────────────────────────────────────────────────────────────
+function readErrorMessage(body) {
+  if (!body) return '';
+  if (typeof body === 'string') return body;
+  if (typeof body.mensagem === 'string' && body.mensagem) return body.mensagem;
+  if (typeof body.detail === 'string') return body.detail;
+  if (Array.isArray(body.detail)) {
+    return body.detail.map(i => String(i?.msg || '')).filter(Boolean).join('; ');
+  }
+  return body.message || '';
+}
 async function apiFetch(path, opts = {}) {
   const s = readSession();
   const headers = { ...(opts.headers || {}) };
   if (s?.token) headers.Authorization = `Bearer ${s.token}`;
-  return fetch(`${API_BASE_URL}${path}`, { ...opts, headers });
+  const r = await fetch(`${API_BASE_URL}${path}`, { ...opts, headers });
+  if (r.status === 401 && s?.token) {
+    goToLogin();
+    throw new Error('Sessao expirada. Entre novamente.');
+  }
+  return r;
+}
+async function ensureOk(r, fallback) {
+  if (r.ok) return;
+  const b = await r.json().catch(() => null);
+  const msg = readErrorMessage(b);
+  if (r.status === 403) throw new Error(msg || 'Acesso negado');
+  throw new Error(msg || fallback);
+}
+async function readJson(r) {
+  if (r.status === 204) return null;
+  return r.json().catch(() => null);
 }
 async function getJson(path) {
   const r = await apiFetch(path);
-  if (!r.ok) { const b = await r.json().catch(() => null); throw new Error(b?.message || 'Erro ao carregar.'); }
-  return r.json();
+  await ensureOk(r, 'Erro ao carregar.');
+  return readJson(r);
+}
+async function sendJson(method, path, body, fallback = 'Erro ao atualizar.') {
+  const r = await apiFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  await ensureOk(r, fallback);
+  return readJson(r);
 }
 async function putJson(path, body) {
-  const r = await apiFetch(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!r.ok) { const b = await r.json().catch(() => null); throw new Error(b?.message || 'Erro ao atualizar.'); }
-  return r.json();
+  return sendJson('PUT', path, body);
+}
+async function patchJson(path, body) {
+  return sendJson('PATCH', path, body);
+}
+async function postJson(path, body) {
+  return sendJson('POST', path, body, 'Erro ao enviar.');
 }
 
 // ── Utilitarios ───────────────────────────────────────────────────
@@ -98,8 +180,13 @@ function origem(order) {
   return order.numeroMesa ? `Mesa ${order.numeroMesa}` : `Balcao #${order.id}`;
 }
 
+function podeCancelar(status) {
+  return ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(status) || (status === 'SERVIDO' && isGerente());
+}
+
 // ── Card de pedido ────────────────────────────────────────────────
 function buildCard(order) {
+  const observacoes = observacoesOperacionais(order.observacoes);
   const mins = elapsedMin(order.dataHora);
   const late = (order.status === 'RECEBIDO' && mins > 15) || (order.status === 'EM_PREPARO' && mins > 25);
   const itensHtml = (order.itens || []).map(i =>
@@ -110,15 +197,20 @@ function buildCard(order) {
   const chipCls = late ? ' sla-late' : '';
   const lateChip = late ? '<span class="sla-chip late-chip">Atrasado</span>' : '';
 
-  const cancelBtn = `<button class="action-button cancel-btn" type="button" onclick="abrirCancelarModal(${order.id})">Cancelar</button>`;
+  const editBtn = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(order.status)
+    ? `<button class="order-icon" type="button" title="Alterar pedido" aria-label="Alterar pedido" onclick="openOrderEdit(${order.id})"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15v5Z"/></svg></button>` : '';
+  const cancelBtn = podeCancelar(order.status)
+    ? `<button class="order-icon icon-remove" type="button" title="Cancelar pedido" aria-label="Cancelar" onclick="abrirCancelarModal(${order.id})"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M6 18 18 6"/></svg></button>`
+    : '';
+  // Mesa e servida; balcao tem retirada separada, validada pelo servidor.
   const actions = order.status === 'PRONTO'
     ? `<div class="card-actions">
         <button class="action-button deliver" type="button" onclick="despachar(${order.id})">
-          Despachar para ${esc(origem(order))}
+          ${order.numeroMesa ? 'Despachar' : 'Confirmar retirada'}
         </button>
-        ${cancelBtn}
+        ${editBtn}${cancelBtn}
       </div>`
-    : `<div class="card-actions">${cancelBtn}</div>`;
+    : (cancelBtn || editBtn ? `<div class="card-actions">${editBtn}${cancelBtn}</div>` : '');
 
   return `
     <article class="kitchen-card${cardCls}">
@@ -133,7 +225,7 @@ function buildCard(order) {
           <span class="sla-chip">${formatTime(order.dataHora)}</span>
         </div>
       </div>
-      ${order.observacoes ? `<div class="card-obs">Obs: ${esc(order.observacoes)}</div>` : ''}
+      ${observacoes ? `<div class="card-obs"><strong>Observação:</strong> ${esc(observacoes)}</div>` : ''}
       ${actions}
     </article>`;
 }
@@ -143,7 +235,7 @@ function buildMesaCard(mesa) {
   const st = normalizarStatusMesa(mesa.status);
 
   const badgeCfg = {
-    livre:                 { label: 'Livre',          cls: 'badge-active'  },
+    livre:                 { label: 'Disponível',     cls: 'badge-active'  },
     ocupada:               { label: 'Ocupada',         cls: 'badge-info'    },
     reservada:             { label: 'Reservada',        cls: 'badge-warning' },
     aguardando_pagamento:  { label: 'Aguardando pagamento', cls: 'badge-pgto' },
@@ -201,7 +293,7 @@ function normalizarStatusMesa(status) {
 
 function buildMesaStatusSummary(mesas) {
   const statuses = [
-    ['livre', 'Livres'],
+    ['livre', 'Disponíveis'],
     ['ocupada', 'Ocupadas'],
     ['reservada', 'Reservadas'],
     ['aguardando_pagamento', 'Aguardando pagamento']
@@ -212,16 +304,16 @@ function buildMesaStatusSummary(mesas) {
     return acc;
   }, {});
   return statuses.map(([status, label]) => `
-    <div class="mesa-summary-card ${status}">
+    <button type="button" class="mesa-summary-card ${status}${mesaStatusFilter === status ? ' is-selected' : ''}" data-mesa-filter="${status}" aria-pressed="${mesaStatusFilter === status}" aria-controls="mesasGrid">
       <strong>${counts[status] || 0}</strong>
       <span>${label}</span>
-    </div>`).join('');
+    </button>`).join('');
 }
 
 // -- Renderizacao ----------------------------------------------------
 function render() {
-  const ordersHash = allOrders.map(o => `${o.id}:${o.status}`).join(',');
-  const mesasHash  = allMesas.map(m => `${m.id}:${m.status}`).join(',');
+  const ordersHash = JSON.stringify(allOrders) + Math.floor(Date.now() / 60000);
+  const mesasHash  = JSON.stringify(allMesas) + mesaStatusFilter;
   if (ordersHash === _lastOrdersHash && mesasHash === _lastMesasHash) return;
   _lastOrdersHash = ordersHash;
   _lastMesasHash  = mesasHash;
@@ -241,9 +333,8 @@ function render() {
   setText('countPreparo',  preparo.length);
   setText('countPronto',   prontos.length);
 
-  // Tempo medio (inclui SERVIDO pois ainda estao na conta)
-  const servidos = allOrders.filter(p => p.status === 'SERVIDO');
-  const ativos = [...recebidos, ...preparo, ...prontos, ...servidos];
+  // A espera termina ao servir; conta em aberto nao representa espera da cozinha.
+  const ativos = [...recebidos, ...preparo, ...prontos];
   if (ativos.length) {
     const avg = Math.round(ativos.reduce((s, o) => s + elapsedMin(o.dataHora), 0) / ativos.length);
     setText('statTempo', avg + ' min');
@@ -276,9 +367,15 @@ function render() {
   // Mesas
   const grid = document.getElementById('mesasGrid');
   if (grid) {
-    grid.innerHTML = allMesas.length
-      ? allMesas.map(buildMesaCard).join('')
-      : '<div class="empty-state">Nenhuma mesa cadastrada</div>';
+    const priority = { aguardando_pagamento: 0, ocupada: 1, reservada: 2, livre: 3, manutencao: 4 };
+    const visible = allMesas.filter(m => !mesaStatusFilter || normalizarStatusMesa(m.status) === mesaStatusFilter)
+      .sort((a, b) => (priority[normalizarStatusMesa(a.status)] ?? 5) - (priority[normalizarStatusMesa(b.status)] ?? 5) || a.numero - b.numero);
+    grid.innerHTML = visible.length
+      ? visible.map(buildMesaCard).join('')
+      : '<div class="empty-state">Nenhuma mesa neste status</div>';
+    setText('mesaFilterResult', mesaStatusFilter ? `${visible.length} mesa(s) no filtro selecionado` : `Todas as ${allMesas.length} mesas · pendências de pagamento primeiro`);
+    const clear = document.getElementById('clearMesaFilter');
+    if (clear) clear.hidden = !mesaStatusFilter;
   }
   const statusSummary = document.getElementById('mesaStatusSummary');
   if (statusSummary) statusSummary.innerHTML = buildMesaStatusSummary(allMesas);
@@ -322,18 +419,20 @@ window.confirmarCancelamento = async function() {
   btn.disabled = true;
   btn.textContent = 'Cancelando...';
 
+  const pedidoId = _cancelarPedidoId;
   try {
-    await putJson(`/pedidos/${_cancelarPedidoId}/status`, {
+    await putJson(`/pedidos/${pedidoId}/status`, {
       status: 'CANCELADO',
-      formaPagamento: null
+      motivo: obs,
+      origemCancelamento: "Atendente"
     });
-    // Grava observacao do motivo via campo observacoes — futuro: endpoint dedicado
-    showToast(`Pedido #${_cancelarPedidoId} cancelado.`, 'success');
+    showToast(`Pedido #${pedidoId} cancelado.`, 'success');
     fecharCancelarModal();
     await loadData({ silent: true });
     await _refreshModalAtual();
   } catch (e) {
     showToast(e.message || 'Erro ao cancelar.', 'error');
+  } finally {
     btn.disabled = false;
     btn.textContent = 'Confirmar Cancelamento';
   }
@@ -362,22 +461,14 @@ window.despachar = async function(orderId) {
     return;
   }
 
+  // Retirada de balcao usa o pagamento ja registrado; nao cobra novamente.
   try {
-    await putJson(`/pedidos/${orderId}/status`, { status: 'SERVIDO' });
-    showToast(`Pedido #${orderId} entregue na mesa.`, 'success');
-  } catch (_) {
-    // Fallback enquanto migration V6 nao foi aplicada
-    try {
-      const mesa = allMesas.find(m => m.numero === order?.numeroMesa);
-      if (mesa && normalizarStatusMesa(mesa.status) === 'aguardando_pagamento') {
-        await putJson(`/pedidos/${orderId}/status`, { status: 'ENTREGUE' });
-        showToast(`Pedido #${orderId} entregue na mesa.`, 'success');
-      } else {
-        showToast(`Pedido #${orderId} despachado.`, 'success');
-      }
-    } catch (e2) {
-      showToast(e2.message || 'Erro ao despachar.', 'error');
-    }
+    if (!order) return;
+    if (order.numeroMesa) await putJson(`/pedidos/${orderId}/status`, { status: 'SERVIDO' });
+    else await putJson(`/pedidos/${orderId}/despacho`, {});
+    showToast(`Pedido #${orderId} ${order.numeroMesa ? 'entregue na mesa' : 'retirado no balcão'}.`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Erro ao despachar.', 'error');
   }
 
   await loadData({ silent: true });
@@ -409,6 +500,7 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
     const pedidos = await getJson(`/pedidos/mesa/${numeroMesa}`);
     const ativos    = (pedidos || []).filter(p => !['CANCELADO','ENTREGUE'].includes(p.status));
     const historico = (pedidos || []).filter(p => p.status === 'ENTREGUE');
+    const gestaoMesa = renderGestaoMesa(allMesas.find(m => m.numero === numeroMesa), ativos.length > 0);
 
     // Mesa livre sem pedidos ativos: exibe apenas botão de novo pedido
     if (ativos.length === 0 && mesaStatus === 'livre') {
@@ -416,7 +508,8 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
         <div style="text-align:center;padding:20px 0 10px;color:#64748b;font-size:13px">Mesa livre — sem pedidos em aberto.</div>
         <button onclick="abrirNovoPedido(${numeroMesa})" style="display:block;width:100%;margin-top:8px;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer">
           + Novo Pedido nesta Mesa
-        </button>`;
+        </button>
+        ${gestaoMesa}`;
       return;
     }
 
@@ -443,11 +536,15 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
         ${renderItens(p)}
         ${p.observacoes ? `<div style="font-size:11px;color:#475569;background:#f8fafc;border-left:3px solid #94a3b8;border-radius:0 4px 4px 0;padding:4px 7px 4px 10px;margin-top:6px">Obs: ${esc(p.observacoes)}</div>` : ''}
         ${p.status === 'PRONTO' ? `<button onclick="despachar(${p.id})" style="width:100%;margin-top:8px;padding:8px;background:#f85b15;color:#fff;border:none;border-radius:6px;font-weight:700;cursor:pointer">Despachar</button>` : ''}
-        ${['RECEBIDO','EM_PREPARO','PRONTO','SERVIDO'].includes(p.status) ? `
+        ${['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(p.status) ? `<button type="button" class="action-button" onclick="openOrderEdit(${p.id})">Alterar pedido</button>` : ''}
+        ${podeCancelar(p.status) ? `
           <button onclick="abrirCancelarModal(${p.id})"
             style="width:100%;margin-top:6px;padding:7px;background:transparent;color:#dc2626;border:1.5px solid #fecaca;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer">
             Cancelar pedido
-          </button>` : ''}
+          </button>` : (['EM_PREPARO','PRONTO','SERVIDO'].includes(p.status) ? `
+          <div style="margin-top:6px;font-size:11px;color:#94a3b8;text-align:center">
+            Cancelamento apos o inicio do preparo exige o perfil Gerente
+          </div>` : '')}
       </div>`;
 
     const temAtivos = ativos.length > 0;
@@ -516,11 +613,102 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
       </div>
       ${ativos.length ? ativos.map(renderPedido).join('') : '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px">Nenhum pedido ativo.</div>'}
       ${btnNovoPedido}
-      ${fecharComanda}`;
+      ${fecharComanda}
+      ${gestaoMesa}`;
   } catch (_) {
     content.innerHTML = '<div style="color:#dc2626;padding:16px">Erro ao carregar dados da mesa.</div>';
   }
 }
+
+// ── Gestao da mesa: status (PATCH /status) e reserva (PATCH /reserva) ──
+function renderGestaoMesa(mesa, temAtivos) {
+  if (!mesa?.id) return '';
+  const st = normalizarStatusMesa(mesa.status);
+  const temReserva = Boolean(mesa.reservaNome || mesa.reservaTelefone || mesa.reservaDataHora);
+  const btnStyle = 'flex:1;padding:8px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer';
+  const inputStyle = 'width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;margin-bottom:6px';
+
+  const botoesStatus = [];
+  if (['livre', 'reservada'].includes(st)) {
+    botoesStatus.push(`<button type="button" onclick="alterarStatusMesaAtendente(${mesa.id}, 'ocupada')" style="${btnStyle};background:#2563eb;color:#fff;border:none">Abrir mesa</button>`);
+  }
+  // Liberar so sem pedidos em aberto; com pedidos a mesa e liberada pelo Caixa no pagamento
+  if (['ocupada', 'aguardando_pagamento'].includes(st) && !temAtivos) {
+    botoesStatus.push(`<button type="button" onclick="alterarStatusMesaAtendente(${mesa.id}, 'livre')" style="${btnStyle};background:#fff;color:#15803d;border:1.5px solid #bbf7d0">Liberar mesa</button>`);
+  }
+
+  let reserva = '';
+  if (temReserva) {
+    const quando = mesa.reservaDataHora ? new Date(mesa.reservaDataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    reserva = `
+      <div style="font-size:12px;color:#475569;margin-bottom:8px">
+        Reserva: <strong>${esc(mesa.reservaNome || '-')}</strong>
+        ${mesa.reservaTelefone ? ` &bull; ${esc(mesa.reservaTelefone)}` : ''}
+        ${quando ? ` &bull; ${esc(quando)}` : ''}
+      </div>
+      <button type="button" onclick="cancelarReservaAtendente(${mesa.id})" style="${btnStyle};width:100%;background:transparent;color:#dc2626;border:1.5px solid #fecaca">Cancelar reserva</button>`;
+  } else if (st === 'livre') {
+    reserva = `
+      <input id="atReservaNome" type="text" maxlength="120" placeholder="Nome de quem reserva *" style="${inputStyle}">
+      <input id="atReservaTelefone" type="tel" maxlength="20" placeholder="Telefone" style="${inputStyle}">
+      <input id="atReservaDataHora" type="datetime-local" style="${inputStyle}">
+      <textarea id="atReservaObs" maxlength="255" rows="2" placeholder="Observacoes da mesa" style="${inputStyle};resize:vertical">${esc(mesa.observacoes || '')}</textarea>
+      <button type="button" onclick="reservarMesaAtendente(${mesa.id})" style="${btnStyle};width:100%;background:#f59e0b;color:#fff;border:none">Reservar mesa</button>`;
+  }
+
+  if (!botoesStatus.length && !reserva) return '';
+  return `
+    <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:14px">
+      <div style="font-size:13px;font-weight:800;margin-bottom:8px">Gerenciar mesa</div>
+      ${botoesStatus.length ? `<div style="display:flex;gap:8px;margin-bottom:10px">${botoesStatus.join('')}</div>` : ''}
+      ${reserva}
+    </div>`;
+}
+
+async function _aposAlterarMesa(msg) {
+  showToast(msg, 'success');
+  await loadData({ silent: true });
+  await _refreshModalAtual();
+}
+
+window.alterarStatusMesaAtendente = async function(mesaId, status) {
+  try {
+    await patchJson(`/mesas/${mesaId}/status`, { status });
+    await _aposAlterarMesa(status === 'livre' ? 'Mesa liberada.' : 'Mesa aberta. O cliente já pode pedir pelo QR Code.');
+  } catch (e) {
+    showToast(e.message || 'Erro ao atualizar mesa.', 'error');
+  }
+};
+
+window.reservarMesaAtendente = async function(mesaId) {
+  const nome = document.getElementById('atReservaNome')?.value.trim() || '';
+  const telefone = document.getElementById('atReservaTelefone')?.value.trim() || '';
+  const dataHora = document.getElementById('atReservaDataHora')?.value || '';
+  const observacoes = document.getElementById('atReservaObs')?.value.trim() || '';
+  if (!nome) { showToast('Informe o nome de quem reserva.', 'error'); return; }
+  if (!dataHora) { showToast('Informe a data e o horario da reserva.', 'error'); return; }
+  try {
+    await patchJson(`/mesas/${mesaId}/reserva`, {
+      reservaNome: nome,
+      reservaTelefone: telefone || null,
+      reservaDataHora: dataHora,
+      observacoes: observacoes || null
+    });
+    await _aposAlterarMesa('Reserva registrada.');
+  } catch (e) {
+    showToast(e.message || 'Erro ao salvar reserva.', 'error');
+  }
+};
+
+// Campos de reserva nulos cancelam; observacoes da mesa sao preservadas (campo omitido)
+window.cancelarReservaAtendente = async function(mesaId) {
+  try {
+    await patchJson(`/mesas/${mesaId}/reserva`, { reservaNome: null, reservaTelefone: null, reservaDataHora: null });
+    await _aposAlterarMesa('Reserva cancelada.');
+  } catch (e) {
+    showToast(e.message || 'Erro ao cancelar reserva.', 'error');
+  }
+};
 
 window.selecionarPgtoModal = function(tipo, btn) {
   _mesaModalPgto = tipo;
@@ -541,12 +729,7 @@ window.fecharComanda = async function(numeroMesa) {
     if (!mesa?.id) throw new Error('Mesa não encontrada.');
 
     // Marca a mesa como "aguardando_pagamento" — o caixa é notificado no PDV
-    await putJson(`/mesas/${mesa.id}`, {
-      numero:      mesa.numero,
-      capacidade:  mesa.capacidade || 4,
-      status:      'aguardando_pagamento',
-      localizacao: mesa.localizacao || ''
-    });
+    await patchJson(`/mesas/${mesa.id}/status`, { status: 'aguardando_pagamento' });
 
     // Salva a forma preferida localmente para o caixa ver
     const pendentes = JSON.parse(localStorage.getItem('dataplate:pgto_pendente') || '{}');
@@ -558,7 +741,7 @@ window.fecharComanda = async function(numeroMesa) {
     await loadData({ silent: true });
   } catch (e) {
     showToast(e.message || 'Erro ao solicitar pagamento.', 'error');
-    if (btn) { btn.disabled = false; btn.textContent = 'Solicitar Pagamento'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Solicitar Pagamento ao Caixa'; }
   }
 };
 
@@ -585,12 +768,17 @@ async function loadData({ silent = false } = {}) {
 
 // ── WebSocket ─────────────────────────────────────────────────────
 function connectWS() {
+  const token = readSession()?.token;
+  // Sem token (modo demo) o backend recusa o WS; fica so o polling
+  if (!token) return;
   const apiUrl = API_BASE_URL.startsWith('http') ? API_BASE_URL : `${window.location.origin}${API_BASE_URL}`;
-  const wsUrl  = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
+  const wsUrl = apiUrl.replace(/^http/, 'ws').replace(/\/api$/, '/ws');
   if (ws && [WebSocket.OPEN, WebSocket.CONNECTING].includes(ws.readyState)) return;
   try {
     ws = new WebSocket(wsUrl);
     ws.addEventListener('open', () => {
+      // O token vai na primeira mensagem: URLs ficam registradas nos logs de acesso.
+      ws.send(JSON.stringify({ type: 'AUTH', token }));
       wsRetryDelay = 1000;
       window.clearInterval(refreshTimer);
       refreshTimer = null;
@@ -604,9 +792,10 @@ function connectWS() {
         }
       } catch (_) {}
     });
-    ws.addEventListener('close', () => {
+    ws.addEventListener('close', (e) => {
       window.clearTimeout(wsTimer);
-      wsTimer = window.setTimeout(connectWS, wsRetryDelay);
+      // 1008 = token recusado: nao insiste; o polling trata 401 e leva ao login
+      if (e?.code !== 1008) wsTimer = window.setTimeout(connectWS, wsRetryDelay);
       wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
       if (!refreshTimer) refreshTimer = window.setInterval(() => loadData({ silent: true }), AUTO_REFRESH_MS);
     });
@@ -740,24 +929,21 @@ window.enviarNpPedido = async function() {
   btn.textContent = 'Enviando...';
 
   const obs = document.getElementById('npObs').value.trim();
+  const mesaNumero = npMesaAtual;
   try {
-    await putJson ? null : null; // putJson já existe
-    await fetch(`${API_BASE_URL}/pedidos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(readSession()?.token ? { Authorization: `Bearer ${readSession().token}` } : {}) },
-      body: JSON.stringify({
-        vendaCaixa: false,
-        numeroMesa: npMesaAtual,
-        itens: npCart.map(i => ({ produtoId: i.id, quantidade: i.qty })),
-        ...(obs && { observacoes: obs })
-      })
+    await postJson('/pedidos', {
+      vendaCaixa: false,
+      numeroMesa: mesaNumero,
+      itens: npCart.map(i => ({ produtoId: i.id, quantidade: i.qty })),
+      ...(obs && { observacoes: obs })
     });
-    showToast(`Pedido enviado para a cozinha — Mesa ${npMesaAtual}`, 'success');
+    showToast(`Pedido enviado para a cozinha — Mesa ${mesaNumero}`, 'success');
     fecharNovoPedido();
     await loadData({ silent: true });
   } catch (e) {
     showToast(e.message || 'Erro ao enviar pedido.', 'error');
-    btn.disabled = false;
+  } finally {
+    btn.disabled = !npCart.length;
     btn.textContent = 'Enviar para a Cozinha';
   }
 };
@@ -769,9 +955,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('sessionInitials').textContent = session.initials || 'AT';
   document.getElementById('sessionName').textContent     = session.name    || 'Atendente';
-  document.getElementById('sessionRole').textContent     = session.role    || 'Operacional';
+  document.getElementById('sessionRole').textContent     = session.role    || (isGerente() ? 'Gerente' : 'Operacional');
+
+  // Links de modulos: mostra so as telas permitidas ao perfil
+  document.querySelectorAll('[data-roles]').forEach(el => {
+    const roles = String(el.dataset.roles || '').split(/\s+/).filter(Boolean);
+    if (!roles.includes(sessionUserKey)) el.remove();
+  });
 
   document.getElementById('logoutButton').addEventListener('click', logout);
+  document.getElementById('mesaStatusSummary').addEventListener('click', event => {
+    const button = event.target.closest('[data-mesa-filter]');
+    if (!button) return;
+    mesaStatusFilter = mesaStatusFilter === button.dataset.mesaFilter ? '' : button.dataset.mesaFilter;
+    render();
+  });
+  document.getElementById('clearMesaFilter').addEventListener('click', () => { mesaStatusFilter = ''; render(); });
   document.getElementById('reloadPanel').addEventListener('click', () => loadData());
 
   document.getElementById('mesaModal')?.addEventListener('click', (e) => {
@@ -804,8 +1003,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateClock();
   window.setInterval(updateClock, 1000);
+  window.setInterval(render, 30000);
 
   loadData();
   refreshTimer = window.setInterval(() => loadData({ silent: true }), AUTO_REFRESH_MS);
   connectWS();
 });
+
+function fmtMoney(value) { return Number(value).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}); }
+let editDraft = null;
+let editProducts = [];
+
+async function openOrderEdit(id) {
+
+  try {
+    const [order, products] = await Promise.all([getJson(`/pedidos/${id}`), getJson('/produtos')]);
+    if (!['RECEBIDO', 'EM_PREPARO', 'PRONTO'].includes(order.status)) throw new Error('Este pedido já saiu da fila da cozinha.');
+    editDraft = { ...order, itens: order.itens.map(item => ({ ...item })) };
+    editProducts = products;
+    document.getElementById('editOrderTitle').textContent = `Alterar pedido #${order.id} · ${origem(order)}`;
+    document.getElementById('editOrderNotes').value = order.observacoes || '';
+    document.getElementById('editOrderReason').value = '';
+    document.getElementById('editOrderError').textContent = '';
+    document.getElementById('editProductSelect').innerHTML = products.map(p => `<option value="${p.id}">${esc(p.nome)} · ${fmtMoney(p.preco)}</option>`).join('');
+    renderEditItems();
+    document.getElementById('editOrderDialog').showModal();
+  } catch (error) { showToast(error.message || 'Não foi possível abrir o pedido.', 'error'); }
+}
+
+function renderEditItems() {
+  document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
+    <div class="edit-item"><span>${esc(item.nomeProduto)}<small>${fmtMoney(item.precoUnitario)} / unidade</small></span>
+    <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${esc(item.nomeProduto)}" /></label>
+    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${esc(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+  renderEditTotal();
+}
+
+function renderEditTotal() {
+  const originalSubtotal = editDraft.itensOriginalSubtotal ?? editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0);
+  editDraft.itensOriginalSubtotal = originalSubtotal;
+  const discount = Math.max(0, originalSubtotal - editDraft.valorTotal);
+  const total = Math.max(0, editDraft.itens.reduce((sum, i) => sum + i.quantidade * i.precoUnitario, 0) - discount);
+  document.getElementById('editOrderTotal').textContent = `Novo total: ${fmtMoney(total)}`;
+}
+
+async function saveOrderEdit(event) {
+  event.preventDefault();
+  const button = document.getElementById('saveEditOrder');
+  const errorEl = document.getElementById('editOrderError');
+  if (button.disabled) return;
+  if (!editDraft.itens.length) { errorEl.textContent = 'Adicione ao menos um produto.'; return; }
+  button.disabled = true;
+  errorEl.textContent = '';
+  try {
+    await putJson(`/pedidos/${editDraft.id}/itens`, {
+      atualizadoEm: editDraft.atualizadoEm,
+      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      observacoes: document.getElementById('editOrderNotes').value,
+      motivo: document.getElementById('editOrderReason').value.trim()
+    });
+
+    document.getElementById('editOrderDialog').close();
+    showToast('Pedido alterado. Atendimento e caixa recebem a atualização.', 'success');
+    await loadData({ silent: true });
+    await _refreshModalAtual();
+  } catch (error) { errorEl.textContent = error.message || 'Não foi possível salvar a alteração.'; }
+  finally { button.disabled = false; }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById('editOrderForm').addEventListener('submit', saveOrderEdit);
+  document.getElementById('closeEditOrder').addEventListener('click', () => document.getElementById('editOrderDialog').close());
+  document.getElementById('addEditItem').addEventListener('click', () => {
+    const id = Number(document.getElementById('editProductSelect').value);
+    const product = editProducts.find(p => p.id === id);
+    if (!product) return;
+    const existing = editDraft.itens.find(i => i.produtoId === id);
+    if (existing) existing.quantidade++;
+    else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-remove-edit-item]');
+    if (!button) return;
+    editDraft.itens.splice(Number(button.dataset.removeEditItem), 1);
+    renderEditItems();
+  });
+  document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    if (!event.target.matches('[data-edit-quantity]')) return;
+    editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
+    renderEditTotal();
+  });
+});
+window.openOrderEdit = openOrderEdit;

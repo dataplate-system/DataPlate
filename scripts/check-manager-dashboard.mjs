@@ -85,6 +85,7 @@ try {
     await expect(stat('Cozinha em preparo')).toHaveText('3');
     await expect(page.locator('#homeMesasDetalhe')).toHaveText('2 disponíveis');
     await expect(page.locator('#headerBreadcrumb')).toHaveText('Início›Dashboard');
+    await expect(page.locator('.admin-back-button')).toBeVisible();
     assert.equal(await page.locator('script[src*="/adm.js"]').count(), 1);
     assert.equal(await page.locator('.content-section .content-section').count(), 0);
     const metrics = await page.evaluate(() => ({ width: innerWidth, scrollWidth: document.documentElement.scrollWidth }));
@@ -114,7 +115,7 @@ try {
     await page.locator('.home-shortcuts button[onclick="navigateTo(\'clientes\')"]').click();
     await page.reload();
     await expect(page.locator('#clientes.active')).toBeVisible();
-    await page.locator('.logo-text').click();
+    await page.locator('.admin-back-button').click();
     await expect(page.locator('#home.active #dashboard')).toBeVisible();
     await page.goto(baseUrl + '/pages/adm.html#dashboard');
     await page.reload();

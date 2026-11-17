@@ -5,20 +5,31 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Funcionario
+from app.models import Funcionario, Role, User
 from app.schemas import FuncionarioRequest, FuncionarioResponse
+from app.security import exigir_perfis
 
 
 router = APIRouter(prefix="/api/funcionarios", tags=["funcionarios"])
 
 
 @router.get("", response_model=list[FuncionarioResponse])
-def listar_funcionarios(db: Session = Depends(get_db)) -> list[FuncionarioResponse]:
+def listar_funcionarios(
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.GERENTE, Role.ADMIN)),
+) -> list[FuncionarioResponse]:
     funcionarios = db.scalars(select(Funcionario).where(Funcionario.ativo.is_(True)).limit(500)).all()
-    return [_to_response(funcionario) for funcionario in funcionarios]
+    # ADMIN ve apenas dados funcionais; dados pessoais e salario sao exclusivos do Gerente.
+    completo = usuario.role == Role.GERENTE
+    return [_to_response(funcionario, completo) for funcionario in funcionarios]
 
 
-@router.post("", response_model=FuncionarioResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=FuncionarioResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def criar_funcionario(request: FuncionarioRequest, db: Session = Depends(get_db)) -> FuncionarioResponse:
     funcionario = Funcionario(criado_em=datetime.now())
     _apply_request(funcionario, request)
@@ -35,7 +46,11 @@ def criar_funcionario(request: FuncionarioRequest, db: Session = Depends(get_db)
     return _to_response(funcionario)
 
 
-@router.put("/{funcionario_id}", response_model=FuncionarioResponse)
+@router.put(
+    "/{funcionario_id}",
+    response_model=FuncionarioResponse,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def atualizar_funcionario(
     funcionario_id: int,
     request: FuncionarioRequest,
@@ -52,7 +67,11 @@ def atualizar_funcionario(
     return _to_response(funcionario)
 
 
-@router.delete("/{funcionario_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{funcionario_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def excluir_funcionario(funcionario_id: int, db: Session = Depends(get_db)) -> Response:
     funcionario = db.get(Funcionario, funcionario_id)
     if funcionario is None:
@@ -91,15 +110,15 @@ def _format_codigo(prefixo: str, item_id: int) -> str:
     return f"{prefixo}-{item_id:03d}"
 
 
-def _to_response(funcionario: Funcionario) -> FuncionarioResponse:
+def _to_response(funcionario: Funcionario, completo: bool = True) -> FuncionarioResponse:
     return FuncionarioResponse(
         id=funcionario.id,
         codigo=funcionario.codigo or _format_codigo("FUN", funcionario.id),
         nome=funcionario.nome,
-        cpf=funcionario.cpf,
-        telefone=funcionario.telefone,
+        cpf=funcionario.cpf if completo else None,
+        telefone=funcionario.telefone if completo else None,
         cargo=funcionario.cargo,
-        salario=float(funcionario.salario) if funcionario.salario is not None else None,
+        salario=float(funcionario.salario) if completo and funcionario.salario is not None else None,
         ativo=funcionario.ativo,
         criadoEm=funcionario.criado_em,
     )

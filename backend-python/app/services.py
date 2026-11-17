@@ -1,11 +1,22 @@
-from fastapi import HTTPException, status
+from datetime import datetime, timedelta
+from hashlib import sha256
+from email.message import EmailMessage
+import logging
+import smtplib
+from secrets import randbelow
+from uuid import UUID, uuid4
+
+from fastapi import BackgroundTasks, HTTPException, status
 from jwt import InvalidTokenError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import User
-from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthRefreshRequest, AuthRegisterRequest, AuthResponse
+from app.core.config import get_settings
+from app.models import PasswordResetToken, User
+from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthRefreshRequest, AuthRegisterRequest, AuthResponse, DemoContactEmailRequest
 from app.security import create_access_token, create_refresh_token, decode_refresh_token, hash_password, verify_password
+
+logger = logging.getLogger(__name__)
 
 
 def login(db: Session, request: AuthLoginRequest) -> AuthResponse:
@@ -17,11 +28,11 @@ def login(db: Session, request: AuthLoginRequest) -> AuthResponse:
 
 def refresh(db: Session, request: AuthRefreshRequest) -> AuthResponse:
     try:
-        cpf = decode_refresh_token(request.refreshToken)
+        user_id = decode_refresh_token(request.refreshToken)
     except InvalidTokenError:
         raise _bad_credentials("Refresh token invalido") from None
 
-    user = _get_user_by_cpf(db, cpf)
+    user = db.get(User, user_id)
     if user is None or not user.ativo:
         raise _bad_credentials("Refresh token invalido")
 
@@ -39,25 +50,175 @@ def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     if _get_user_by_cpf(db, cpf) is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"CPF ja cadastrado: {cpf}")
 
-    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role)
+    user = User(nome=nome, cpf=cpf, senha_hash=hash_password(request.senha), role=request.role.value)
     db.add(user)
     db.commit()
     db.refresh(user)
     return _to_auth_response(user)
 
 
-def reset_password(db: Session, request: AuthPasswordResetRequest) -> None:
+def request_password_reset(
+    db: Session,
+    request: AuthPasswordResetStartRequest,
+    background_tasks: BackgroundTasks,
+) -> AuthPasswordResetStartResponse:
+    """A resposta e igual para qualquer CPF: um token sem registro falha depois como codigo invalido.
+
+    O e-mail sai em segundo plano, para o tempo de resposta tambem nao revelar se o CPF existe.
+    """
+    settings = get_settings()
     user = _get_user_by_cpf(db, request.cpf)
-    if user is None:
-        raise _bad_credentials("CPF nao encontrado")
+    reset_token = uuid4()
+    pode_receber = user is not None and user.ativo and (user.email or settings.password_reset_debug_code)
+    if not pode_receber:
+        return AuthPasswordResetStartResponse(resetToken=reset_token)
+
+    code = f"{randbelow(1_000_000):06d}"
+    db.add(PasswordResetToken(
+        id=reset_token,
+        user_id=user.id,
+        code_hash=_password_reset_code_hash(code),
+        expires_at=datetime.utcnow() + timedelta(minutes=10),
+    ))
+    db.commit()
+    if settings.password_reset_debug_code:
+        return AuthPasswordResetStartResponse(resetToken=reset_token, debugCode=code)
+
+    background_tasks.add_task(_enviar_codigo_em_segundo_plano, user.email, code)
+    return AuthPasswordResetStartResponse(resetToken=reset_token)
+
+
+def verify_password_reset_code(db: Session, reset_token: UUID, code: str) -> PasswordResetToken:
+    token = db.get(PasswordResetToken, reset_token)
+    if token is None or token.used_at is not None or datetime.utcnow() > token.expires_at:
+        raise _invalid_password_reset_code()
+    if token.attempts >= 3:
+        raise _invalid_password_reset_code()
+    if _password_reset_code_hash(code) != token.code_hash:
+        token.attempts += 1
+        db.commit()
+        raise _invalid_password_reset_code()
+    return token
+
+
+def reset_password(db: Session, request: AuthPasswordResetRequest) -> None:
+    token = verify_password_reset_code(db, request.resetToken, request.codigo)
+    user = db.get(User, token.user_id)
+    if user is None or not user.ativo:
+        raise _invalid_password_reset_code()
 
     user.senha_hash = hash_password(request.novaSenha)
-    db.add(user)
+    token.used_at = datetime.utcnow()
     db.commit()
+
+
+def send_demo_contact_email(request: DemoContactEmailRequest) -> None:
+    settings = get_settings()
+    preferencia = "E-mail" if request.preferencia == "email" else "Telefone"
+
+    # Aviso para a equipe: obrigatorio, o pedido so conta como enviado se ele sair.
+    aviso = EmailMessage()
+    aviso["Subject"] = f"DataPlate - novo pedido de demonstração: {request.nome}"
+    aviso["To"] = settings.demo_leads_email or settings.smtp_from_email or settings.smtp_user or ""
+    aviso["Reply-To"] = request.email
+    aviso.set_content(
+        "Novo pedido de demonstração pela página inicial.\n\n"
+        f"Nome: {request.nome}\n"
+        f"E-mail: {request.email}\n"
+        f"Telefone: {request.telefone}\n"
+        f"Prefere contato por: {preferencia}\n"
+    )
+    _send_smtp_email(
+        aviso,
+        "Envio de e-mail indisponível. Verifique a configuração SMTP.",
+        "Não foi possível enviar a mensagem. Tente novamente.",
+        "Falha ao enviar aviso de solicitação de demonstração para a equipe.",
+    )
+
+    if request.preferencia != "email":
+        return
+
+    # Confirmacao para o interessado: se falhar, o pedido ja chegou na equipe (erro so vai para o log).
+    confirmacao = EmailMessage()
+    confirmacao["Subject"] = "DataPlate - recebemos seu pedido de demonstração"
+    confirmacao["To"] = request.email
+    confirmacao.set_content(
+        f"Olá, {request.nome}!\n\n"
+        "Primeiramente, obrigado por solicitar uma demonstração do DataPlate.\n\n"
+        "É um prazer entrar em contato. Somos da equipe do DataPlate, plataforma que une cardápio digital por QR Code, pedidos em tempo real para a cozinha, controle de mesas e reservas, e um painel com indicadores para a gestão do restaurante."
+        "Gostaríamos de convidar você para uma demonstração gratuita e sem compromisso, na qual mostramos na prática como o sistema funciona no dia a dia e como ele pode se adaptar às necessidades do seu negócio.\n\n"
+        "Duração: cerca de 20 minutos\n"
+        "Formato: online ou presencial, como for mais conveniente para você\n"
+        "Opções de horário: Oque melhor encaixar na sua agenda, é só nos informar!\n\n"
+        "Agradecemos desde já a atenção e ficamos no aguardo do seu retorno.\n\n"
+        "Atenciosamente,\n"
+        "Equipe DataPlate\n"
+        "Telefone: 99 99999-9999 / E-mail: contato@dataplate.com.br"
+    )
+    try:
+        _send_smtp_email(
+            confirmacao,
+            "Envio de e-mail indisponível. Verifique a configuração SMTP.",
+            "Não foi possível enviar a confirmação.",
+            "Falha ao enviar confirmação de solicitação de demonstração.",
+        )
+    except HTTPException:
+        pass
 
 
 def _only_digits(value: str) -> str:
     return "".join(c for c in (value or "") if c.isdigit())
+
+
+def _password_reset_code_hash(code: str) -> str:
+    secret = get_settings().effective_password_reset_secret
+    return sha256(f"{secret}:{code}".encode("utf-8")).hexdigest()
+
+
+def _invalid_password_reset_code() -> HTTPException:
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Codigo de recuperacao invalido ou expirado")
+
+
+def _enviar_codigo_em_segundo_plano(email: str, code: str) -> None:
+    try:
+        _send_password_reset_email(email, code)
+    except HTTPException as error:
+        logger.error("Codigo de recuperacao nao enviado: %s", error.detail)
+
+
+def _send_password_reset_email(email: str, code: str) -> None:
+    message = EmailMessage()
+    message["Subject"] = "DataPlate - código para redefinir sua senha"
+    message["To"] = email
+    message.set_content(f"Seu código de recuperação DataPlate é: {code}\n\nEle expira em 10 minutos.")
+    _send_smtp_email(
+        message,
+        "Envio de e-mail de recuperação não configurado",
+        "Não foi possível enviar o e-mail de recuperação. Verifique as configurações SMTP.",
+        "Falha ao enviar o e-mail de recuperação de senha.",
+    )
+
+
+def _send_smtp_email(
+    message: EmailMessage,
+    configuration_error: str,
+    failure_detail: str,
+    failure_log: str,
+) -> None:
+    settings = get_settings()
+    if not settings.smtp_user or not settings.smtp_password:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=configuration_error)
+    message["From"] = settings.smtp_from_email or settings.smtp_user
+    try:
+        with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, timeout=15) as smtp:
+            smtp.login(settings.smtp_user, settings.smtp_password)
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException):
+        logger.exception(failure_log)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=failure_detail,
+        ) from None
 
 
 def _get_user_by_cpf(db: Session, cpf: str) -> User | None:

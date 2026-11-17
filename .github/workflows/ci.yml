@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (API e PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE: docker compose -f backend-python/docker-compose.yml
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Subir banco, migracoes e API
+        run: $COMPOSE up -d --build api
+
+      - name: Aguardar a API
+        run: timeout 90 bash -c 'until curl -fs http://localhost:8081/actuator/health; do sleep 2; done'
+
+      - name: Carregar massa de teste
+        run: $COMPOSE exec -T api python -m app.local_test_data
+
+      - name: Executar testes
+        run: |
+          $COMPOSE cp backend-python/tests/. api:/app/tests
+          $COMPOSE exec -T -e PYTHONPATH=/app -w /app/tests api python -m unittest discover -s /app/tests
+
+      - name: Mostrar logs em caso de falha
+        if: failure()
+        run: $COMPOSE logs migrate api
+
+  frontend:
+    name: Frontend (sintaxe do JavaScript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verificar sintaxe
+        run: for arquivo in frontend/JavaScript/*.js scripts/*.mjs; do node --check "$arquivo"; done

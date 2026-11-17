@@ -1,10 +1,11 @@
 from datetime import date, datetime
+from typing import Literal
 from decimal import Decimal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import PedidoStatusNome, Role
-from enum import Enum
 
 
 
@@ -25,8 +26,36 @@ class AuthRegisterRequest(BaseModel):
 
 
 class AuthPasswordResetRequest(BaseModel):
+    resetToken: UUID
+    codigo: str = Field(pattern=r"^\d{6}$")
+    novaSenha: str = Field(min_length=8, max_length=72)
+
+
+class AuthPasswordResetStartRequest(BaseModel):
     cpf: str = Field(min_length=1)
-    novaSenha: str = Field(min_length=1)
+
+
+class AuthPasswordResetVerifyRequest(BaseModel):
+    resetToken: UUID
+    codigo: str = Field(pattern=r"^\d{6}$")
+
+
+class DemoContactEmailRequest(BaseModel):
+    nome: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=5, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    telefone: str = Field(min_length=10, max_length=30)
+    preferencia: Literal["email", "telefone"] = "email"
+
+    @field_validator("nome", "email", "telefone", mode="before")
+    @classmethod
+    def remover_espacos_externos(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+
+class AuthPasswordResetStartResponse(BaseModel):
+    resetToken: UUID | None = None
+    # Disponivel somente no Docker local, para permitir testar o fluxo sem SMTP/SMS.
+    debugCode: str | None = None
 
 
 class AuthResponse(BaseModel):
@@ -42,7 +71,10 @@ class UserUpdateRequest(BaseModel):
     nome: str = Field(min_length=1)
     cpf: str = Field(min_length=1)
     role: Role
+    email: str | None = Field(default=None, max_length=255)
+    funcionarioId: int | None = Field(default=None, ge=1)
     senha: str | None = Field(default=None, min_length=8, max_length=72)
+    ativo: bool | None = None
 
 
 class UserResponse(BaseModel):
@@ -50,6 +82,10 @@ class UserResponse(BaseModel):
     nome: str
     cpf: str
     role: Role
+    email: str | None
+    ativo: bool
+    funcionarioId: int | None = None
+    funcionarioNome: str | None = None
 
 
 class CategoriaRequest(BaseModel):
@@ -108,6 +144,19 @@ class MesaRequest(BaseModel):
     reservaDataHora: datetime | None = None
     observacoes: str | None = None
 
+class StatusMesaSchema(BaseModel):
+    status: str = Field(min_length=1, max_length=30)
+
+class MesaStatusRequest(BaseModel):
+    status: str = Field(min_length=1)
+
+
+class MesaReservaRequest(BaseModel):
+    reservaNome: str | None = None
+    reservaTelefone: str | None = None
+    reservaDataHora: datetime | None = None
+    observacoes: str | None = None
+
 
 class MesaResponse(BaseModel):
     id: int
@@ -115,8 +164,8 @@ class MesaResponse(BaseModel):
     capacidade: int
     status: str
     localizacao: str | None
-    reservaNome: str | None
-    reservaTelefone: str | None
+    reservaNome: str | None = None
+    reservaTelefone: str | None = None
     reservaDataHora: datetime | None
     observacoes: str | None
     ativo: bool
@@ -177,10 +226,10 @@ class FuncionarioResponse(BaseModel):
     id: int
     codigo: str
     nome: str
-    cpf: str
-    telefone: str | None
+    cpf: str | None = None
+    telefone: str | None = None
     cargo: str
-    salario: float | None
+    salario: float | None = None
     ativo: bool
     criadoEm: datetime | None
 
@@ -191,6 +240,13 @@ class InsumoRequest(BaseModel):
     quantidadeAtual: Decimal = Field(ge=Decimal("0.000"))
     quantidadeMinima: Decimal = Field(ge=Decimal("0.000"))
     custoUnitario: Decimal = Field(ge=Decimal("0.00"))
+    fornecedorIds: list[int] | None = None
+
+
+class FornecedorResumoResponse(BaseModel):
+    id: int
+    razaoSocial: str
+    ativo: bool
 
 
 class InsumoResponse(BaseModel):
@@ -201,6 +257,7 @@ class InsumoResponse(BaseModel):
     quantidadeMinima: float
     custoUnitario: float
     ativo: bool
+    fornecedores: list[FornecedorResumoResponse] = Field(default_factory=list)
 
 
 class RestauranteRequest(BaseModel):
@@ -214,10 +271,10 @@ class RestauranteRequest(BaseModel):
 class RestauranteResponse(BaseModel):
     id: int | None
     nome: str
-    cnpj: str | None
-    telefone: str | None
-    endereco: str | None
-    email: str | None
+    cnpj: str | None = None
+    telefone: str | None = None
+    endereco: str | None = None
+    email: str | None = None
 
 
 class CepResponse(BaseModel):
@@ -243,6 +300,8 @@ class PedidoItemRequest(BaseModel):
 class PedidoCreateRequest(BaseModel):
     numeroMesa: int | None = None
     mesaId: int | None = None
+    mesaToken: UUID | None = None
+    clienteId: int | None = Field(default=None, ge=1)
     vendaCaixa: bool | None = None
     formaPagamento: str | None = None
     desconto: Decimal | None = None
@@ -251,8 +310,17 @@ class PedidoCreateRequest(BaseModel):
 
 
 class PedidoStatusUpdateRequest(BaseModel):
+    origemCancelamento: Literal["Atendente", "Cozinha", "Gerente", "Caixa"] | None = None
     status: PedidoStatusNome
     formaPagamento: str | None = None
+    motivo: str | None = Field(default=None, max_length=255)
+
+
+class PedidoEditRequest(BaseModel):
+    itens: list[PedidoItemRequest] = Field(min_length=1, max_length=100)
+    observacoes: str | None = Field(default=None, max_length=2000)
+    motivo: str = Field(min_length=3, max_length=255)
+    atualizadoEm: datetime
 
 
 class PedidoItemResponse(BaseModel):
@@ -264,14 +332,23 @@ class PedidoItemResponse(BaseModel):
     tempoPreparo: int | None = None
 
 class PedidoResponse(BaseModel):
+    numeroPedido: str | None = None
+    canceladoEm: datetime | None = None
+    entregueEm: datetime | None = None
+    motivoCancelamento: str | None = None
+    origemCancelamento: str | None = None
     id: int
     numeroMesa: int | None
+    clienteId: int | None = None
+    clienteNome: str | None = None
     origem: str
     status: PedidoStatusNome
     dataHora: datetime
+    atualizadoEm: datetime | None = None
     valorTotal: float
     observacoes: str | None
     itens: list[PedidoItemResponse]
+    tokenAcesso: str | None = None
 
 
 class PaginatedPedidoResponse(BaseModel):
@@ -334,7 +411,9 @@ class RelatorioCardapioItem(BaseModel):
     quantidadeVendida: float
     faturamento: float
     custoTotal: float
-    lucro: float
+    # Sem ficha tecnica nao ha custo conhecido, entao o lucro nao e informado.
+    lucro: float | None
+    temFichaTecnica: bool
 
 
 class RelatorioResumoResponse(BaseModel):
@@ -346,6 +425,9 @@ class RelatorioResumoResponse(BaseModel):
     pedidosEntregues: int
     pedidosCancelados: int
     faturamento: float
+    faturamentoRecebido: float
+    faturamentoEmAberto: float
+    valorCancelado: float
     ticketMedio: float
     topProdutos: list[TopProdutoResponse]
 
@@ -354,8 +436,12 @@ class RelatorioVendasResponse(BaseModel):
     inicio: date
     fim: date
     faturamento: float
+    faturamentoRecebido: float
+    faturamentoEmAberto: float
+    valorCancelado: float
     ticketMedio: float
     custoTotal: float
+    produtosSemFicha: int
     totalPedidos: int
     pedidosEntregues: int
     pedidosCancelados: int
@@ -369,6 +455,49 @@ class RelatorioCardapioResponse(BaseModel):
     topProdutos: list[RelatorioCardapioItem]
     totalItensVendidos: int
     faturamentoTotal: float
+    produtosSemFicha: int
+
+
+class RelatorioBcgItem(BaseModel):
+    produtoId: int
+    nome: str
+    idCategoria: int
+    quantidadeVendida: float
+    faturamento: float
+    faturamentoAnterior: float
+    participacao: float
+    crescimento: float | None
+    classificacao: str
+    acaoSugerida: str
+    lucro: float | None
+    temFichaTecnica: bool
+
+
+class RelatorioBcgResponse(BaseModel):
+    inicio: date
+    fim: date
+    inicioAnterior: date
+    fimAnterior: date
+    faturamentoTotal: float
+    faturamentoAnterior: float
+    crescimentoTotal: float | None
+    limiteParticipacao: float
+    limiteCrescimento: float
+    itens: list[RelatorioBcgItem]
+
+
+class EstoqueMovimentoResponse(BaseModel):
+    id: int
+    insumoId: int
+    insumoNome: str
+    unidade: str
+    tipo: str
+    quantidade: float
+    saldoApos: float
+    pedidoId: int | None
+    usuarioNome: str | None
+    motivo: str | None
+    criadoEm: datetime
 
 
 class RelatorioOperacionalResponse(BaseModel):
@@ -385,12 +514,6 @@ class RelatorioOperacionalResponse(BaseModel):
     ticketMedio: float
     faturamento: float
     tempoMedioPreparoMin: float
-
-class Role(str, Enum):
-    GERENTE = "GERENTE"
-    ATENDENTE = "ATENDENTE"
-    CAIXA = "CAIXA"
-    COZINHA = "COZINHA"
 
 
 def _validar_cpf(valor: str) -> str:
@@ -409,7 +532,9 @@ class UserCreateRequest(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     cpf: str
     senha: str = Field(min_length=8, max_length=72)  # limite do bcrypt
+    email: str = Field(min_length=5, max_length=255)
     role: Role
+    funcionarioId: int | None = Field(default=None, ge=1)
 
     @field_validator("cpf")
     @classmethod

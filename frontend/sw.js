@@ -1,14 +1,17 @@
-const CACHE_NAME = 'dataplate-mobile-v1';
+const CACHE_NAME = 'dataplate-mobile-v4';
 const APP_SHELL = [
   './',
   './pages/adm-login.html',
+  './pages/adm-recuperar-senha.html',
   './Css/adm-login.css',
   './Css/admin-login.css',
+  './Css/adm-recuperar-senha.css',
   './Css/design-system.css',
   './Css/mobile.css',
   './JavaScript/mobile-runtime.js',
   './JavaScript/adm-auth.js',
   './JavaScript/adm-login.js',
+  './JavaScript/adm-recuperar-senha.js?v=20261104-melhorias',
   './images/brand/logo-dataplate.png'
 ];
 

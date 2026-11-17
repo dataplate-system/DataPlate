@@ -104,6 +104,9 @@ Normalmente isso não é necessário: a API cria o administrador padrão ao inic
 - `GET /api/mesas`
 - `POST /api/mesas`
 - `PUT /api/mesas/{id}`
+- `PATCH /api/mesas/{id}/status`
+- `PATCH /api/mesas/{id}/reserva`
+- `GET /api/mesas/por-token/{token}`
 - `DELETE /api/mesas/{id}`
 - `GET /api/clientes`
 - `POST /api/clientes`
@@ -139,4 +142,6 @@ Normalmente isso não é necessário: a API cria o administrador padrão ao inic
 - `GET /api/usuarios`
 - `PUT /api/usuarios/{id}`
 - `DELETE /api/usuarios/{id}`
-- `WS /ws`
+- `WS /ws` (`?token=<access JWT>` ou `?pedido=<id>&pedidoToken=<tokenAcesso>`)
+
+Perfis exigidos por rota e acessos de teste: ver `DEVELOPMENT.md` (secao Auth) e `docs/Requisitos/RegrasNegocioAcessos.md`.

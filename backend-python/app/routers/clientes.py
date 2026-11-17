@@ -5,20 +5,26 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Cliente
+from app.models import Cliente, Role
 from app.schemas import ClienteRequest, ClienteResponse
+from app.security import exigir_perfis
 
 
 router = APIRouter(prefix="/api/clientes", tags=["clientes"])
 
 
-@router.get("", response_model=list[ClienteResponse])
+@router.get("", response_model=list[ClienteResponse], dependencies=[Depends(exigir_perfis(Role.GERENTE, Role.CAIXA))])
 def listar_clientes(db: Session = Depends(get_db)) -> list[ClienteResponse]:
     clientes = db.scalars(select(Cliente).where(Cliente.ativo.is_(True)).limit(500)).all()
     return [_to_response(cliente) for cliente in clientes]
 
 
-@router.post("", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ClienteResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE, Role.CAIXA))],
+)
 def criar_cliente(request: ClienteRequest, db: Session = Depends(get_db)) -> ClienteResponse:
     cliente = Cliente(criado_em=datetime.now())
     _apply_request(cliente, request)
@@ -35,7 +41,11 @@ def criar_cliente(request: ClienteRequest, db: Session = Depends(get_db)) -> Cli
     return _to_response(cliente)
 
 
-@router.put("/{cliente_id}", response_model=ClienteResponse)
+@router.put(
+    "/{cliente_id}",
+    response_model=ClienteResponse,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE, Role.CAIXA))],
+)
 def atualizar_cliente(cliente_id: int, request: ClienteRequest, db: Session = Depends(get_db)) -> ClienteResponse:
     cliente = db.get(Cliente, cliente_id)
     if cliente is None:
@@ -48,7 +58,11 @@ def atualizar_cliente(cliente_id: int, request: ClienteRequest, db: Session = De
     return _to_response(cliente)
 
 
-@router.delete("/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{cliente_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(exigir_perfis(Role.GERENTE))],
+)
 def excluir_cliente(cliente_id: int, db: Session = Depends(get_db)) -> Response:
     cliente = db.get(Cliente, cliente_id)
     if cliente is None:

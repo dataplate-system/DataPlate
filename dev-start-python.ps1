@@ -18,7 +18,7 @@ try {
             param($path, $port)
 
             Set-Location $path
-            python -m http.server $port
+            python -m http.server $port --bind 0.0.0.0
         } -ArgumentList $frontendPath, $frontendPort
     }
 

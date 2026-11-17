@@ -1,0 +1,2 @@
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_email ON usuarios (email) WHERE email IS NOT NULL;

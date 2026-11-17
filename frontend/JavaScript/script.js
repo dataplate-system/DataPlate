@@ -101,6 +101,100 @@ if (telefoneInput) {
   });
 }
 
+const leadForm = document.getElementById('demonstracao');
+const leadContactDialog = document.getElementById('leadContactDialog');
+const leadContactEmail = document.getElementById('leadContactEmail');
+const leadContactEmailValue = document.getElementById('leadContactEmailValue');
+const leadContactPhone = document.getElementById('leadContactPhone');
+const leadContactPhoneValue = document.getElementById('leadContactPhoneValue');
+const leadContactClose = document.getElementById('leadContactClose');
+const leadContactMessage = document.getElementById('leadContactMessage');
+const leadApiBaseUrl =
+  window.DATAPLATE_API_BASE_URL ||
+  localStorage.getItem('DATAPLATE_API_BASE_URL') ||
+  `http://${location.hostname || 'localhost'}:8081/api`;
+
+if (
+  leadForm &&
+  leadContactDialog &&
+  leadContactEmail &&
+  leadContactEmailValue &&
+  leadContactPhone &&
+  leadContactPhoneValue &&
+  leadContactClose &&
+  leadContactMessage
+) {
+  leadForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const email = document.getElementById('leadEmail').value.trim();
+    const telefone = telefoneInput.value.trim();
+
+    leadContactEmailValue.textContent = email;
+    leadContactPhoneValue.textContent = telefone;
+    leadContactMessage.textContent = '';
+    leadContactEmail.disabled = false;
+    leadContactPhone.disabled = false;
+    leadContactDialog.hidden = false;
+    leadContactEmail.focus();
+  });
+
+  // Envia o pedido para a equipe com o canal escolhido; por e-mail o interessado tambem recebe confirmacao.
+  async function enviarPedidoDemonstracao(preferencia) {
+    leadContactEmail.disabled = true;
+    leadContactPhone.disabled = true;
+    leadContactMessage.textContent = 'Enviando pedido...';
+    let enviado = false;
+
+    try {
+      const response = await fetch(`${leadApiBaseUrl}/leads/demo-contact-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: document.getElementById('leadNome').value.trim(),
+          email: document.getElementById('leadEmail').value.trim(),
+          telefone: telefoneInput.value.trim(),
+          preferencia
+        })
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        const detail = result?.detail;
+        throw new Error(typeof detail === 'string' ? detail : 'Não foi possível enviar a mensagem. Tente novamente.');
+      }
+
+      enviado = true;
+      leadContactMessage.textContent = preferencia === 'email'
+        ? 'Pedido enviado! Confira a confirmação no seu e-mail.'
+        : 'Pedido enviado! Entraremos em contato pelo seu telefone.';
+    } catch (error) {
+      leadContactMessage.textContent = error instanceof TypeError
+        ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+        : error.message;
+    } finally {
+      // Depois de enviado, mantem bloqueado para evitar pedido duplicado.
+      leadContactEmail.disabled = enviado;
+      leadContactPhone.disabled = enviado;
+    }
+  }
+
+  leadContactEmail.addEventListener('click', () => enviarPedidoDemonstracao('email'));
+  leadContactPhone.addEventListener('click', () => enviarPedidoDemonstracao('telefone'));
+
+  leadContactClose.addEventListener('click', function () {
+    leadContactDialog.hidden = true;
+    document.querySelector('.cont').focus();
+  });
+
+  leadContactDialog.addEventListener('click', function (event) {
+    if (event.target === leadContactDialog) {
+      leadContactDialog.hidden = true;
+      document.querySelector('.cont').focus();
+    }
+  });
+}
+
 const cnpjInput = document.getElementById('cnpj');
 if (cnpjInput) {
   cnpjInput.addEventListener('input', function (e) {

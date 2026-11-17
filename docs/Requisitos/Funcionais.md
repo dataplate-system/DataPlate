@@ -21,3 +21,12 @@ O sistema deve gerar relatórios de vendas, desempenho do cardápio, operação 
 
 ## RF08 - Usuários e Permissões
 O sistema deve permitir cadastrar usuários administrativos e definir tipos de acesso.
+
+## RF09 - Matriz BCG
+O sistema deve classificar os itens do cardápio pela Matriz BCG em Em alta (Estrela), Garantido (Vaca Leiteira), Promissor (Interrogação) e Em queda (Abacaxi), e sugerir uma ação para cada classificação. Sem dados de mercado, a participação de mercado é medida pela participação do item no faturamento, e o crescimento do mercado, pelo crescimento das vendas do item em relação ao período anterior.
+
+## RF10 - Baixa de Estoque
+O sistema deve baixar os insumos pela ficha técnica quando o preparo do pedido começar, registrar cada movimentação e avisar quando um insumo atingir o estoque mínimo.
+
+## RF11 - Abertura da Mesa
+O sistema deve aceitar pedidos pelo QR Code somente depois que a equipe abrir a mesa.

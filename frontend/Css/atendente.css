@@ -372,13 +372,13 @@ button { cursor: pointer; }
 .mesas-resumo { color: var(--color-muted); font-size: 13px; font-weight: 800; padding: 8px 11px; background: #fff; border: 1px solid var(--color-border); border-radius: 999px; }
 
 .mesa-status-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
-.mesa-summary-card { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; }
-.mesa-summary-card strong { font-size: 22px; line-height: 1; }
-.mesa-summary-card span { color: var(--color-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.mesa-summary-card { display: flex; align-items: baseline; min-width: 0; gap: 8px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; }
+.mesa-summary-card strong { flex: 0 0 auto; font-size: 22px; line-height: 1; }
+.mesa-summary-card span { min-width: 0; color: var(--color-muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; overflow-wrap: anywhere; }
 .mesa-summary-card.livre { border-bottom: 3px solid var(--color-success); }
 .mesa-summary-card.ocupada { border-bottom: 3px solid var(--color-secondary); }
 .mesa-summary-card.reservada { border-bottom: 3px solid var(--color-warning); }
-.mesa-summary-card.aguardando_pagamento { border-bottom: 3px solid var(--color-primary); }
+.mesa-summary-card.aguardando_pagamento { border-bottom: 3px solid #db2777; }
 
 .mesa-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0 0 16px; }
 .mesa-legend-item { display: inline-flex; align-items: center; gap: 6px; color: var(--color-muted); font-size: 12px; font-weight: 700; }
@@ -386,7 +386,7 @@ button { cursor: pointer; }
 .mesa-legend-item.livre i { background: var(--color-success); }
 .mesa-legend-item.ocupada i { background: var(--color-secondary); }
 .mesa-legend-item.reservada i { background: var(--color-warning); }
-.mesa-legend-item.aguardando_pagamento i { background: var(--color-primary); }
+.mesa-legend-item.aguardando_pagamento i { background: #db2777; }
 
 .mesas-grid {
   display: grid;
@@ -396,8 +396,11 @@ button { cursor: pointer; }
 
 /* Card estilo admin */
 .mesa-card {
+  min-width: 0;
   min-height: 188px;
   padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid var(--color-border);
   border-top: 5px solid #94a3b8;
   border-radius: 12px;
@@ -415,26 +418,46 @@ button { cursor: pointer; }
 .mesa-card.status-reservada         { border-top-color: var(--color-warning); background: linear-gradient(145deg, #fff, #fffbeb); }
 .mesa-card.status-manutencao        { border-top-color: var(--color-danger); }
 .mesa-card.status-aguardando_pagamento {
-  border-top-color: var(--color-primary);
-  background: linear-gradient(145deg, #fff, #fff7ed);
+  border-top-color: #db2777;
+  background: linear-gradient(145deg, #fff, #fdf2f8);
 }
 
 /* Badges compartilhados */
 .badge {
-  display: inline-flex; align-items: center;
-  padding: 3px 10px; border-radius: 999px;
-  font-size: 10px; font-weight: 900;
-  text-transform: uppercase; letter-spacing: .04em;
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px 9px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  flex: 0 1 auto;
 }
 .badge-active  { background: #dcfce7; color: #166534; }
 .badge-info    { background: #dbeafe; color: #1d4ed8; }
 .badge-warning { background: #fef3c7; color: #92400e; }
 .badge-danger  { background: #fee2e2; color: #dc2626; }
-.badge-pgto    { background: #fff5f0; color: var(--color-primary); border: 1px solid #fed7aa; }
+.badge-pgto    { background: #fce7f3; color: #9d174d; border: 1px solid #f9a8d4; }
 
 /* Mesa card internals */
-.mesa-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.mesa-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.mesa-top > div { min-width: 0; flex: 0 0 auto; }
+.mesa-top .badge { max-width: 62%; }
 .mesa-label { display: block; margin-bottom: 2px; color: var(--color-muted); font-size: 10px; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
 .mesa-num  { font-size: 30px; font-weight: 900; line-height: .9; }
 .mesa-meta { flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--color-muted); }
@@ -785,4 +808,46 @@ button { cursor: pointer; }
   .atendente-hero { padding: 20px 16px; }
   .atendente-hero h1 { font-size: 28px; }
   .atendente-main { width: calc(100% - 28px); }
+}
+
+
+/* ── AJUSTES DOS CARDS DE MESA ─────────────────────────────────── */
+.mesa-card,
+.mesa-card * {
+  min-width: 0;
+}
+.mesa-meta,
+.mesa-meta > span,
+.mesa-pronto-hint,
+.mesa-total {
+  overflow-wrap: anywhere;
+}
+.mesa-summary-card.aguardando_pagamento {
+  background: #fdf2f8;
+}
+@media (max-width: 700px) {
+  .mesa-status-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mesas-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 165px), 1fr));
+    gap: 10px;
+  }
+  .mesa-card {
+    padding: 12px;
+  }
+  .mesa-top {
+    flex-wrap: wrap;
+  }
+  .mesa-top .badge {
+    max-width: 100%;
+  }
+}
+@media (max-width: 360px) {
+  .mesa-status-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mesas-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

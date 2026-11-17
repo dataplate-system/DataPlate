@@ -5,20 +5,44 @@
   const DEFAULT_DEMO_ADMIN_KEY = 'gerente';
   const PASSWORD_MIN_LENGTH = 8;
 
+  const ROLE_TO_USER_KEY = {
+    ADMIN: 'admin',
+    GERENTE: 'gerente',
+    FUNCIONARIO: 'atendente',
+    CAIXA: 'caixa',
+    COZINHA: 'cozinha'
+  };
+  const USER_KEY_HOME = {
+    admin: 'adm.html',
+    gerente: 'adm.html',
+    atendente: 'atendente.html',
+    caixa: 'pdv.html',
+    cozinha: 'cozinha.html'
+  };
+
   const defaultAdmins = {
-    gerente: {
-      name: 'Gerente Principal',
-      initials: 'GP',
+    admin: {
+      name: 'Administrador',
+      initials: 'AD',
       cpf: '000.000.000-01',
       password: 'admin123',
       role: 'Administrador',
+      userKey: 'admin',
+      recoveryContact: 'e-mail a*****r@dataplate.local'
+    },
+    gerente: {
+      name: 'Gerente Principal',
+      initials: 'GP',
+      cpf: '000.000.000-02',
+      password: 'admin123',
+      role: 'Gerente',
       userKey: 'gerente',
       recoveryContact: 'e-mail g*****e@dataplate.local'
     },
     atendente: {
       name: 'Atendente',
       initials: 'AT',
-      cpf: '000.000.000-02',
+      cpf: '000.000.000-03',
       password: 'admin123',
       role: 'Operacional',
       userKey: 'atendente',
@@ -27,7 +51,7 @@
     cozinha: {
       name: 'Cozinha',
       initials: 'CZ',
-      cpf: '000.000.000-03',
+      cpf: '000.000.000-04',
       password: 'admin123',
       role: 'Pedidos e preparo',
       userKey: 'cozinha',
@@ -36,13 +60,21 @@
     caixa: {
       name: 'Caixa',
       initials: 'CX',
-      cpf: '000.000.000-04',
+      cpf: '000.000.000-05',
       password: 'admin123',
       role: 'PDV e vendas',
       userKey: 'caixa',
       recoveryContact: 'SMS final 3333'
     }
   };
+
+  function userKeyFromRole(role) {
+    return ROLE_TO_USER_KEY[String(role || '').toUpperCase()] || null;
+  }
+
+  function homePageForUserKey(userKey) {
+    return USER_KEY_HOME[userKey] || null;
+  }
 
   function safelyParseJson(value, fallback) {
     try {
@@ -207,6 +239,10 @@
     ADMIN_SESSION_KEY,
     ADMIN_PASSWORDS_KEY,
     DEFAULT_DEMO_ADMIN_KEY,
+    ROLE_TO_USER_KEY,
+    USER_KEY_HOME,
+    userKeyFromRole,
+    homePageForUserKey,
     formatCpf,
     getAdmin,
     getAdmins,

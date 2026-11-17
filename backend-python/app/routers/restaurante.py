@@ -3,22 +3,30 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Restaurante
+from app.models import Restaurante, Role, User
 from app.schemas import RestauranteRequest, RestauranteResponse
+from app.security import exigir_perfis, get_usuario_opcional
 
 
 router = APIRouter(prefix="/api/restaurante", tags=["restaurante"])
 
 
 @router.get("", response_model=RestauranteResponse)
-def obter_restaurante(db: Session = Depends(get_db)) -> RestauranteResponse:
+def obter_restaurante(
+    db: Session = Depends(get_db),
+    usuario: User | None = Depends(get_usuario_opcional),
+) -> RestauranteResponse:
     restaurante = db.scalar(select(Restaurante).where(Restaurante.ativo.is_(True)).limit(1))
     if restaurante is None:
-        return RestauranteResponse(id=None, nome="DataPlate Restaurante", cnpj="", telefone="", endereco="", email="")
-    return _to_response(restaurante)
+        response = RestauranteResponse(id=None, nome="DataPlate Restaurante", cnpj="", telefone="", endereco="", email="")
+    else:
+        response = _to_response(restaurante)
+    if usuario is None:
+        response.cnpj = None
+    return response
 
 
-@router.put("", response_model=RestauranteResponse)
+@router.put("", response_model=RestauranteResponse, dependencies=[Depends(exigir_perfis(Role.ADMIN))])
 def atualizar_restaurante(request: RestauranteRequest, db: Session = Depends(get_db)) -> RestauranteResponse:
     restaurante = db.scalar(select(Restaurante).where(Restaurante.ativo.is_(True)).limit(1))
     if restaurante is None:

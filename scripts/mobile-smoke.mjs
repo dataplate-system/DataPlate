@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs/promises';
@@ -13,6 +13,21 @@ const sessions = {
   cozinha: { name: 'Cozinha', initials: 'CZ', role: 'Pedidos e preparo', userKey: 'cozinha' },
   caixa: { name: 'Caixa', initials: 'CX', role: 'PDV e vendas', userKey: 'caixa' }
 };
+
+// Os paineis exigem uma sessao real, inclusive nos testes responsivos.
+for (const [key, cpf, senha] of [
+  ['gerente', '00000000002', 'admin123'],
+  ['atendente', '00000000003', 'admin123'],
+  ['cozinha', '00000000004', 'admin123'],
+  ['caixa', '00000000005', 'admin123']
+]) {
+  const response = await fetch(`${process.env.DATAPLATE_API_URL || 'http://localhost:8081/api'}/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cpf, senha })
+  });
+  if (!response.ok) throw new Error(`Login de teste falhou: ${key}`);
+  const user = await response.json();
+  Object.assign(sessions[key], { token: user.token, backendRole: user.role });
+}
 
 const routes = [
   { name: 'site', path: '/pages/index.html' },

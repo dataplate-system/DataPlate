@@ -1,16 +1,25 @@
 from enum import StrEnum
 from datetime import datetime
 from decimal import Decimal
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Boolean, Computed, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger, String, Text, Uuid, text
+from sqlalchemy import BigInteger, Boolean, Column, Computed, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger, String, Table, Text, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
 
+fornecedor_insumos = Table(
+    "fornecedor_insumos",
+    Base.metadata,
+    Column("fornecedor_id", BigInteger, ForeignKey("fornecedores.id", ondelete="CASCADE"), primary_key=True),
+    Column("insumo_id", BigInteger, ForeignKey("insumos.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class Role(StrEnum):
     ADMIN = "ADMIN"
+    GERENTE = "GERENTE"
     COZINHA = "COZINHA"
     FUNCIONARIO = "FUNCIONARIO"
     CAIXA = "CAIXA"
@@ -34,7 +43,26 @@ class User(Base):
     cpf: Mapped[str] = mapped_column(String(11), unique=True, index=True)
     senha_hash: Mapped[str] = mapped_column("senha", String(255))
     role: Mapped[str] = mapped_column(String(30))
+    email: Mapped[str | None] = mapped_column(String(255), unique=True)
     ativo: Mapped[bool] = mapped_column(default=True)
+    funcionario_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("funcionarios.id", ondelete="SET NULL"),
+        unique=True,
+    )
+    funcionario: Mapped["Funcionario | None"] = relationship(back_populates="usuario")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False, index=True)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
 class Restaurante(Base):
@@ -124,6 +152,10 @@ class Fornecedor(Base):
     email: Mapped[str | None] = mapped_column(String)
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     criado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    insumos: Mapped[list["Insumo"]] = relationship(
+        secondary=fornecedor_insumos,
+        back_populates="fornecedores",
+    )
 
 
 class Funcionario(Base):
@@ -138,6 +170,7 @@ class Funcionario(Base):
     salario: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     criado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    usuario: Mapped[User | None] = relationship(back_populates="funcionario", uselist=False)
 
 
 class Insumo(Base):
@@ -150,6 +183,10 @@ class Insumo(Base):
     quantidade_minima: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     custo_unitario: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    fornecedores: Mapped[list[Fornecedor]] = relationship(
+        secondary=fornecedor_insumos,
+        back_populates="insumos",
+    )
 
 
 class Pedido(Base):
@@ -157,17 +194,32 @@ class Pedido(Base):
 
     id: Mapped[int] = mapped_column("id_pedido", BigInteger, primary_key=True, autoincrement=True)
     id_mesa: Mapped[int | None] = mapped_column(Integer, ForeignKey("mesa.id_mesa"))
+    id_cliente: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("clientes.id", ondelete="SET NULL"),
+    )
     id_status: Mapped[int] = mapped_column(Integer, nullable=False)
     numero_pedido: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     data_hora: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     observacoes: Mapped[str | None] = mapped_column(Text)
     valor_total: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    pago_em: Mapped[datetime | None] = mapped_column(DateTime)
+    forma_pagamento: Mapped[str | None] = mapped_column(String(30))
+    token_acesso: Mapped[UUID] = mapped_column(
+        Uuid,
+        nullable=False,
+        unique=True,
+        default=uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
 
     itens: Mapped[list["PedidoItem"]] = relationship(
         back_populates="pedido",
         cascade="all, delete-orphan",
     )
+    cliente: Mapped[Cliente | None] = relationship()
+    historico: Mapped[list["PedidoStatusHistorico"]] = relationship(order_by="PedidoStatusHistorico.id")
 
 
 class PedidoItem(Base):
@@ -193,6 +245,29 @@ class PedidoStatusHistorico(Base):
     id_pedido: Mapped[int] = mapped_column(BigInteger, ForeignKey("pedido.id_pedido"), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
     registrado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    id_usuario: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+    )
+    motivo: Mapped[str | None] = mapped_column(String(255))
+
+
+class EstoqueMovimento(Base):
+    __tablename__ = "estoque_movimento"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    insumo_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("insumos.id", ondelete="CASCADE"), nullable=False)
+    id_pedido: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("pedido.id_pedido", ondelete="SET NULL"))
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    # Negativo: saida do estoque. Positivo: entrada.
+    quantidade: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    saldo_apos: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    id_usuario: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
+    motivo: Mapped[str | None] = mapped_column(String(255))
+    criado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+
+    insumo: Mapped[Insumo] = relationship()
+    usuario: Mapped[User | None] = relationship()
 
 
 class ProdutoInsumo(Base):

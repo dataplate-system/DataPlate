@@ -1,17 +1,23 @@
 import math
+import re
 import time
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from uuid import UUID
+from typing import Literal
 
 import anyio
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import String, case, cast, func, or_, select
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db import get_db
-from app.models import Mesa, Pedido, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto
+from app.estoque import sincronizar_estoque_do_pedido
+from app.limiter import exigir_disponivel, pedidos_qr_por_mesa
+from app.models import Cliente, Mesa, Pedido, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto, Role, User
 from app.realtime import manager
-from app.schemas import PedidoCreateRequest, PaginatedPedidoResponse, PedidoResponse, PedidoStatusUpdateRequest
+from app.security import exigir_perfis, get_usuario_atual, get_usuario_opcional
+from app.schemas import PedidoCreateRequest, PedidoEditRequest, PaginatedPedidoResponse, PedidoResponse, PedidoStatusUpdateRequest
 
 
 STATUS_RECEBIDO_ID = 1
@@ -22,59 +28,146 @@ STATUS_CANCELADO_ID = 5
 STATUS_SERVIDO_ID = 6
 STATUS_ATIVOS = (STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID, STATUS_SERVIDO_ID)
 
+LIMITE_DESCONTO_PERCENTUAL = Decimal("10")
+MESA_STATUS_LIBERADOS = ("livre", "reservada")
+# So a equipe abre a mesa: um QR Code fotografado nao gera pedido com a mesa fechada.
+MESA_STATUS_ACEITA_QR = "ocupada"
+# A baixa de estoque acontece ao sair da fila e nunca e repetida (ver app/estoque.py).
+STATUS_COM_BAIXA_ESTOQUE = {
+    PedidoStatusNome.EM_PREPARO,
+    PedidoStatusNome.PRONTO,
+    PedidoStatusNome.SERVIDO,
+    PedidoStatusNome.ENTREGUE,
+}
+
+PERFIS_CRIAM_PEDIDO = {Role.GERENTE.value, Role.FUNCIONARIO.value, Role.CAIXA.value}
+PERFIS_RECURSOS_CAIXA = {Role.GERENTE.value, Role.CAIXA.value}
+PERFIS_CONSULTA_PEDIDO = {
+    Role.GERENTE.value,
+    Role.ADMIN.value,
+    Role.FUNCIONARIO.value,
+    Role.CAIXA.value,
+    Role.COZINHA.value,
+}
+
+_S = PedidoStatusNome
+_COZINHA_GERENTE = frozenset({Role.COZINHA.value, Role.GERENTE.value})
+_CAIXA_GERENTE = frozenset({Role.CAIXA.value, Role.GERENTE.value})
+_EQUIPE_CANCELAMENTO = frozenset({Role.GERENTE.value, Role.FUNCIONARIO.value, Role.COZINHA.value})
+_SOMENTE_GERENTE = frozenset({Role.GERENTE.value})
+# (origem, destino) -> perfis autorizados (RN-AC32, RN-AC41). Fora desta tabela: 409.
+TRANSICOES_STATUS: dict[tuple[PedidoStatusNome, PedidoStatusNome], frozenset[str]] = {
+    (_S.RECEBIDO, _S.EM_PREPARO): _COZINHA_GERENTE,
+    (_S.EM_PREPARO, _S.PRONTO): _COZINHA_GERENTE,
+    (_S.RECEBIDO, _S.PRONTO): _COZINHA_GERENTE,
+    (_S.PRONTO, _S.SERVIDO): frozenset({Role.FUNCIONARIO.value, Role.GERENTE.value}),
+    (_S.PRONTO, _S.ENTREGUE): _CAIXA_GERENTE,
+    (_S.SERVIDO, _S.ENTREGUE): _CAIXA_GERENTE,
+    (_S.RECEBIDO, _S.CANCELADO): _EQUIPE_CANCELAMENTO | {Role.CAIXA.value},
+    (_S.EM_PREPARO, _S.CANCELADO): _EQUIPE_CANCELAMENTO,
+    (_S.PRONTO, _S.CANCELADO): _EQUIPE_CANCELAMENTO,
+    (_S.SERVIDO, _S.CANCELADO): _SOMENTE_GERENTE,
+}
+
+exigir_operacao = exigir_perfis(Role.GERENTE, Role.FUNCIONARIO, Role.CAIXA, Role.COZINHA)
+exigir_historico = exigir_perfis(Role.GERENTE, Role.ADMIN, Role.CAIXA)
+
 router = APIRouter(prefix="/api/pedidos", tags=["pedidos"])
 
 
 @router.post("", response_model=PedidoResponse, status_code=status.HTTP_201_CREATED)
-def criar_pedido(request: PedidoCreateRequest, db: Session = Depends(get_db)) -> PedidoResponse:
+def criar_pedido(
+    request: PedidoCreateRequest,
+    db: Session = Depends(get_db),
+    usuario: User | None = Depends(get_usuario_opcional),
+) -> PedidoResponse:
     venda_caixa = request.vendaCaixa is True
+    _autorizar_criacao(request, usuario, venda_caixa)
     _validar_criacao(request, venda_caixa)
-    mesa = _resolver_mesa(db, request, venda_caixa)
+    mesa = _resolver_mesa(db, request, venda_caixa, anonimo=usuario is None)
+    chave_qr = None
+    if usuario is None and mesa is not None:
+        chave_qr = str(mesa.id)
+        exigir_disponivel(pedidos_qr_por_mesa, chave_qr, "Muitos pedidos nesta mesa.")
+    produtos = _resolver_produtos(db, request)
+    subtotal_itens = sum(
+        (produtos[item.produtoId].preco * Decimal(item.quantidade) for item in request.itens),
+        Decimal("0"),
+    )
+    _validar_desconto(request, usuario, subtotal_itens, venda_caixa)
+    cliente = _resolver_cliente(db, request.clienteId)
 
     now = datetime.now()
     pedido = Pedido(
         id_mesa=None if mesa is None else mesa.id,
+        cliente=cliente,
         id_status=STATUS_RECEBIDO_ID,
         numero_pedido=_gerar_numero_pedido(),
         data_hora=now,
         observacoes=_observacoes_pedido(request, venda_caixa),
         atualizado_em=now,
         valor_total=Decimal("0"),
+        # Venda no caixa e paga na hora; pedido de mesa so ao fechar a conta.
+        pago_em=now if venda_caixa else None,
+        forma_pagamento=_forma_pagamento(request.formaPagamento) if venda_caixa else None,
     )
     db.add(pedido)
+    if mesa is not None and mesa.status in MESA_STATUS_LIBERADOS:
+        mesa.status = "ocupada"
+        db.add(mesa)
     db.flush()
 
-    itens = [_criar_item(db, pedido, item.produtoId, item.quantidade) for item in request.itens]
+    itens = [_criar_item(pedido, produtos[item.produtoId], item.quantidade) for item in request.itens]
     todos_instantaneos = venda_caixa and all(item.produto.tempo_preparo is not None and item.produto.tempo_preparo == 0 for item in itens)
     pedido.id_status = STATUS_ENTREGUE_ID if todos_instantaneos else STATUS_RECEBIDO_ID
     pedido.valor_total = _total_pedido(sum((_subtotal_do_item(item) for item in itens), Decimal("0")), request, venda_caixa)
 
     db.add_all(itens)
-    db.add(PedidoStatusHistorico(id_pedido=pedido.id, status=_to_status(pedido.id_status).value, registrado_em=now))
+    db.add(
+        PedidoStatusHistorico(
+            id_pedido=pedido.id,
+            status=_to_status(pedido.id_status).value,
+            registrado_em=now,
+            id_usuario=None if usuario is None else usuario.id,
+        )
+    )
+    criticos = []
+    if todos_instantaneos:
+        criticos = sincronizar_estoque_do_pedido(db, pedido.id, itens, usuario.id, "Venda no caixa")
     db.commit()
     db.refresh(pedido)
+    if chave_qr is not None:
+        pedidos_qr_por_mesa.registrar(chave_qr)
     response = _to_response(_get_pedido_with_itens(db, pedido.id), _mesa_map(db))
     _publicar_evento("VENDA_CAIXA" if todos_instantaneos else "NOVO_PEDIDO", response)
-    return response
+    _publicar_estoque_baixo(criticos)
+    # O token de acompanhamento so e devolvido a quem criou o pedido, nunca nos eventos.
+    return response.model_copy(update={"tokenAcesso": str(pedido.token_acesso)})
 
 
-@router.get("/ativos", response_model=list[PedidoResponse])
+@router.get("/ativos", response_model=list[PedidoResponse], dependencies=[Depends(exigir_operacao)])
 def listar_ativos(db: Session = Depends(get_db)) -> list[PedidoResponse]:
     pedidos = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
+        .options(joinedload(Pedido.cliente))
         .where(Pedido.id_status.in_(STATUS_ATIVOS))
         .order_by(Pedido.data_hora.asc())
     ).unique().all()
     return [_to_response(pedido, _mesa_map(db)) for pedido in pedidos]
 
 
-@router.get("", response_model=PaginatedPedidoResponse)
+@router.get("", response_model=PaginatedPedidoResponse, dependencies=[Depends(exigir_historico)])
 def listar_pedidos(
     page: int = Query(default=0, ge=0),
     size: int = Query(default=50, ge=1),
     data: date | None = Query(default=None),
     status: list[PedidoStatusNome] | None = Query(default=None),
+    mesa: int | None = Query(default=None, ge=1),
+    cliente: str | None = Query(default=None, max_length=100),
+    numero: str | None = Query(default=None, max_length=100),
+    ordem: Literal["recentes", "antigos", "total_maior", "total_menor"] = "recentes",
     db: Session = Depends(get_db),
 ) -> PaginatedPedidoResponse:
     safe_size = min(size, 200)
@@ -84,12 +177,44 @@ def listar_pedidos(
         filters.extend((Pedido.data_hora >= inicio, Pedido.data_hora < inicio + timedelta(days=1)))
     if status:
         filters.append(Pedido.id_status.in_([_to_status_id(item) for item in status]))
+    if mesa is not None:
+        filters.append(Pedido.id_mesa.in_(select(Mesa.id).where(Mesa.numero == mesa)))
+    if cliente and cliente.strip():
+        filters.append(Pedido.id_cliente.in_(select(Cliente.id).where(
+            func.lower(Cliente.nome).contains(cliente.strip().lower(), autoescape=True))))
+    if numero and numero.strip():
+        termo = numero.strip().removeprefix("#")
+        filters.append(or_(cast(Pedido.id, String) == termo,
+                           func.lower(Pedido.numero_pedido).contains(termo.lower(), autoescape=True)))
     total = db.scalar(select(func.count(Pedido.id)).where(*filters)) or 0
+    total_pages = math.ceil(total / safe_size) if total else 0
+    page = min(page, max(0, total_pages - 1))
+    def horario_do_status(nome):
+        return (select(func.max(PedidoStatusHistorico.registrado_em))
+                .where(PedidoStatusHistorico.id_pedido == Pedido.id, PedidoStatusHistorico.status == nome)
+                .correlate(Pedido).scalar_subquery())
+
+    # A recencia dos pedidos encerrados e a do encerramento, nao a da criacao.
+    data_ordenacao = case(
+        (Pedido.id_status == STATUS_CANCELADO_ID,
+         func.coalesce(horario_do_status("CANCELADO"), Pedido.atualizado_em, Pedido.data_hora)),
+        (Pedido.id_status == STATUS_ENTREGUE_ID,
+         func.coalesce(horario_do_status("ENTREGUE"), Pedido.pago_em, Pedido.atualizado_em, Pedido.data_hora)),
+        else_=Pedido.data_hora,
+    )
+    ordenacao = {
+        "recentes": (data_ordenacao.desc(), Pedido.id.desc()),
+        "antigos": (data_ordenacao.asc(), Pedido.id.asc()),
+        "total_maior": (Pedido.valor_total.desc(), Pedido.id.desc()),
+        "total_menor": (Pedido.valor_total.asc(), Pedido.id.asc()),
+    }[ordem]
     pedidos = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
+        .options(joinedload(Pedido.cliente))
         .where(*filters)
-        .order_by(Pedido.data_hora.desc(), Pedido.id.desc())
+        .order_by(*ordenacao)
         .offset(page * safe_size)
         .limit(safe_size)
     ).unique().all()
@@ -98,11 +223,11 @@ def listar_pedidos(
         page=page,
         size=safe_size,
         totalElements=total,
-        totalPages=math.ceil(total / safe_size) if total else 0,
+        totalPages=total_pages,
     )
 
 
-@router.get("/mesa/{numero_mesa}", response_model=list[PedidoResponse])
+@router.get("/mesa/{numero_mesa}", response_model=list[PedidoResponse], dependencies=[Depends(exigir_operacao)])
 def listar_por_mesa(numero_mesa: int, db: Session = Depends(get_db)) -> list[PedidoResponse]:
     mesa = db.scalar(select(Mesa).where(Mesa.numero == numero_mesa, Mesa.ativo.is_(True)))
     if mesa is None:
@@ -110,7 +235,9 @@ def listar_por_mesa(numero_mesa: int, db: Session = Depends(get_db)) -> list[Ped
 
     pedidos = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
+        .options(joinedload(Pedido.cliente))
         .where(Pedido.id_mesa == mesa.id)
         .order_by(Pedido.data_hora.desc())
     ).unique().all()
@@ -118,8 +245,109 @@ def listar_por_mesa(numero_mesa: int, db: Session = Depends(get_db)) -> list[Ped
 
 
 @router.get("/{pedido_id}", response_model=PedidoResponse)
-def obter_pedido(pedido_id: int, db: Session = Depends(get_db)) -> PedidoResponse:
-    return _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
+def obter_pedido(
+    pedido_id: int,
+    token: str | None = Query(default=None, max_length=64),
+    db: Session = Depends(get_db),
+    usuario: User | None = Depends(get_usuario_opcional),
+) -> PedidoResponse:
+    if usuario is not None:
+        if usuario.role not in PERFIS_CONSULTA_PEDIDO:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+        return _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
+
+    # Cliente anonimo: somente o proprio pedido, com o token de acompanhamento.
+    token_acesso = _parse_uuid(token)
+    pedido = None if token_acesso is None else _get_pedido_with_itens(db, pedido_id)
+    if pedido is None or pedido.token_acesso != token_acesso:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Pedido nao encontrado: {pedido_id}")
+    return _to_response(pedido, _mesa_map(db))
+
+
+@router.put("/{pedido_id}/itens", response_model=PedidoResponse)
+def editar_pedido(
+    pedido_id: int,
+    request: PedidoEditRequest,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.COZINHA, Role.GERENTE, Role.FUNCIONARIO)),
+) -> PedidoResponse:
+    pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
+    if pedido is None:
+        raise HTTPException(status_code=404, detail="Pedido nao encontrado")
+    if pedido.id_status not in (STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID):
+        raise HTTPException(status_code=409, detail="Somente pedidos na fila da cozinha podem ser alterados")
+    if pedido.atualizado_em != request.atualizadoEm:
+        raise HTTPException(status_code=409, detail="O pedido mudou. Reabra a edicao para carregar a versao atual.")
+    if len({item.produtoId for item in request.itens}) != len(request.itens):
+        raise HTTPException(status_code=422, detail="Agrupe as quantidades de cada produto em uma unica linha")
+    motivo = request.motivo.strip()
+    if len(motivo) < 3:
+        raise HTTPException(status_code=422, detail="Informe o motivo da alteracao")
+    produtos = _resolver_produtos(db, request)
+    anteriores = {item.id_produto: item for item in pedido.itens if not item.cancelado}
+    subtotal_anterior = sum((_subtotal_do_item(item) for item in anteriores.values()), Decimal("0"))
+    desconto = max(Decimal("0"), subtotal_anterior - pedido.valor_total)
+    resumo_anterior = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in anteriores.values())
+    novas_linhas = []
+    for item in request.itens:
+        linha = _criar_item(pedido, produtos[item.produtoId], item.quantidade)
+        if item.produtoId in anteriores:
+            linha.preco_unitario = anteriores[item.produtoId].preco_unitario
+        novas_linhas.append(linha)
+    subtotal = sum((_subtotal_do_item(item) for item in novas_linhas), Decimal("0"))
+    pedido.itens = novas_linhas
+    pedido.valor_total = max(Decimal("0"), subtotal - desconto)
+    obs = _texto_ou_none(request.observacoes)
+    # Dados financeiros registrados pelo caixa nao podem desaparecer na edicao.
+    tags = [parte.strip() for parte in (pedido.observacoes or "").split("|")
+            if parte.strip().startswith(("Pagamento:", "Desconto:"))]
+    for tag in tags:
+        if tag not in (obs or ""):
+            obs = f"{obs} | {tag}" if obs else tag
+    observacoes_anteriores = pedido.observacoes
+    pedido.observacoes = obs
+    # Pedido pronto volta ao preparo para a cozinha conferir a alteracao.
+    if pedido.id_status == STATUS_PRONTO_ID:
+        pedido.id_status = STATUS_EM_PREPARO_ID
+    pedido.atualizado_em = datetime.now()
+    resumo_novo = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in novas_linhas)
+    db.add(PedidoStatusHistorico(
+        id_pedido=pedido.id, status=_to_status(pedido.id_status).value,
+        registrado_em=pedido.atualizado_em, id_usuario=usuario.id,
+        motivo=f"Edicao: {motivo}. Antes: {resumo_anterior}. Depois: {resumo_novo}. Obs anterior: {observacoes_anteriores or '-'}"[:255],
+    ))
+    criticos = []
+    if pedido.id_status != STATUS_RECEBIDO_ID:
+        criticos = sincronizar_estoque_do_pedido(db, pedido.id, novas_linhas, usuario.id, f"Edicao: {motivo}")
+    db.commit()
+    response = _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
+    _publicar_evento("PEDIDO_ATUALIZADO", response)
+    _publicar_estoque_baixo(criticos)
+    return response
+
+
+@router.put("/{pedido_id}/despacho", response_model=PedidoResponse)
+def despachar_balcao(
+    pedido_id: int,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.FUNCIONARIO, Role.GERENTE)),
+) -> PedidoResponse:
+    pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
+    if pedido is None:
+        raise HTTPException(status_code=404, detail="Pedido nao encontrado")
+    if pedido.id_mesa is not None or pedido.id_status != STATUS_PRONTO_ID:
+        raise HTTPException(status_code=409, detail="Somente pedidos de balcao prontos podem ser retirados")
+    if not re.search(r"(?:Pagamento:|Venda no caixa - pagamento:)\s*(PIX|DEBITO|CREDITO|DINHEIRO)\b", pedido.observacoes or "", re.IGNORECASE):
+        raise HTTPException(status_code=409, detail="Confirme o pagamento no caixa antes de entregar o pedido")
+    pedido.id_status = STATUS_ENTREGUE_ID
+    pedido.atualizado_em = datetime.now()
+    db.add(PedidoStatusHistorico(id_pedido=pedido.id, status="ENTREGUE",
+        registrado_em=pedido.atualizado_em, id_usuario=usuario.id,
+        motivo="Retirada no balcao; pagamento ja registrado pelo caixa"))
+    db.commit()
+    response = _to_response(_get_pedido_with_itens(db, pedido.id), _mesa_map(db))
+    _publicar_evento("PEDIDO_ATUALIZADO", response)
+    return response
 
 
 @router.put("/{pedido_id}/status", response_model=PedidoResponse)
@@ -127,25 +355,147 @@ def atualizar_status(
     pedido_id: int,
     request: PedidoStatusUpdateRequest,
     db: Session = Depends(get_db),
+    usuario: User = Depends(get_usuario_atual),
 ) -> PedidoResponse:
-    pedido = db.get(Pedido, pedido_id)
+    # Lock da linha do pedido: transicoes concorrentes nao podem partir do mesmo estado.
+    pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
     if pedido is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Pedido nao encontrado: {pedido_id}")
+        raise HTTPException(status_code=404, detail=f"Pedido nao encontrado: {pedido_id}")
 
-    pedido.id_status = _to_status_id(request.status)
-    pedido.atualizado_em = datetime.now()
-    if request.status == PedidoStatusNome.ENTREGUE and request.formaPagamento and request.formaPagamento.strip():
+    origem = _to_status(pedido.id_status)
+    destino = request.status
+    perfis = TRANSICOES_STATUS.get((origem, destino))
+    if perfis is None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Transicao de status invalida")
+    _autorizar_transicao(pedido, origem, destino, perfis, usuario)
+
+    motivo = _texto_ou_none(request.motivo)
+    forma_pagamento = _texto_ou_none(request.formaPagamento)
+    if destino == PedidoStatusNome.CANCELADO and motivo is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Motivo do cancelamento e obrigatorio")
+    if destino == PedidoStatusNome.ENTREGUE and forma_pagamento is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Forma de pagamento obrigatoria para finalizar o pedido",
+        )
+
+    if destino == PedidoStatusNome.CANCELADO:
+        setor = {Role.FUNCIONARIO: "Atendente", Role.COZINHA: "Cozinha", Role.CAIXA: "Caixa", Role.GERENTE: "Gerente"}[usuario.role]
+        if request.origemCancelamento:
+            if usuario.role != Role.GERENTE and request.origemCancelamento != setor:
+                raise HTTPException(status_code=403, detail="Origem do cancelamento incompatível com o perfil")
+            setor = request.origemCancelamento
+        motivo = f"[{setor}] {motivo}"
+        if len(motivo) > 255:
+            raise HTTPException(status_code=422, detail="Use até 240 caracteres no motivo do cancelamento")
+
+    agora = datetime.now()
+    pedido.id_status = _to_status_id(destino)
+    pedido.atualizado_em = agora
+    if destino == PedidoStatusNome.ENTREGUE:
         obs = "" if pedido.observacoes is None else pedido.observacoes.strip()
-        tag = "Pagamento: " + request.formaPagamento.strip().upper()
+        tag = "Pagamento: " + forma_pagamento.upper()
         if "Pagamento:" not in obs:
             pedido.observacoes = tag if not obs else f"{obs} | {tag}"
+        if pedido.pago_em is None:
+            pedido.pago_em = agora
+            pedido.forma_pagamento = _forma_pagamento(forma_pagamento)
 
-    db.add(PedidoStatusHistorico(id_pedido=pedido.id, status=request.status.value, registrado_em=datetime.now()))
+    db.add(
+        PedidoStatusHistorico(
+            id_pedido=pedido.id,
+            status=destino.value,
+            registrado_em=agora,
+            id_usuario=usuario.id,
+            motivo=motivo,
+        )
+    )
     db.add(pedido)
+    criticos = []
+    if destino in STATUS_COM_BAIXA_ESTOQUE:
+        criticos = sincronizar_estoque_do_pedido(db, pedido.id, pedido.itens, usuario.id, "Inicio do preparo")
     db.commit()
     response = _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
     _publicar_evento("PEDIDO_ATUALIZADO", response)
+    _publicar_estoque_baixo(criticos)
     return response
+
+
+def _autorizar_transicao(
+    pedido: Pedido,
+    origem: PedidoStatusNome,
+    destino: PedidoStatusNome,
+    perfis: frozenset[str],
+    usuario: User,
+) -> None:
+    if usuario.role in perfis:
+        return
+    # Caixa pode marcar como pronto um pedido sem nenhum item que exija preparo.
+    if (
+        origem == PedidoStatusNome.RECEBIDO
+        and destino == PedidoStatusNome.PRONTO
+        and usuario.role == Role.CAIXA
+        and not _possui_item_com_preparo(pedido)
+    ):
+        return
+    if destino == PedidoStatusNome.CANCELADO and usuario.role in (Role.FUNCIONARIO, Role.CAIXA):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cancelamento apos o inicio do preparo exige o perfil Gerente",
+        )
+    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+
+
+def _possui_item_com_preparo(pedido: Pedido) -> bool:
+    return any(
+        not item.cancelado and (item.produto.tempo_preparo is None or item.produto.tempo_preparo > 0)
+        for item in pedido.itens
+    )
+
+
+def _autorizar_criacao(request: PedidoCreateRequest, usuario: User | None, venda_caixa: bool) -> None:
+    usa_recurso_caixa = (
+        venda_caixa
+        or (request.desconto is not None and request.desconto > 0)
+        or request.clienteId is not None
+    )
+    if usuario is None:
+        if usa_recurso_caixa:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+        if request.mesaToken is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Leia o QR Code da mesa para fazer o pedido",
+            )
+        return
+    if usuario.role not in PERFIS_CRIAM_PEDIDO:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+    if usa_recurso_caixa and usuario.role not in PERFIS_RECURSOS_CAIXA:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+
+
+def _validar_desconto(request: PedidoCreateRequest, usuario: User | None, subtotal: Decimal, venda_caixa: bool) -> None:
+    if request.desconto is None or request.desconto == 0:
+        return
+    if request.desconto < 0:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Desconto nao pode ser negativo")
+    if not venda_caixa:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Desconto so pode ser aplicado em venda no caixa",
+        )
+    if request.desconto > subtotal:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Desconto nao pode ser maior que o subtotal",
+        )
+    if usuario is not None and usuario.role == Role.CAIXA:
+        limite = subtotal * LIMITE_DESCONTO_PERCENTUAL / Decimal("100")
+        if request.desconto > limite:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Desconto acima do limite de 10% exige o perfil Gerente",
+            )
 
 
 def _validar_criacao(request: PedidoCreateRequest, venda_caixa: bool) -> None:
@@ -153,13 +503,28 @@ def _validar_criacao(request: PedidoCreateRequest, venda_caixa: bool) -> None:
         if request.formaPagamento is None or not request.formaPagamento.strip():
             raise HTTPException(status_code=400, detail="Forma de pagamento obrigatoria para venda no caixa.")
         return
-    if request.mesaId is None and request.numeroMesa is None:
+    if request.mesaId is None and request.numeroMesa is None and request.mesaToken is None:
         raise HTTPException(status_code=400, detail="Mesa obrigatoria para pedidos de salao.")
 
 
-def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool) -> Mesa | None:
+def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool, anonimo: bool) -> Mesa | None:
     if venda_caixa:
         return None
+    if request.mesaToken is not None:
+        mesa = db.scalar(select(Mesa).where(Mesa.qr_code_token == request.mesaToken, Mesa.ativo.is_(True)))
+        if mesa is None:
+            codigo = status.HTTP_403_FORBIDDEN if anonimo else status.HTTP_404_NOT_FOUND
+            raise HTTPException(status_code=codigo, detail="QR Code de mesa invalido ou inativo.")
+        if (request.mesaId is not None and request.mesaId != mesa.id) or (
+            request.numeroMesa is not None and request.numeroMesa != mesa.numero
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A mesa informada nao corresponde ao QR Code.")
+        if anonimo and mesa.status != MESA_STATUS_ACEITA_QR:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esta mesa não está aberta para pedidos. Chame o atendente.",
+            )
+        return mesa
     if request.mesaId is not None:
         mesa = db.get(Mesa, request.mesaId)
         if mesa is None:
@@ -171,10 +536,49 @@ def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool)
     return mesa
 
 
-def _criar_item(db: Session, pedido: Pedido, produto_id: int, quantidade: int) -> PedidoItem:
-    produto = db.get(Produto, produto_id)
-    if produto is None:
-        raise HTTPException(status_code=404, detail=f"Produto nao encontrado: {produto_id}")
+def _resolver_cliente(db: Session, cliente_id: int | None) -> Cliente | None:
+    if cliente_id is None:
+        return None
+    cliente = db.get(Cliente, cliente_id)
+    if cliente is None or not cliente.ativo:
+        raise HTTPException(status_code=404, detail=f"Cliente nao encontrado ou inativo: {cliente_id}")
+    return cliente
+
+
+def _resolver_produtos(db: Session, request: PedidoCreateRequest | PedidoEditRequest) -> dict[int, Produto]:
+    produtos: dict[int, Produto] = {}
+    for item in request.itens:
+        if item.produtoId in produtos:
+            continue
+        produto = db.get(Produto, item.produtoId)
+        if produto is None:
+            raise HTTPException(status_code=404, detail=f"Produto nao encontrado: {item.produtoId}")
+        if not produto.ativo:
+            raise HTTPException(status_code=400, detail=f"Produto indisponivel: {produto.nome}")
+        produtos[item.produtoId] = produto
+    return produtos
+
+
+def _parse_uuid(valor: str | None) -> UUID | None:
+    if not valor:
+        return None
+    try:
+        return UUID(valor)
+    except ValueError:
+        return None
+
+
+def _forma_pagamento(valor: str | None) -> str | None:
+    return None if valor is None else valor.strip().upper()[:30]
+
+
+def _texto_ou_none(valor: str | None) -> str | None:
+    if valor is None or not valor.strip():
+        return None
+    return valor.strip()
+
+
+def _criar_item(pedido: Pedido, produto: Produto, quantidade: int) -> PedidoItem:
     quantidade_decimal = Decimal(quantidade)
     return PedidoItem(
         id_pedido=pedido.id,
@@ -189,6 +593,7 @@ def _criar_item(db: Session, pedido: Pedido, produto_id: int, quantidade: int) -
 def _get_pedido_with_itens(db: Session, pedido_id: int) -> Pedido:
     pedido = db.scalars(
         select(Pedido)
+        .options(selectinload(Pedido.historico))
         .options(joinedload(Pedido.itens).joinedload(PedidoItem.produto))
         .where(Pedido.id == pedido_id)
     ).unique().first()
@@ -267,12 +672,26 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
         }
         for item in pedido.itens
     ]
+    cancelamento = max((h for h in pedido.historico if h.status == "CANCELADO"), key=lambda h: (h.registrado_em, h.id), default=None)
+    entrega = max((h for h in pedido.historico if h.status == "ENTREGUE"), key=lambda h: (h.registrado_em, h.id), default=None)
+    motivo = cancelamento.motivo if cancelamento else None
+    setor = None
+    if motivo and motivo.startswith("[") and "] " in motivo:
+        setor, motivo = motivo[1:].split("] ", 1)
     return PedidoResponse(
+        numeroPedido=pedido.numero_pedido,
+        canceladoEm=cancelamento.registrado_em if cancelamento else None,
+        entregueEm=entrega.registrado_em if entrega else None,
+        motivoCancelamento=motivo,
+        origemCancelamento=setor,
         id=pedido.id,
         numeroMesa=_numero_mesa(pedido.id_mesa, mesas),
+        clienteId=pedido.id_cliente,
+        clienteNome=pedido.cliente.nome if pedido.cliente else None,
         origem="CAIXA" if pedido.id_mesa is None else "MESA",
         status=_to_status(pedido.id_status),
         dataHora=pedido.data_hora,
+        atualizadoEm=pedido.atualizado_em,
         valorTotal=float(pedido.valor_total),
         observacoes=pedido.observacoes,
         itens=itens,
@@ -280,4 +699,10 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
 
 
 def _publicar_evento(tipo: str, pedido: PedidoResponse) -> None:
-    anyio.from_thread.run(manager.broadcast, {"type": tipo, "pedido": pedido.model_dump(mode="json")})
+    payload = {"type": tipo, "pedido": pedido.model_dump(mode="json", exclude={"tokenAcesso"})}
+    anyio.from_thread.run(manager.broadcast, payload)
+
+
+def _publicar_estoque_baixo(insumos: list[dict]) -> None:
+    if insumos:
+        anyio.from_thread.run(manager.broadcast, {"type": "ESTOQUE_BAIXO", "insumos": insumos})
