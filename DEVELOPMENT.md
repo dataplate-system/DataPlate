@@ -158,6 +158,8 @@ Revise o `UPDATE` do CPF `00000000002` antes de rodar fora do ambiente de desenv
 
 A migracao `011_fichas_tecnicas_demo.sql` (idempotente) cria fichas tecnicas para os produtos de demonstracao que nao tinham. A migracao `010_pagamento_e_estoque.sql` (idempotente) cria `pedido.pago_em`, `pedido.forma_pagamento` e a tabela `estoque_movimento`. Os pedidos antigos entregues, ou de balcao com pagamento marcado, ficam registrados como pagos. O Docker Compose ja a executa na inicializacao.
 
+A migracao `012_turno_caixa.sql` (idempotente) cria a tabela `turno_caixa` (abertura e fechamento de caixa por turno) e o indice unico que impede dois turnos abertos ao mesmo tempo. O Docker Compose ja a executa na inicializacao; em bancos existentes, aplique-a manualmente como as anteriores.
+
 Para recriar o banco local do zero:
 
 ```powershell
@@ -227,7 +229,8 @@ Regras completas em `docs/Requisitos/RegrasNegocioAcessos.md`.
 - Status de pedido: maquina de estados em `routers/pedidos.py` (`TRANSICOES_STATUS`). Cancelamento exige `motivo`; `ENTREGUE` (pago) exige `formaPagamento`.
 - Mesas: cadastro via `PUT /api/mesas/{id}` (Gerente); status via `PATCH /api/mesas/{id}/status`; reserva via `PATCH /api/mesas/{id}/reserva`.
 - Fluxo do cliente (`user.html`): a mesa vem so do QR Code (`?mesaToken=`). `POST /api/pedidos` envia `mesaToken` e devolve `tokenAcesso`; o acompanhamento usa `GET /api/pedidos/{id}?token=<tokenAcesso>`. Sem `mesaToken` valido, o pedido anonimo recebe 403.
-- Abertura da mesa: o pedido anonimo so e aceito com a mesa em `ocupada`, status definido pela equipe ("Abrir mesa" no atendente) ou por um pedido lancado por ela; caso contrario, 409. Com a mesa fechada, o cardapio continua visivel e `user.html` mostra um aviso. Fechar a conta libera a mesa e volta a bloquear. O QR Code impresso e fixo: uma foto dele ainda funciona enquanto a mesa estiver aberta, por isso ha tambem o limite de 20 pedidos anonimos por mesa a cada 10 minutos (429).
+- Abertura da mesa: o primeiro pedido pelo QR Code pode iniciar em mesa `livre` e a abre na mesma transacao, sem exigir chamado ao atendente. Mesas `reservada`, `manutencao` ou `aguardando_pagamento` recusam pedido (409); a equipe tambem pode abrir a mesa pelo painel. A abertura so e persistida quando o pedido e valido. Fechar a conta libera a mesa. O QR Code impresso e fixo, por isso ha tambem o limite de 20 pedidos anonimos por mesa a cada 10 minutos (429).
+- Chamados pelo QR Code: `POST /api/chamados/mesa?token=<mesaToken>` aceita `ATENDENTE`, `CONTA` e `AGUA` somente enquanto a mesa estiver `ocupada`; um chamado aberto do mesmo tipo ou um novo chamado do mesmo tipo antes de 2 minutos e recusado. `GET /api/chamados/mesa?token=...` informa os chamados ainda abertos para liberar os botoes no cliente. Atendente e Gerente consultam `GET /api/chamados` e atendem via `PATCH /api/chamados/{id}/atender`. Chamados sao publicados no WebSocket da equipe e encerrados automaticamente ao fechar a mesa.
 - Frontend: a sessao guarda `backendRole`; cada tela confere o perfil ao carregar e redireciona para a tela inicial do perfil. Perfil desconhecido nao entra. Ocultar menus e so usabilidade: a autorizacao real e do backend.
 
 ## WebSocket
@@ -250,6 +253,8 @@ Eventos publicados:
 { "type": "PEDIDO_ATUALIZADO", "pedido": {} }
 { "type": "VENDA_CAIXA", "pedido": {} }
 { "type": "ESTOQUE_BAIXO", "insumos": [] }
+{ "type": "CHAMADO_MESA", "chamado": {} }
+{ "type": "CHAMADO_ATENDIDO", "chamado": {} }
 ```
 
 `ESTOQUE_BAIXO` e enviado somente a equipe, quando um insumo atinge o estoque minimo.
@@ -259,7 +264,19 @@ Eventos publicados:
 - `GET /api/relatorios/bcg`: Matriz BCG com dados internos, no lugar dos dados de mercado. Compara o periodo com o anterior de mesma duracao. Participacao alta: igual ou maior que a media por item ativo no faturamento; crescimento: faturar mais que no periodo anterior. Produto novo com vendas conta como crescimento. A tela mostra Em alta (Estrela), Garantido (Vaca Leiteira), Promissor (Interrogacao) e Em queda (Abacaxi).
 - `GET /api/relatorios/vendas` e `/resumo`: `faturamento` (lancado) = `faturamentoRecebido` + `faturamentoEmAberto`; `valorCancelado` fica fora do total. Recebido e pedido com `pago_em` ou entregue.
 - `GET /api/relatorios/cardapio`: sem ficha tecnica, `lucro` e `null`, pois o custo e desconhecido.
+- `GET /api/clientes/{id}/resumo` (somente Gerente): perfil do cliente com total de pedidos, total gasto, ticket medio, prato mais pedido, primeira e ultima compra, gasto por mes nos ultimos 6 meses e os ultimos 10 pedidos. Pedidos cancelados ficam fora. `clienteFrequente` e verdadeiro com 5 pedidos ou mais nos ultimos 30 dias. Tela: Cadastros > Clientes > "Ver perfil".
 - Estoque (`app/estoque.py`): a baixa ocorre ao sair da fila (em preparo ou pronto) ou na venda de caixa entregue na hora. Editar um pedido ja baixado ajusta so a diferenca. Cancelar antes do preparo nao movimenta; depois do preparo a baixa e mantida, pois o insumo ja foi usado. O saldo pode ficar negativo, para nao travar a cozinha. Movimentacoes em `GET /api/insumos/movimentos`.
+
+## Caixa por turno
+
+Rotas em `routers/caixa.py` (tabela `turno_caixa`, migracao 012):
+
+- `GET /api/caixa/turnos/atual` (Caixa, Gerente): turno aberto com os totais recebidos desde a abertura, ou `null` com o caixa fechado.
+- `POST /api/caixa/turnos` (Caixa, Gerente): abre o turno com `valorInicial` (dinheiro na gaveta). Com outro turno aberto: 409.
+- `PUT /api/caixa/turnos/{id}/fechar` (Caixa, Gerente): fecha com `valorContado`; grava os totais por forma de pagamento (PIX, debito, credito, dinheiro e outros) somando os pedidos nao cancelados com `pago_em` entre a abertura e o fechamento. `valorEsperadoDinheiro` = valor inicial + vendas em dinheiro; `diferenca` = contado - esperado (negativo: falta; positivo: sobra).
+- `GET /api/caixa/turnos` (somente Gerente): turnos fechados, do mais recente ao mais antigo. Aparecem em Operacoes > Pagamentos > "Turnos de caixa".
+
+No `pdv.html`, sem turno aberto a tela pede a abertura e nao registra venda nem fechamento de conta. "Fechar caixa" mostra os cards por forma de pagamento, o grafico de pizza, o dinheiro esperado, o campo do valor contado e a diferenca. A API continua aceitando pedidos sem turno aberto (cliente pelo QR Code, atendente e integracoes).
 
 ## O Que Nao Fazer
 

@@ -26,15 +26,35 @@ class MesaQrTest(TesteComBanco):
     def pedidos_da_mesa(self, mesa):
         return self.db.scalar(select(func.count(Pedido.id)).where(Pedido.id_mesa == mesa.id))
 
-    def test_qr_de_mesa_fechada_nao_gera_pedido(self):
-        for status in ("livre", "reservada", "manutencao", "aguardando_pagamento"):
+    def test_qr_de_mesa_indisponivel_nao_gera_pedido(self):
+        for status in ("reservada", "manutencao", "aguardando_pagamento"):
             mesa = self.criar_mesa(status)
             resposta = self.pedir(mesa)
             self.assertEqual(resposta.status_code, 409, status)
-            self.assertIn("não está aberta", resposta.json()["detail"])
+            self.assertIn("não está disponível", resposta.json()["detail"])
             self.assertEqual(self.pedidos_da_mesa(mesa), 0)
             self.db.refresh(mesa)
             self.assertEqual(mesa.status, status)
+
+    def test_primeiro_pedido_pelo_qr_abre_mesa_livre_sem_chamar_atendente(self):
+        mesa = self.criar_mesa("livre")
+
+        resposta = self.pedir(mesa)
+
+        self.assertEqual(resposta.status_code, 201, resposta.text)
+        self.assertEqual(self.pedidos_da_mesa(mesa), 1)
+        self.db.refresh(mesa)
+        self.assertEqual(mesa.status, "ocupada")
+
+    def test_pedido_invalido_nao_abre_mesa_livre(self):
+        mesa = self.criar_mesa("livre")
+        resposta = self.client.post("/api/pedidos", json={
+            "mesaToken": str(mesa.qr_code_token), "itens": [{"produtoId": 999999999, "quantidade": 1}],
+        })
+
+        self.assertEqual(resposta.status_code, 404)
+        self.db.refresh(mesa)
+        self.assertEqual(mesa.status, "livre")
 
     def test_qr_de_mesa_aberta_gera_pedido(self):
         mesa = self.criar_mesa("ocupada")
@@ -65,6 +85,7 @@ class MesaQrTest(TesteComBanco):
             corpo = self.client.get(f"/api/mesas/por-token/{mesa.qr_code_token}").json()
             self.assertEqual(corpo["aberta"], aberta)
             self.assertEqual(corpo["numero"], mesa.numero)
+            self.assertEqual(corpo["status"], status)
 
     def test_limita_pedidos_repetidos_da_mesma_mesa(self):
         mesa = self.criar_mesa("ocupada")

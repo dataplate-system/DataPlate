@@ -28,6 +28,11 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
+    // Teste de layout: simula um turno de caixa aberto para a tela nao pedir a abertura.
+    await page.route('**/api/caixa/turnos/atual', route => route.fulfill({ json: {
+      id: 1, aberto: true, abertoEm: new Date().toISOString(), valorInicial: 100, valorEsperadoDinheiro: 100,
+      totais: { pix: 0, debito: 0, credito: 0, dinheiro: 0, outros: 0, totalVendas: 0, quantidadeVendas: 0 }
+    } }));
     await page.goto(`${base}/pages/pdv.html`);
     await page.locator('.produto-card').first().waitFor();
     // As fotos tem carregamento preguicoso: so as que estao na tela precisam ter carregado.

@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import BigInteger, Boolean, Column, Computed, DateTime, Enum, ForeignKey, Integer, Numeric, SmallInteger, String, Table, Text, Uuid, text
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Column, Computed, DateTime, Enum, ForeignKey, Index, Integer, Numeric, SmallInteger, String, Table, Text, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -124,6 +124,33 @@ class Mesa(Base):
         server_default=text("gen_random_uuid()"),
     )
     ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class ChamadoMesa(Base):
+    __tablename__ = "chamado_mesa"
+    __table_args__ = (
+        CheckConstraint("tipo IN ('ATENDENTE', 'CONTA', 'AGUA')", name="ck_chamado_mesa_tipo"),
+        Index(
+            "uq_chamado_mesa_aberto_tipo",
+            "id_mesa",
+            "tipo",
+            unique=True,
+            postgresql_where=text("atendido_em IS NULL"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column("id_chamado_mesa", BigInteger, primary_key=True, autoincrement=True)
+    id_mesa: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("mesa.id_mesa", ondelete="CASCADE"),
+        nullable=False,
+    )
+    tipo: Mapped[str] = mapped_column(String(20), nullable=False)
+    criado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    atendido_em: Mapped[datetime | None] = mapped_column(DateTime)
+    atendido_por: Mapped[int | None] = mapped_column(
+        ForeignKey("usuarios.id", ondelete="SET NULL"),
+    )
 
 
 class Cliente(Base):
@@ -252,6 +279,16 @@ class PedidoStatusHistorico(Base):
     motivo: Mapped[str | None] = mapped_column(String(255))
 
 
+class PedidoAvaliacao(Base):
+    __tablename__ = "pedido_avaliacao"
+
+    id: Mapped[int] = mapped_column("id_pedido_avaliacao", BigInteger, primary_key=True, autoincrement=True)
+    id_pedido: Mapped[int] = mapped_column(BigInteger, ForeignKey("pedido.id_pedido", ondelete="CASCADE"), unique=True, nullable=False)
+    nota: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    comentario: Mapped[str | None] = mapped_column(String(300))
+    avaliado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+
+
 class EstoqueMovimento(Base):
     __tablename__ = "estoque_movimento"
 
@@ -280,3 +317,28 @@ class ProdutoInsumo(Base):
 
     produto: Mapped[Produto] = relationship()
     insumo: Mapped[Insumo] = relationship()
+
+
+class TurnoCaixa(Base):
+    """Turno do caixa: abertura com o valor inicial em dinheiro e fechamento com a conferencia da gaveta."""
+
+    __tablename__ = "turno_caixa"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    aberto_por: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
+    aberto_em: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now)
+    valor_inicial: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=Decimal("0"))
+    fechado_por: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
+    fechado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    valor_contado: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    # Totais do turno gravados no fechamento (pedido.pago_em e pedido.forma_pagamento).
+    total_pix: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_debito: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_credito: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_dinheiro: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    total_outros: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    quantidade_vendas: Mapped[int | None] = mapped_column(Integer)
+    observacao: Mapped[str | None] = mapped_column(String(255))
+
+    usuario_abertura: Mapped[User | None] = relationship(foreign_keys="TurnoCaixa.aberto_por")
+    usuario_fechamento: Mapped[User | None] = relationship(foreign_keys="TurnoCaixa.fechado_por")

@@ -15,13 +15,16 @@ const AUTO_REFRESH_MS   = 15000;
 
 let allOrders    = [];
 let allMesas     = [];
+let allChamados  = [];
 let wsRetryDelay = 1000;
 let wsTimer = null;
 let ws = null;
 let refreshTimer = null;
 let wsLoadTimer  = null;
+let chamadoAudioContext = null;
 let _lastOrdersHash = '';
 let _lastMesasHash  = '';
+let _lastChamadosHash = '';
 let mesaStatusFilter = '';
 
 function observacoesOperacionais(value) {
@@ -249,9 +252,10 @@ function buildMesaCard(mesa) {
   const total    = pedidos.reduce((s, p) => s + Number(p.valorTotal || 0), 0);
   const temPronto = pedidos.some(p => p.status === 'PRONTO');
   const temAtivo  = pedidos.length > 0;
+  const chamados = allChamados.filter(c => c.mesaId === mesa.id);
 
   return `
-    <article class="mesa-card status-${st}" onclick="abrirMesa(${mesa.numero})">
+    <article class="mesa-card status-${st}${chamados.length ? ' has-open-call' : ''}" onclick="abrirMesa(${mesa.numero})">
       <div class="mesa-top">
         <div>
           <span class="mesa-label">Mesa</span>
@@ -261,6 +265,7 @@ function buildMesaCard(mesa) {
       </div>
       <div class="mesa-meta">
         <span class="mesa-location">${esc(mesa.localizacao || 'Salão principal')}</span>
+        ${chamados.length ? `<span class="mesa-chamado-hint">Chamado: ${chamados.map(c => esc(rotuloChamado(c.tipo))).join(', ')}</span>` : ''}
         ${temAtivo
           ? `<span>${pedidos.length} pedido(s) ativo(s)</span>
              ${temPronto ? '<span class="mesa-pronto-hint">Pronto p/ despacho</span>' : ''}
@@ -314,9 +319,11 @@ function buildMesaStatusSummary(mesas) {
 function render() {
   const ordersHash = JSON.stringify(allOrders) + Math.floor(Date.now() / 60000);
   const mesasHash  = JSON.stringify(allMesas) + mesaStatusFilter;
-  if (ordersHash === _lastOrdersHash && mesasHash === _lastMesasHash) return;
+  const chamadosHash = JSON.stringify(allChamados) + Math.floor(Date.now() / 60000);
+  if (ordersHash === _lastOrdersHash && mesasHash === _lastMesasHash && chamadosHash === _lastChamadosHash) return;
   _lastOrdersHash = ordersHash;
   _lastMesasHash  = mesasHash;
+  _lastChamadosHash = chamadosHash;
 
   const recebidos = allOrders.filter(p => p.status === 'RECEBIDO');
   const preparo   = allOrders.filter(p => p.status === 'EM_PREPARO');
@@ -329,9 +336,15 @@ function render() {
   setText('statPreparo',  preparo.length);
   setText('statPronto',   prontos.length);
   setText('statMesas',    mesasOcup.length);
+  setText('statChamados', allChamados.length);
   setText('countRecebido', recebidos.length);
   setText('countPreparo',  preparo.length);
   setText('countPronto',   prontos.length);
+  setText('countChamados', allChamados.length);
+  setText('chamadosResumo', allChamados.length
+    ? `${allChamados.length} chamado(s) aguardando`
+    : 'Nenhum chamado em aberto');
+  setList('chamadosGrid', allChamados, buildChamadoCard, 'Nenhum chamado aguardando atendimento');
 
   // A espera termina ao servir; conta em aberto nao representa espera da cozinha.
   const ativos = [...recebidos, ...preparo, ...prontos];
@@ -380,6 +393,26 @@ function render() {
   const statusSummary = document.getElementById('mesaStatusSummary');
   if (statusSummary) statusSummary.innerHTML = buildMesaStatusSummary(allMesas);
   setText('mesasResumo', `${mesasOcup.length} ocupada(s) / ${allMesas.length} total`);
+}
+
+function rotuloChamado(tipo) {
+  return {
+    ATENDENTE: 'Atendente',
+    CONTA: 'Conta',
+    AGUA: 'Água'
+  }[tipo] || tipo;
+}
+
+function buildChamadoCard(chamado) {
+  return `
+    <article class="chamado-card">
+      <div>
+        <span class="chamado-tipo">${esc(rotuloChamado(chamado.tipo))}</span>
+        <strong>Mesa ${esc(chamado.numeroMesa)}</strong>
+        <span class="chamado-espera">Aguardando há ${elapsedMin(chamado.criadoEm)} min · ${formatTime(chamado.criadoEm)}</span>
+      </div>
+      <button type="button" class="chamado-atender" onclick="atenderChamado(${Number(chamado.id)})">Atender</button>
+    </article>`;
 }
 
 function setText(id, val) {
@@ -753,13 +786,15 @@ window.fecharMesaModal = function() {
 // ── Carregar dados ────────────────────────────────────────────────
 async function loadData({ silent = false } = {}) {
   try {
-    const [ordersRaw, mesasRaw] = await Promise.all([
+    const [ordersRaw, mesasRaw, chamadosRaw] = await Promise.all([
       getJson('/pedidos/ativos'),
-      getJson('/mesas')
+      getJson('/mesas'),
+      getJson('/chamados')
     ]);
     const list = Array.isArray(ordersRaw) ? ordersRaw : [];
     allOrders = list.map(o => ({ ...o, status: String(o.status || '').toUpperCase() }));
     allMesas  = (mesasRaw || []).filter(m => m.ativo !== false).sort((a, b) => a.numero - b.numero);
+    allChamados = Array.isArray(chamadosRaw) ? chamadosRaw : [];
   } catch (err) {
     console.error('[atendente]', err);
   }
@@ -789,6 +824,14 @@ function connectWS() {
         if (['NOVO_PEDIDO','PEDIDO_ATUALIZADO','VENDA_CAIXA'].includes(p?.type)) {
           window.clearTimeout(wsLoadTimer);
           wsLoadTimer = window.setTimeout(() => loadData({ silent: true }), 300);
+        } else if (['CHAMADO_MESA', 'CHAMADO_ATENDIDO'].includes(p?.type)) {
+          if (p.type === 'CHAMADO_MESA' && p.chamado
+            && !allChamados.some(chamado => chamado.id === p.chamado.id)) {
+            tocarAlertaChamado();
+            showToast(`Novo chamado: Mesa ${p.chamado.numeroMesa} · ${rotuloChamado(p.chamado.tipo)}`, 'warning');
+          }
+          window.clearTimeout(wsLoadTimer);
+          wsLoadTimer = window.setTimeout(() => loadData({ silent: true }), 150);
         }
       } catch (_) {}
     });
@@ -805,6 +848,50 @@ function connectWS() {
     wsTimer = window.setTimeout(connectWS, wsRetryDelay);
   }
 }
+
+async function tocarAlertaChamado() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    chamadoAudioContext ||= new AudioContextClass();
+    if (chamadoAudioContext.state === 'suspended') await chamadoAudioContext.resume();
+    [0, 0.18].forEach((atraso, indice) => {
+      const oscilador = chamadoAudioContext.createOscillator();
+      const volume = chamadoAudioContext.createGain();
+      oscilador.frequency.value = indice ? 880 : 660;
+      volume.gain.setValueAtTime(0.0001, chamadoAudioContext.currentTime + atraso);
+      volume.gain.exponentialRampToValueAtTime(0.18, chamadoAudioContext.currentTime + atraso + 0.02);
+      volume.gain.exponentialRampToValueAtTime(0.0001, chamadoAudioContext.currentTime + atraso + 0.14);
+      oscilador.connect(volume);
+      volume.connect(chamadoAudioContext.destination);
+      oscilador.start(chamadoAudioContext.currentTime + atraso);
+      oscilador.stop(chamadoAudioContext.currentTime + atraso + 0.15);
+    });
+  } catch (error) {
+    console.error('Não foi possível reproduzir o alerta sonoro do chamado:', error);
+  }
+}
+
+function habilitarAlertaSonoro() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  chamadoAudioContext ||= new AudioContextClass();
+  if (chamadoAudioContext.state === 'suspended') {
+    chamadoAudioContext.resume().catch((error) => {
+      console.error('Não foi possível habilitar o alerta sonoro do chamado:', error);
+    });
+  }
+}
+
+window.atenderChamado = async function(chamadoId) {
+  try {
+    await patchJson(`/chamados/${encodeURIComponent(chamadoId)}/atender`, {});
+    showToast('Chamado atendido. O cliente já pode solicitar novamente.', 'success');
+    await loadData({ silent: true });
+  } catch (error) {
+    showToast(error.message || 'Não foi possível atender o chamado.', 'error');
+  }
+};
 
 // ── Cardápio / Novo Pedido ────────────────────────────────────────
 let npMesaAtual = null;
@@ -964,6 +1051,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('logoutButton').addEventListener('click', logout);
+  window.addEventListener('pointerdown', habilitarAlertaSonoro, { once: true });
+  window.addEventListener('keydown', habilitarAlertaSonoro, { once: true });
   document.getElementById('mesaStatusSummary').addEventListener('click', event => {
     const button = event.target.closest('[data-mesa-filter]');
     if (!button) return;

@@ -45,6 +45,7 @@ if (pedidoAtivoId && !pedidoAtivoToken) {
 }
 let pedidoStatusTimer = null;
 let pedidoStatusSocket = null;
+let notaSelecionadaAvaliacao = 0;
 
 let categoriaAtual = "todos";
 
@@ -79,7 +80,6 @@ function formatarPreco(valor) {
 }
 
 const MENSAGEM_LER_QR = "Leia o QR Code da mesa para fazer o pedido";
-const MENSAGEM_MESA_FECHADA = "Esta mesa não está aberta para pedidos. Chame o atendente.";
 const INTERVALO_MESA_FECHADA_MS = 15000;
 
 // A mesa do cliente vem exclusivamente do token do QR Code (RN-AC36)
@@ -90,6 +90,13 @@ localStorage.removeItem("numeroMesa");
 const mesaQrToken = (new URLSearchParams(window.location.search).get('mesaToken') || '').trim() || null;
 let mesaQrResolucaoFalhou = false;
 let timerMesaFechada = null;
+let timerChamadosMesa = null;
+let chamadosAbertosMesa = new Map();
+const TIPOS_CHAMADO_MESA = {
+  ATENDENTE: "Chamar atendente",
+  CONTA: "Pedir a conta",
+  AGUA: "Pedir água",
+};
 
 async function consultarMesaQr() {
   const response = await fetch(`${API_BASE_URL}/mesas/por-token/${encodeURIComponent(mesaQrToken)}`);
@@ -99,24 +106,50 @@ async function consultarMesaQr() {
   }
   const mesaId = Number(body?.mesaId);
   const numero = Number(body?.numero);
+  const status = String(body?.status || (body?.aberta === true ? "ocupada" : "desconhecido")).trim().toLowerCase();
   if (!(mesaId > 0) || !(numero > 0)) {
     throw new Error('A resposta da mesa vinculada ao QR Code é inválida.');
   }
-  return { mesaId, numeroMesa: numero, aberta: body?.aberta === true };
+  return { mesaId, numeroMesa: numero, status, aberta: body?.aberta === true };
 }
 
-// O cardapio continua visivel; enquanto a mesa estiver fechada, o aviso acompanha a liberacao.
+// O primeiro pedido abre a mesa livre; os chamados ficam disponiveis depois.
 function atualizarAvisoMesaFechada() {
   const aberta = mesaQrContext?.aberta === true;
   const aviso = document.getElementById("avisoMesaFechada");
   if (aviso) aviso.hidden = aberta;
-  if (aberta) {
-    window.clearInterval(timerMesaFechada);
-    timerMesaFechada = null;
-  } else if (!timerMesaFechada) {
+  const tituloAviso = document.getElementById("avisoMesaTitulo");
+  const descricaoAviso = document.getElementById("avisoMesaDescricao");
+  if (mesaQrContext && !aberta) {
+    const mesaLivre = mesaQrContext.status === "livre";
+    const statusDesconhecido = mesaQrContext.status === "desconhecido";
+    if (tituloAviso) {
+      tituloAviso.textContent = mesaLivre ? "Mesa livre" : statusDesconhecido ? "Mesa identificada" : "Mesa indisponível";
+    }
+    if (descricaoAviso) {
+      descricaoAviso.textContent = mesaLivre
+        ? "Faça seu primeiro pedido para abrir a mesa. Chamar o atendente é opcional."
+        : statusDesconhecido
+          ? "Mesas livres são abertas no primeiro pedido. Se esta mesa estiver indisponível, o sistema avisará."
+          : "Esta mesa não está disponível para pedidos. Fale com a equipe.";
+    }
+  }
+  atualizarControlesChamadosMesa();
+  if (!timerMesaFechada) {
     timerMesaFechada = window.setInterval(() => {
       mesaAbertaParaPedidos();
     }, INTERVALO_MESA_FECHADA_MS);
+  }
+  if (aberta) {
+    if (!timerChamadosMesa) {
+      carregarChamadosMesa();
+      timerChamadosMesa = window.setInterval(carregarChamadosMesa, 3000);
+    }
+  } else {
+    window.clearInterval(timerChamadosMesa);
+    timerChamadosMesa = null;
+    chamadosAbertosMesa.clear();
+    atualizarControlesChamadosMesa();
   }
 }
 
@@ -126,6 +159,10 @@ async function mesaAbertaParaPedidos() {
     atualizarAvisoMesaFechada();
   } catch (error) {
     console.error('Erro ao consultar a mesa do QR Code:', error);
+    if (mesaQrContext) {
+      mesaQrContext.aberta = false;
+      atualizarAvisoMesaFechada();
+    }
   }
   return mesaQrContext?.aberta === true;
 }
@@ -145,6 +182,71 @@ const mesaQrPronto = mesaQrToken
 
 function mesaQrValida() {
   return Boolean(mesaQrToken && mesaQrContext && !mesaQrResolucaoFalhou);
+}
+
+function atualizarControlesChamadosMesa() {
+  const secao = document.getElementById("chamadosMesa");
+  if (!secao) return;
+  const aberta = mesaQrValida() && mesaQrContext.aberta;
+  secao.hidden = !aberta;
+  secao.querySelectorAll("[data-tipo-chamado]").forEach((botao) => {
+    const tipo = botao.dataset.tipoChamado;
+    const aberto = chamadosAbertosMesa.has(tipo);
+    botao.disabled = aberto || botao.dataset.enviando === "true";
+    botao.textContent = aberto ? "Chamado aberto" : TIPOS_CHAMADO_MESA[tipo];
+  });
+  const mensagem = document.getElementById("chamadosMesaMensagem");
+  if (mensagem) {
+    const ativos = [...chamadosAbertosMesa.keys()].map((tipo) => TIPOS_CHAMADO_MESA[tipo]);
+    mensagem.textContent = ativos.length
+      ? `A equipe foi avisada: ${ativos.join(", ")}.`
+      : "A equipe será avisada.";
+  }
+}
+
+async function carregarChamadosMesa() {
+  if (!mesaQrValida() || !mesaQrContext.aberta) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/chamados/mesa?token=${encodeURIComponent(mesaQrToken)}`);
+    const body = await readResponseBody(response);
+    if (!response.ok) throw new Error(extractErrorMessage(body, "Não foi possível atualizar os chamados."));
+    chamadosAbertosMesa = new Map((body || []).map((chamado) => [chamado.tipo, chamado]));
+    atualizarControlesChamadosMesa();
+  } catch (error) {
+    console.error("Erro ao consultar chamados da mesa:", error);
+  }
+}
+
+async function enviarChamadoMesa(botao) {
+  const tipo = botao.dataset.tipoChamado;
+  if (!mesaQrValida() || !mesaQrContext.aberta) {
+    mostrarNotificacao("aviso", "Mesa fechada", "Os chamados ficam disponíveis somente com a mesa aberta.");
+    return;
+  }
+  botao.dataset.enviando = "true";
+  botao.disabled = true;
+  botao.textContent = "Enviando...";
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/chamados/mesa?token=${encodeURIComponent(mesaQrToken)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo }),
+      }
+    );
+    const body = await readResponseBody(response);
+    if (!response.ok) throw new Error(extractErrorMessage(body, "Não foi possível enviar o chamado."));
+    chamadosAbertosMesa.set(tipo, body);
+    atualizarControlesChamadosMesa();
+    mostrarNotificacao("sucesso", TIPOS_CHAMADO_MESA[tipo], "O atendente foi avisado.");
+  } catch (error) {
+    mostrarNotificacao("erro", "Chamado não enviado", error.message || "Tente novamente.");
+    await carregarChamadosMesa();
+  } finally {
+    delete botao.dataset.enviando;
+    atualizarControlesChamadosMesa();
+  }
 }
 
 function avisarMesaSemQr() {
@@ -564,11 +666,6 @@ async function confirmarPedido() {
     avisarMesaSemQr();
     return;
   }
-  if (!(await mesaAbertaParaPedidos())) {
-    mostrarNotificacao("aviso", "Mesa não aberta", MENSAGEM_MESA_FECHADA);
-    return;
-  }
-
   atualizarResumoPagamento();
 
   document.getElementById("telaCarrinho").style.display = "none";
@@ -635,6 +732,11 @@ async function pagamentoAprovado() {
     const pedidoCriado = await response.json();
     pedidoAtivoId = String(pedidoCriado.id || "");
     pedidoAtivoToken = String(pedidoCriado.tokenAcesso || "");
+    if (mesaQrContext) {
+      mesaQrContext.status = "ocupada";
+      mesaQrContext.aberta = true;
+      atualizarAvisoMesaFechada();
+    }
     if (pedidoAtivoId) {
       localStorage.setItem("pedidoAtivoId", pedidoAtivoId);
       localStorage.setItem("pedidoAtivoToken", pedidoAtivoToken);
@@ -837,6 +939,7 @@ function aplicarStatusPedidoReal(statusPedido) {
     el.classList.toggle("ativo", i < etapa);
   });
 
+  exibirAvaliacaoSeNecessaria(status);
   definirAtualizacaoPedido("Status atualizado agora", "atualizado");
 }
 
@@ -845,6 +948,81 @@ function definirAtualizacaoPedido(mensagem, tipo = "") {
   if (!el) return;
   el.textContent = mensagem;
   el.className = `pedido-atualizacao ${tipo}`.trim();
+}
+
+function getPedidoAvaliacaoStorageKey() {
+  return pedidoAtivoId ? `pedidoAvaliacaoEnviada:${pedidoAtivoId}` : "pedidoAvaliacaoEnviada:sem-pedido";
+}
+
+function exibirAvaliacaoSeNecessaria(statusPedido) {
+  const form = document.getElementById("avaliacaoPedido");
+  const mensagem = document.getElementById("avaliacaoMensagem");
+  if (!form) return;
+
+  const status = String(statusPedido || "RECEBIDO").toUpperCase();
+  const podeAvaliar = ["SERVIDO", "ENTREGUE"].includes(status);
+  const jaAvaliado = localStorage.getItem(getPedidoAvaliacaoStorageKey()) === "true";
+
+  if (!podeAvaliar || jaAvaliado) {
+    form.style.display = "none";
+    if (mensagem) mensagem.textContent = "";
+    return;
+  }
+
+  form.style.display = "block";
+}
+
+function inicializarAvaliacaoPedido() {
+  const estrelas = document.querySelectorAll(".avaliacao-estrela");
+  const botao = document.getElementById("btnEnviarAvaliacao");
+
+  if (!botao || !estrelas.length) return;
+
+  estrelas.forEach((estrela) => {
+    estrela.addEventListener("click", () => {
+      notaSelecionadaAvaliacao = Number(estrela.dataset.nota || 0);
+      estrelas.forEach((item) => {
+        const selecionada = Number(item.dataset.nota || 0) <= notaSelecionadaAvaliacao;
+        item.style.color = selecionada ? "#fbbf24" : "#d1d5db";
+      });
+    });
+  });
+
+  botao.addEventListener("click", async () => {
+    if (!pedidoAtivoId || !pedidoAtivoToken) {
+      mostrarNotificacao("erro", "Avaliação", "Pedido não identificado.");
+      return;
+    }
+    if (!notaSelecionadaAvaliacao) {
+      mostrarNotificacao("aviso", "Avaliação", "Selecione uma nota de 1 a 5 estrelas.");
+      return;
+    }
+
+    const comentario = document.getElementById("avaliacaoComentario")?.value?.trim() || "";
+    const mensagem = document.getElementById("avaliacaoMensagem");
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/pedidos/${encodeURIComponent(pedidoAtivoId)}/avaliacao?token=${encodeURIComponent(pedidoAtivoToken)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nota: notaSelecionadaAvaliacao, comentario: comentario || null }),
+        }
+      );
+      const body = await readResponseBody(response);
+      if (!response.ok) {
+        throw new Error(extractErrorMessage(body, "Não foi possível enviar a avaliação."));
+      }
+      localStorage.setItem(getPedidoAvaliacaoStorageKey(), "true");
+      document.getElementById("avaliacaoPedido").style.display = "none";
+      if (mensagem) mensagem.textContent = "Obrigado pela avaliação!";
+      mostrarNotificacao("sucesso", "Avaliação", "Obrigado pelo feedback.");
+    } catch (error) {
+      if (mensagem) mensagem.textContent = error.message || "Não foi possível enviar a avaliação.";
+      mostrarNotificacao("erro", "Avaliação", error.message || "Não foi possível enviar a avaliação.");
+    }
+  });
 }
 
 function pararAcompanhamentoPedido() {
@@ -945,6 +1123,11 @@ window.fecharAvisoMesa = function() {
   const overlay = document.getElementById('mesaSelectorOverlay');
   if (overlay) overlay.style.display = 'none';
 };
+
+document.getElementById("chamadosMesa")?.addEventListener("click", (event) => {
+  const botao = event.target.closest("[data-tipo-chamado]");
+  if (botao) enviarChamadoMesa(botao);
+});
 
 (async function verificarMesa() {
   await mesaQrPronto;

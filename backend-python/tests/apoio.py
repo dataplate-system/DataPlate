@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app import limiter
 from app.db import engine, get_db
-from app.models import Categoria, Insumo, Mesa, Pedido, PedidoItem, Produto, ProdutoInsumo, Restaurante, Role, User
+from app.models import Categoria, Cliente, Insumo, Mesa, Pedido, PedidoItem, Produto, ProdutoInsumo, Restaurante, Role, User
 from app.security import get_usuario_atual, get_usuario_opcional, hash_password
 
 
@@ -84,11 +84,18 @@ class TesteComBanco(unittest.TestCase):
         self.db.flush()
         return usuario
 
-    def criar_pedido(self, itens, status=1, data_hora=None, mesa=None, pago_em=None):
+    def criar_cliente(self, nome="Cliente de teste"):
+        cliente = Cliente(nome=nome, cpf=f"{uuid4().int % 10**11:011d}", ativo=True, criado_em=datetime.now())
+        self.db.add(cliente)
+        self.db.flush()
+        return cliente
+
+    def criar_pedido(self, itens, status=1, data_hora=None, mesa=None, pago_em=None, forma_pagamento=None, cliente=None):
         """itens: lista de (produto, quantidade, preco)."""
         quando = data_hora or datetime.now()
-        pedido = Pedido(id_mesa=mesa.id if mesa else None, id_status=status, numero_pedido=f"QA-{uuid4().hex[:12]}",
-                        data_hora=quando, atualizado_em=quando, pago_em=pago_em,
+        pedido = Pedido(id_mesa=mesa.id if mesa else None, id_cliente=cliente.id if cliente else None, id_status=status,
+                        numero_pedido=f"QA-{uuid4().hex[:12]}", data_hora=quando, atualizado_em=quando,
+                        pago_em=pago_em, forma_pagamento=forma_pagamento,
                         valor_total=sum((Decimal(q) * Decimal(p) for _, q, p in itens), Decimal("0")))
         self.db.add(pedido)
         self.db.flush()

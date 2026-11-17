@@ -14,10 +14,18 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.db import get_db
 from app.estoque import sincronizar_estoque_do_pedido
 from app.limiter import exigir_disponivel, pedidos_qr_por_mesa
-from app.models import Cliente, Mesa, Pedido, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto, Role, User
+from app.models import Cliente, Mesa, Pedido, PedidoAvaliacao, PedidoItem, PedidoStatusHistorico, PedidoStatusNome, Produto, Role, User
 from app.realtime import manager
 from app.security import exigir_perfis, get_usuario_atual, get_usuario_opcional
-from app.schemas import PedidoCreateRequest, PedidoEditRequest, PaginatedPedidoResponse, PedidoResponse, PedidoStatusUpdateRequest
+from app.schemas import (
+    PedidoAvaliacaoRequest,
+    PedidoAvaliacaoResponse,
+    PedidoCreateRequest,
+    PedidoEditRequest,
+    PaginatedPedidoResponse,
+    PedidoResponse,
+    PedidoStatusUpdateRequest,
+)
 
 
 STATUS_RECEBIDO_ID = 1
@@ -30,7 +38,6 @@ STATUS_ATIVOS = (STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID, STA
 
 LIMITE_DESCONTO_PERCENTUAL = Decimal("10")
 MESA_STATUS_LIBERADOS = ("livre", "reservada")
-# So a equipe abre a mesa: um QR Code fotografado nao gera pedido com a mesa fechada.
 MESA_STATUS_ACEITA_QR = "ocupada"
 # A baixa de estoque acontece ao sair da fila e nunca e repetida (ver app/estoque.py).
 STATUS_COM_BAIXA_ESTOQUE = {
@@ -262,6 +269,40 @@ def obter_pedido(
     if pedido is None or pedido.token_acesso != token_acesso:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Pedido nao encontrado: {pedido_id}")
     return _to_response(pedido, _mesa_map(db))
+
+
+@router.post("/{pedido_id}/avaliacao", response_model=PedidoAvaliacaoResponse)
+def avaliar_pedido(
+    pedido_id: int,
+    request: PedidoAvaliacaoRequest,
+    token: str | None = Query(default=None, max_length=64),
+    db: Session = Depends(get_db),
+) -> PedidoAvaliacaoResponse:
+    token_acesso = _parse_uuid(token)
+    pedido = None if token_acesso is None else _get_pedido_with_itens(db, pedido_id)
+    if pedido is None or pedido.token_acesso != token_acesso:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Pedido nao encontrado: {pedido_id}")
+    if pedido.id_status not in (STATUS_SERVIDO_ID, STATUS_ENTREGUE_ID):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A avaliacao so e permitida para pedidos servidos ou entregues")
+    avaliacao_existente = db.scalar(select(PedidoAvaliacao).where(PedidoAvaliacao.id_pedido == pedido_id))
+    if avaliacao_existente is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Este pedido ja foi avaliado")
+
+    avaliacao = PedidoAvaliacao(
+        id_pedido=pedido.id,
+        nota=request.nota,
+        comentario=request.comentario,
+    )
+    db.add(avaliacao)
+    db.commit()
+    db.refresh(avaliacao)
+    return PedidoAvaliacaoResponse(
+        id=avaliacao.id,
+        pedidoId=avaliacao.id_pedido,
+        nota=avaliacao.nota,
+        comentario=avaliacao.comentario,
+        dataHora=avaliacao.avaliado_em,
+    )
 
 
 @router.put("/{pedido_id}/itens", response_model=PedidoResponse)
@@ -511,7 +552,11 @@ def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool,
     if venda_caixa:
         return None
     if request.mesaToken is not None:
-        mesa = db.scalar(select(Mesa).where(Mesa.qr_code_token == request.mesaToken, Mesa.ativo.is_(True)))
+        mesa = db.scalar(
+            select(Mesa)
+            .where(Mesa.qr_code_token == request.mesaToken, Mesa.ativo.is_(True))
+            .with_for_update()
+        )
         if mesa is None:
             codigo = status.HTTP_403_FORBIDDEN if anonimo else status.HTTP_404_NOT_FOUND
             raise HTTPException(status_code=codigo, detail="QR Code de mesa invalido ou inativo.")
@@ -519,10 +564,10 @@ def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool,
             request.numeroMesa is not None and request.numeroMesa != mesa.numero
         ):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="A mesa informada nao corresponde ao QR Code.")
-        if anonimo and mesa.status != MESA_STATUS_ACEITA_QR:
+        if anonimo and mesa.status not in {MESA_STATUS_ACEITA_QR, "livre"}:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Esta mesa não está aberta para pedidos. Chame o atendente.",
+                detail="Esta mesa não está disponível para pedidos.",
             )
         return mesa
     if request.mesaId is not None:

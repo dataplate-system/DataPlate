@@ -99,6 +99,40 @@ body:has(#telaLista) {
   overflow: hidden;
 }
 #telaLista .novo-topo { position: relative; padding: 16px; background: transparent !important; }
+#telaLista .chamados-mesa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 14px 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fff7ed;
+}
+#telaLista .chamados-mesa[hidden] { display: none; }
+#telaLista .chamados-mesa > div:first-child { display: grid; gap: 4px; }
+#telaLista .chamados-mesa > div:first-child strong { color: #9a3412; }
+#telaLista #chamadosMesaMensagem { color: #7c2d12; font-size: 13px; }
+#telaLista .chamados-mesa-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+#telaLista .chamados-mesa-acoes button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #f97316;
+  border-radius: 9px;
+  background: #fff;
+  color: #9a3412;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#telaLista .chamados-mesa-acoes button:disabled {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: wait;
+}
 #telaLista .banner-topo .voltar {
   width: 36px;
   height: 36px;
@@ -303,3 +337,9 @@ body:has(#barraFlutuante.ativa) #telaLista .conteudo { padding-bottom: calc(64px
   line-height: 1.4;
 }
 .aviso-mesa-fechada[hidden] { display: none; }
+
+@media (max-width: 700px) {
+  #telaLista .chamados-mesa { align-items: stretch; flex-direction: column; margin: 10px 12px 0; }
+  #telaLista .chamados-mesa-acoes { display: grid; grid-template-columns: 1fr; }
+  #telaLista .chamados-mesa-acoes button { width: 100%; }
+}

@@ -58,6 +58,7 @@ login_por_origem = LimitadorTentativas(maximo=30, janela_segundos=300)
 recuperacao_por_cpf = LimitadorTentativas(maximo=3, janela_segundos=900)
 recuperacao_por_origem = LimitadorTentativas(maximo=20, janela_segundos=900)
 pedidos_qr_por_mesa = LimitadorTentativas(maximo=20, janela_segundos=600)
+chamados_qr_por_mesa_tipo = LimitadorTentativas(maximo=1, janela_segundos=120)
 
 
 def origem_da_requisicao(request: Request) -> str:

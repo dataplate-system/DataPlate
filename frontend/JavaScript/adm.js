@@ -117,6 +117,7 @@ const SECTION_ROLES = {
   'rel-cardapio':        ['admin', 'gerente'],
   'rel-bcg':             ['admin', 'gerente'],
   'rel-operacional':     ['admin', 'gerente'],
+  'rel-avaliacoes':      ['admin', 'gerente'],
   'config-restaurante':  ['admin', 'gerente'],
   'config-usuarios':     ['admin', 'gerente'],
   'config-integracao':   ['admin', 'gerente'],
@@ -671,6 +672,7 @@ function navigateTo(sectionId, options = {}) {
     'rel-cardapio':      ['Relatórios',   'Desempenho do Cardápio'],
     'rel-bcg':           ['Relatórios',   'Matriz BCG'],
     'rel-operacional':   ['Relatórios',   'Operacional'],
+    'rel-avaliacoes':    ['Relatórios',   'Avaliações'],
     'config-restaurante':['Configurações','Restaurante'],
     'config-usuarios':   ['Configurações','Usuários'],
     'config-integracao': ['Configurações','Integrações'],
@@ -721,6 +723,7 @@ function navigateTo(sectionId, options = {}) {
     'rel-cardapio':    () => { preencherDatasRelatorio('rel-cardapio', 30);   const r = getRelDateRange('rel-cardapio');    carregarRelCardapio(r.inicio, r.fim); },
     'rel-bcg':         () => { preencherDatasRelatorio('rel-bcg', 30);        const r = getRelDateRange('rel-bcg');         carregarRelBcg(r.inicio, r.fim); },
     'rel-operacional': () => { preencherDatasRelatorio('rel-operacional', 30); const r = getRelDateRange('rel-operacional'); carregarRelOperacional(r.inicio, r.fim); },
+    'rel-avaliacoes':  () => { preencherDatasRelatorio('rel-avaliacoes', 30); const r = getRelDateRange('rel-avaliacoes'); carregarRelAvaliacoes(r.inicio, r.fim); },
     'config-usuarios': carregarUsuarios,
     'config-restaurante': carregarConfiguracaoRestaurante,
     insumos: carregarInsumos
@@ -790,6 +793,7 @@ const ADMIN_HOME_ROUTES = [
   { id: 'rel-cardapio', labels: ['desempenho do cardapio', 'desempenho do cardápio', 'relatorio cardapio', 'relatório cardápio'] },
   { id: 'rel-bcg', labels: ['matriz bcg', 'bcg', 'classificacao de produtos', 'classificação de produtos'] },
   { id: 'rel-operacional', labels: ['relatorio operacional', 'relatório operacional', 'operacional'] },
+  { id: 'rel-avaliacoes', labels: ['avaliacoes', 'avaliações', 'relatorio de avaliacoes', 'relatório de avaliações', 'feedback dos clientes'] },
   { id: 'config-restaurante', labels: ['restaurante', 'configuracao restaurante', 'configuração restaurante'] },
   { id: 'config-usuarios', labels: ['usuarios', 'usuários', 'permissoes', 'permissões'] },
   { id: 'config-integracao', labels: ['integracao', 'integração', 'integracoes', 'integrações'] },
@@ -1671,6 +1675,8 @@ async function carregarPagamentos() {
     fim.value = def.fim;
   }
 
+  carregarTurnosCaixa();
+
   const tbody = document.getElementById('pgtoTabelaBody');
   if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>';
 
@@ -1752,6 +1758,50 @@ async function carregarPagamentos() {
 }
 
 window.carregarPagamentos = carregarPagamentos;
+
+// Turnos de caixa (abertura e fechamento no PDV): o historico e so do Gerente.
+async function carregarTurnosCaixa() {
+  const tbody = document.getElementById('turnosCaixaBody');
+  if (!tbody || !isGerenteRole()) return;
+  const vazio = (msg, cor = '#94a3b8') => `<tr><td colspan="8" style="text-align:center;color:${cor};padding:24px">${msg}</td></tr>`;
+  tbody.innerHTML = vazio('Carregando...');
+
+  const quando = (iso) => {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return `${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+  };
+
+  try {
+    const turnos = await getJson('/caixa/turnos?limite=100');
+    if (!turnos || !turnos.length) {
+      tbody.innerHTML = vazio('Nenhum turno de caixa fechado ainda.');
+      window._turnosCaixa = [];
+      return;
+    }
+    window._turnosCaixa = turnos;
+    tbody.innerHTML = turnos.map((t) => {
+      const diferenca = Number(t.diferenca || 0);
+      const cor = diferenca < 0 ? '#dc2626' : diferenca > 0 ? '#2563eb' : '#16a34a';
+      const texto = diferenca < 0 ? `- ${formatCurrency(-diferenca)}` : diferenca > 0 ? `+ ${formatCurrency(diferenca)}` : formatCurrency(0);
+      const responsavel = [t.abertoPor, t.fechadoPor].filter(Boolean)
+        .filter((nome, i, lista) => lista.indexOf(nome) === i).join(' / ') || '-';
+      return `<tr>
+        <td style="white-space:nowrap">${quando(t.abertoEm)}</td>
+        <td style="white-space:nowrap">${quando(t.fechadoEm)}</td>
+        <td>${escapeHtml(responsavel)}</td>
+        <td>${formatCurrency(t.valorInicial)}</td>
+        <td><strong>${formatCurrency(t.totais?.totalVendas)}</strong><br><small style="color:#64748b">${Number(t.totais?.quantidadeVendas || 0)} venda(s)</small></td>
+        <td>${formatCurrency(t.valorEsperadoDinheiro)}</td>
+        <td>${formatCurrency(t.valorContado)}</td>
+        <td><strong style="color:${cor}" title="${escapeHtml(t.observacao || '')}">${texto}</strong></td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    tbody.innerHTML = vazio(`Erro: ${escapeHtml(e.message)}`, '#dc2626');
+  }
+}
+window.carregarTurnosCaixa = carregarTurnosCaixa;
 
 window.exportarPagamentosCSV = function() {
   const transacoes = window._pgtoTransacoes || [];
@@ -4040,6 +4090,69 @@ function carregarRelOperacional(inicio, fim) {
     .catch((err) => console.error('[rel-operacional]', err));
 }
 
+function carregarRelAvaliacoes(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  getJson(`/relatorios/avaliacoes${params}`)
+    .then((data) => {
+      const notaMedia = Number(data.notaMedia || 0);
+      const totalAvaliacoes = Number(data.totalAvaliacoes || 0);
+      const distribuicao = Array.isArray(data.quantidadePorNota) ? data.quantidadePorNota : [];
+      const maxQuantidade = distribuicao.reduce((max, item) => Math.max(max, Number(item.quantidade || 0)), 0);
+
+      setStatByLabel('rel-avaliacoes', 'Nota Média', `${notaMedia.toFixed(1).replace('.', ',')}/5`, `${totalAvaliacoes} avaliação(ões) no período`);
+      setStatByLabel('rel-avaliacoes', 'Total de Avaliações', String(totalAvaliacoes), `${data.comentariosRecentes?.length || 0} comentários recentes`);
+
+      const chartEl = document.getElementById('avaliacaoBarChart');
+      if (chartEl) {
+        if (!distribuicao.length) {
+          chartEl.innerHTML = '<div style="color:#94a3b8;padding:18px 0;text-align:center">Nenhuma avaliação registrada no período.</div>';
+        } else {
+          chartEl.innerHTML = distribuicao.map((item) => {
+            const nota = Number(item.nota || 0);
+            const quantidade = Number(item.quantidade || 0);
+            const width = maxQuantidade > 0 ? Math.max(8, (quantidade / maxQuantidade) * 100) : 0;
+            return `
+              <div style="display:grid;grid-template-columns:52px 1fr 36px;align-items:center;gap:10px;margin-bottom:10px;">
+                <strong style="font-size:14px;">${nota}★</strong>
+                <div style="background:#e5e7eb;border-radius:999px;overflow:hidden;height:12px;">
+                  <div style="height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);width:${width}%;border-radius:999px;"></div>
+                </div>
+                <span style="font-size:13px;color:#475569;text-align:right;">${quantidade}</span>
+              </div>`;
+          }).join('');
+        }
+      }
+
+      const tbody = document.querySelector('#rel-avaliacoes .data-table tbody');
+      if (!tbody) return;
+      const comentarios = Array.isArray(data.comentariosRecentes) ? data.comentariosRecentes : [];
+      if (!comentarios.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">Nenhum comentário registrado para esse período.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = comentarios.map((item) => {
+        const dataHora = item.dataHora ? new Date(item.dataHora).toLocaleString('pt-BR') : '—';
+        const mesaNumero = item.mesaNumero != null ? `Mesa ${item.mesaNumero}` : 'Mesa não informada';
+        return `
+          <tr>
+            <td>${mesaNumero}</td>
+            <td>${item.nota}★</td>
+            <td>${dataHora}</td>
+            <td>${escapeHtml(item.comentario || 'Sem comentário')}</td>
+          </tr>`;
+      }).join('');
+    })
+    .catch((err) => {
+      console.error('[rel-avaliacoes]', err);
+      const tbody = document.querySelector('#rel-avaliacoes .data-table tbody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:20px">Erro ao carregar avaliações.</td></tr>';
+      }
+      showToast(err.message || 'Erro ao carregar relatório de avaliações.');
+    });
+}
+
 function buildDateParams(inicio, fim) {
   const p = [];
   if (inicio) p.push(`inicio=${inicio}`);
@@ -4127,6 +4240,7 @@ function buildLinhaCliente(c) {
     <td><span class="badge badge-active">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
     <td>${formatDate(c.criadoEm)}</td>
     <td>
+      <button class="btn-icon btn-icon-view" title="Ver perfil" onclick="verPerfilCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 13.5c0-2.5 2.2-4 5-4s5 1.5 5 4"/></svg></button>
       <button class="btn-icon btn-icon-edit" title="Editar" data-crud-action="edit" onclick="editarCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L5 13l-2.5.5.5-2.5z"/></svg></button>
       <button class="btn-icon btn-icon-delete" title="Excluir" data-crud-action="delete" onclick="excluirCliente(${c.id})"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 14 4"/><path d="M5 4V2h6v2"/><path d="M13 4l-1 10H4L3 4"/><line x1="6" y1="7" x2="6" y2="11"/><line x1="10" y1="7" x2="10" y2="11"/></svg></button>
     </td>
@@ -4300,6 +4414,114 @@ window.excluirCliente = async function(id) {
     .then(() => { showToast('Cliente excluído com sucesso!', 'success'); carregarClientes(); })
     .catch((err) => showToast(err.message || 'Erro ao excluir cliente.'));
 };
+
+// =============================================
+// PERFIL DO CLIENTE (histórico de compras)
+// =============================================
+
+function textoPerfilCliente(id, valor) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = valor;
+}
+
+window.verPerfilCliente = async function(id) {
+  const cliente = (window.__clientes || []).find((item) => item.id === id);
+  const carregando = document.getElementById('clientePerfilCarregando');
+  const dados = document.getElementById('clientePerfilDados');
+  const vazio = document.getElementById('clientePerfilVazio');
+  const selo = document.getElementById('clientePerfilSelo');
+  if (!carregando || !dados || !vazio || !selo) return;
+
+  textoPerfilCliente('clientePerfilNome', cliente?.nome || 'Cliente');
+  textoPerfilCliente('clientePerfilCodigo', cliente ? displayCode(cliente, 'CLI') : '');
+  carregando.textContent = 'Carregando perfil...';
+  carregando.hidden = false;
+  dados.hidden = true;
+  vazio.hidden = true;
+  selo.hidden = true;
+  destroyChart('clientePerfilChart');
+  window.openModal('clientePerfilModal');
+
+  try {
+    const resumo = await getJson(`/clientes/${id}/resumo`);
+    renderPerfilCliente(resumo);
+  } catch (err) {
+    carregando.textContent = err.message || 'Erro ao carregar o perfil do cliente.';
+    console.error('[clientes] perfil', err);
+  }
+};
+
+function renderPerfilCliente(resumo) {
+  const carregando = document.getElementById('clientePerfilCarregando');
+  const dados = document.getElementById('clientePerfilDados');
+  const vazio = document.getElementById('clientePerfilVazio');
+  const selo = document.getElementById('clientePerfilSelo');
+
+  textoPerfilCliente('clientePerfilNome', resumo.nome);
+  textoPerfilCliente('clientePerfilCodigo', resumo.codigo);
+  carregando.hidden = true;
+  // Selo: 5 pedidos ou mais nos últimos 30 dias (regra do backend).
+  selo.hidden = !resumo.clienteFrequente;
+  selo.title = `${resumo.pedidosUltimos30Dias} pedido(s) nos últimos 30 dias`;
+
+  if (!resumo.totalPedidos) {
+    vazio.hidden = false;
+    dados.hidden = true;
+    return;
+  }
+
+  vazio.hidden = true;
+  dados.hidden = false;
+  textoPerfilCliente('clientePerfilGasto', formatCurrency(resumo.totalGasto));
+  textoPerfilCliente('clientePerfilPedidos', String(resumo.totalPedidos));
+  textoPerfilCliente('clientePerfilPeriodo', `Primeira compra ${formatDate(resumo.primeiraCompra)} · última ${formatDate(resumo.ultimaCompra)}`);
+  textoPerfilCliente('clientePerfilTicket', formatCurrency(resumo.ticketMedio));
+  textoPerfilCliente('clientePerfilPrato', resumo.pratoMaisPedido?.nome || '—');
+  textoPerfilCliente('clientePerfilPratoQtd', resumo.pratoMaisPedido
+    ? `${Number(resumo.pratoMaisPedido.quantidade)} unidade(s) pedida(s)`
+    : 'Nenhum item registrado');
+
+  const tbody = document.getElementById('clientePerfilPedidosBody');
+  if (tbody) {
+    tbody.innerHTML = (resumo.ultimosPedidos || []).map((p) => {
+      const quando = new Date(p.dataHora);
+      const data = `${quando.toLocaleDateString('pt-BR')} ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      const itens = (p.itens || []).map((i) => `${i.quantidade}x ${escapeHtml(i.nomeProduto)}`).join(', ') || '-';
+      return `<tr>
+        <td style="white-space:nowrap">${data}</td>
+        <td>${escapeHtml(pedidoOrigemLabel(p))}</td>
+        <td style="font-size:12px;color:#64748b">${itens}</td>
+        <td><strong>${formatCurrency(p.valorTotal)}</strong></td>
+        <td><span class="badge ${pedidoBadgeClass[p.status] || 'badge-info'}">${escapeHtml(pedidoStatusLabel[p.status] || p.status)}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  renderClientePerfilChart(resumo.gastoPorMes || []);
+}
+
+function renderClientePerfilChart(gastoPorMes) {
+  if (!hasChartLibrary()) return;
+  const canvas = document.getElementById('clientePerfilChart');
+  if (!canvas) return;
+  destroyChart('clientePerfilChart');
+
+  _charts['clientePerfilChart'] = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: gastoPorMes.map((m) => m.label),
+      datasets: [{
+        label: 'Gasto (R$)',
+        data: gastoPorMes.map((m) => Number(m.valor || 0)),
+        backgroundColor: '#2563eb',
+        borderRadius: 6,
+        borderSkipped: false,
+        maxBarThickness: 32
+      }]
+    },
+    options: currencyTooltipOptions()
+  });
+}
 
 window.editarFuncionario = function(id) {
   const funcionario = (window.__funcionarios || []).find((item) => item.id === id);

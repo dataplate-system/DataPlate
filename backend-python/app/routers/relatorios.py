@@ -2,13 +2,16 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app import bcg
 from app.db import get_db
-from app.models import PedidoStatusNome, Role
+from app.models import Mesa, Pedido, PedidoAvaliacao, PedidoStatusNome, Role
 from app.schemas import (
+    AvaliacaoComentarioResponse,
+    AvaliacaoPorNotaResponse,
+    RelatorioAvaliacoesResponse,
     RelatorioBcgItem,
     RelatorioBcgResponse,
     RelatorioCardapioItem,
@@ -209,6 +212,63 @@ def matriz_bcg(inicio: date | None = None, fim: date | None = None, db: Session 
         limiteParticipacao=round(limite, 2),
         limiteCrescimento=bcg.LIMITE_CRESCIMENTO,
         itens=itens,
+    )
+
+
+@router.get("/avaliacoes", response_model=RelatorioAvaliacoesResponse)
+def avaliacoes(
+    inicio: date | None = Query(default=None),
+    fim: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+) -> RelatorioAvaliacoesResponse:
+    data_inicio, data_fim, inicio_dia, fim_dia = _periodo(inicio, fim, default_30_dias=False)
+    del data_inicio, data_fim
+    linhas = db.execute(
+        select(
+            PedidoAvaliacao.id,
+            PedidoAvaliacao.id_pedido,
+            PedidoAvaliacao.nota,
+            PedidoAvaliacao.comentario,
+            PedidoAvaliacao.avaliado_em,
+            Pedido.id_mesa,
+            Mesa.numero,
+        )
+        .join(Pedido, Pedido.id == PedidoAvaliacao.id_pedido)
+        .outerjoin(Mesa, Mesa.id == Pedido.id_mesa)
+        .where(PedidoAvaliacao.avaliado_em >= inicio_dia, PedidoAvaliacao.avaliado_em <= fim_dia)
+        .order_by(PedidoAvaliacao.avaliado_em.desc())
+    ).all()
+
+    total = len(linhas)
+    if total == 0:
+        return RelatorioAvaliacoesResponse(
+            notaMedia=0.0,
+            totalAvaliacoes=0,
+            quantidadePorNota=[AvaliacaoPorNotaResponse(nota=nota, quantidade=0) for nota in range(1, 6)],
+            comentariosRecentes=[],
+        )
+
+    contagem = {nota: 0 for nota in range(1, 6)}
+    for _, _, nota, _, _, _, _ in linhas:
+        contagem[nota] += 1
+    media = sum((nota for _, _, nota, _, _, _, _ in linhas), 0) / total
+    comentarios = [
+        AvaliacaoComentarioResponse(
+            id=avaliacao_id,
+            pedidoId=pedido_id,
+            mesaNumero=mesa_numero,
+            nota=nota,
+            comentario=comentario,
+            dataHora=avaliado_em,
+        )
+        for avaliacao_id, pedido_id, nota, comentario, avaliado_em, _, mesa_numero in linhas
+        if comentario is not None and comentario.strip()
+    ]
+    return RelatorioAvaliacoesResponse(
+        notaMedia=round(media, 2),
+        totalAvaliacoes=total,
+        quantidadePorNota=[AvaliacaoPorNotaResponse(nota=nota, quantidade=contagem[nota]) for nota in range(1, 6)],
+        comentariosRecentes=comentarios[:10],
     )
 
 

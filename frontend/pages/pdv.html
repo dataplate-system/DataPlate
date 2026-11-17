@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111827" />
   <title>DataPlate PDV</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/pdv.css?v=20261020-dashboard-header" />
+  <link rel="stylesheet" href="../Css/pdv.css?v=20261116-caixa" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
@@ -48,6 +48,14 @@
     </form>
 
     <div class="pdv-topbar-right">
+      <div class="pdv-caixa-status" id="pdvCaixaStatus" hidden aria-live="polite">
+        <span class="pdv-caixa-dot" aria-hidden="true"></span>
+        <span>
+          <strong id="pdvCaixaStatusTitulo">Caixa fechado</strong>
+          <small id="pdvCaixaStatusInfo">Abra o turno para vender</small>
+        </span>
+      </div>
+      <button class="pdv-action-btn" id="pdvFecharCaixaBtn" type="button" hidden>Fechar caixa</button>
       <div class="pdv-session-info" id="pdvSessionInfo">
         <div class="pdv-avatar" id="pdvAvatar">AT</div>
         <span>
@@ -330,6 +338,86 @@
     </aside>
   </div>
 
+  <!-- ABERTURA DE CAIXA: sem turno aberto o PDV não registra vendas -->
+  <div id="pdvAberturaOverlay" class="pdv-overlay caixa-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="pdvAberturaTitulo">
+    <div class="success-box caixa-box">
+      <h3 id="pdvAberturaTitulo">Caixa fechado</h3>
+      <p class="success-detail">Informe o valor inicial em dinheiro na gaveta para abrir o turno. As vendas só são registradas com o caixa aberto.</p>
+      <div class="caixa-campo">
+        <label class="section-label" for="valorInicialInput">Valor inicial em dinheiro</label>
+        <input id="valorInicialInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" autocomplete="off" />
+      </div>
+      <div class="caixa-campo">
+        <label class="section-label" for="aberturaObsInput">Observação (opcional)</label>
+        <input id="aberturaObsInput" type="text" maxlength="255" placeholder="Ex: troco conferido" autocomplete="off" />
+      </div>
+      <p id="pdvAberturaErro" class="caixa-erro" role="alert" hidden></p>
+      <button id="abrirCaixaBtn" class="btn-action btn-primary" type="button" style="width:100%">Abrir caixa</button>
+      <p id="pdvAberturaUltimo" class="caixa-ultimo" hidden></p>
+    </div>
+  </div>
+
+  <!-- FECHAMENTO DE CAIXA: resumo do turno e conferência da gaveta -->
+  <div id="pdvFechamentoModal" class="pgto-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pdvFechamentoTitulo" hidden>
+    <div class="pgto-modal-box caixa-fechamento-box">
+      <div class="pgto-modal-header">
+        <div>
+          <h3 id="pdvFechamentoTitulo" class="pgto-modal-title">Fechar caixa</h3>
+          <p id="pdvFechamentoSub" class="pgto-modal-sub">Turno aberto —</p>
+        </div>
+        <button class="pgto-modal-close" type="button" aria-label="Fechar" onclick="fecharModalFechamento()">&#x2715;</button>
+      </div>
+
+      <p class="pgto-modal-label">Recebido no turno</p>
+      <div class="caixa-cards">
+        <div class="caixa-card">
+          <img src="../images/menu/pix.png" class="pgto-icon-sm" alt="">
+          <span>PIX</span><strong id="fechPix">R$ 0,00</strong>
+        </div>
+        <div class="caixa-card">
+          <img src="../images/menu/Debito.png" class="pgto-icon-sm" alt="">
+          <span>Débito</span><strong id="fechDebito">R$ 0,00</strong>
+        </div>
+        <div class="caixa-card">
+          <img src="../images/menu/Credito.png" class="pgto-icon-sm" alt="">
+          <span>Crédito</span><strong id="fechCredito">R$ 0,00</strong>
+        </div>
+        <div class="caixa-card">
+          <img src="../images/menu/dinheiro.png" class="pgto-icon-sm" alt="">
+          <span>Dinheiro</span><strong id="fechDinheiro">R$ 0,00</strong>
+        </div>
+      </div>
+      <p id="fechOutros" class="caixa-outros" hidden></p>
+      <div class="caixa-grafico" id="fechGraficoWrap">
+        <canvas id="fechamentoChart" aria-label="Divisão dos recebimentos por forma de pagamento"></canvas>
+      </div>
+
+      <div class="caixa-resumo">
+        <div class="checkout-line"><span>Total vendido no turno</span><strong id="fechTotal">R$ 0,00</strong></div>
+        <div class="checkout-line"><span>Valor inicial</span><strong id="fechInicial">R$ 0,00</strong></div>
+        <div class="checkout-line"><span>Dinheiro esperado na gaveta</span><strong id="fechEsperado">R$ 0,00</strong></div>
+      </div>
+
+      <div class="caixa-campo">
+        <label class="section-label" for="valorContadoInput">Valor contado em dinheiro</label>
+        <input id="valorContadoInput" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" autocomplete="off" />
+      </div>
+      <div class="checkout-line caixa-diferenca" id="fechDiferencaLinha">
+        <span>Diferença</span><strong id="fechDiferenca">—</strong>
+      </div>
+      <p id="fechDiferencaTexto" class="caixa-diferenca-texto" aria-live="polite"></p>
+      <div class="caixa-campo">
+        <label class="section-label" for="fechamentoObsInput">Observação (opcional)</label>
+        <input id="fechamentoObsInput" type="text" maxlength="255" placeholder="Ex: diferença justificada" autocomplete="off" />
+      </div>
+
+      <div class="pgto-modal-actions">
+        <button id="confirmarFechamentoBtn" class="btn-action btn-success pgto-confirm-btn" type="button">Confirmar fechamento</button>
+        <button class="pgto-cancel-btn" type="button" onclick="fecharModalFechamento()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- OVERLAY DE SUCESSO -->
   <div id="successOverlay" class="pdv-overlay" hidden role="dialog" aria-modal="true">
     <div class="success-box">
@@ -365,6 +453,7 @@
 
   <div id="toastArea" aria-live="polite"></div>
 
-  <script src="../JavaScript/pdv.js?v=20261104-melhorias"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="../JavaScript/pdv.js?v=20261116-caixa"></script>
 </body>
 </html>

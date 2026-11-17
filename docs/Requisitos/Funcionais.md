@@ -30,3 +30,9 @@ O sistema deve baixar os insumos pela ficha técnica quando o preparo do pedido 
 
 ## RF11 - Abertura da Mesa
 O sistema deve aceitar pedidos pelo QR Code somente depois que a equipe abrir a mesa.
+
+## RF12 - Perfil do Cliente
+O sistema deve mostrar ao gerente o perfil de cada cliente cadastrado com total gasto, número de pedidos, ticket médio, prato mais pedido, gasto por mês e os últimos pedidos, sem contar pedidos cancelados, e destacar o cliente frequente (5 pedidos ou mais nos últimos 30 dias).
+
+## RF13 - Abertura e Fechamento de Caixa
+O sistema deve controlar o caixa por turno: o Caixa ou o Gerente abre o turno informando o valor inicial em dinheiro, o PDV só registra vendas com o turno aberto, e o fechamento mostra o total recebido por forma de pagamento, o dinheiro esperado na gaveta, o valor contado e a diferença. Só pode existir um turno aberto por vez e só o Gerente vê o histórico dos turnos.

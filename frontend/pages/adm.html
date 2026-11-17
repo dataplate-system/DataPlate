@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111827" />
   <title>DataPlate - Painel Administrativo</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/adm.css?v=20261005-stock-awareness" />
+  <link rel="stylesheet" href="../Css/adm.css?v=20261116-perfil-cliente" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260928-stock-card-v2" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/dashboard-home.css?v=20261021-pedidos-visibility" />
@@ -81,6 +81,7 @@
             <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
             <a href="#rel-bcg" class="dropdown-link" onclick="navigateTo('rel-bcg')">Matriz BCG</a>
             <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
+            <a href="#rel-avaliacoes" class="dropdown-link" onclick="navigateTo('rel-avaliacoes')">Avaliações</a>
           </div>
         </div>
 
@@ -262,6 +263,10 @@
               <button type="button" class="home-shortcut" onclick="navigateTo('rel-operacional')">
                 <span class="shortcut-icon">◱</span>
                 <span><strong>Operacional</strong><small>Eficiência e tempos</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('rel-avaliacoes')">
+                <span class="shortcut-icon">★</span>
+                <span><strong>Avaliações</strong><small>Feedback dos clientes</small></span>
               </button>
             </div>
 
@@ -938,6 +943,31 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Turnos de caixa: abertura e fechamento registrados no PDV (somente Gerente) -->
+          <div class="report-section" id="turnosCaixaSection" data-roles="gerente" style="margin-top:24px">
+            <h3>Turnos de caixa</h3>
+            <p class="modal-description" style="margin-bottom:12px">Fechamentos registrados no PDV: total vendido no turno e diferença entre o dinheiro contado e o esperado (vermelho: falta; azul: sobra).</p>
+            <div class="table-container">
+              <table class="data-table" id="turnosCaixaTabela">
+                <thead>
+                  <tr>
+                    <th>Abertura</th>
+                    <th>Fechamento</th>
+                    <th>Responsável</th>
+                    <th>Valor inicial</th>
+                    <th>Total vendido</th>
+                    <th>Dinheiro esperado</th>
+                    <th>Contado</th>
+                    <th>Diferença</th>
+                  </tr>
+                </thead>
+                <tbody id="turnosCaixaBody">
+                  <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px">Carregando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
 
         <!-- PEDIDOS -->
@@ -1458,6 +1488,64 @@
           </div>
         </section>
 
+        <!-- AVALIAÇÕES -->
+        <section id="rel-avaliacoes" class="content-section">
+          <div class="section-header">
+            <h1>Avaliações</h1>
+            <p>Feedback dos clientes por pedido e percepção geral</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Data Inicial</label>
+              <input type="date" id="relAvaliacoesInicio" onchange="carregarRelAvaliacoes(this.value||null, document.getElementById('relAvaliacoesFim').value||null)" />
+            </div>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" id="relAvaliacoesFim" onchange="carregarRelAvaliacoes(document.getElementById('relAvaliacoesInicio').value||null, this.value||null)" />
+            </div>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Nota Média</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total de Avaliações</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Distribuição por nota</h3>
+            <div id="avaliacaoBarChart" style="max-width:760px; margin-top:12px;"></div>
+          </div>
+
+          <div class="report-section">
+            <h3>Últimos comentários</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Mesa</th>
+                    <th>Nota</th>
+                    <th>Data</th>
+                    <th>Comentário</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="4" style="text-align:center;color:#94a3b8">Selecione o período para carregar os comentários</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <!-- INSUMOS -->
         <section id="insumos" class="content-section">
           <div class="section-header">
@@ -1818,6 +1906,73 @@
       <div class="form-actions" style="justify-content:center">
         <button type="button" class="btn-secondary" onclick="closeModal('tableQrModal')">Fechar</button>
         <button type="button" class="btn-primary" id="tableQrDownload">Baixar QR Code</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PERFIL DO CLIENTE (histórico de compras) -->
+  <div class="modal" id="clientePerfilModal">
+    <div class="modal-content cliente-perfil-content">
+      <button class="modal-close" onclick="closeModal('clientePerfilModal')">✕</button>
+      <div class="modal-header cliente-perfil-header">
+        <div>
+          <span id="clientePerfilNome">Cliente</span>
+          <small id="clientePerfilCodigo" class="cliente-perfil-codigo"></small>
+        </div>
+        <span id="clientePerfilSelo" class="badge badge-success cliente-perfil-selo" hidden>Cliente frequente</span>
+      </div>
+      <p id="clientePerfilCarregando" class="modal-description">Carregando perfil...</p>
+      <p id="clientePerfilVazio" class="cliente-perfil-vazio" hidden>
+        Este cliente ainda não tem pedidos. As vendas feitas no PDV com o cliente selecionado aparecerão aqui.
+      </p>
+      <div id="clientePerfilDados" hidden>
+        <div class="stats-grid cliente-perfil-stats">
+          <div class="stat-card">
+            <div class="stat-label">Total gasto</div>
+            <div class="stat-value" id="clientePerfilGasto">R$ 0,00</div>
+            <div class="stat-change">Pedidos não cancelados</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Pedidos</div>
+            <div class="stat-value" id="clientePerfilPedidos">0</div>
+            <div class="stat-change" id="clientePerfilPeriodo">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ticket médio</div>
+            <div class="stat-value" id="clientePerfilTicket">R$ 0,00</div>
+            <div class="stat-change">Valor médio por pedido</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Prato favorito</div>
+            <div class="stat-value cliente-perfil-prato" id="clientePerfilPrato">—</div>
+            <div class="stat-change" id="clientePerfilPratoQtd"></div>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <h3>Gasto por mês (últimos 6 meses)</h3>
+          <div style="position:relative;height:220px">
+            <canvas id="clientePerfilChart"></canvas>
+          </div>
+        </div>
+
+        <div class="report-section">
+          <h3>Últimos pedidos</h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Origem</th>
+                  <th>Itens</th>
+                  <th>Valor</th>
+                  <th>Situação</th>
+                </tr>
+              </thead>
+              <tbody id="clientePerfilPedidosBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2479,6 +2634,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261109-bcg-pedidos" defer></script>
+  <script src="../JavaScript/adm.js?v=20261116-caixa" defer></script>
 </body>
 </html>

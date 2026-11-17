@@ -192,6 +192,51 @@ class ClienteResponse(BaseModel):
     criadoEm: datetime | None
 
 
+class ClientePratoFavoritoResponse(BaseModel):
+    produtoId: int
+    nome: str
+    quantidade: float
+
+
+class ClienteGastoMensalResponse(BaseModel):
+    # Mes no formato AAAA-MM; label curto para o grafico, ex.: "nov/26".
+    mes: str
+    label: str
+    valor: float
+    pedidos: int
+
+
+class ClienteResumoPedidoItemResponse(BaseModel):
+    nomeProduto: str
+    quantidade: int
+
+
+class ClienteResumoPedidoResponse(BaseModel):
+    id: int
+    dataHora: datetime
+    origem: str
+    numeroMesa: int | None
+    status: PedidoStatusNome
+    valorTotal: float
+    itens: list[ClienteResumoPedidoItemResponse]
+
+
+class ClienteResumoResponse(BaseModel):
+    clienteId: int
+    nome: str
+    codigo: str
+    totalPedidos: int
+    totalGasto: float
+    ticketMedio: float
+    pratoMaisPedido: ClientePratoFavoritoResponse | None
+    primeiraCompra: datetime | None
+    ultimaCompra: datetime | None
+    pedidosUltimos30Dias: int
+    clienteFrequente: bool
+    gastoPorMes: list[ClienteGastoMensalResponse]
+    ultimosPedidos: list[ClienteResumoPedidoResponse]
+
+
 class FornecedorRequest(BaseModel):
     codigo: str | None = None
     razaoSocial: str = Field(min_length=1)
@@ -314,6 +359,41 @@ class PedidoStatusUpdateRequest(BaseModel):
     status: PedidoStatusNome
     formaPagamento: str | None = None
     motivo: str | None = Field(default=None, max_length=255)
+
+
+class PedidoAvaliacaoRequest(BaseModel):
+    nota: int = Field(ge=1, le=5)
+    comentario: str | None = Field(default=None, max_length=300)
+
+    @field_validator("comentario", mode="before")
+    @classmethod
+    def limpar_comentario(cls, valor: str | None) -> str | None:
+        if valor is None:
+            return None
+        texto = valor.strip()
+        return texto or None
+
+
+class PedidoAvaliacaoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    pedidoId: int
+    nota: int
+    comentario: str | None
+    dataHora: datetime
+
+
+class ChamadoMesaRequest(BaseModel):
+    tipo: Literal["ATENDENTE", "CONTA", "AGUA"]
+
+
+class ChamadoMesaResponse(BaseModel):
+    id: int
+    mesaId: int
+    numeroMesa: int
+    tipo: Literal["ATENDENTE", "CONTA", "AGUA"]
+    criadoEm: datetime
 
 
 class PedidoEditRequest(BaseModel):
@@ -473,6 +553,27 @@ class RelatorioBcgItem(BaseModel):
     temFichaTecnica: bool
 
 
+class AvaliacaoPorNotaResponse(BaseModel):
+    nota: int
+    quantidade: int
+
+
+class AvaliacaoComentarioResponse(BaseModel):
+    id: int
+    pedidoId: int
+    mesaNumero: int | None
+    nota: int
+    comentario: str | None
+    dataHora: datetime
+
+
+class RelatorioAvaliacoesResponse(BaseModel):
+    notaMedia: float
+    totalAvaliacoes: int
+    quantidadePorNota: list[AvaliacaoPorNotaResponse]
+    comentariosRecentes: list[AvaliacaoComentarioResponse]
+
+
 class RelatorioBcgResponse(BaseModel):
     inicio: date
     fim: date
@@ -540,3 +641,42 @@ class UserCreateRequest(BaseModel):
     @classmethod
     def cpf_valido(cls, v: str) -> str:
         return _validar_cpf(v)
+
+
+class TurnoCaixaAbrirRequest(BaseModel):
+    valorInicial: Decimal = Field(ge=Decimal("0"), le=Decimal("99999999.99"))
+    observacao: str | None = Field(default=None, max_length=255)
+
+
+class TurnoCaixaFecharRequest(BaseModel):
+    valorContado: Decimal = Field(ge=Decimal("0"), le=Decimal("99999999.99"))
+    observacao: str | None = Field(default=None, max_length=255)
+
+
+class TurnoCaixaTotaisResponse(BaseModel):
+    pix: float
+    debito: float
+    credito: float
+    dinheiro: float
+    outros: float
+    totalVendas: float
+    quantidadeVendas: int
+
+
+class TurnoCaixaResponse(BaseModel):
+    id: int
+    aberto: bool
+    abertoPorId: int | None
+    abertoPor: str | None
+    abertoEm: datetime
+    valorInicial: float
+    fechadoPorId: int | None
+    fechadoPor: str | None
+    fechadoEm: datetime | None
+    valorContado: float | None
+    observacao: str | None
+    totais: TurnoCaixaTotaisResponse
+    # Dinheiro que deveria estar na gaveta: valor inicial + vendas em dinheiro.
+    valorEsperadoDinheiro: float
+    # valorContado - valorEsperadoDinheiro; negativo = falta, positivo = sobra. Nulo com o turno aberto.
+    diferenca: float | None
