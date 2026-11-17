@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1">
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand">
-  <link rel="stylesheet" href="../Css/user-menu.css?v=20261104-mesa-aberta">
+  <link rel="stylesheet" href="../Css/user-menu.css?v=20261116-chamados">
   <link rel="manifest" href="../manifest.webmanifest">
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
 </head>
@@ -292,6 +292,20 @@
       🚚 Entregue
     </div>
 
+    <div id="avaliacaoPedido" style="display:none; margin-top:20px; text-align:left; background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; box-shadow:0 12px 28px rgba(15,23,42,.06);">
+      <h3 style="margin:0 0 10px; font-size:20px;">Como foi seu pedido?</h3>
+      <div id="avaliacaoEstrelas" aria-label="Avaliar pedido" style="display:flex; gap:8px; margin-bottom:12px;">
+        <button type="button" class="avaliacao-estrela" data-nota="1" aria-label="Nota 1 de 5" style="font-size:28px; background:none; border:none; color:#d1d5db; cursor:pointer; padding:0;">★</button>
+        <button type="button" class="avaliacao-estrela" data-nota="2" aria-label="Nota 2 de 5" style="font-size:28px; background:none; border:none; color:#d1d5db; cursor:pointer; padding:0;">★</button>
+        <button type="button" class="avaliacao-estrela" data-nota="3" aria-label="Nota 3 de 5" style="font-size:28px; background:none; border:none; color:#d1d5db; cursor:pointer; padding:0;">★</button>
+        <button type="button" class="avaliacao-estrela" data-nota="4" aria-label="Nota 4 de 5" style="font-size:28px; background:none; border:none; color:#d1d5db; cursor:pointer; padding:0;">★</button>
+        <button type="button" class="avaliacao-estrela" data-nota="5" aria-label="Nota 5 de 5" style="font-size:28px; background:none; border:none; color:#d1d5db; cursor:pointer; padding:0;">★</button>
+      </div>
+      <textarea id="avaliacaoComentario" rows="3" maxlength="300" placeholder="Comentário opcional (até 300 caracteres)" style="width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:10px; padding:10px 12px; resize:none; font:inherit;"></textarea>
+      <button id="btnEnviarAvaliacao" type="button" class="btn-carrinho" style="margin-top:12px; width:100%;">Enviar avaliação</button>
+      <p id="avaliacaoMensagem" class="pedido-atualizacao" style="margin-top:8px; min-height:1.2em;"></p>
+    </div>
+
      <button class="btn-novo-pedido" onclick="novoPedido()">
   🔄 Fazer novo pedido
      </button>
@@ -346,9 +360,21 @@
   <main class="conteudo">
 
     <div id="avisoMesaFechada" class="aviso-mesa-fechada" role="status" hidden>
-      <strong>Esta mesa ainda não está aberta.</strong>
-      <span>Veja o cardápio à vontade. Para pedir, chame o atendente.</span>
+      <strong id="avisoMesaTitulo">Mesa indisponível</strong>
+      <span id="avisoMesaDescricao">Se a mesa estiver livre, o primeiro pedido a abrirá. Chamar o atendente é opcional.</span>
     </div>
+
+    <section id="chamadosMesa" class="chamados-mesa" aria-label="Solicitar atendimento" hidden>
+      <div>
+        <strong>Precisa de ajuda?</strong>
+        <span id="chamadosMesaMensagem" role="status" aria-live="polite">A equipe será avisada.</span>
+      </div>
+      <div class="chamados-mesa-acoes">
+        <button type="button" data-tipo-chamado="ATENDENTE">Chamar atendente</button>
+        <button type="button" data-tipo-chamado="CONTA">Pedir a conta</button>
+        <button type="button" data-tipo-chamado="AGUA">Pedir água</button>
+      </div>
+    </section>
 
     <!-- TOPO -->
     <div class="banner-topo">
@@ -778,6 +804,6 @@
   
 
 
-<script src="../JavaScript/user.js?v=20261104-mesa-aberta"></script>
+<script src="../JavaScript/user.js?v=20261116-qr-status-compat"></script>
 </body>
 </html>

@@ -55,7 +55,7 @@ auditoria exaustiva de segurança nem uma homologação de todos os módulos.
 | Média | Estoque com movimentação pela ficha técnica | Há insumos e produto_insumos; não foi localizada baixa no fluxo de pedidos. Registrar consumo, perda e estorno, vinculados ao pedido, e sugerir indisponibilidade quando faltar ingrediente. Definir em qual etapa ocorre o consumo. |
 | Média | Tempos por etapa e metas configuráveis | A espera atual usa a criação do pedido e limites fixos. Usar histórico para medir espera até iniciar, preparo e demora na retirada; configurar metas por categoria e turno. Isso identifica onde ocorre o gargalo. |
 | Média | Abertura e fechamento de caixa por turno | Registrar saldo inicial, entradas, saídas, conferência por forma de pagamento e diferença. Complementa as vendas sem depender de integração bancária. |
-| Média | Chamados da mesa pelo QR Code | Cliente solicita atendimento, água ou conta e o atendente recebe uma fila com confirmação. Usar token da mesa e intervalo mínimo entre chamados para evitar repetição. |
+| Concluída | Chamados da mesa pelo QR Code | Implementado com token da mesa, chamadas de atendente/conta/água, intervalo mínimo por tipo, fila do atendente em tempo real e liberação após atendimento. |
 | Média | Saúde da conexão e recuperação | Exibir claramente última sincronização, reconexão e falha de envio. Pedidos demonstrativos não devem parecer reais durante indisponibilidade da API. Para repetição de envio, usar idempotência no backend. |
 | Média | Consolidar o tema visual | O design-system contém várias camadas de sobrescrita; cores semânticas estavam sendo substituídas. Organizar tokens de status e componentes compartilhados reduz correções pontuais e diferenças entre telas. |
 | Baixa | Harmonizar documentação e módulos atuais | O TAP exclui aplicativo nativo, enquanto existe estrutura Android/Capacitor. Atualizar escopo, acessos e instruções de execução para refletir o produto realmente entregue. |
@@ -65,7 +65,7 @@ auditoria exaustiva de segurança nem uma homologação de todos os módulos.
 1. Pagamentos próprios, fechamento transacional e indicadores financeiros.
 2. Modificadores por item e histórico completo das alterações.
 3. Movimentação de estoque e metas de tempo por etapa.
-4. Chamados por QR Code, caixa por turno e padronização visual.
+4. Caixa por turno e padronização visual.
 
 Integração bancária, emissão fiscal e delivery estão fora do escopo atual do TAP.
 Podem ser discutidos em uma fase posterior, com requisitos específicos.

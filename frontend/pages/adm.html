@@ -81,6 +81,7 @@
             <a href="#rel-cardapio" class="dropdown-link" onclick="navigateTo('rel-cardapio')">Desempenho do Cardápio</a>
             <a href="#rel-bcg" class="dropdown-link" onclick="navigateTo('rel-bcg')">Matriz BCG</a>
             <a href="#rel-operacional" class="dropdown-link" onclick="navigateTo('rel-operacional')">Operacional</a>
+            <a href="#rel-avaliacoes" class="dropdown-link" onclick="navigateTo('rel-avaliacoes')">Avaliações</a>
           </div>
         </div>
 
@@ -262,6 +263,10 @@
               <button type="button" class="home-shortcut" onclick="navigateTo('rel-operacional')">
                 <span class="shortcut-icon">◱</span>
                 <span><strong>Operacional</strong><small>Eficiência e tempos</small></span>
+              </button>
+              <button type="button" class="home-shortcut" onclick="navigateTo('rel-avaliacoes')">
+                <span class="shortcut-icon">★</span>
+                <span><strong>Avaliações</strong><small>Feedback dos clientes</small></span>
               </button>
             </div>
 
@@ -1479,6 +1484,64 @@
               <div class="stat-label">Pedidos Entregues no Prazo</div>
               <div class="stat-value">—</div>
               <div class="stat-change">Clique em Gerar</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- AVALIAÇÕES -->
+        <section id="rel-avaliacoes" class="content-section">
+          <div class="section-header">
+            <h1>Avaliações</h1>
+            <p>Feedback dos clientes por pedido e percepção geral</p>
+          </div>
+
+          <div class="report-filters">
+            <div class="filter-group">
+              <label>Data Inicial</label>
+              <input type="date" id="relAvaliacoesInicio" onchange="carregarRelAvaliacoes(this.value||null, document.getElementById('relAvaliacoesFim').value||null)" />
+            </div>
+            <div class="filter-group">
+              <label>Data Final</label>
+              <input type="date" id="relAvaliacoesFim" onchange="carregarRelAvaliacoes(document.getElementById('relAvaliacoesInicio').value||null, this.value||null)" />
+            </div>
+            <button class="btn-secondary" type="button" data-export-format="pdf">Exportar PDF</button>
+            <button class="btn-secondary" type="button" data-export-format="excel">Exportar Excel</button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Nota Média</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total de Avaliações</div>
+              <div class="stat-value">—</div>
+              <div class="stat-change">Selecione o período</div>
+            </div>
+          </div>
+
+          <div class="report-section">
+            <h3>Distribuição por nota</h3>
+            <div id="avaliacaoBarChart" style="max-width:760px; margin-top:12px;"></div>
+          </div>
+
+          <div class="report-section">
+            <h3>Últimos comentários</h3>
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Mesa</th>
+                    <th>Nota</th>
+                    <th>Data</th>
+                    <th>Comentário</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="4" style="text-align:center;color:#94a3b8">Selecione o período para carregar os comentários</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </section>

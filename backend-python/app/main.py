@@ -26,6 +26,7 @@ from app.routers import (
     caixa,
     categorias,
     cep,
+    chamados,
     clientes,
     fornecedores,
     funcionarios,
@@ -75,6 +76,7 @@ app.include_router(auth.router)
 app.include_router(caixa.router)
 app.include_router(categorias.router)
 app.include_router(cep.router)
+app.include_router(chamados.router)
 app.include_router(clientes.router)
 app.include_router(fornecedores.router)
 app.include_router(funcionarios.router)

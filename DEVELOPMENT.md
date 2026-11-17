@@ -229,7 +229,8 @@ Regras completas em `docs/Requisitos/RegrasNegocioAcessos.md`.
 - Status de pedido: maquina de estados em `routers/pedidos.py` (`TRANSICOES_STATUS`). Cancelamento exige `motivo`; `ENTREGUE` (pago) exige `formaPagamento`.
 - Mesas: cadastro via `PUT /api/mesas/{id}` (Gerente); status via `PATCH /api/mesas/{id}/status`; reserva via `PATCH /api/mesas/{id}/reserva`.
 - Fluxo do cliente (`user.html`): a mesa vem so do QR Code (`?mesaToken=`). `POST /api/pedidos` envia `mesaToken` e devolve `tokenAcesso`; o acompanhamento usa `GET /api/pedidos/{id}?token=<tokenAcesso>`. Sem `mesaToken` valido, o pedido anonimo recebe 403.
-- Abertura da mesa: o pedido anonimo so e aceito com a mesa em `ocupada`, status definido pela equipe ("Abrir mesa" no atendente) ou por um pedido lancado por ela; caso contrario, 409. Com a mesa fechada, o cardapio continua visivel e `user.html` mostra um aviso. Fechar a conta libera a mesa e volta a bloquear. O QR Code impresso e fixo: uma foto dele ainda funciona enquanto a mesa estiver aberta, por isso ha tambem o limite de 20 pedidos anonimos por mesa a cada 10 minutos (429).
+- Abertura da mesa: o primeiro pedido pelo QR Code pode iniciar em mesa `livre` e a abre na mesma transacao, sem exigir chamado ao atendente. Mesas `reservada`, `manutencao` ou `aguardando_pagamento` recusam pedido (409); a equipe tambem pode abrir a mesa pelo painel. A abertura so e persistida quando o pedido e valido. Fechar a conta libera a mesa. O QR Code impresso e fixo, por isso ha tambem o limite de 20 pedidos anonimos por mesa a cada 10 minutos (429).
+- Chamados pelo QR Code: `POST /api/chamados/mesa?token=<mesaToken>` aceita `ATENDENTE`, `CONTA` e `AGUA` somente enquanto a mesa estiver `ocupada`; um chamado aberto do mesmo tipo ou um novo chamado do mesmo tipo antes de 2 minutos e recusado. `GET /api/chamados/mesa?token=...` informa os chamados ainda abertos para liberar os botoes no cliente. Atendente e Gerente consultam `GET /api/chamados` e atendem via `PATCH /api/chamados/{id}/atender`. Chamados sao publicados no WebSocket da equipe e encerrados automaticamente ao fechar a mesa.
 - Frontend: a sessao guarda `backendRole`; cada tela confere o perfil ao carregar e redireciona para a tela inicial do perfil. Perfil desconhecido nao entra. Ocultar menus e so usabilidade: a autorizacao real e do backend.
 
 ## WebSocket
@@ -252,6 +253,8 @@ Eventos publicados:
 { "type": "PEDIDO_ATUALIZADO", "pedido": {} }
 { "type": "VENDA_CAIXA", "pedido": {} }
 { "type": "ESTOQUE_BAIXO", "insumos": [] }
+{ "type": "CHAMADO_MESA", "chamado": {} }
+{ "type": "CHAMADO_ATENDIDO", "chamado": {} }
 ```
 
 `ESTOQUE_BAIXO` e enviado somente a equipe, quando um insumo atinge o estoque minimo.

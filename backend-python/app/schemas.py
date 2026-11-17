@@ -361,6 +361,41 @@ class PedidoStatusUpdateRequest(BaseModel):
     motivo: str | None = Field(default=None, max_length=255)
 
 
+class PedidoAvaliacaoRequest(BaseModel):
+    nota: int = Field(ge=1, le=5)
+    comentario: str | None = Field(default=None, max_length=300)
+
+    @field_validator("comentario", mode="before")
+    @classmethod
+    def limpar_comentario(cls, valor: str | None) -> str | None:
+        if valor is None:
+            return None
+        texto = valor.strip()
+        return texto or None
+
+
+class PedidoAvaliacaoResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    pedidoId: int
+    nota: int
+    comentario: str | None
+    dataHora: datetime
+
+
+class ChamadoMesaRequest(BaseModel):
+    tipo: Literal["ATENDENTE", "CONTA", "AGUA"]
+
+
+class ChamadoMesaResponse(BaseModel):
+    id: int
+    mesaId: int
+    numeroMesa: int
+    tipo: Literal["ATENDENTE", "CONTA", "AGUA"]
+    criadoEm: datetime
+
+
 class PedidoEditRequest(BaseModel):
     itens: list[PedidoItemRequest] = Field(min_length=1, max_length=100)
     observacoes: str | None = Field(default=None, max_length=2000)
@@ -516,6 +551,27 @@ class RelatorioBcgItem(BaseModel):
     acaoSugerida: str
     lucro: float | None
     temFichaTecnica: bool
+
+
+class AvaliacaoPorNotaResponse(BaseModel):
+    nota: int
+    quantidade: int
+
+
+class AvaliacaoComentarioResponse(BaseModel):
+    id: int
+    pedidoId: int
+    mesaNumero: int | None
+    nota: int
+    comentario: str | None
+    dataHora: datetime
+
+
+class RelatorioAvaliacoesResponse(BaseModel):
+    notaMedia: float
+    totalAvaliacoes: int
+    quantidadePorNota: list[AvaliacaoPorNotaResponse]
+    comentariosRecentes: list[AvaliacaoComentarioResponse]
 
 
 class RelatorioBcgResponse(BaseModel):

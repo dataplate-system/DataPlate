@@ -100,11 +100,17 @@
           <strong id="statTempo">--</strong>
           <small>Pedidos ativos</small>
         </article>
+        <article class="stat-card stat-chamados">
+          <span>Chamados abertos</span>
+          <strong id="statChamados">0</strong>
+          <small>Aguardando atendimento</small>
+        </article>
       </section>
 
       <!-- ABAS -->
       <nav class="page-tabs">
         <button class="tab-btn" data-tab="board" type="button">Fila de Pedidos</button>
+        <button class="tab-btn" data-tab="chamados" type="button">Chamados <strong id="countChamados">0</strong></button>
         <button class="tab-btn" data-tab="mesas" type="button">Mesas do Salão</button>
       </nav>
 
@@ -141,6 +147,20 @@
             <div class="column-list" id="listPronto"></div>
           </article>
 
+        </section>
+      </div>
+
+      <!-- TAB: CHAMADOS -->
+      <div class="tab-panel" data-tab-panel="chamados">
+        <section class="chamados-section">
+          <div class="mesas-header">
+            <div>
+              <p class="mesas-eyebrow">Solicitações do salão</p>
+              <h2>Chamados em aberto</h2>
+            </div>
+            <span id="chamadosResumo" class="mesas-resumo">Carregando...</span>
+          </div>
+          <div class="chamados-grid" id="chamadosGrid" aria-live="polite"></div>
         </section>
       </div>
 
@@ -251,6 +271,6 @@
       <p id="editOrderError" role="alert"></p>
     </form>
   </dialog>
-  <script src="../JavaScript/atendente.js?v=20261109-filtros" defer></script>
+  <script src="../JavaScript/atendente.js?v=20261116-chamados" defer></script>
 </body>
 </html>

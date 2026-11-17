@@ -117,6 +117,7 @@ const SECTION_ROLES = {
   'rel-cardapio':        ['admin', 'gerente'],
   'rel-bcg':             ['admin', 'gerente'],
   'rel-operacional':     ['admin', 'gerente'],
+  'rel-avaliacoes':      ['admin', 'gerente'],
   'config-restaurante':  ['admin', 'gerente'],
   'config-usuarios':     ['admin', 'gerente'],
   'config-integracao':   ['admin', 'gerente'],
@@ -671,6 +672,7 @@ function navigateTo(sectionId, options = {}) {
     'rel-cardapio':      ['Relatórios',   'Desempenho do Cardápio'],
     'rel-bcg':           ['Relatórios',   'Matriz BCG'],
     'rel-operacional':   ['Relatórios',   'Operacional'],
+    'rel-avaliacoes':    ['Relatórios',   'Avaliações'],
     'config-restaurante':['Configurações','Restaurante'],
     'config-usuarios':   ['Configurações','Usuários'],
     'config-integracao': ['Configurações','Integrações'],
@@ -721,6 +723,7 @@ function navigateTo(sectionId, options = {}) {
     'rel-cardapio':    () => { preencherDatasRelatorio('rel-cardapio', 30);   const r = getRelDateRange('rel-cardapio');    carregarRelCardapio(r.inicio, r.fim); },
     'rel-bcg':         () => { preencherDatasRelatorio('rel-bcg', 30);        const r = getRelDateRange('rel-bcg');         carregarRelBcg(r.inicio, r.fim); },
     'rel-operacional': () => { preencherDatasRelatorio('rel-operacional', 30); const r = getRelDateRange('rel-operacional'); carregarRelOperacional(r.inicio, r.fim); },
+    'rel-avaliacoes':  () => { preencherDatasRelatorio('rel-avaliacoes', 30); const r = getRelDateRange('rel-avaliacoes'); carregarRelAvaliacoes(r.inicio, r.fim); },
     'config-usuarios': carregarUsuarios,
     'config-restaurante': carregarConfiguracaoRestaurante,
     insumos: carregarInsumos
@@ -790,6 +793,7 @@ const ADMIN_HOME_ROUTES = [
   { id: 'rel-cardapio', labels: ['desempenho do cardapio', 'desempenho do cardápio', 'relatorio cardapio', 'relatório cardápio'] },
   { id: 'rel-bcg', labels: ['matriz bcg', 'bcg', 'classificacao de produtos', 'classificação de produtos'] },
   { id: 'rel-operacional', labels: ['relatorio operacional', 'relatório operacional', 'operacional'] },
+  { id: 'rel-avaliacoes', labels: ['avaliacoes', 'avaliações', 'relatorio de avaliacoes', 'relatório de avaliações', 'feedback dos clientes'] },
   { id: 'config-restaurante', labels: ['restaurante', 'configuracao restaurante', 'configuração restaurante'] },
   { id: 'config-usuarios', labels: ['usuarios', 'usuários', 'permissoes', 'permissões'] },
   { id: 'config-integracao', labels: ['integracao', 'integração', 'integracoes', 'integrações'] },
@@ -4084,6 +4088,69 @@ function carregarRelOperacional(inicio, fim) {
       setStatByLabel('rel-operacional', 'Pedidos Entregues no Prazo', `${data.taxaEntrega || 0}%`, `de ${data.totalPedidos || 0} pedidos`);
     })
     .catch((err) => console.error('[rel-operacional]', err));
+}
+
+function carregarRelAvaliacoes(inicio, fim) {
+  const params = buildDateParams(inicio, fim);
+  getJson(`/relatorios/avaliacoes${params}`)
+    .then((data) => {
+      const notaMedia = Number(data.notaMedia || 0);
+      const totalAvaliacoes = Number(data.totalAvaliacoes || 0);
+      const distribuicao = Array.isArray(data.quantidadePorNota) ? data.quantidadePorNota : [];
+      const maxQuantidade = distribuicao.reduce((max, item) => Math.max(max, Number(item.quantidade || 0)), 0);
+
+      setStatByLabel('rel-avaliacoes', 'Nota Média', `${notaMedia.toFixed(1).replace('.', ',')}/5`, `${totalAvaliacoes} avaliação(ões) no período`);
+      setStatByLabel('rel-avaliacoes', 'Total de Avaliações', String(totalAvaliacoes), `${data.comentariosRecentes?.length || 0} comentários recentes`);
+
+      const chartEl = document.getElementById('avaliacaoBarChart');
+      if (chartEl) {
+        if (!distribuicao.length) {
+          chartEl.innerHTML = '<div style="color:#94a3b8;padding:18px 0;text-align:center">Nenhuma avaliação registrada no período.</div>';
+        } else {
+          chartEl.innerHTML = distribuicao.map((item) => {
+            const nota = Number(item.nota || 0);
+            const quantidade = Number(item.quantidade || 0);
+            const width = maxQuantidade > 0 ? Math.max(8, (quantidade / maxQuantidade) * 100) : 0;
+            return `
+              <div style="display:grid;grid-template-columns:52px 1fr 36px;align-items:center;gap:10px;margin-bottom:10px;">
+                <strong style="font-size:14px;">${nota}★</strong>
+                <div style="background:#e5e7eb;border-radius:999px;overflow:hidden;height:12px;">
+                  <div style="height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);width:${width}%;border-radius:999px;"></div>
+                </div>
+                <span style="font-size:13px;color:#475569;text-align:right;">${quantidade}</span>
+              </div>`;
+          }).join('');
+        }
+      }
+
+      const tbody = document.querySelector('#rel-avaliacoes .data-table tbody');
+      if (!tbody) return;
+      const comentarios = Array.isArray(data.comentariosRecentes) ? data.comentariosRecentes : [];
+      if (!comentarios.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">Nenhum comentário registrado para esse período.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = comentarios.map((item) => {
+        const dataHora = item.dataHora ? new Date(item.dataHora).toLocaleString('pt-BR') : '—';
+        const mesaNumero = item.mesaNumero != null ? `Mesa ${item.mesaNumero}` : 'Mesa não informada';
+        return `
+          <tr>
+            <td>${mesaNumero}</td>
+            <td>${item.nota}★</td>
+            <td>${dataHora}</td>
+            <td>${escapeHtml(item.comentario || 'Sem comentário')}</td>
+          </tr>`;
+      }).join('');
+    })
+    .catch((err) => {
+      console.error('[rel-avaliacoes]', err);
+      const tbody = document.querySelector('#rel-avaliacoes .data-table tbody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:20px">Erro ao carregar avaliações.</td></tr>';
+      }
+      showToast(err.message || 'Erro ao carregar relatório de avaliações.');
+    });
 }
 
 function buildDateParams(inicio, fim) {

@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models import Mesa, Role, User
 from app.security import exigir_perfis
-from app.schemas import MesaRequest, MesaReservaRequest, MesaResponse, MesaStatusRequest
+from app.schemas import ChamadoMesaResponse, MesaRequest, MesaReservaRequest, MesaResponse, MesaStatusRequest
+from app.routers.chamados import _publicar_evento, encerrar_chamados_da_mesa
 
 
 DEFAULT_RESTAURANTE_ID = 1
@@ -36,7 +37,7 @@ def listar_mesas(
 
 
 @router.get("/por-token/{token}")
-def buscar_mesa_por_token(token: UUID, db: Session = Depends(get_db)) -> dict[str, int | bool]:
+def buscar_mesa_por_token(token: UUID, db: Session = Depends(get_db)) -> dict[str, int | bool | str]:
     mesa = db.scalar(
         select(Mesa).where(
             Mesa.qr_code_token == token,
@@ -46,7 +47,12 @@ def buscar_mesa_por_token(token: UUID, db: Session = Depends(get_db)) -> dict[st
     if mesa is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="QR Code de mesa invalido ou inativo.")
 
-    return {"mesaId": mesa.id, "numero": mesa.numero, "aberta": mesa.status == "ocupada"}
+    return {
+        "mesaId": mesa.id,
+        "numero": mesa.numero,
+        "aberta": mesa.status == "ocupada",
+        "status": mesa.status,
+    }
 
 
 @router.get("/{mesa_id}/qrcode.svg", dependencies=[Depends(exigir_perfis(Role.GERENTE))])
@@ -105,10 +111,17 @@ def atualizar_mesa(mesa_id: int, request: MesaRequest, db: Session = Depends(get
     if mesa is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Mesa nao encontrada: {mesa_id}")
 
+    status_anterior = mesa.status
     _apply_request(mesa, request)
+    chamados_encerrados = (
+        encerrar_chamados_da_mesa(db, mesa.id)
+        if status_anterior == "ocupada" and mesa.status != "ocupada"
+        else []
+    )
     db.add(mesa)
     db.commit()
     db.refresh(mesa)
+    _publicar_chamados_encerrados(chamados_encerrados)
     return _to_response(mesa)
 
 
@@ -124,10 +137,16 @@ def atualizar_status_mesa(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Status de mesa invalido: {request.status}")
 
     mesa = _obter_mesa_ativa(db, mesa_id)
+    chamados_encerrados = (
+        encerrar_chamados_da_mesa(db, mesa.id)
+        if mesa.status == "ocupada" and novo_status != "ocupada"
+        else []
+    )
     mesa.status = novo_status
     db.add(mesa)
     db.commit()
     db.refresh(mesa)
+    _publicar_chamados_encerrados(chamados_encerrados)
     return _to_response(mesa, usuario.role == Role.CAIXA)
 
 
@@ -138,6 +157,7 @@ def atualizar_status_mesa(
 )
 def atualizar_reserva_mesa(mesa_id: int, request: MesaReservaRequest, db: Session = Depends(get_db)) -> MesaResponse:
     mesa = _obter_mesa_ativa(db, mesa_id)
+    status_anterior = mesa.status
     nome = _blank_to_none(request.reservaNome)
     telefone = _blank_to_none(request.reservaTelefone)
 
@@ -156,9 +176,15 @@ def atualizar_reserva_mesa(mesa_id: int, request: MesaReservaRequest, db: Sessio
     if "observacoes" in request.model_fields_set:
         mesa.observacoes = _blank_to_none(request.observacoes)
 
+    chamados_encerrados = (
+        encerrar_chamados_da_mesa(db, mesa.id)
+        if status_anterior == "ocupada" and mesa.status != "ocupada"
+        else []
+    )
     db.add(mesa)
     db.commit()
     db.refresh(mesa)
+    _publicar_chamados_encerrados(chamados_encerrados)
     return _to_response(mesa)
 
 
@@ -172,9 +198,11 @@ def excluir_mesa(mesa_id: int, db: Session = Depends(get_db)) -> Response:
     if mesa is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Mesa nao encontrada: {mesa_id}")
 
+    chamados_encerrados = encerrar_chamados_da_mesa(db, mesa.id)
     mesa.ativo = False
     db.add(mesa)
     db.commit()
+    _publicar_chamados_encerrados(chamados_encerrados)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -217,6 +245,11 @@ def _blank_to_none(value: str | None) -> str | None:
     if value is None or not value.strip():
         return None
     return value.strip()
+
+
+def _publicar_chamados_encerrados(chamados: list[ChamadoMesaResponse]) -> None:
+    for chamado in chamados:
+        _publicar_evento("CHAMADO_ATENDIDO", chamado)
 
 
 def _to_response(mesa: Mesa, ocultar_reserva: bool = False) -> MesaResponse:

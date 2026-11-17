@@ -195,6 +195,30 @@ CREATE TABLE IF NOT EXISTS pedido_status_historico (
     motivo VARCHAR(255)
 );
 
+CREATE TABLE IF NOT EXISTS pedido_avaliacao (
+    id_pedido_avaliacao BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_pedido BIGINT NOT NULL UNIQUE REFERENCES pedido(id_pedido) ON DELETE CASCADE,
+    nota SMALLINT NOT NULL CHECK (nota BETWEEN 1 AND 5),
+    comentario VARCHAR(300),
+    avaliado_em TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_pedido_avaliacao_data ON pedido_avaliacao (avaliado_em DESC);
+
+CREATE TABLE IF NOT EXISTS chamado_mesa (
+    id_chamado_mesa BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_mesa BIGINT NOT NULL REFERENCES mesa(id_mesa) ON DELETE CASCADE,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('ATENDENTE', 'CONTA', 'AGUA')),
+    criado_em TIMESTAMP NOT NULL DEFAULT now(),
+    atendido_em TIMESTAMP,
+    atendido_por BIGINT REFERENCES usuarios(id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_chamado_mesa_aberto_tipo
+    ON chamado_mesa (id_mesa, tipo)
+    WHERE atendido_em IS NULL;
+CREATE INDEX IF NOT EXISTS idx_chamado_mesa_fila
+    ON chamado_mesa (criado_em)
+    WHERE atendido_em IS NULL;
+
 ALTER TABLE pedido ADD COLUMN IF NOT EXISTS id_cliente BIGINT;
 DO $$ BEGIN
     IF NOT EXISTS (
