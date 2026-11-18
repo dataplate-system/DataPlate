@@ -76,6 +76,7 @@ SCHEMA_COLUNAS = (
     ),
     ("pedido_status_historico", "motivo", "ALTER TABLE pedido_status_historico ADD COLUMN IF NOT EXISTS motivo VARCHAR(255)"),
     ("pedido", "token_acesso", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS token_acesso UUID NOT NULL DEFAULT gen_random_uuid()"),
+    ("pedido", "urgente", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS urgente BOOLEAN NOT NULL DEFAULT FALSE"),
     ("pedido", "pago_em", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS pago_em TIMESTAMP"),
     ("pedido", "forma_pagamento", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(30)"),
 )

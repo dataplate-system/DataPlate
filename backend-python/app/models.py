@@ -231,6 +231,7 @@ class Pedido(Base):
     observacoes: Mapped[str | None] = mapped_column(Text)
     valor_total: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     atualizado_em: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    urgente: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     pago_em: Mapped[datetime | None] = mapped_column(DateTime)
     forma_pagamento: Mapped[str | None] = mapped_column(String(30))
     token_acesso: Mapped[UUID] = mapped_column(

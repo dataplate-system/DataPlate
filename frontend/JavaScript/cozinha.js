@@ -36,7 +36,6 @@ function origemPedido(order) {
 }
 const ACTIVE_STATUSES = ['RECEBIDO', 'EM_PREPARO', 'PRONTO'];
 const AUTO_REFRESH_MS = 15000;
-const KITCHEN_URGENT_KEY = 'dataplate:kitchenUrgentOrders';
 const KITCHEN_CHECKLIST_KEY = 'dataplate:kitchenChecklist';
 
 const STATUS_META = {
@@ -142,7 +141,6 @@ let websocketRetryDelay = 1000;
 let wsKitchenLoadTimer = null;
 let fallbackMode = false;
 let fallbackNoticeShown = false;
-let urgentOrderIds = new Set();
 let checklistState = {};
 const updatingOrderIds = new Set();
 let closedOrders = new Map();
@@ -168,7 +166,6 @@ function writeJsonStorage(key, value) {
 }
 
 function loadOperationalState() {
-  urgentOrderIds = new Set(readJsonStorage(KITCHEN_URGENT_KEY, []));
   checklistState = readJsonStorage(KITCHEN_CHECKLIST_KEY, {});
   const hoje = new Date().toDateString();
   closedOrders = new Map(
@@ -379,14 +376,21 @@ function orderKey(orderOrId) {
 }
 
 function isUrgentOrder(orderOrId) {
-  return urgentOrderIds.has(orderKey(orderOrId));
+  const order = typeof orderOrId === 'object' ? orderOrId : kitchenOrders.find(o => String(o.id) === String(orderOrId));
+  return Boolean(order?.urgente) && ACTIVE_STATUSES.includes(order.status);
 }
 
-function toggleUrgentOrder(orderId) {
-  const key = orderKey(orderId);
-  if (urgentOrderIds.has(key)) urgentOrderIds.delete(key);
-  else urgentOrderIds.add(key);
-  writeJsonStorage(KITCHEN_URGENT_KEY, Array.from(urgentOrderIds));
+async function toggleUrgentOrder(orderId) {
+  const order = kitchenOrders.find(o => String(o.id) === String(orderId));
+  if (!order) return;
+  try {
+    const updated = await putJson(`/pedidos/${orderId}/urgente`, { urgente: !isUrgentOrder(order) });
+    Object.assign(order, updated);
+    renderKitchen();
+    showToast(isUrgentOrder(order) ? 'Pedido marcado como urgente.' : 'Urgência removida.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Erro ao atualizar urgência.', 'error');
+  }
 }
 
 function itemKey(item, index) {
@@ -423,9 +427,7 @@ function getChecklistStats(order) {
 
 function cleanupOrderState(orderId) {
   const key = orderKey(orderId);
-  urgentOrderIds.delete(key);
   delete checklistState[key];
-  writeJsonStorage(KITCHEN_URGENT_KEY, Array.from(urgentOrderIds));
   writeJsonStorage(KITCHEN_CHECKLIST_KEY, checklistState);
 }
 
@@ -518,14 +520,16 @@ function getAction(order) {
   const isUpdating = updatingOrderIds.has(orderKey(order.id));
   return `
     <button
-      class="action-button ${meta.actionClass}"
+      class="action-button order-icon order-advance ${meta.actionClass}"
+      title="${isUpdating ? 'Atualizando pedido' : meta.actionLabel}"
+      aria-label="${isUpdating ? 'Atualizando pedido' : meta.actionLabel}"
       type="button"
       data-order-action
       data-order-id="${order.id}"
       data-next-status="${meta.nextStatus}"
       ${isUpdating ? 'disabled aria-busy="true"' : ''}
     >
-      ${isUpdating ? 'Atualizando...' : meta.actionLabel}
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${meta.nextStatus === 'PRONTO' ? '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>' : '<path d="m9 5 10 7-10 7V5Z"/>'}</svg>
     </button>
   `;
 }
@@ -549,12 +553,12 @@ function buildCard(order) {
   const isUrgent = isUrgentOrder(order);
 
   const chips = [
-    isUrgent ? '<span class="priority-chip">Urgente</span>' : '',
     sla.level !== 'ok' ? `<span class="sla-chip ${sla.level}">${escapeHtml(sla.label)}</span>` : ''
   ].filter(Boolean).join('');
 
   return `
     <article class="kitchen-card ${isUrgent ? 'is-urgent' : ''} sla-${sla.level}" data-order-id="${order.id}">
+      ${isUrgent ? `<div class="urgent-ribbon"><strong>URGENTE</strong><small>${order.status === 'PRONTO' ? 'Priorizar retirada' : order.status === 'EM_PREPARO' ? 'Priorizar preparo' : 'Priorizar atendimento'}</small></div>` : ''}
       <div class="card-main">
         <div class="card-topline">
           <strong>Pedido #${escapeHtml(order.id)} - ${escapeHtml(origemPedido(order))}</strong>
@@ -614,7 +618,8 @@ function renderStats(activeOrders) {
 
 function renderNextOrder(filteredOrders) {
   const strip = document.getElementById('nextOrderStrip');
-  const nextOrder = filteredOrders.find((order) => order.status === 'RECEBIDO')
+  const nextOrder = filteredOrders.find((order) => isUrgentOrder(order) && ['RECEBIDO', 'EM_PREPARO'].includes(order.status))
+    || filteredOrders.find((order) => order.status === 'RECEBIDO')
     || filteredOrders.find((order) => order.status === 'EM_PREPARO');
 
   if (!nextOrder) {
@@ -628,13 +633,13 @@ function renderNextOrder(filteredOrders) {
   const items = getItems(nextOrder);
   const itemCount = items.reduce((total, item) => total + Number(item.quantidade || 0), 0);
 
-  strip.className = `next-order-strip sla-${sla.level}`;
+  strip.className = `next-order-strip sla-${sla.level} ${isUrgent ? 'is-urgent' : ''}`;
   strip.innerHTML = `
     <div class="next-order-main">
       <span>Pedido da vez</span>
       <strong>#${escapeHtml(nextOrder.id)} - ${escapeHtml(origemPedido(nextOrder))}</strong>
       <div class="next-order-meta">
-        ${isUrgent ? '<span class="priority-chip">Urgente</span>' : ''}
+        ${isUrgent ? '<span class="priority-chip urgent-priority">URGENTE</span>' : ''}
         <span class="sla-chip ${sla.level}">${escapeHtml(sla.label)}</span>
         <span class="sla-chip">${formatElapsed(nextOrder.dataHora)}</span>
         <span class="sla-chip">${itemCount || items.length} item(ns)</span>
@@ -712,12 +717,12 @@ function renderTable(filteredOrders) {
     const sla = getSlaState(order);
     const isUrgent = isUrgentOrder(order);
     return `
-      <tr>
+      <tr class="${isUrgent ? 'urgent-row' : ''}">
         <td><strong>#${escapeHtml(order.id)}</strong></td>
         <td>${escapeHtml(origemPedido(order))}</td>
         <td>${escapeHtml(label)}</td>
         <td><span class="sla-chip ${sla.level}">${formatElapsed(order.dataHora)}</span></td>
-        <td>${isUrgent ? '<span class="priority-chip">Urgente</span>' : '<span class="sla-chip">Normal</span>'}</td>
+        <td>${isUrgent ? '<span class="priority-chip urgent-priority">URGENTE</span>' : '<span class="sla-chip">Normal</span>'}</td>
         <td>${formatCurrency(order.valorTotal)}</td>
         <td><span class="status-badge ${meta.badgeClass || ''}">${escapeHtml(meta.label || order.status)}</span></td>
         <td>${getAction(order).replace('action-button', 'row-action')}</td>
@@ -1181,8 +1186,6 @@ function bindEvents() {
     if (urgent) {
       event.preventDefault();
       toggleUrgentOrder(urgent.dataset.toggleUrgent);
-      renderKitchen();
-      showToast(isUrgentOrder(urgent.dataset.toggleUrgent) ? 'Pedido marcado como urgente.' : 'Urgência removida.', 'success');
       return;
     }
 

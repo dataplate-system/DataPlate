@@ -368,3 +368,7 @@ funcionarios, mesas, insumos, fichas, pedidos e historicos sao recriados.
 A carga recria os cinco logins, nove pedidos ativos recentes, historico de trinta
 dias e cenarios naturais de cancelamento. Tempos ativos ficam entre 5 e 19 minutos
 no momento da carga e continuam aumentando conforme o tempo real passa.
+
+## Prioridade de pedidos
+
+A migracao `015_pedido_urgente.sql` adiciona a prioridade persistente. Gerente e Cozinha podem usar `PUT /api/pedidos/{id}/urgente` com `{ "urgente": true }` (ou false), somente em RECEBIDO, EM_PREPARO e PRONTO. O evento PEDIDO_ATUALIZADO sincroniza a equipe. Na Cozinha, urgentes aparecem primeiro e podem ser filtrados em Urgentes; a prioridade nao muda o status nem o pagamento. Pedidos servidos ou encerrados deixam de exibir urgencia.

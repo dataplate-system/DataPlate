@@ -1,0 +1,27 @@
+/* Estados operacionais carregados depois do tema global. */
+body .kitchen-card.is-urgent { border: 2px solid #c2410c !important; border-left: 6px solid #c2410c !important; background: #fff !important; }
+body .kitchen-card .urgent-ribbon { display:flex; align-items:center; gap:8px; padding:10px 14px; margin:0 0 12px; background:#c2410c !important; color:#fff !important; font-family:Arial, sans-serif; font-size:14px; font-weight:800; letter-spacing:.08em; }
+body .urgent-ribbon small { margin-left:auto; color:#fff !important; font-family:Arial, sans-serif; font-size:12px; font-weight:600; letter-spacing:0; }
+body .next-order-strip.is-urgent .priority-chip, body .urgent-priority { display:inline-flex; gap:5px; padding:7px 10px; background:#c2410c !important; color:#fff !important; font-family:Arial, sans-serif; font-size:12px; line-height:1.3; font-weight:800; letter-spacing:.06em; border-radius:5px !important; }
+body tr.urgent-row > td { background:#fff7ed !important; }
+body tr.urgent-row > td:first-child { border-left:5px solid #c2410c !important; }
+body .next-order-strip.is-urgent { border:2px solid #c2410c !important; }
+#mesaModal label.at-pgto-opt { position:relative; cursor:pointer; box-sizing:border-box; }
+#mesaModal .at-pgto-radio { appearance:auto !important; display:block !important; position:static !important; width:20px !important; height:20px !important; margin:0 4px 0 0; accent-color:#1d4ed8; opacity:1 !important; flex-shrink:0; }
+#mesaModal .at-pgto-opt:has(input:checked) { border:2px solid #2563eb !important; background:#eff6ff !important; box-shadow:0 0 0 2px #bfdbfe !important; }
+#mesaModal .at-pgto-confirmation { color:#1e40af !important; font-weight:900; font-size:12px; white-space:nowrap; }
+#mesaModal .at-pgto-opt:focus-within { outline:2px solid #1d4ed8; outline-offset:3px; }
+@media(max-width:420px) { #mesaModal .at-pgto-opt { gap:8px; flex-wrap:wrap; } #mesaModal .at-pgto-icon { width:24px; height:24px; } }
+
+body .urgent-ribbon strong { font: inherit; color: #fff !important; }
+
+/* Avanco do pedido: controle compacto, alinhado a editar e cancelar. */
+body button.order-icon.order-advance {
+  width:44px !important; height:44px !important; min-width:44px !important; min-height:44px !important;
+  flex:0 0 44px !important; padding:0 !important;
+  background:#15803d !important; border:1px solid #15803d !important; color:#fff !important;
+}
+body button.order-icon.order-advance:hover { background:#166534 !important; border-color:#166534 !important; }
+body button.order-icon.order-advance:focus-visible { outline:3px solid #86efac; outline-offset:3px; }
+body button.order-advance svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+body button.order-advance[aria-busy="true"] { opacity:.55; cursor:wait; }

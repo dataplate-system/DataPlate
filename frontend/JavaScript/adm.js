@@ -2623,24 +2623,18 @@ document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
 // KITCHEN BOARD STATUS UPDATES
 // =============================================
 
-// TODO backend: adicionar campo "urgente BOOLEAN DEFAULT FALSE" na tabela pedido
-// e endpoint PUT /pedidos/{id}/urgente para sincronizar entre dispositivos.
-// Por ora a urgencia e propagada via localStorage (funciona no mesmo browser).
-window.marcarUrgente = function(pedidoId) {
-  const key = 'dataplate:kitchenUrgentOrders';
-  let ids = [];
-  try { ids = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) {}
-  const str = String(pedidoId);
-  const jaUrgente = ids.includes(str);
-  if (jaUrgente) {
-    ids = ids.filter(id => id !== str);
-    showToast('Urgência removida do pedido #' + pedidoId, 'success');
-  } else {
-    ids.push(str);
-    showToast('Pedido #' + pedidoId + ' marcado como URGENTE', 'success');
+window.marcarUrgente = async function(pedidoId, urgente, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await putJson(`/pedidos/${pedidoId}/urgente`, { urgente });
+    showToast(urgente ? 'Pedido priorizado na cozinha.' : 'Urgência removida.', 'success');
+    atualizarTelasPedido();
+    abrirDetalhesPedido(pedidoId);
+  } catch (err) {
+    showToast(err.message || 'Erro ao atualizar urgência.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
   }
-  localStorage.setItem(key, JSON.stringify(ids));
-  closeModal('orderDetailsModal');
 };
 
 // ENTREGUE nao e marcado pelo painel: so ocorre no pagamento (PDV) com formaPagamento.
@@ -4725,7 +4719,7 @@ function buildLinhaPedido(p) {
     <td>${dataExibida}</td>
     <td>${qtd} item(s)</td>
     <td>${formatCurrency(p.valorTotal)}</td>
-    <td>${pedidoStatusBadge(p.status)}</td>
+    <td>${pedidoStatusBadge(p.status)} ${p.urgente ? '<strong class="order-urgent-label">Urgente</strong>' : ''}</td>
     <td>-</td>
     <td><button class="btn-small" type="button" onclick="abrirDetalhesPedido(${p.id})">Ver</button></td>
   </tr>`;
@@ -4754,6 +4748,7 @@ window.abrirDetalhesPedido = function(id) {
           <div><span style="color:#64748b;font-weight:600">Status</span><br/>${pedidoStatusBadge(p.status)}</div>
           <div><span style="color:#64748b;font-weight:600">Pedido realizado em</span><br/>${p.dataHora ? new Date(p.dataHora).toLocaleString('pt-BR') : '-'}</div>
         </div>
+        ${p.urgente ? '<p class="order-urgent-label">Urgente — prioridade no painel da cozinha</p>' : ''}
         ${p.status === 'CANCELADO' ? `<div class="order-cancellation-details"><p><strong>Cancelado em:</strong> ${p.canceladoEm ? new Date(p.canceladoEm).toLocaleString('pt-BR') : 'Horário não registrado'}</p><p><strong>Origem do cancelamento:</strong> ${escapeHtml(p.origemCancelamento || 'Origem não registrada')}</p><p><strong>Motivo:</strong> ${escapeHtml(p.motivoCancelamento || 'Motivo não registrado')}</p></div>` : ''}
         <table class="data-table" style="font-size:13px">
           <thead><tr><th>Item</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unitário</th><th style="text-align:right">Subtotal</th></tr></thead>
@@ -4764,7 +4759,7 @@ window.abrirDetalhesPedido = function(id) {
         </div>
         ${isGerenteRole() ? `<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">
           ${p.status === 'PRONTO' && p.numeroMesa ? `<button class="btn-primary" type="button" onclick="alterarStatusPedido(${p.id},'SERVIDO');closeModal('orderDetailsModal')">Confirmar Entrega</button>` : ''}
-          ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#f59e0b;border-color:#fde68a" type="button" onclick="marcarUrgente(${p.id})">Urgente</button>` : ''}
+          ${['RECEBIDO','EM_PREPARO','PRONTO'].includes(p.status) ? `<button class="btn-secondary" style="color:#f59e0b;border-color:#fde68a" type="button" aria-pressed="${!!p.urgente}" onclick="marcarUrgente(${p.id},${!p.urgente},this)">${p.urgente ? 'Remover urgência' : 'Marcar urgente'}</button>` : ''}
           ${!['CANCELADO','ENTREGUE'].includes(p.status) ? `<button class="btn-secondary" style="color:#dc2626;border-color:#fecaca" type="button" onclick="cancelarPedido(${p.id})">Cancelar Pedido</button>` : ''}
         </div>` : ''}`;
     })

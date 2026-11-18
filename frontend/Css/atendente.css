@@ -917,3 +917,14 @@ body .atendente-main .mesa-card.has-open-call {
   .chamado-card { align-items: stretch; flex-direction: column; }
   .chamado-atender { width: 100%; }
 }
+
+/* Selecao explicita da forma de pagamento. */
+#mesaModal .at-pgto-opt.is-selected { border: 2px solid #2563eb !important; background: #eff6ff !important; box-shadow: 0 0 0 2px #bfdbfe !important; }
+#mesaModal .at-pgto-opt.is-selected .at-pgto-arrow { color: #1d4ed8; font-weight: 900; font-size: 24px; }
+#pgtoSelecionado { color: #1e40af; font-weight: 700; }
+
+#mesaModal .at-pgto-confirmation { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: #1e40af; white-space: nowrap; }
+@media (max-width: 420px) {
+  #mesaModal .at-pgto-opt { flex-wrap: wrap; }
+  #mesaModal .at-pgto-confirmation { font-size: 11px; }
+}

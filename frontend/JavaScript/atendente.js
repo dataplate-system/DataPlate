@@ -208,8 +208,8 @@ function buildCard(order) {
   // Mesa e servida; balcao tem retirada separada, validada pelo servidor.
   const actions = order.status === 'PRONTO'
     ? `<div class="card-actions">
-        <button class="action-button deliver" type="button" onclick="despachar(${order.id})">
-          ${order.numeroMesa ? 'Despachar' : 'Confirmar retirada'}
+        <button class="action-button deliver order-icon order-advance" type="button" title="${order.numeroMesa ? 'Confirmar entrega na mesa' : 'Confirmar retirada'}" aria-label="${order.numeroMesa ? 'Confirmar entrega na mesa' : 'Confirmar retirada'}" onclick="despachar(${order.id})">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 14h18M5 14a7 7 0 0 1 14 0M12 5V3M3 18h10m-3-3 3 3-3 3"/></svg>
         </button>
         ${editBtn}${cancelBtn}
       </div>`
@@ -543,6 +543,8 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
           + Novo Pedido nesta Mesa
         </button>
         ${gestaoMesa}`;
+    const selecionado = content.querySelector(`[data-pgto="${_mesaModalPgto}"]`);
+    if (selecionado) selecionarPgtoModal(_mesaModalPgto, selecionado);
       return;
     }
 
@@ -598,27 +600,28 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
           <div style="font-size:13px;font-weight:800;margin-bottom:8px">Solicitar pagamento — ${formatBRL(totalAtivo)}</div>
           <div style="font-size:12px;color:#64748b;margin-bottom:10px">O caixa sera notificado e processara o pagamento.</div>
           <div class="at-pgto-lista">
-            <button class="at-pgto-opt" onclick="selecionarPgtoModal('PIX',this)" data-pgto="PIX">
+            <label aria-pressed="false" class="at-pgto-opt" data-pgto="PIX"><input class="at-pgto-radio" type="radio" name="mesaPagamento" value="PIX" onchange="selecionarPgtoModal(this.value,this.closest('.at-pgto-opt'))">
               <img src="../images/menu/pix.png" class="at-pgto-icon" alt="PIX">
               <span class="at-pgto-info"><strong>PIX</strong><small>Pagamento instantaneo</small></span>
               <span class="at-pgto-arrow">›</span>
-            </button>
-            <button class="at-pgto-opt" onclick="selecionarPgtoModal('CREDITO',this)" data-pgto="CREDITO">
+            </label>
+            <label aria-pressed="false" class="at-pgto-opt" data-pgto="CREDITO"><input class="at-pgto-radio" type="radio" name="mesaPagamento" value="CREDITO" onchange="selecionarPgtoModal(this.value,this.closest('.at-pgto-opt'))">
               <img src="../images/menu/Credito.png" class="at-pgto-icon" alt="Credito">
               <span class="at-pgto-info"><strong>Cartao Credito</strong><small>Parcelamento disponivel</small></span>
               <span class="at-pgto-arrow">›</span>
-            </button>
-            <button class="at-pgto-opt" onclick="selecionarPgtoModal('DEBITO',this)" data-pgto="DEBITO">
+            </label>
+            <label aria-pressed="false" class="at-pgto-opt" data-pgto="DEBITO"><input class="at-pgto-radio" type="radio" name="mesaPagamento" value="DEBITO" onchange="selecionarPgtoModal(this.value,this.closest('.at-pgto-opt'))">
               <img src="../images/menu/Debito.png" class="at-pgto-icon" alt="Debito">
               <span class="at-pgto-info"><strong>Cartao Debito</strong><small>Debito na hora</small></span>
               <span class="at-pgto-arrow">›</span>
-            </button>
-            <button class="at-pgto-opt" onclick="selecionarPgtoModal('DINHEIRO',this)" data-pgto="DINHEIRO">
+            </label>
+            <label aria-pressed="false" class="at-pgto-opt" data-pgto="DINHEIRO"><input class="at-pgto-radio" type="radio" name="mesaPagamento" value="DINHEIRO" onchange="selecionarPgtoModal(this.value,this.closest('.at-pgto-opt'))">
               <img src="../images/menu/dinheiro.png" class="at-pgto-icon" alt="Dinheiro">
               <span class="at-pgto-info"><strong>Dinheiro</strong><small>Troco disponivel</small></span>
               <span class="at-pgto-arrow">›</span>
-            </button>
+            </label>
           </div>
+          <p id="pgtoSelecionado" role="status" aria-live="polite">Selecione uma forma de pagamento.</p>
           <button class="btn-fechar-comanda" id="btnFecharComanda" disabled onclick="fecharComanda(${numeroMesa})">
             Solicitar Pagamento ao Caixa
           </button>
@@ -648,6 +651,8 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
       ${btnNovoPedido}
       ${fecharComanda}
       ${gestaoMesa}`;
+    const selecionado = content.querySelector(`[data-pgto="${_mesaModalPgto}"]`);
+    if (selecionado) selecionarPgtoModal(_mesaModalPgto, selecionado);
   } catch (_) {
     content.innerHTML = '<div style="color:#dc2626;padding:16px">Erro ao carregar dados da mesa.</div>';
   }
@@ -745,8 +750,15 @@ window.cancelarReservaAtendente = async function(mesaId) {
 
 window.selecionarPgtoModal = function(tipo, btn) {
   _mesaModalPgto = tipo;
-  document.querySelectorAll('.at-pgto-opt').forEach(b => b.classList.remove('is-selected'));
-  btn.classList.add('is-selected');
+  document.querySelectorAll('.at-pgto-opt').forEach(b => {
+    const selected = b === btn;
+    b.querySelector('.at-pgto-radio').checked = selected;
+    b.classList.toggle('is-selected', selected);
+    b.setAttribute('aria-pressed', String(selected));
+    b.querySelector('.at-pgto-arrow').innerHTML = selected ? '<span class="at-pgto-confirmation">&#10003; Selecionado</span>' : '&#8250;';
+  });
+  const resumo = document.getElementById('pgtoSelecionado');
+  if (resumo) resumo.textContent = 'Forma selecionada: ' + btn.querySelector('strong').textContent;
   const btnFechar = document.getElementById('btnFecharComanda');
   if (btnFechar) btnFechar.disabled = false;
 };

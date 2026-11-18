@@ -411,7 +411,12 @@ class PedidoItemResponse(BaseModel):
     subtotal: float
     tempoPreparo: int | None = None
 
+class PedidoUrgenciaRequest(BaseModel):
+    urgente: bool
+
+
 class PedidoResponse(BaseModel):
+    urgente: bool = False
     numeroPedido: str | None = None
     canceladoEm: datetime | None = None
     entregueEm: datetime | None = None

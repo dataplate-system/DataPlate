@@ -25,6 +25,7 @@ from app.schemas import (
     PaginatedPedidoResponse,
     PedidoResponse,
     PedidoStatusUpdateRequest,
+    PedidoUrgenciaRequest,
 )
 
 
@@ -364,6 +365,26 @@ def editar_pedido(
     response = _to_response(_get_pedido_with_itens(db, pedido_id), _mesa_map(db))
     _publicar_evento("PEDIDO_ATUALIZADO", response)
     _publicar_estoque_baixo(criticos)
+    return response
+
+
+@router.put("/{pedido_id}/urgente", response_model=PedidoResponse)
+def atualizar_urgencia(
+    pedido_id: int,
+    request: PedidoUrgenciaRequest,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.GERENTE, Role.COZINHA)),
+) -> PedidoResponse:
+    pedido = db.scalar(select(Pedido).where(Pedido.id == pedido_id).with_for_update())
+    if pedido is None:
+        raise HTTPException(status_code=404, detail="Pedido nao encontrado")
+    if pedido.id_status not in (STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID):
+        raise HTTPException(status_code=409, detail="Urgencia disponivel somente para pedidos aguardando preparo ou entrega")
+    pedido.urgente = request.urgente
+    pedido.atualizado_em = datetime.now()
+    db.commit()
+    response = _to_response(_get_pedido_with_itens(db, pedido.id), _mesa_map(db))
+    _publicar_evento("PEDIDO_ATUALIZADO", response)
     return response
 
 
@@ -724,6 +745,7 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
     if motivo and motivo.startswith("[") and "] " in motivo:
         setor, motivo = motivo[1:].split("] ", 1)
     return PedidoResponse(
+        urgente=bool(pedido.urgente) and pedido.id_status in (1, 2, 3),
         numeroPedido=pedido.numero_pedido,
         canceladoEm=cancelamento.registrado_em if cancelamento else None,
         entregueEm=entrega.registrado_em if entrega else None,

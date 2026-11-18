@@ -16,6 +16,29 @@ class OperacaoPedidosTest(TesteComBanco):
     def pedido(self, status):
         return self.criar_pedido([(self.produto, "1", "10")], status=status)
 
+    def test_urgencia_persiste_e_publica_para_equipe(self):
+        pedido = self.pedido(1)
+        for urgente in (True, False):
+            resposta = self.client.put(f"/api/pedidos/{pedido.id}/urgente", json={"urgente": urgente})
+            self.assertEqual(resposta.status_code, 200, resposta.text)
+            self.assertEqual(resposta.json()["urgente"], urgente)
+            self.db.expire_all()
+            self.assertEqual(self.client.get(f"/api/pedidos/{pedido.id}").json()["urgente"], urgente)
+            self.assertEqual(self.publicar_evento.call_args.args[0], "PEDIDO_ATUALIZADO")
+            self.assertEqual(self.publicar_evento.call_args.args[1].urgente, urgente)
+
+    def test_urgencia_valida_perfis_e_pedidos_fora_do_preparo(self):
+        pedido = self.pedido(2)
+        for role in (Role.ADMIN, Role.FUNCIONARIO, Role.CAIXA):
+            self.usuario = self.criar_usuario(role)
+            self.assertEqual(self.client.put(f"/api/pedidos/{pedido.id}/urgente", json={"urgente": True}).status_code, 403)
+        self.usuario = self.criar_usuario(Role.COZINHA)
+        self.assertEqual(self.client.put(f"/api/pedidos/{pedido.id}/urgente", json={"urgente": True}).status_code, 200)
+        for status in (4, 5, 6):
+            encerrado = self.pedido(status)
+            self.assertEqual(self.client.put(f"/api/pedidos/{encerrado.id}/urgente", json={"urgente": True}).status_code, 409)
+        self.assertEqual(self.client.put("/api/pedidos/999999999/urgente", json={"urgente": True}).status_code, 404)
+
     def test_cancelamento_nos_tres_estagios_registra_motivo_e_origem(self):
         for role, origem in ((Role.FUNCIONARIO, "Atendente"), (Role.COZINHA, "Cozinha")):
             self.usuario = self.criar_usuario(role)

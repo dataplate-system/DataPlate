@@ -107,3 +107,21 @@ body .order-items { min-height: 120px; }
   .edit-item { grid-template-columns: minmax(0, 1fr) 60px; }
   .edit-item button { grid-column: 1 / -1; }
 }
+
+/* Urgencia explicita, distinta do indicador de atraso. */
+body .kitchen-card.is-urgent {
+  border: 2px solid #9f1239 !important;
+  border-left: 2px solid #9f1239 !important;
+  background: #fff !important;
+  overflow: hidden;
+}
+body .kitchen-card .urgent-ribbon {
+  display: flex; align-items: center; gap: 7px;
+  margin: -1px -1px 14px; padding: 8px 14px;
+  background: #9f1239 !important; color: #fff !important;
+  font-size: 12px; font-weight: 800; letter-spacing: .06em;
+  border-radius: 7px 7px 0 0;
+}
+body .urgent-ribbon small { margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: 0; color: #fff !important; }
+body .next-order-strip.is-urgent { border: 2px solid #9f1239 !important; }
+body .next-order-strip.is-urgent .priority-chip { background: #9f1239 !important; color: #fff !important; }
