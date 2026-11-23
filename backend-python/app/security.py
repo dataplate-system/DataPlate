@@ -1,6 +1,6 @@
 import base64
-import hashlib
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 import bcrypt
 import jwt
@@ -16,16 +16,13 @@ bearer_scheme = HTTPBearer(auto_error=False)
 # O token identifica o usuario pelo id: CPF nao deve ficar legivel no payload do JWT.
 PREFIXO_SUBJECT = "usuario:"
 
-
 def _signing_key(secret: str) -> bytes:
     try:
         key = base64.b64decode(secret, validate=True)
     except ValueError:
         key = secret.encode("utf-8")
-
     if len(key) < 32:
-        return hashlib.sha256(secret.encode("utf-8")).digest()
-
+        raise RuntimeError("JWT secret precisa ter pelo menos 32 bytes")
     return key
 
 
@@ -46,8 +43,14 @@ def create_access_token(user: User) -> str:
 
 
 def create_refresh_token(user: User) -> str:
+    return create_refresh_token_with_jti(user, uuid4().hex)
+
+
+def create_refresh_token_with_jti(user: User, jti: str) -> str:
     settings = get_settings()
-    return _create_token(_subject(user), settings.jwt_refresh_expiration_ms, settings.effective_refresh_secret, "refresh")
+    return _create_token(
+        _subject(user), settings.jwt_refresh_expiration_ms, settings.effective_refresh_secret, "refresh", jti
+    )
 
 
 def decode_access_token(token: str) -> int:
@@ -56,8 +59,29 @@ def decode_access_token(token: str) -> int:
 
 
 def decode_refresh_token(token: str) -> int:
+    usuario_id, _, _ = decode_refresh_token_data(token)
+    return usuario_id
+
+
+def decode_refresh_token_data(token: str) -> tuple[int, str, datetime]:
     settings = get_settings()
-    return _id_do_usuario(_decode_subject(token, settings.effective_refresh_secret, "refresh"))
+    payload = jwt.decode(
+        token,
+        _signing_key(settings.effective_refresh_secret),
+        algorithms=["HS256"],
+        issuer="dataplate",
+        leeway=10,
+        options={"require": ["exp", "iat", "sub", "type", "jti"]},
+    )
+    if payload.get("type") != "refresh":
+        raise jwt.InvalidTokenError("Tipo de token invalido")
+    jti = payload.get("jti")
+    if not isinstance(jti, str) or not jti:
+        raise jwt.InvalidTokenError("Refresh token sem jti")
+    subject = payload.get("sub")
+    if not isinstance(subject, str):
+        raise jwt.InvalidTokenError("Refresh token sem subject")
+    return _id_do_usuario(subject), jti, datetime.fromtimestamp(payload["exp"], UTC)
 
 
 def _subject(user: User) -> str:
@@ -71,19 +95,29 @@ def _id_do_usuario(subject: str) -> int:
     return int(subject[len(PREFIXO_SUBJECT):])
 
 
-def _create_token(subject: str, ttl_ms: int, secret: str, token_type: str) -> str:
+def _create_token(subject: str, ttl_ms: int, secret: str, token_type: str, jti: str | None = None) -> str:
     now = datetime.now(UTC)
     payload = {
+        "iss": "dataplate",
         "sub": subject,
         "type": token_type,
         "iat": int(now.timestamp()),
         "exp": now + timedelta(milliseconds=ttl_ms),
     }
+    if jti is not None:
+        payload["jti"] = jti
     return jwt.encode(payload, _signing_key(secret), algorithm="HS256")
 
 
 def _decode_subject(token: str, secret: str, token_type: str) -> str:
-    payload = jwt.decode(token, _signing_key(secret), algorithms=["HS256"])
+    payload = jwt.decode(
+        token,
+        _signing_key(secret),
+        algorithms=["HS256"],
+        issuer="dataplate",
+        leeway=10,  # tolera pequeno desvio de relógio
+        options={"require": ["exp", "iat", "sub", "type"]},
+    )
     if payload.get("type") != token_type:
         raise jwt.InvalidTokenError("Tipo de token invalido")
     subject = payload.get("sub")
@@ -110,9 +144,9 @@ def get_usuario_atual(
     try:
         usuario_id = decode_access_token(credentials.credentials)
     except jwt.ExpiredSignatureError:
-        raise _nao_autenticado("Token expirado")
+        raise _nao_autenticado("Token expirado") from None
     except jwt.InvalidTokenError:
-        raise _nao_autenticado("Token invalido")
+        raise _nao_autenticado("Token invalido") from None
 
     usuario = db.get(User, usuario_id)
     if usuario is None:
@@ -132,20 +166,17 @@ def get_usuario_opcional(
 
 
 def exigir_perfis(*perfis: Role):
-    permitidos = {p.value for p in perfis}
+    permitidos = set(perfis)
 
     def _verificar(usuario_atual: User = Depends(get_usuario_atual)) -> User:
-        if usuario_atual.role not in permitidos:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
+        if Role(usuario_atual.role) not in permitidos:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Acesso negado")
         return usuario_atual
 
     return _verificar
 
 
-def exigir_admin(usuario_atual: User = Depends(get_usuario_atual)) -> User:
-    if usuario_atual.role != Role.ADMIN:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
-    return usuario_atual
+exigir_admin = exigir_perfis(Role.ADMIN)
 
 
 def usuario_por_access_token(db: Session, token: str) -> User | None:

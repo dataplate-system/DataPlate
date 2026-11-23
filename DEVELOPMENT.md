@@ -160,6 +160,8 @@ A migracao `011_fichas_tecnicas_demo.sql` (idempotente) cria fichas tecnicas par
 
 A migracao `012_turno_caixa.sql` (idempotente) cria a tabela `turno_caixa` (abertura e fechamento de caixa por turno) e o indice unico que impede dois turnos abertos ao mesmo tempo. O Docker Compose ja a executa na inicializacao; em bancos existentes, aplique-a manualmente como as anteriores.
 
+A migracao `016_integracoes_e_refresh_tokens.sql` cria a configuracao criptografada das integracoes, a trilha de auditoria e o armazenamento de refresh tokens. O servico `migrate` do Docker Compose executa essa migracao antes da API.
+
 Para recriar o banco local do zero:
 
 ```powershell
@@ -190,6 +192,10 @@ docker compose -f backend-python\docker-compose.yml up -d --build
 - Roles: `ADMIN`, `GERENTE`, `FUNCIONARIO` (Atendente), `CAIXA`, `COZINHA`. Cliente nao tem conta.
 
 O token identifica o usuario por `sub: "usuario:<id>"`; o CPF nao fica no JWT. Login: 5 falhas no mesmo CPF e origem, ou 30 na mesma origem, bloqueiam por 5 minutos (HTTP 429). Pedido de codigo de recuperacao: 3 por CPF e origem, ou 20 por origem, a cada 15 minutos. A resposta e igual para CPF cadastrado ou nao. Os contadores ficam em memoria e valem para um unico processo da API.
+
+`INTEGRATIONS_KEY` e obrigatoria para iniciar a API. Gere um valor por ambiente com `python -c "import secrets; print(secrets.token_urlsafe(48))"` e mantenha-o igual em todas as instancias; perder ou trocar essa chave impede descriptografar os segredos salvos. Em producao, configure-a como segredo, por exemplo com `fly secrets set INTEGRATIONS_KEY=<valor-gerado>`. O arquivo `.env.example` documenta a variavel para o ambiente local.
+
+Refresh tokens agora carregam `jti` e sao rotacionados em cada `POST /api/auth/refresh`; logout usa `POST /api/auth/logout`. Tokens de refresh antigos, sem `jti` registrado, exigem novo login. Tokens de acesso antigos sem `iss: "dataplate"` tambem exigem novo login.
 
 Com `APP_ENV` diferente de `local` (o padrao e `production`), a API nao sobe com o `JWT_SECRET` de desenvolvimento, com a senha padrao do administrador, com os acessos de teste ligados ou com `PASSWORD_RESET_DEBUG_CODE`. O Docker Compose e o `run-local.ps1` definem `APP_ENV=local`.
 

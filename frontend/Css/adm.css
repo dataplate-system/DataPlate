@@ -2011,6 +2011,57 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
   border-top: 1px solid var(--color-border);
 }
 
+.integration-secret-control {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.integration-secret-control input {
+  min-width: 0;
+  flex: 1;
+}
+
+.integration-toggle {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0 12px;
+  color: var(--color-text);
+  background: var(--color-white);
+  cursor: pointer;
+}
+
+.integration-status {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #475569;
+  background: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.integration-status.is-connected {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.integration-status.is-error {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.integration-test {
+  margin: -8px 8px 0 0;
+}
+
+.integration-form-actions {
+  border-top: 0;
+  padding-top: 0;
+}
+
 /* MODAL */
 .modal {
   display: none;

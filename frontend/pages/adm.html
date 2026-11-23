@@ -1690,50 +1690,68 @@
 
           <form id="formIntegracao" class="config-form">
             <div class="form-section">
-              <h3>iFood / Delivery</h3>
+              <h3>iFood / Delivery <span class="integration-status" data-integration-status="ifood" role="status">Não configurado</span></h3>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Token de Integração iFood</label>
-                  <input type="text" name="ifoodToken" data-optional="true" placeholder="Token fornecido pelo iFood" autocomplete="off" />
+                  <label for="integracaoIfoodToken">Token de Integração iFood</label>
+                  <div class="integration-secret-control">
+                    <input id="integracaoIfoodToken" type="password" name="ifoodToken" data-optional="true" placeholder="Token fornecido pelo iFood" autocomplete="off" />
+                    <button type="button" class="integration-toggle" data-toggle-target="integracaoIfoodToken" aria-label="Mostrar token iFood">Mostrar</button>
+                  </div>
                 </div>
                 <div class="form-group">
-                  <label>ID do Restaurante (iFood)</label>
-                  <input type="text" name="ifoodRestauranteId" data-optional="true" placeholder="Ex: abc123" autocomplete="off" />
+                  <label for="integracaoIfoodRestauranteId">ID do Restaurante (iFood)</label>
+                  <input id="integracaoIfoodRestauranteId" type="text" name="ifoodRestauranteId" data-optional="true" placeholder="Ex: abc123" autocomplete="off" />
                 </div>
               </div>
+              <button type="button" class="btn-secondary integration-test" data-test-provider="ifood" data-roles="admin">Testar conexão</button>
             </div>
 
             <div class="form-section">
-              <h3>Pagamentos</h3>
+              <h3>Pagamentos <span class="integration-status" data-integration-status="pagamentos" role="status">Não configurado</span></h3>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Chave PIX</label>
-                  <input type="text" name="chavePix" data-optional="true" data-mask="none" placeholder="CPF, CNPJ, email ou chave aleatória" />
+                  <label for="integracaoChavePix">Chave PIX</label>
+                  <div class="integration-secret-control">
+                    <input id="integracaoChavePix" type="password" name="chavePix" data-optional="true" data-mask="none" placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória" autocomplete="off" />
+                    <button type="button" class="integration-toggle" data-toggle-target="integracaoChavePix" aria-label="Mostrar chave PIX">Mostrar</button>
+                  </div>
                 </div>
                 <div class="form-group">
-                  <label>Token PagSeguro</label>
-                  <input type="text" name="pagseguroToken" data-optional="true" placeholder="Token da conta PagSeguro" autocomplete="off" />
+                  <label for="integracaoPagSeguroToken">Token PagSeguro</label>
+                  <div class="integration-secret-control">
+                    <input id="integracaoPagSeguroToken" type="password" name="pagseguroToken" data-optional="true" placeholder="Token da conta PagSeguro" autocomplete="off" />
+                    <button type="button" class="integration-toggle" data-toggle-target="integracaoPagSeguroToken" aria-label="Mostrar token PagSeguro">Mostrar</button>
+                  </div>
                 </div>
               </div>
+              <button type="button" class="btn-secondary integration-test" data-test-provider="pagamentos" data-roles="admin">Testar conexão</button>
             </div>
 
             <div class="form-section">
               <h3>Localização e Marketing</h3>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Chave Google Maps API</label>
-                  <input type="text" name="googleMapsKey" data-optional="true" placeholder="AIza..." autocomplete="off" />
+                  <label for="integracaoGoogleMapsKey">Chave Google Maps API</label>
+                  <span class="integration-status" data-integration-status="google-maps" role="status">Não configurado</span>
+                  <div class="integration-secret-control">
+                    <input id="integracaoGoogleMapsKey" type="password" name="googleMapsKey" data-optional="true" placeholder="AIzaSy..." autocomplete="off" />
+                    <button type="button" class="integration-toggle" data-toggle-target="integracaoGoogleMapsKey" aria-label="Mostrar chave Google Maps">Mostrar</button>
+                  </div>
                 </div>
                 <div class="form-group">
-                  <label>Email de marketing (remetente)</label>
-                  <input type="email" name="emailMarketing" data-optional="true" placeholder="marketing@seurestaurante.com" />
+                  <label for="integracaoEmailMarketing">E-mail de marketing (remetente)</label>
+                  <span class="integration-status" data-integration-status="marketing" role="status">Não configurado</span>
+                  <input id="integracaoEmailMarketing" type="email" name="emailMarketing" data-optional="true" placeholder="marketing@seurestaurante.com" autocomplete="off" />
                 </div>
               </div>
+              <button type="button" class="btn-secondary integration-test" data-test-provider="google-maps" data-roles="admin">Testar conexão do Google Maps</button>
+              <button type="button" class="btn-secondary integration-test" data-test-provider="marketing" data-roles="admin">Testar conexão de marketing</button>
             </div>
 
-            <div class="form-actions">
+            <div class="form-actions integration-form-actions">
               <button type="submit" class="btn-primary" data-roles="admin">Salvar Integrações</button>
-              <button type="button" class="btn-secondary" onclick="carregarIntegracao()">Recarregar</button>
+              <button type="button" class="btn-secondary" id="descartarIntegracoes">Descartar alterações</button>
             </div>
           </form>
         </section>

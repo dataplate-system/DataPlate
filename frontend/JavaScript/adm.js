@@ -5502,19 +5502,60 @@ window.addEventListener('load', () => {
 });
 
 // =============================================
-// CONFIG INTEGRACAO - localStorage
+// CONFIG INTEGRACAO - API
 // =============================================
-const INTEGRACAO_KEY    = 'dataplate:integracao';
 const NOTIFICACOES_KEY  = 'dataplate:notificacoes';
 
-function carregarIntegracao() {
-  const saved = JSON.parse(localStorage.getItem(INTEGRACAO_KEY) || '{}');
-  const form  = document.getElementById('formIntegracao');
-  if (!form) return;
-  Object.entries(saved).forEach(([k, v]) => {
-    const el = form.querySelector(`[name="${k}"]`);
-    if (el) el.value = v;
+const INTEGRACAO_PROVEDORES = {
+  ifood: ['ifoodToken', 'ifoodRestauranteId'],
+  pagamentos: ['chavePix', 'pagseguroToken'],
+  'google-maps': ['googleMapsKey'],
+  marketing: ['emailMarketing']
+};
+
+function definirStatusIntegracao(provedor, estado) {
+  const badge = document.querySelector(`[data-integration-status="${provedor}"]`);
+  if (!badge) return;
+  badge.textContent = estado;
+  badge.classList.toggle('is-connected', estado === 'Conectado');
+  badge.classList.toggle('is-error', estado === 'Erro');
+}
+
+function integracaoTemAlteracoes(form) {
+  return Array.from(form.querySelectorAll('input[name]')).some((campo) => {
+    const valorOriginal = campo.type === 'password' ? '' : (campo.dataset.savedValue || '');
+    return campo.value !== valorOriginal;
   });
+}
+
+async function carregarIntegracao({ silencioso = false } = {}) {
+  const form = document.getElementById('formIntegracao');
+  if (!form) return;
+  try {
+    const dados = await getJson('/integrations');
+    const valores = {
+      ifoodToken: dados.ifoodToken,
+      ifoodRestauranteId: dados.ifoodRestauranteId,
+      chavePix: dados.chavePix,
+      pagseguroToken: dados.pagseguroToken,
+      googleMapsKey: dados.googleMapsKey,
+      emailMarketing: dados.emailMarketing
+    };
+    Object.entries(valores).forEach(([nome, valor]) => {
+      const campo = form.querySelector(`[name="${nome}"]`);
+      if (!campo) return;
+      if (campo.type === 'password') {
+        campo.value = '';
+        campo.placeholder = valor || campo.dataset.emptyPlaceholder || '';
+      } else {
+        campo.value = valor || '';
+      }
+      campo.dataset.savedValue = campo.value;
+    });
+    Object.entries(dados.status || {}).forEach(([provedor, estado]) => definirStatusIntegracao(provedor, estado));
+  } catch (erro) {
+    if (!silencioso) showToast(erro.message || 'Erro ao carregar as integrações.', 'error');
+  }
 }
 
 function carregarNotificacoes() {
@@ -5531,17 +5572,79 @@ function carregarNotificacoes() {
     carregarIntegracao();
     carregarNotificacoes();
 
-    document.getElementById('formIntegracao')?.addEventListener('submit', (e) => {
+    const formIntegracao = document.getElementById('formIntegracao');
+    formIntegracao?.querySelectorAll('input[type="password"]').forEach((campo) => {
+      campo.dataset.emptyPlaceholder = campo.placeholder;
+    });
+
+    formIntegracao?.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (!isAdminRole()) {
         showToast('Somente o Administrador altera as integrações.', 'error');
         return;
       }
-      const fd = new FormData(e.target);
-      const data = {};
-      fd.forEach((v, k) => { if (v) data[k] = v; });
-      localStorage.setItem(INTEGRACAO_KEY, JSON.stringify(data));
-      showSuccessModal('Integrações salvas!', 'As configurações foram salvas localmente.');
+      const botao = formIntegracao.querySelector('button[type="submit"]');
+      const textoOriginal = botao.textContent;
+      botao.disabled = true;
+      botao.textContent = 'Salvando...';
+      try {
+        const fd = new FormData(formIntegracao);
+        for (const [provedor, campos] of Object.entries(INTEGRACAO_PROVEDORES)) {
+          const payload = {};
+          campos.forEach((campo) => {
+            const valor = String(fd.get(campo) || '').trim();
+            if (valor) payload[campo] = valor;
+          });
+          if (Object.keys(payload).length) await putJson(`/integrations/${provedor}`, payload);
+        }
+        await carregarIntegracao({ silencioso: true });
+        showToast('Integrações salvas com sucesso.', 'success');
+      } catch (erro) {
+        showToast(erro.message || 'Erro ao salvar as integrações.', 'error');
+      } finally {
+        botao.disabled = false;
+        botao.textContent = textoOriginal;
+      }
+    });
+
+    document.getElementById('descartarIntegracoes')?.addEventListener('click', async () => {
+      if (integracaoTemAlteracoes(formIntegracao) && !window.confirm('Descartar as alterações não salvas?')) return;
+      await carregarIntegracao();
+    });
+
+    formIntegracao?.querySelectorAll('[data-toggle-target]').forEach((botao) => {
+      botao.addEventListener('click', () => {
+        const campo = document.getElementById(botao.dataset.toggleTarget);
+        if (!campo) return;
+        const mostrar = campo.type === 'password';
+        campo.type = mostrar ? 'text' : 'password';
+        botao.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+        botao.setAttribute('aria-label', `${mostrar ? 'Ocultar' : 'Mostrar'} ${campo.labels?.[0]?.textContent || 'segredo'}`);
+      });
+    });
+
+    formIntegracao?.querySelectorAll('[data-test-provider]').forEach((botao) => {
+      botao.addEventListener('click', async () => {
+        if (integracaoTemAlteracoes(formIntegracao)) {
+          showToast('Salve ou descarte as alterações antes de testar a conexão.', 'error');
+          return;
+        }
+        const provedor = botao.dataset.testProvider;
+        const textoOriginal = botao.textContent;
+        botao.disabled = true;
+        botao.textContent = 'Testando...';
+        try {
+          const resposta = await postJson(`/integrations/${provedor}/test`, {});
+          definirStatusIntegracao(provedor, resposta.sucesso ? 'Conectado' : 'Erro');
+          showToast(resposta.mensagem, resposta.sucesso ? 'success' : 'error');
+        } catch (erro) {
+          definirStatusIntegracao(provedor, 'Erro');
+          showToast(erro.message || 'Erro ao testar a integração.', 'error');
+        } finally {
+          botao.disabled = false;
+          botao.textContent = textoOriginal;
+        }
+      });
     });
 
     document.getElementById('formNotificacoes')?.addEventListener('submit', (e) => {

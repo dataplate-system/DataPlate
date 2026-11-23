@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     jwt_expiration_ms: int = 86_400_000
     jwt_refresh_expiration_ms: int = 604_800_000
     password_reset_secret: str | None = None
+    integrations_key: SecretStr | None = None
     password_reset_debug_code: bool = False
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 465
