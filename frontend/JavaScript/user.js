@@ -582,7 +582,7 @@ function abrirProdutoDinamico(produtoId) {
   tela.innerHTML = `
     <header class="topo">
       <button class="voltar" onclick="voltarListaDinamica()">←</button>
-      <img src="../images/brand/logo-emp.png" class="logo-topo">
+      <img src="../images/brand/logo-dataplate.png" class="logo-topo">
     </header>
     <div class="detalhe-corpo">
       <div class="topo-img">
@@ -604,7 +604,7 @@ function abrirProdutoDinamico(produtoId) {
       </div>
     </div>
     <footer class="rodape-user">
-      <strong>Raízes do Sabor</strong>
+      <strong>DataPlate</strong>
       <span>Restaurante</span>
     </footer>
   `;
@@ -1118,15 +1118,14 @@ function atualizarBotaoPedido() {
   }
 }
 
-// Sem QR Code valido o cardapio fica disponivel apenas para consulta
 function mostrarAvisoMesaSemQr() {
-  const overlay = document.getElementById('mesaSelectorOverlay');
-  if (overlay) overlay.style.display = 'flex';
+  const overlay = document.getElementById("mesaSelectorOverlay");
+  if (overlay) overlay.style.display = "flex";
 }
 
 window.fecharAvisoMesa = function() {
-  const overlay = document.getElementById('mesaSelectorOverlay');
-  if (overlay) overlay.style.display = 'none';
+  const overlay = document.getElementById("mesaSelectorOverlay");
+  if (overlay) overlay.style.display = "none";
 };
 
 document.getElementById("mesaManualForm")?.addEventListener("submit", (event) => {

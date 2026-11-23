@@ -39,14 +39,21 @@ body:has(#telaLista) {
 
 /* Mantem a logo do restaurante no mesmo tamanho do cardapio nas telas internas. */
 #telaCarrinho .logo-topo,
+#telaPagamento .logo-topo,
+#telaPix .logo-topo,
+#telaDinheiro .logo-topo,
 [id^="telaProduto"] .logo-topo {
   width: 92px !important;
   height: 92px !important;
   max-width: 92px;
   object-fit: contain;
+  filter: none !important;
 }
 
-#telaCarrinho .topo {
+#telaCarrinho .topo,
+#telaPagamento .topo,
+#telaPix .topo,
+#telaDinheiro .topo {
   position: fixed !important;
   top: 0 !important;
   left: 0;
@@ -59,8 +66,21 @@ body:has(#telaLista) {
   border-bottom: 0;
   backdrop-filter: blur(8px);
 }
-#telaCarrinho {
+#telaCarrinho,
+#telaPagamento,
+#telaPix,
+#telaDinheiro {
   padding-top: 92px !important;
+}
+#telaDinheiro .topo .voltar {
+  width: 40px;
+  height: 40px;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: rgb(255 255 255 / 65%) !important;
+  box-shadow: none !important;
 }
 #telaLista .sidebar h2 {
   display: block;
@@ -126,7 +146,7 @@ body:has(#telaLista) {
   height: 222px;
   min-height: 0 !important;
   padding: 0 !important;
-  background: url('../images/menu/fundo%20da%20logo%20restaurante.png') center / cover !important;
+  background: linear-gradient(rgb(255 255 255 / 22%), rgb(255 255 255 / 22%)), url('../images/menu/T%C3%A1bua%20com%20%C3%ADcone%20de%20garfo%20e%20faca.png') center / cover !important;
   border: 0 !important;
   border-radius: 0 0 20px 20px !important;
   box-shadow: none !important;
@@ -190,6 +210,17 @@ body:has(#telaLista) #cartFloat {
   background: rgb(255 255 255 / 85%) !important;
   box-shadow: 0 2px 8px rgb(0 0 0 / 10%) !important;
   font-size: 20px;
+}
+body:has(#telaCarrinho[style*="display: block"]) #cartFloat {
+  display: none !important;
+}
+body:has(#telaPagamento[style*="display: block"]) #cartFloat,
+body:has(#telaPix[style*="display: block"]) #cartFloat,
+body:has(#telaDinheiro[style*="display: block"]) #cartFloat {
+  display: none !important;
+}
+body:has([id^="telaProduto"][style*="display: block"]) #cartFloat {
+  display: none !important;
 }
 #telaLista .busca { padding: 18px; }
 #telaLista .busca::before { content: none; }
