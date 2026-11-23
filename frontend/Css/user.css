@@ -2273,7 +2273,10 @@ h2 {
   width:42px;
   height:42px;
   border-radius:12px;
-  background:rgba(255,255,255,0.18);
+  background:transparent !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -2284,9 +2287,16 @@ h2 {
 /* TEXTO */
 .notificacao .conteudo{
   flex:1;
-  background:transparent;
+  background:transparent !important;
   margin-left:0;
   width:auto;
+}
+
+#notificacoes .notificacao .conteudo,
+#notificacoes .notificacao .titulo,
+#notificacoes .notificacao .mensagem {
+  background:transparent !important;
+  background-color:transparent !important;
 }
 
 .notificacao .titulo{

@@ -524,10 +524,10 @@ def _autorizar_criacao(request: PedidoCreateRequest, usuario: User | None, venda
     if usuario is None:
         if usa_recurso_caixa:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado")
-        if request.mesaToken is None:
+        if request.mesaToken is None and request.numeroMesa is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Leia o QR Code da mesa para fazer o pedido",
+                detail="Leia o QR Code ou informe o numero da mesa para fazer o pedido",
             )
         return
     if usuario.role not in PERFIS_CRIAM_PEDIDO:
@@ -599,6 +599,11 @@ def _resolver_mesa(db: Session, request: PedidoCreateRequest, venda_caixa: bool,
     mesa = db.scalar(select(Mesa).where(Mesa.numero == request.numeroMesa, Mesa.ativo.is_(True)))
     if mesa is None:
         raise HTTPException(status_code=404, detail=f"Mesa nao encontrada: {request.numeroMesa}")
+    if anonimo and mesa.status not in {MESA_STATUS_ACEITA_QR, "livre"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Esta mesa não está disponível para pedidos.",
+        )
     return mesa
 
 

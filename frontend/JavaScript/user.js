@@ -79,7 +79,7 @@ function formatarPreco(valor) {
   return "R$ " + Number(valor || 0).toFixed(2).replace(".", ",");
 }
 
-const MENSAGEM_LER_QR = "Leia o QR Code da mesa para fazer o pedido";
+const MENSAGEM_LER_QR = "Leia o QR Code ou informe o número da mesa para fazer o pedido";
 const INTERVALO_MESA_FECHADA_MS = 15000;
 
 // A mesa do cliente vem exclusivamente do token do QR Code (RN-AC36)
@@ -88,6 +88,7 @@ localStorage.removeItem("mesaId");
 localStorage.removeItem("numeroMesa");
 
 const mesaQrToken = (new URLSearchParams(window.location.search).get('mesaToken') || '').trim() || null;
+let mesaManualNumero = null;
 let mesaQrResolucaoFalhou = false;
 let timerMesaFechada = null;
 let timerChamadosMesa = null;
@@ -182,6 +183,10 @@ const mesaQrPronto = mesaQrToken
 
 function mesaQrValida() {
   return Boolean(mesaQrToken && mesaQrContext && !mesaQrResolucaoFalhou);
+}
+
+function mesaSelecionadaParaPedido() {
+  return mesaQrValida() || Number.isInteger(mesaManualNumero) && mesaManualNumero > 0;
 }
 
 function atualizarControlesChamadosMesa() {
@@ -662,7 +667,7 @@ async function confirmarPedido() {
   }
 
   await mesaQrPronto;
-  if (!mesaQrValida()) {
+  if (!mesaSelecionadaParaPedido()) {
     avisarMesaSemQr();
     return;
   }
@@ -700,14 +705,14 @@ async function pagamentoAprovado() {
   }
 
   await mesaQrPronto;
-  if (!mesaQrValida()) {
+  if (!mesaSelecionadaParaPedido()) {
     avisarMesaSemQr();
     return false;
   }
 
   const obs = document.getElementById('observacaoPedido')?.value.trim() || null;
   const pedido = {
-    mesaToken: mesaQrToken,
+    ...(mesaQrValida() ? { mesaToken: mesaQrToken } : { numeroMesa: mesaManualNumero }),
     formaPagamento: pagamentoSelecionado || null,
     ...(obs && { observacoes: obs }),
     itens: carrinho.map(item => ({
@@ -1124,6 +1129,20 @@ window.fecharAvisoMesa = function() {
   if (overlay) overlay.style.display = 'none';
 };
 
+document.getElementById("mesaManualForm")?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const campo = document.getElementById("numeroMesaManual");
+  const numero = Number(campo?.value);
+  if (!Number.isInteger(numero) || numero < 1) {
+    mostrarNotificacao("aviso", "Número inválido", "Informe um número de mesa válido.");
+    campo?.focus();
+    return;
+  }
+  mesaManualNumero = numero;
+  fecharAvisoMesa();
+  mostrarNotificacao("info", "Mesa selecionada", `Os próximos pedidos serão enviados para a mesa ${numero}.`);
+});
+
 document.getElementById("chamadosMesa")?.addEventListener("click", (event) => {
   const botao = event.target.closest("[data-tipo-chamado]");
   if (botao) enviarChamadoMesa(botao);
@@ -1233,31 +1252,11 @@ function mostrarNotificacao(tipo, titulo, mensagem){
 
   const area = document.getElementById("notificacoes");
 
-  let icone = "🔔";
-
-  if(tipo === "sucesso"){
-    icone = "✔";
-  }
-
-  else if(tipo === "erro"){
-    icone = "✖";
-  }
-
-  else if(tipo === "aviso"){
-    icone = "⚠";
-  }
-
-  else if(tipo === "info"){
-    icone = "ℹ";
-  }
-
   const notificacao = document.createElement("div");
 
   notificacao.className = `notificacao ${tipo}`;
 
   notificacao.innerHTML = `
-    <div class="icone">${icone}</div>
-
     <div class="conteudo">
       <div class="titulo">${titulo}</div>
       <div class="mensagem">${mensagem}</div>

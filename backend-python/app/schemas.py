@@ -343,7 +343,7 @@ class PedidoItemRequest(BaseModel):
 
 
 class PedidoCreateRequest(BaseModel):
-    numeroMesa: int | None = None
+    numeroMesa: int | None = Field(default=None, ge=1)
     mesaId: int | None = None
     mesaToken: UUID | None = None
     clienteId: int | None = Field(default=None, ge=1)

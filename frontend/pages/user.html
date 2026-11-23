@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#111827">
   <title>DataPlate</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png">
-  <link rel="stylesheet" href="../Css/user.css">
+  <link rel="stylesheet" href="../Css/user.css?v=20261122-notificacao-texto-transparente">
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified">
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1">
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand">
-  <link rel="stylesheet" href="../Css/user-menu.css?v=20261116-chamados">
+  <link rel="stylesheet" href="../Css/user-menu.css?v=20261122-carrinho-barra-transparente">
   <link rel="manifest" href="../manifest.webmanifest">
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
 </head>
@@ -23,7 +23,7 @@
   <span id="badgePedido" class="cart-badge" style="display:none"></span>
 </button>
 
-<!-- AVISO: MESA SOMENTE VIA QR CODE -->
+<!-- AVISO E OPÇÃO TEMPORÁRIA DE IDENTIFICAÇÃO DA MESA -->
 <div id="mesaSelectorOverlay" class="dp-mesa-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
   <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div class="client-app-brand selector-brand">
@@ -39,8 +39,14 @@
     </div>
     <img src="../images/brand/logo-emp.png" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:12px;margin-bottom:16px">
     <h2 style="font-size:22px;font-weight:900;margin-bottom:4px;color:#111">Raizes do Sabor</h2>
-    <p style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">Leia o QR Code da mesa para fazer o pedido</p>
-    <p style="font-size:14px;color:#64748b;margin-bottom:24px">Sem o QR Code da mesa o cardapio fica disponivel apenas para consulta.</p>
+    <p style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">Leia o QR Code da mesa ou informe o número</p>
+    <p style="font-size:14px;color:#64748b;margin-bottom:16px">A opção de informar a mesa é temporária.</p>
+    <form id="mesaManualForm" style="display:grid;gap:10px;margin-bottom:12px;text-align:left">
+      <label for="numeroMesaManual" style="font-size:14px;font-weight:700;color:#111">Número da mesa</label>
+      <input id="numeroMesaManual" name="numeroMesa" type="number" min="1" step="1" inputmode="numeric" required placeholder="Ex.: 5" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px">
+      <button type="submit" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">Usar número da mesa</button>
+    </form>
+    <p style="font-size:13px;color:#64748b;margin-bottom:14px">Ou consulte o cardápio sem informar a mesa.</p>
     <button type="button" onclick="fecharAvisoMesa()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">
       Ver cardapio
     </button>
@@ -804,6 +810,6 @@
   
 
 
-<script src="../JavaScript/user.js?v=20261116-qr-status-compat"></script>
+<script src="../JavaScript/user.js?v=20261122-mesa-manual-temporaria"></script>
 </body>
 </html>
