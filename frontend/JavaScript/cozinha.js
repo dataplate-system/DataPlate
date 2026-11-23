@@ -547,8 +547,6 @@ function buildProgress(order) {
 function buildCard(order) {
   const meta = STATUS_META[order.status] || {};
   const items = getItems(order);
-  const visibleItems = items.slice(0, 4);
-  const hiddenCount = Math.max(0, items.length - visibleItems.length);
   const sla = getSlaState(order);
   const isUrgent = isUrgentOrder(order);
 
@@ -567,16 +565,16 @@ function buildCard(order) {
         </div>
         <div class="card-items">
           ${
-            visibleItems.length
-              ? visibleItems.map((item) => `
+            items.length
+              ? items.map((item) => `
                 <div class="card-item">
                   <span>${escapeHtml(item.quantidade || 0)}x</span>
                   ${escapeHtml(item.nomeProduto || 'Item')}
                 </div>
+                ${item.observacao ? `<div class="card-item-observacao">Obs: ${escapeHtml(item.observacao)}</div>` : ''}
               `).join('')
               : '<div class="card-item">Sem itens</div>'
           }
-          ${hiddenCount ? `<div class="card-item card-item-more">+${hiddenCount} item(ns)</div>` : ''}
         </div>
         ${order.observacoes ? `<div class="card-obs">Obs: ${escapeHtml(order.observacoes)}</div>` : ''}
         ${chips || formatTime(order.dataHora) ? `
@@ -1078,7 +1076,9 @@ function renderEditItems() {
   document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
     <div class="edit-item"><span>${escapeHtml(item.nomeProduto)}<small>${formatCurrency(item.precoUnitario)} / unidade</small></span>
     <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${escapeHtml(item.nomeProduto)}" /></label>
-    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${escapeHtml(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${escapeHtml(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button>
+    ${campoObservacaoItem(item.observacao, escapeHtml, `data-edit-observacao="${index}"`)}
+    </div>`).join('') || '<p>Adicione ao menos um produto.</p>';
   renderEditTotal();
 }
 
@@ -1101,7 +1101,7 @@ async function saveOrderEdit(event) {
   try {
     await putJson(`/pedidos/${editDraft.id}/itens`, {
       atualizadoEm: editDraft.atualizadoEm,
-      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      itens: agruparItensParaEdicao(editDraft.itens),
       observacoes: document.getElementById('editOrderNotes').value,
       motivo: document.getElementById('editOrderReason').value.trim()
     });
@@ -1148,9 +1148,7 @@ function bindEvents() {
     const id = Number(document.getElementById('editProductSelect').value);
     const product = editProducts.find(p => p.id === id);
     if (!product) return;
-    const existing = editDraft.itens.find(i => i.produtoId === id);
-    if (existing) existing.quantidade++;
-    else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
+    editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
     renderEditItems();
   });
   document.getElementById('editOrderItems').addEventListener('click', (event) => {
@@ -1160,6 +1158,11 @@ function bindEvents() {
     renderEditItems();
   });
   document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    const indice = event.target.dataset.editObservacao;
+    if (indice !== undefined) {
+      editDraft.itens[indice].observacao = event.target.value;
+      return;
+    }
     if (!event.target.matches('[data-edit-quantity]')) return;
     editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
     renderEditTotal();

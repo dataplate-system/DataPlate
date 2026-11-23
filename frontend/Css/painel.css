@@ -1,0 +1,97 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #101b28;
+  color: #f4f7fa;
+}
+
+* { box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: clamp(1rem, 4vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+
+header, .controles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+header p { color: #bdd0e2; margin: 0 0 .3rem; }
+h1, h2 { margin: 0; line-height: 1.12; }
+h1 { font-size: clamp(1.6rem, 4vw, 4rem); }
+h2 { font-size: clamp(1.35rem, 3vw, 3rem); }
+
+button {
+  padding: .65rem 1rem;
+  border: 1px solid #7890a7;
+  border-radius: .5rem;
+  background: #17283a;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible { outline: 3px solid #ffcc80; outline-offset: 3px; }
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(.75rem, 2vw, 2rem);
+}
+
+section {
+  padding: clamp(.75rem, 2.5vw, 2.5rem);
+  border-radius: 1rem;
+  background: #192d42;
+  border-top: .35rem solid #91b9e0;
+}
+
+.retirada { background: #102f2c; border-color: #71e7bd; }
+.retirada h2 { color: #a4f5d7; }
+ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: .75rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  padding: .4em .25em;
+  text-align: center;
+  background: #263f59;
+  border-radius: .65rem;
+  font-size: clamp(1.3rem, 4vw, 4rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.retirada li { color: #06241b; background: #88efc9; }
+.retirada .recem-pronto { animation: chamar 1.8s ease-out; }
+@keyframes chamar {
+  0%, 40% { background: #ffe08a; box-shadow: 0 0 1.25rem #ffdc7a; transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+li.vazio {
+  background: transparent;
+  color: #bdd0e2;
+  text-align: left;
+  font-size: clamp(1rem, 1.8vw, 1.6rem);
+  font-weight: 400;
+}
+
+#mensagemPainel { color: #ffdf9d; margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .retirada .recem-pronto { animation: none; outline: 3px solid #ffe08a; }
+}
