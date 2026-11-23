@@ -598,7 +598,7 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
       fecharComanda = `
         <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:16px">
           <div style="font-size:13px;font-weight:800;margin-bottom:8px">Solicitar pagamento — ${formatBRL(totalAtivo)}</div>
-          <div style="font-size:12px;color:#64748b;margin-bottom:10px">O caixa sera notificado e processara o pagamento.</div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:10px">O caixa será notificado para processar os pedidos desta comanda.</div>
           <div class="at-pgto-lista">
             <label aria-pressed="false" class="at-pgto-opt" data-pgto="PIX"><input class="at-pgto-radio" type="radio" name="mesaPagamento" value="PIX" onchange="selecionarPgtoModal(this.value,this.closest('.at-pgto-opt'))">
               <img src="../images/menu/pix.png" class="at-pgto-icon" alt="PIX">
@@ -647,10 +647,10 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
         <span>Em aberto: <strong style="color:#f85b15">${formatBRL(totalAtivo)}</strong></span>
         ${historico.length ? `<span style="color:#64748b">${historico.length} entregue(s)</span>` : ''}
       </div>
+      ${gestaoMesa}
       ${ativos.length ? ativos.map(renderPedido).join('') : '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px">Nenhum pedido ativo.</div>'}
       ${btnNovoPedido}
-      ${fecharComanda}
-      ${gestaoMesa}`;
+      ${fecharComanda}`;
     const selecionado = content.querySelector(`[data-pgto="${_mesaModalPgto}"]`);
     if (selecionado) selecionarPgtoModal(_mesaModalPgto, selecionado);
   } catch (_) {
@@ -694,14 +694,73 @@ function renderGestaoMesa(mesa, temAtivos) {
       <button type="button" onclick="reservarMesaAtendente(${mesa.id})" style="${btnStyle};width:100%;background:#f59e0b;color:#fff;border:none">Reservar mesa</button>`;
   }
 
-  if (!botoesStatus.length && !reserva) return '';
+  const moverPedidos = ['ocupada', 'aguardando_pagamento'].includes(st) && temAtivos
+    ? `<div style="display:flex;gap:8px;margin-top:10px">
+        <button type="button" onclick="transferirPedidosMesaAtendente(${mesa.id})" style="${btnStyle};background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa">Transferir mesa</button>
+      </div>`
+    : '';
+
+  if (!botoesStatus.length && !reserva && !moverPedidos) return '';
   return `
     <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:14px">
       <div style="font-size:13px;font-weight:800;margin-bottom:8px">Gerenciar mesa</div>
       ${botoesStatus.length ? `<div style="display:flex;gap:8px;margin-bottom:10px">${botoesStatus.join('')}</div>` : ''}
       ${reserva}
+      ${moverPedidos}
     </div>`;
 }
+
+window.transferirPedidosMesaAtendente = async function(mesaId) {
+  const origem = allMesas.find((mesa) => Number(mesa.id) === Number(mesaId));
+  if (!origem) return showToast('Mesa não encontrada.', 'error');
+  const destinos = allMesas.filter((mesa) => Number(mesa.id) !== Number(mesaId)
+    && normalizarStatusMesa(mesa.status) === 'livre');
+  if (!destinos.length) {
+    return showToast('Não há mesa livre para receber a transferência.', 'error');
+  }
+  const modal = document.getElementById('transferMesaModal');
+  const descricao = document.getElementById('transferMesaDescricao');
+  const select = document.getElementById('transferMesaDestino');
+  const confirmar = document.getElementById('confirmarTransferMesaBtn');
+  if (!modal || !descricao || !select || !confirmar) return;
+  descricao.textContent = `Os pedidos em aberto da Mesa ${origem.numero} serão movidos para a mesa escolhida. A mesa de origem ficará livre.`;
+  select.innerHTML = destinos.map((mesa) => `<option value="${mesa.id}">Mesa ${esc(mesa.numero)} — ${esc(mesa.localizacao || 'Salão principal')}</option>`).join('');
+  modal.dataset.mesaOrigemId = String(origem.id);
+  confirmar.disabled = false;
+  modal.style.display = 'flex';
+  select.focus();
+};
+
+window.fecharTransferenciaMesaAtendente = function() {
+  const modal = document.getElementById('transferMesaModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.confirmarTransferenciaMesaAtendente = async function() {
+  const modal = document.getElementById('transferMesaModal');
+  const select = document.getElementById('transferMesaDestino');
+  const confirmar = document.getElementById('confirmarTransferMesaBtn');
+  const origemId = Number(modal?.dataset.mesaOrigemId);
+  const destinoId = Number(select?.value);
+  const origem = allMesas.find((mesa) => Number(mesa.id) === origemId);
+  const destino = allMesas.find((mesa) => Number(mesa.id) === destinoId);
+  if (!origem || !destino || normalizarStatusMesa(destino.status) !== 'livre') {
+    return showToast('Escolha uma mesa que ainda esteja disponível.', 'error');
+  }
+  if (confirmar) { confirmar.disabled = true; confirmar.textContent = 'Transferindo...'; }
+  try {
+    const resultado = await putJson(`/mesas/${origem.id}/transferir`, { mesaDestinoId: destino.id });
+    _mesaModalNumero = Number(resultado.mesaDestino);
+    showToast(`${resultado.pedidosMovidos} pedido(s) transferido(s) para a Mesa ${resultado.mesaDestino}.`, 'success');
+    window.fecharTransferenciaMesaAtendente();
+    await loadData({ silent: true });
+    await _refreshModalAtual();
+  } catch (error) {
+    showToast(error.message || 'Não foi possível mover os pedidos.', 'error');
+  } finally {
+    if (confirmar) { confirmar.disabled = false; confirmar.textContent = 'Confirmar transferência'; }
+  }
+};
 
 async function _aposAlterarMesa(msg) {
   showToast(msg, 'success');

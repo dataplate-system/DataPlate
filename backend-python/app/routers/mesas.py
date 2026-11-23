@@ -9,9 +9,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models import Mesa, Role, User
+from app.models import Mesa, Pedido, Role, User
 from app.security import exigir_perfis
-from app.schemas import ChamadoMesaResponse, MesaRequest, MesaReservaRequest, MesaResponse, MesaStatusRequest
+from app.schemas import ChamadoMesaResponse, MesaRequest, MesaReservaRequest, MesaResponse, MesaStatusRequest, MoverPedidosMesaRequest
 from app.routers.chamados import _publicar_evento, encerrar_chamados_da_mesa
 
 
@@ -204,6 +204,61 @@ def excluir_mesa(mesa_id: int, db: Session = Depends(get_db)) -> Response:
     db.commit()
     _publicar_chamados_encerrados(chamados_encerrados)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/{mesa_id}/transferir", dependencies=[Depends(exigir_perfis(Role.GERENTE, Role.FUNCIONARIO))])
+def transferir_mesa(mesa_id: int, request: MoverPedidosMesaRequest, db: Session = Depends(get_db)) -> dict[str, int | str]:
+    return _mover_pedidos_entre_mesas(mesa_id, request.mesaDestinoId, db, juntar=False)
+
+
+@router.put("/{mesa_id}/juntar", dependencies=[Depends(exigir_perfis(Role.GERENTE))])
+def juntar_mesas(mesa_id: int, request: MoverPedidosMesaRequest, db: Session = Depends(get_db)) -> dict[str, int | str]:
+    return _mover_pedidos_entre_mesas(mesa_id, request.mesaDestinoId, db, juntar=True)
+
+
+def _mover_pedidos_entre_mesas(mesa_origem_id: int, mesa_destino_id: int, db: Session, *, juntar: bool) -> dict[str, int | str]:
+    if mesa_origem_id == mesa_destino_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Escolha uma mesa diferente da origem.")
+
+    mesas = db.scalars(
+        select(Mesa)
+        .where(Mesa.id.in_([mesa_origem_id, mesa_destino_id]), Mesa.ativo.is_(True))
+        .order_by(Mesa.id.asc())
+        .with_for_update()
+    ).all()
+    por_id = {mesa.id: mesa for mesa in mesas}
+    origem = por_id.get(mesa_origem_id)
+    destino = por_id.get(mesa_destino_id)
+    if origem is None or destino is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Mesa de origem ou destino não encontrada.")
+    if origem.status not in {"ocupada", "aguardando_pagamento"}:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A mesa de origem não está ocupada.")
+    if juntar:
+        if destino.status not in {"ocupada", "aguardando_pagamento"}:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Para juntar mesas, a mesa de destino também precisa estar ocupada.")
+    elif destino.status != "livre":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A transferência só pode ser feita para uma mesa livre.")
+
+    pedidos = db.scalars(
+        select(Pedido)
+        .where(Pedido.id_mesa == origem.id, Pedido.id_status != 5, Pedido.pago_em.is_(None))
+        .with_for_update()
+    ).all()
+    if not pedidos:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Não há pedidos em aberto para mover nesta mesa.")
+
+    for pedido in pedidos:
+        pedido.id_mesa = destino.id
+    origem.status = "livre"
+    destino.status = "ocupada"
+    chamados_encerrados = encerrar_chamados_da_mesa(db, origem.id)
+    db.commit()
+    _publicar_chamados_encerrados(chamados_encerrados)
+    return {
+        "mesaOrigem": origem.numero,
+        "mesaDestino": destino.numero,
+        "pedidosMovidos": len(pedidos),
+    }
 
 
 def _apply_request(mesa: Mesa, request: MesaRequest) -> None:

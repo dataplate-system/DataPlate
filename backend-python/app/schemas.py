@@ -199,6 +199,10 @@ class MesaStatusRequest(BaseModel):
     status: str = Field(min_length=1)
 
 
+class MoverPedidosMesaRequest(BaseModel):
+    mesaDestinoId: int = Field(gt=0)
+
+
 class MesaReservaRequest(BaseModel):
     reservaNome: str | None = None
     reservaTelefone: str | None = None
