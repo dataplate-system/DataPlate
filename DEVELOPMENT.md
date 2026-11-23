@@ -160,6 +160,12 @@ A migracao `011_fichas_tecnicas_demo.sql` (idempotente) cria fichas tecnicas par
 
 A migracao `012_turno_caixa.sql` (idempotente) cria a tabela `turno_caixa` (abertura e fechamento de caixa por turno) e o indice unico que impede dois turnos abertos ao mesmo tempo. O Docker Compose ja a executa na inicializacao; em bancos existentes, aplique-a manualmente como as anteriores.
 
+A migracao `016_email_change_tokens.sql` (idempotente) cria a tabela de códigos temporários usados para confirmar a troca do e-mail de recuperação. Em bancos existentes, aplique-a antes de habilitar a tela Minha conta:
+
+```powershell
+Get-Content database\migrations\016_email_change_tokens.sql | docker compose -f backend-python\docker-compose.yml exec -T db psql -U postgres -d dataplate
+```
+
 Para recriar o banco local do zero:
 
 ```powershell

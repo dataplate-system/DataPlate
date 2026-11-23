@@ -79,7 +79,7 @@ Legenda: **C** criar, **L** ler, **A** alterar, **E** excluir, **I** inativar, *
 |---|---|---|---|---|---|---|
 | **Sistema** | | | | | | |
 | Usuários e perfis | C L A I E | C L A I (1) | — | — | — | — |
-| Própria conta (senha, e-mail) *(funcionalidade futura)* | L A | L A | L A | L A | L A | — |
+| Própria conta (senha, e-mail) | L A | L A | L A | L A | L A | — |
 | Dados do restaurante | L A | L | — | — | — | L (2) |
 | Integrações e notificações (14) | C L A E | L | — | — | — | — |
 | Parâmetros técnicos *(funcionalidade futura)* | C L A E | — | — | — | — | — |
@@ -463,7 +463,7 @@ Notas:
 | Não existe perfil Gerente. O seed cria o usuário "Gerente" como `ADMIN`, e a tela de usuários mapeia "Gerente" para `ADMIN` | `models.py:20-24`, `seed.py:37-42`, `adm.js:4874-4880` | Seção 1, RN-AC04 | Corrigido: `Role.GERENTE`, seed e migração `006_perfil_gerente.sql`; a UI mapeia Gerente para `GERENTE` |
 | Não é possível criar usuário `CAIXA` pela UI: o select de perfil só oferece Administrador, Operacional e Cozinha, e `USER_ROLE_LABEL`/`USER_ROLE_CLASS` não têm `CAIXA` | `adm.html:1904-1908`, `adm.js:4871-4872` | Seção 1, RN-AC04 | Corrigido: select com os 5 perfis (Gerente vê só os operacionais) |
 | Não há como ativar/inativar usuário pela API ou UI. `UserResponse` não expõe `ativo`, e a tabela exibe "Ativo" fixo | `routers/usuarios.py`, `schemas.py:67`, `adm.js:4889` | RN-AC21, RN-AC22, RN-AC25 | Corrigido: `ativo` em `UserResponse`/`UserUpdateRequest`; botão Ativar/Inativar na tabela |
-| Não existe troca da própria senha ou e-mail. O modal "Segurança" é apenas visual e não chama a API | `adm.js:2240-2252` | RN-AC23 | Pendente |
+| Não existe troca da própria senha ou e-mail. O modal "Segurança" é apenas visual e não chama a API | `routers/auth.py`, `services.py`, `minha-conta.html` | RN-AC23 | Corrigido: todas as funções autenticadas podem trocar a própria senha após informar a senha atual e alterar o e-mail após confirmação por código enviado ao novo endereço |
 | O frontend não renova o token: um 401 encerra a sessão direto | `adm.js:121` | RN-AC12 | Pendente: um 401 leva ao login, sem tentativa de refresh |
 | O frontend trata qualquer perfil desconhecido como "gerente" (administrador) | `adm-login.js:175-180` | RN-AC06 | Corrigido: perfil desconhecido não cria sessão ("Perfil sem acesso") |
 | O controle de perfil é apenas visual: `data-role`, `sessionStorage` editável, atalhos e hash abrem seções restritas, "Trocar usuário" não exige senha | `adm.js:47-58`, `adm.js:293-307`, `adm.js:2256` | RN-AC03, RN-AC11, RN-AC17 | Corrigido: `backendRole` decide o perfil, `data-roles` e `SECTION_ROLES` filtram menu, atalhos, busca e `navigateTo`; "Trocar usuário" encerra a sessão |

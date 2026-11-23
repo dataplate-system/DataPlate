@@ -2593,26 +2593,6 @@ document.getElementById('profileForm')?.addEventListener('submit', (e) => {
   showSuccessModal('Perfil atualizado!', 'Suas informações foram salvas com sucesso.');
 });
 
-document.getElementById('securityForm')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const newPassword = e.target.querySelector('[name="newPassword"]');
-  const confirmPassword = e.target.querySelector('[name="confirmPassword"]');
-
-  confirmPassword.setCustomValidity('');
-  if (!validateForm(e.target)) return;
-
-  if (newPassword.value !== confirmPassword.value) {
-    confirmPassword.setCustomValidity('As senhas nao conferem.');
-    confirmPassword.reportValidity();
-    return;
-  }
-
-  confirmPassword.setCustomValidity('');
-  closeModal('securityModal');
-  showSuccessModal('Segurança atualizada!', 'Suas configurações de acesso foram salvas.');
-  e.target.reset();
-});
-
 // Trocar usuario exige novo login (sem troca de perfil sem senha)
 document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();

@@ -54,9 +54,14 @@ class LimitadorTentativas:
 # Falhas de login no mesmo CPF e origem, e falhas de qualquer CPF na mesma origem.
 login_por_cpf = LimitadorTentativas(maximo=5, janela_segundos=300)
 login_por_origem = LimitadorTentativas(maximo=30, janela_segundos=300)
+# Confirmacoes da propria conta usam os mesmos limites por usuario e por origem.
+alteracao_conta_por_usuario = LimitadorTentativas(maximo=5, janela_segundos=300)
+alteracao_conta_por_origem = LimitadorTentativas(maximo=30, janela_segundos=300)
 # Cada pedido de codigo envia um e-mail, entao toda solicitacao conta.
 recuperacao_por_cpf = LimitadorTentativas(maximo=3, janela_segundos=900)
 recuperacao_por_origem = LimitadorTentativas(maximo=20, janela_segundos=900)
+alteracao_email_por_usuario = LimitadorTentativas(maximo=3, janela_segundos=900)
+alteracao_email_por_origem = LimitadorTentativas(maximo=20, janela_segundos=900)
 pedidos_qr_por_mesa = LimitadorTentativas(maximo=20, janela_segundos=600)
 chamados_qr_por_mesa_tipo = LimitadorTentativas(maximo=1, janela_segundos=120)
 

@@ -14,6 +14,7 @@ from app.db import SessionLocal, get_db
 from app.limiter import LimitadorTentativas
 from app.main import app as aplicacao
 from app.models import Role, User
+from app.routers import auth as auth_module
 from app.routers.auth import router as auth_router
 from app.security import create_access_token, decode_access_token, get_usuario_atual
 from app.security import _create_token as criar_token
@@ -27,9 +28,21 @@ class AutenticacaoTest(TesteComBanco):
 
     def setUp(self):
         super().setUp()
+        for limitador in (
+            auth_module.alteracao_conta_por_usuario,
+            auth_module.alteracao_conta_por_origem,
+            auth_module.alteracao_email_por_usuario,
+            auth_module.alteracao_email_por_origem,
+        ):
+            limitador.limpar()
         self.conta = self.criar_usuario(email="conta.teste@example.com")
         self.db.commit()
         self.client.app.dependency_overrides.pop(get_usuario_atual)
+
+    def autenticacao(self, senha=SENHA):
+        resposta = self.entrar(senha)
+        self.assertEqual(resposta.status_code, 200, resposta.text)
+        return {"Authorization": f"Bearer {resposta.json()['token']}"}
 
     def entrar(self, senha=SENHA, cpf=None):
         return self.client.post("/api/auth/login", json={"cpf": cpf or self.conta.cpf, "senha": senha})
@@ -114,6 +127,105 @@ class AutenticacaoTest(TesteComBanco):
             for _ in range(3):
                 self.assertEqual(self.solicitar_codigo(self.conta.cpf).status_code, 202)
             self.assertEqual(self.solicitar_codigo(self.conta.cpf).status_code, 429)
+
+    def test_usuario_altera_a_propria_senha_e_a_antiga_deixa_de_funcionar(self):
+        headers = self.autenticacao()
+
+        resposta_errada = self.client.put(
+            "/api/auth/me/password",
+            json={"senhaAtual": "senha-incorreta", "novaSenha": "novaSenha123"},
+            headers=headers,
+        )
+        self.assertEqual(resposta_errada.status_code, 400)
+        self.assertIn("Senha atual incorreta", resposta_errada.json()["detail"])
+
+        resposta = self.client.put(
+            "/api/auth/me/password",
+            json={"senhaAtual": SENHA, "novaSenha": "novaSenha123"},
+            headers=headers,
+        )
+        self.assertEqual(resposta.status_code, 204, resposta.text)
+        self.assertEqual(self.entrar(SENHA).status_code, 401)
+        self.assertEqual(self.entrar("novaSenha123").status_code, 200)
+
+    def test_troca_de_senha_recusa_senha_fraca_e_campos_de_perfil(self):
+        headers = self.autenticacao()
+
+        resposta = self.client.put(
+            "/api/auth/me/password",
+            json={"senhaAtual": SENHA, "novaSenha": "somenteletras"},
+            headers=headers,
+        )
+        self.assertEqual(resposta.status_code, 422)
+
+        resposta = self.client.put(
+            "/api/auth/me/password",
+            json={"senhaAtual": SENHA, "novaSenha": "novaSenha123", "role": "ADMIN", "ativo": False},
+            headers=headers,
+        )
+        self.assertEqual(resposta.status_code, 422)
+        self.assertEqual(self.conta.role, Role.GERENTE.value)
+        self.assertTrue(self.conta.ativo)
+
+    def test_senha_atual_errada_bloqueia_novas_tentativas_por_cinco_minutos(self):
+        headers = self.autenticacao()
+        payload = {"senhaAtual": "senha-incorreta", "novaSenha": "novaSenha123"}
+
+        for _ in range(5):
+            self.assertEqual(self.client.put("/api/auth/me/password", json=payload, headers=headers).status_code, 400)
+
+        bloqueada = self.client.put("/api/auth/me/password", json=payload, headers=headers)
+        self.assertEqual(bloqueada.status_code, 429)
+        self.assertGreater(int(bloqueada.headers["Retry-After"]), 0)
+
+    def test_email_de_recuperacao_so_muda_apos_confirmacao(self):
+        headers = self.autenticacao()
+        with patch("app.services.randbelow", return_value=123456), patch("app.services._send_email_change_code") as enviar:
+            resposta = self.client.put(
+                "/api/auth/me/email-change",
+                json={"senhaAtual": SENHA, "email": " Novo@Example.com "},
+                headers=headers,
+            )
+            self.assertEqual(resposta.status_code, 202, resposta.text)
+            enviar.assert_called_once_with("novo@example.com", "123456")
+
+            meu_usuario = self.client.get("/api/auth/me", headers=headers)
+            self.assertEqual(meu_usuario.json()["email"], "conta.teste@example.com")
+            codigo_invalido = self.client.post(
+                "/api/auth/me/email-change/confirm",
+                json={"codigo": "999999"},
+                headers=headers,
+            )
+            self.assertEqual(codigo_invalido.status_code, 400)
+
+            confirmacao = self.client.post(
+                "/api/auth/me/email-change/confirm",
+                json={"codigo": "123456"},
+                headers=headers,
+            )
+            self.assertEqual(confirmacao.status_code, 204, confirmacao.text)
+
+        meu_usuario = self.client.get("/api/auth/me", headers=headers)
+        self.assertEqual(meu_usuario.json()["email"], "novo@example.com")
+
+    def test_email_de_recuperacao_recusa_senha_errada_e_alteracao_de_perfil(self):
+        headers = self.autenticacao()
+
+        resposta = self.client.put(
+            "/api/auth/me/email-change",
+            json={"senhaAtual": "senha-incorreta", "email": "novo@example.com"},
+            headers=headers,
+        )
+        self.assertEqual(resposta.status_code, 400)
+
+        resposta = self.client.put(
+            "/api/auth/me/email-change",
+            json={"senhaAtual": SENHA, "email": "novo@example.com", "role": "ADMIN", "ativo": False},
+            headers=headers,
+        )
+        self.assertEqual(resposta.status_code, 422)
+        self.assertEqual(self.conta.role, Role.GERENTE.value)
+        self.assertTrue(self.conta.ativo)
 
 
 class LimitadorTest(unittest.TestCase):

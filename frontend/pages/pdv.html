@@ -11,11 +11,12 @@
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <style>[data-roles][hidden] { display: none !important; }</style>
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <link rel="stylesheet" href="../Css/operacao.css?v=20261103-3" />
-  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
   <link rel="stylesheet" href="../Css/pdv-operacao.css?v=20261103-1" />
 </head>
 <body>
@@ -56,13 +57,19 @@
         </span>
       </div>
       <button class="pdv-action-btn" id="pdvFecharCaixaBtn" type="button" hidden>Fechar caixa</button>
-      <div class="pdv-session-info" id="pdvSessionInfo">
-        <div class="pdv-avatar" id="pdvAvatar">AT</div>
-        <span>
-          <strong id="pdvUserName">Caixa</strong>
-          <small id="pdvUserRole">Operacional</small>
-        </span>
-      </div>
+      <details class="account-menu" id="pdvSessionInfo">
+        <summary class="pdv-session-info account-menu-trigger">
+          <span class="pdv-avatar" id="pdvAvatar">AT</span>
+          <span>
+            <strong id="pdvUserName">Caixa</strong>
+            <small id="pdvUserRole">Operacional</small>
+          </span>
+          <span class="account-menu-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="account-menu-panel">
+          <a href="minha-conta.html">Minha conta</a>
+        </div>
+      </details>
       <button class="pdv-logout-btn" id="pdvLogoutBtn" type="button">Sair</button>
     </div>
   </header>

@@ -14,9 +14,10 @@
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
   <link rel="stylesheet" href="../Css/role-theme.css?v=20261103-perfis-v2" />
   <link rel="stylesheet" href="../Css/relatorios.css?v=20261109-bcg" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
-  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
   <link rel="stylesheet" href="../Css/pedidos-ui.css?v=20261109-filtros" />
 </head>
 <body>
@@ -91,7 +92,7 @@
           <div class="dropdown-menu">
             <a href="#config-restaurante" class="dropdown-link" onclick="navigateTo('config-restaurante')">Restaurante</a>
             <a href="#config-usuarios" class="dropdown-link" onclick="navigateTo('config-usuarios')">Usuários e Permissões</a>
-            <a href="#seguranca" class="dropdown-link" data-open-modal="securityModal">Segurança</a>
+            <a href="minha-conta.html" class="dropdown-link">Minha conta</a>
             <a href="#config-integracao" class="dropdown-link" onclick="navigateTo('config-integracao')">Integração</a>
             <a href="#config-notificacoes" class="dropdown-link" onclick="navigateTo('config-notificacoes')">Notificações</a>
           </div>
@@ -100,13 +101,19 @@
 
       <div class="header-right">
         <span class="header-breadcrumb" id="headerBreadcrumb" aria-live="polite"></span>
-        <div class="header-session-info">
-          <div class="user-avatar-small" id="headerUserAvatar">GP</div>
-          <span>
-            <strong id="headerUserName">Gerente</strong>
-            <small id="headerUserRole">Administrador</small>
-          </span>
-        </div>
+        <details class="account-menu">
+          <summary class="header-session-info account-menu-trigger">
+            <span class="user-avatar-small" id="headerUserAvatar">GP</span>
+            <span>
+              <strong id="headerUserName">Gerente</strong>
+              <small id="headerUserRole">Administrador</small>
+            </span>
+            <span class="account-menu-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="account-menu-panel">
+            <a href="minha-conta.html">Minha conta</a>
+          </div>
+        </details>
         <button type="button" class="header-logout-btn" onclick="openModal('logoutModal')">Sair</button>
       </div>
     </header>
@@ -2466,42 +2473,6 @@
     </div>
   </div>
 
-  <div class="modal" id="securityModal">
-    <div class="modal-content modal-content-small">
-      <button type="button" class="modal-close" onclick="closeModal('securityModal')">✕</button>
-      <div class="modal-header">Segurança</div>
-      <form id="securityForm">
-        <div class="form-row modal-form-row">
-          <div class="form-group">
-            <label>Senha Atual</label>
-            <input type="password" name="currentPassword" placeholder="Digite sua senha atual" autocomplete="current-password" required />
-          </div>
-          <div class="form-group">
-            <label>Nova Senha</label>
-            <input type="password" name="newPassword" placeholder="Mínimo de 8 caracteres" autocomplete="new-password" minlength="8" required />
-          </div>
-        </div>
-        <div class="form-row modal-form-row">
-          <div class="form-group">
-            <label>Confirmar Nova Senha</label>
-            <input type="password" name="confirmPassword" placeholder="Repita a nova senha" autocomplete="new-password" minlength="8" required />
-          </div>
-          <div class="form-group">
-            <label>Verificação</label>
-            <label class="checkbox-label security-check">
-              <input type="checkbox" name="twoFactor" data-optional="true" />
-              <span>Ativar autenticação em duas etapas</span>
-            </label>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn-secondary" onclick="closeModal('securityModal')">Cancelar</button>
-          <button type="submit" class="btn-primary">Atualizar Segurança</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <div class="modal" id="switchUserModal">
     <div class="modal-content modal-content-small">
       <button type="button" class="modal-close" onclick="closeModal('switchUserModal')">✕</button>
@@ -2634,6 +2605,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="../JavaScript/adm.js?v=20261116-prioridade-selecao-2" defer></script>
+  <script src="../JavaScript/adm.js?v=20261123-minha-conta" defer></script>
 </body>
 </html>

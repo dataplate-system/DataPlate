@@ -11,10 +11,11 @@
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=3-atendente-mesas" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <link rel="stylesheet" href="../Css/operacao.css?v=20261116-prioridade-selecao-3" />
-  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
   <link rel="stylesheet" href="../Css/pedidos-ui.css?v=20261109-filtros" />
   <link rel="stylesheet" href="../Css/prioridade-pagamento.css?v=20261116-5" />
 </head>
@@ -48,13 +49,19 @@
       </form>
 
       <div class="header-actions">
-        <div class="session-summary">
-          <span class="user-avatar" id="sessionInitials">AT</span>
-          <span>
-            <strong id="sessionName">Atendente</strong>
-            <small id="sessionRole">Operacional</small>
-          </span>
-        </div>
+        <details class="account-menu">
+          <summary class="session-summary account-menu-trigger">
+            <span class="user-avatar" id="sessionInitials">AT</span>
+            <span>
+              <strong id="sessionName">Atendente</strong>
+              <small id="sessionRole">Operacional</small>
+            </span>
+            <span class="account-menu-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="account-menu-panel">
+            <a href="minha-conta.html">Minha conta</a>
+          </div>
+        </details>
         <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
       </div>
     </header>
