@@ -448,13 +448,15 @@ function carregarCarrinho() {
 
   carrinho.forEach((item, index) => {
     total += item.preco * item.quantidade;
+    const esgotado = produtoEsgotado(item.produtoId);
 
     lista.innerHTML += `
-      <div class="item">
-        <img src="${item.imagem}">
+      <div class="item${esgotado ? " is-esgotado" : ""}">
+        <img src="${escaparHtml(item.imagem)}">
         <div class="info">
-          <h3>${item.nome}</h3>
+          <h3>${escaparHtml(item.nome)}</h3>
           <p>R$ ${item.preco}</p>
+          ${esgotado ? `<span class="carrinho-esgotado">Esgotado no momento · remova para continuar</span>` : ""}
           <div class="quantidade">
             <button onclick="diminuir(${index})">-</button>
             <span>${item.quantidade}</span>
@@ -504,6 +506,15 @@ carregarCarrinho();
 //adição de produtos ao carrinho
 
 function adicionarCarrinho(produtoId, nome, preco, imagem, qtd) {
+
+  if (produtoEsgotado(produtoId)) {
+    mostrarNotificacao(
+      "aviso",
+      "Item esgotado",
+      `${nome} não está disponível no momento.`
+    );
+    return;
+  }
 
   if (!produtoId || !nome || !preco || !imagem || !Number.isInteger(qtd) || qtd < 1) {
 
@@ -564,6 +575,7 @@ function voltarListaDinamica() {
 function abrirProdutoDinamico(produtoId) {
   const produto = produtosCardapio.find((item) => Number(item.id) === Number(produtoId));
   if (!produto) return;
+  produtoDinamicoAberto = { id: Number(produto.id), esgotado: Boolean(produto.esgotado) };
 
   esconderTelasProduto();
   document.getElementById("telaLista").style.display = "none";
@@ -585,13 +597,20 @@ function abrirProdutoDinamico(produtoId) {
       <img src="../images/brand/logo-dataplate.png" class="logo-topo">
     </header>
     <div class="detalhe-corpo">
-      <div class="topo-img">
+      <div class="topo-img${produto.esgotado ? " is-esgotado" : ""}">
         <img src="${escaparHtml(imagem)}">
+        ${produto.esgotado ? `<span class="carimbo-esgotado carimbo-grande" aria-hidden="true">Esgotado</span>` : ""}
       </div>
-      <div class="container">
+      <div class="container${produto.esgotado ? " is-esgotado" : ""}">
         <h2>${nome}</h2>
         <p>${descricao}</p>
         <span class="preco">${formatarPreco(produto.preco)}</span>
+        ${produto.esgotado ? `
+        <div class="aviso-esgotado" role="status">
+          <strong>Esgotado no momento</strong>
+          ${produto.motivoEsgotado ? `<span>${escaparHtml(produto.motivoEsgotado)}</span>` : ""}
+        </div>
+        <button class="btn-carrinho" disabled>Indisponível no momento</button>` : `
         <h3>Quantidade</h3>
         <div class="quantidade">
           <button onclick="diminuirQtd(this)">-</button>
@@ -600,7 +619,7 @@ function abrirProdutoDinamico(produtoId) {
         </div>
         <button class="btn-carrinho" onclick="adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', parseInt(this.closest('.container').querySelector('.qtd').innerText))">
           Adicionar ao carrinho
-        </button>
+        </button>`}
       </div>
     </div>
     <footer class="rodape-user">
@@ -611,6 +630,60 @@ function abrirProdutoDinamico(produtoId) {
   tela.style.display = "block";
 }
 
+// Item esgotado (#74): o atendente pausa o item e o cardapio se atualiza sozinho.
+const INTERVALO_DISPONIBILIDADE_MS = 15000;
+let assinaturaDisponibilidade = "";
+let produtoDinamicoAberto = null;
+
+function produtoEsgotado(produtoId) {
+  return produtosCardapio.some((produto) => Number(produto.id) === Number(produtoId) && produto.esgotado);
+}
+
+function calcularAssinaturaDisponibilidade(produtos) {
+  return produtos.map((produto) => `${produto.id}:${produto.esgotado ? 1 : 0}:${produto.motivoEsgotado || ""}`).join("|");
+}
+
+async function buscarProdutosCardapio() {
+  const response = await fetch(`${API_BASE_URL}/produtos`);
+  if (!response.ok) {
+    const body = await readResponseBody(response);
+    throw new Error(extractErrorMessage(body, "Nao foi possivel carregar o cardapio."));
+  }
+  const produtos = await response.json();
+  return produtos.filter((produto) => produto.ativo !== false);
+}
+
+function renderizarCardapio() {
+  const lista = document.getElementById("listaPratos");
+  if (!lista) return;
+  if (!produtosCardapio.length) {
+    lista.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Nenhum produto cadastrado no cardápio.</p>';
+    return;
+  }
+
+  // Esgotados vao para o fim: dentro de cada categoria ficam depois dos disponiveis.
+  const ordenados = [...produtosCardapio].sort((a, b) => Number(Boolean(a.esgotado)) - Number(Boolean(b.esgotado)));
+  lista.innerHTML = ordenados.map((produto) => {
+    const imagem = getImagemProduto(produto);
+    const acao = produto.esgotado
+      ? `<span class="carimbo-esgotado" aria-label="Esgotado">Esgotado</span>`
+      : `<button class="add-rapido" title="Adicionar ao carrinho"
+          onclick="event.stopPropagation(); adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', 1)">+</button>`;
+    return `
+      <div class="item${produto.esgotado ? " is-esgotado" : ""}" data-categoria="${getCategoriaProduto(produto)}" onclick="abrirProdutoDinamico(${produto.id})">
+        <img src="${escaparHtml(imagem)}" alt="">
+        <div class="info">
+          <h3>${escaparHtml(produto.nome)}</h3>
+          <p>${escaparHtml(produto.descricao || "Sem descrição cadastrada.")}</p>
+          ${produto.esgotado ? `<span class="motivo-esgotado">${escaparHtml(produto.motivoEsgotado || "Indisponível no momento")}</span>` : ""}
+          <span class="preco">${formatarPreco(produto.preco)}</span>
+        </div>
+        ${acao}
+      </div>`;
+  }).join("");
+  filtrar();
+}
+
 async function carregarCardapio() {
   const lista = document.getElementById("listaPratos");
   if (!lista) return;
@@ -618,39 +691,42 @@ async function carregarCardapio() {
   lista.innerHTML = '<p id="cardapioLoading" style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Carregando cardápio...</p>';
 
   try {
-    const response = await fetch(`${API_BASE_URL}/produtos`);
-    if (!response.ok) {
-      const body = await readResponseBody(response);
-      throw new Error(extractErrorMessage(body, "Nao foi possivel carregar o cardapio."));
-    }
-
-    const produtos = await response.json();
-    produtosCardapio = produtos.filter((produto) => produto.ativo !== false);
-    if (!produtosCardapio.length) {
-      lista.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">Nenhum produto cadastrado no cardápio.</p>';
-      return;
-    }
-
-    lista.innerHTML = produtosCardapio.map((produto) => {
-      const imagem = getImagemProduto(produto);
-      return `
-      <div class="item" data-categoria="${getCategoriaProduto(produto)}" onclick="abrirProdutoDinamico(${produto.id})">
-        <img src="${escaparHtml(imagem)}">
-        <div class="info">
-          <h3>${escaparHtml(produto.nome)}</h3>
-          <p>${escaparHtml(produto.descricao || "Sem descrição cadastrada.")}</p>
-          <span class="preco">${formatarPreco(produto.preco)}</span>
-        </div>
-        <button class="add-rapido" title="Adicionar ao carrinho"
-          onclick="event.stopPropagation(); adicionarCarrinho(${produto.id}, '${escaparJsString(produto.nome)}', ${Number(produto.preco || 0)}, '${escaparJsString(imagem)}', 1)">+</button>
-      </div>`;
-    }).join("");
-    filtrar();
+    produtosCardapio = await buscarProdutosCardapio();
+    assinaturaDisponibilidade = calcularAssinaturaDisponibilidade(produtosCardapio);
+    renderizarCardapio();
+    carregarCarrinho();
   } catch (error) {
     console.error("Erro ao carregar cardapio:", error);
     lista.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#ef4444;padding:32px">Não foi possível carregar o cardápio. Tente novamente.</p>';
   }
 }
+
+// Atualizacao silenciosa: so redesenha quando a disponibilidade mudou.
+async function atualizarDisponibilidadeCardapio() {
+  if (document.visibilityState === "hidden" || !produtosCardapio.length) return;
+  try {
+    const produtos = await buscarProdutosCardapio();
+    const assinatura = calcularAssinaturaDisponibilidade(produtos);
+    if (assinatura === assinaturaDisponibilidade) return;
+    assinaturaDisponibilidade = assinatura;
+    produtosCardapio = produtos;
+    renderizarCardapio();
+    carregarCarrinho();
+    const tela = document.getElementById("telaProdutoDinamico");
+    if (produtoDinamicoAberto && tela && tela.style.display !== "none") {
+      const atual = produtosCardapio.find((produto) => Number(produto.id) === produtoDinamicoAberto.id);
+      if (!atual) voltarListaDinamica();
+      else if (Boolean(atual.esgotado) !== produtoDinamicoAberto.esgotado) abrirProdutoDinamico(atual.id);
+    }
+  } catch (error) {
+    console.error("Erro ao atualizar a disponibilidade do cardapio:", error);
+  }
+}
+
+window.setInterval(atualizarDisponibilidadeCardapio, INTERVALO_DISPONIBILIDADE_MS);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") atualizarDisponibilidadeCardapio();
+});
 
 // pagamento
 
@@ -669,6 +745,17 @@ async function confirmarPedido() {
   await mesaQrPronto;
   if (!mesaSelecionadaParaPedido()) {
     avisarMesaSemQr();
+    return;
+  }
+  await atualizarDisponibilidadeCardapio();
+  const esgotados = carrinho.filter((item) => produtoEsgotado(item.produtoId));
+  if (esgotados.length) {
+    mostrarNotificacao(
+      "aviso",
+      esgotados.length === 1 ? "Item esgotado" : "Itens esgotados",
+      `${esgotados.map((item) => item.nome).join(", ")} acabou de ficar indisponível. Remova do carrinho para continuar.`
+    );
+    carregarCarrinho();
     return;
   }
   atualizarResumoPagamento();
@@ -755,6 +842,7 @@ async function pagamentoAprovado() {
       "Erro",
       error.message
     );
+    if (/esgotad/i.test(error.message || "")) atualizarDisponibilidadeCardapio();
     return false;
   }
 

@@ -19,6 +19,7 @@ Os testes `test_*.py` ficam em `backend-python/tests/` e rodam com `npm test`, t
 | RF11 Abertura da mesa | `atendente.html`, `user.html` | `PATCH /api/mesas/{id}/status`, `POST /api/pedidos` | `test_mesa_qr.py`, `check-melhorias.mjs` |
 | RF12 Perfil do cliente | `adm.html` | `GET /api/clientes/{id}/resumo` | `test_clientes.py` |
 | RF13 Abertura e fechamento de caixa | `pdv.html`, `adm.html` | `/api/caixa/turnos`, `/api/caixa/turnos/atual`, `PUT /api/caixa/turnos/{id}/fechar` | `test_caixa.py` |
+| RF14 Item esgotado no cardápio | `atendente.html`, `user.html`, `pdv.html`, `adm.html` | `PUT /api/produtos/{id}/disponibilidade`, `GET /api/produtos`, `POST /api/pedidos` | `test_item_esgotado.py` |
 
 ## Objetivos do TAP
 

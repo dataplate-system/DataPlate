@@ -4328,7 +4328,9 @@ function adicionarLinhaProduto(p) {
 function buildLinhaProduto(p) {
   return `<tr>
     <td><strong>${escapeHtml(displayCode(p, 'PRO'))}</strong></td>
-    <td><strong>${escapeHtml(p.nome)}</strong></td>
+    <td><strong${p.esgotado ? ' class="produto-esgotado-nome"' : ''}>${escapeHtml(p.nome)}</strong>${p.esgotado
+      ? `<small class="produto-esgotado-motivo">${escapeHtml(['Indisponível', p.motivoEsgotado].filter(Boolean).join(' · '))}</small>`
+      : ''}</td>
     <td>${escapeHtml(getCategoryLabel(p.idCategoria))}</td>
     <td>${formatCurrency(p.preco)}</td>
     <td>${p.tempoPreparo ? `${p.tempoPreparo} min` : '-'}</td>

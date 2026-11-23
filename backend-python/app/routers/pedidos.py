@@ -329,8 +329,8 @@ def editar_pedido(
     motivo = request.motivo.strip()
     if len(motivo) < 3:
         raise HTTPException(status_code=422, detail="Informe o motivo da alteracao")
-    produtos = _resolver_produtos(db, request)
     anteriores = {item.id_produto: item for item in pedido.itens if not item.cancelado}
+    produtos = _resolver_produtos(db, request, {produto_id: item.quantidade for produto_id, item in anteriores.items()})
     subtotal_anterior = sum((_subtotal_do_item(item) for item in anteriores.values()), Decimal("0"))
     desconto = max(Decimal("0"), subtotal_anterior - pedido.valor_total)
     resumo_anterior = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in anteriores.values())
@@ -640,8 +640,18 @@ def _resolver_cliente(db: Session, cliente_id: int | None) -> Cliente | None:
     return cliente
 
 
-def _resolver_produtos(db: Session, request: PedidoCreateRequest | PedidoEditRequest) -> dict[int, Produto]:
+def _resolver_produtos(
+    db: Session,
+    request: PedidoCreateRequest | PedidoEditRequest,
+    quantidades_atuais: dict[int, Decimal] | None = None,
+) -> dict[int, Produto]:
+    """Carrega os produtos do pedido e recusa os inativos ou esgotados.
+
+    Na edicao, `quantidades_atuais` traz o que o pedido ja tem: um item que esgotou
+    depois de pedido pode continuar, mas nao pode ser acrescentado nem aumentado.
+    """
     produtos: dict[int, Produto] = {}
+    esgotados: list[str] = []
     for item in request.itens:
         if item.produtoId in produtos:
             continue
@@ -651,6 +661,15 @@ def _resolver_produtos(db: Session, request: PedidoCreateRequest | PedidoEditReq
         if not produto.ativo:
             raise HTTPException(status_code=400, detail=f"Produto indisponivel: {produto.nome}")
         produtos[item.produtoId] = produto
+        ja_pedido = (quantidades_atuais or {}).get(produto.id, Decimal("0"))
+        if produto.esgotado and Decimal(item.quantidade) > ja_pedido:
+            esgotados.append(produto.nome)
+    if esgotados:
+        rotulo = "Item esgotado no momento" if len(esgotados) == 1 else "Itens esgotados no momento"
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"{rotulo}: {', '.join(esgotados)}. Remova do pedido para continuar.",
+        )
     return produtos
 
 

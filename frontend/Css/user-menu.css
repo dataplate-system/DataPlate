@@ -408,3 +408,111 @@ body:has(#barraFlutuante.ativa) #telaLista .conteudo { padding-bottom: calc(64px
   #telaLista .chamados-mesa-acoes { display: grid; grid-template-columns: 1fr; }
   #telaLista .chamados-mesa-acoes button { width: 100%; }
 }
+
+/* Item esgotado (#74): card acinzentado, carimbo e sem botao de adicionar. */
+#telaLista .item.is-esgotado { cursor: default; }
+#telaLista .item.is-esgotado > img { filter: grayscale(1); opacity: .55; }
+#telaLista .item.is-esgotado .info h3,
+#telaLista .item.is-esgotado .info .preco { color: #9ca3af !important; }
+#telaLista .item.is-esgotado .info p { color: #a3a8b3 !important; }
+
+/* Carimbo de borracha: tinta vermelha gasta, borda dupla, girado e saindo pelo canto. */
+.carimbo-esgotado {
+  --carimbo-cor: #b8102a;
+  --carimbo-giro: -12deg;
+  position: absolute;
+  z-index: 3;
+  display: inline-block;
+  padding: 6px 16px 4px;
+  border: 5px solid var(--carimbo-cor);
+  border-radius: 10px;
+  /* Segunda borda, mais fina, por dentro da primeira. */
+  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 4px var(--carimbo-cor);
+  background: rgb(255 255 255 / 92%);
+  color: var(--carimbo-cor);
+  font-family: "Anton", Impact, "Arial Black", sans-serif;
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: rotate(var(--carimbo-giro));
+  /* Falhas da tinta: ruido SVG usado como mascara. */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='90'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.9 1.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='90'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.9 1.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 180px 90px;
+  mask-size: 180px 90px;
+  filter: drop-shadow(0 2px 3px rgb(127 29 29 / 25%));
+  animation: carimbar .32s cubic-bezier(.2, .9, .3, 1.25) both;
+}
+@keyframes carimbar {
+  from { opacity: 0; transform: rotate(var(--carimbo-giro)) scale(1.9); }
+  70% { opacity: 1; transform: rotate(var(--carimbo-giro)) scale(.94); }
+  to { opacity: 1; transform: rotate(var(--carimbo-giro)) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .carimbo-esgotado { animation: none; }
+}
+
+/* No card, o carimbo passa da borda superior direita. */
+#telaLista .lista-grid .item.is-esgotado { overflow: visible; }
+#telaLista .lista-grid .item.is-esgotado > img { border-radius: 20px 20px 0 0 !important; }
+#telaLista .lista-grid { overflow-x: clip; overflow-y: visible; }
+#telaLista .item .carimbo-esgotado { top: -18px; right: -8px; }
+@media (max-width: 600px) {
+  #telaLista .item .carimbo-esgotado { font-size: 25px; right: -6px; }
+}
+
+/* No detalhe, um carimbo maior sobre a foto. */
+#telaProdutoDinamico .topo-img.is-esgotado { position: relative; }
+#telaProdutoDinamico .topo-img.is-esgotado img { filter: grayscale(1); opacity: .6; }
+#telaProdutoDinamico .carimbo-grande {
+  --carimbo-giro: -14deg;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  padding: 10px 26px 8px;
+  border-width: 6px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 6px var(--carimbo-cor);
+  font-size: clamp(28px, 7vw, 50px);
+}
+#telaLista .item .motivo-esgotado {
+  display: block;
+  margin: 0 0 8px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+#telaProdutoDinamico .aviso-esgotado {
+  display: grid;
+  gap: 4px;
+  margin: 18px 0;
+  padding: 14px 16px;
+  border: 1px solid #fecaca;
+  border-radius: 14px;
+  background: #fef2f2;
+  color: #991b1b;
+  overflow-wrap: anywhere;
+}
+#telaProdutoDinamico .aviso-esgotado strong { font-size: 16px; }
+#telaProdutoDinamico .aviso-esgotado span { font-size: 14px; }
+#telaProdutoDinamico .btn-carrinho:disabled {
+  background: #d1d5db !important;
+  color: #4b5563 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed;
+}
+#listaCarrinho .item.is-esgotado { border-color: #fecaca !important; background: #fef2f2 !important; }
+#listaCarrinho .item.is-esgotado img { filter: grayscale(1); opacity: .6; }
+#listaCarrinho .carrinho-esgotado {
+  display: block;
+  margin: 4px 0;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 800;
+}

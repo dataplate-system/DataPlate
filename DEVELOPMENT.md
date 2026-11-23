@@ -166,6 +166,8 @@ A migracao `016_email_change_tokens.sql` (idempotente) cria a tabela de códigos
 Get-Content database\migrations\016_email_change_tokens.sql | docker compose -f backend-python\docker-compose.yml exec -T db psql -U postgres -d dataplate
 ```
 
+A migracao `017_produto_esgotado.sql` (idempotente) cria em `produto` as colunas `esgotado`, `esgotado_motivo`, `esgotado_em` e `esgotado_por` (item esgotado no cardapio). O Docker Compose ja a executa na inicializacao, e a API cria as colunas que faltarem ao iniciar.
+
 Para recriar o banco local do zero:
 
 ```powershell
@@ -261,7 +263,10 @@ Eventos publicados:
 { "type": "ESTOQUE_BAIXO", "insumos": [] }
 { "type": "CHAMADO_MESA", "chamado": {} }
 { "type": "CHAMADO_ATENDIDO", "chamado": {} }
+{ "type": "PRODUTO_DISPONIBILIDADE", "produto": {} }
 ```
+
+`PRODUTO_DISPONIBILIDADE` vai somente para a equipe. O cardapio do cliente confere a disponibilidade a cada 15 segundos e ao voltar para a aba.
 
 `ESTOQUE_BAIXO` e enviado somente a equipe, quando um insumo atinge o estoque minimo.
 
@@ -374,6 +379,13 @@ funcionarios, mesas, insumos, fichas, pedidos e historicos sao recriados.
 A carga recria os cinco logins, nove pedidos ativos recentes, historico de trinta
 dias e cenarios naturais de cancelamento. Tempos ativos ficam entre 5 e 19 minutos
 no momento da carga e continuam aumentando conforme o tempo real passa.
+
+## Item esgotado no cardapio
+
+- `PUT /api/produtos/{id}/disponibilidade` (Atendente e Gerente) com `{ "esgotado": true, "motivo": "Acabou por hoje" }` marca o item como indisponivel; `{ "esgotado": false }` libera de novo. O motivo e opcional (ate 120 caracteres). Remarcar um item ja esgotado troca o motivo e mantem o horario original.
+- `GET /api/produtos` devolve `esgotado`, `motivoEsgotado` e `esgotadoEm`; `esgotadoPorNome` so vem para a equipe autenticada.
+- `POST /api/pedidos` com item esgotado retorna 409 com o nome dos itens, pelo QR Code, pelo atendente e pelo PDV. Na edicao (`PUT /api/pedidos/{id}/itens`), o item que ja estava no pedido pode continuar, mas nao pode ser acrescentado nem aumentado.
+- Telas: aba "Cardapio" no `atendente.html` (busca, filtro e motivo); selo "Esgotado" e botao desativado no `user.html` e no `pdv.html`, com os esgotados no fim da categoria; selo "Indisponivel" na lista do cardapio do `adm.html`.
 
 ## Prioridade de pedidos
 

@@ -1514,3 +1514,16 @@ body #produtoSearch {
 @media (max-width: 760px) {
   .pdv-caixa-status small { display: none; }
 }
+
+/* Item esgotado (#74): marcado pelo atendente, nao pode ser vendido. */
+.produto-card.is-esgotado { cursor: not-allowed; background: #f8fafc; }
+.produto-card.is-esgotado:hover { box-shadow: none; transform: none; }
+.produto-card.is-esgotado .produto-img,
+.produto-card.is-esgotado .produto-img-placeholder { filter: grayscale(1); opacity: .55; }
+.produto-card.is-esgotado .produto-nome,
+.produto-card.is-esgotado .produto-preco { color: #94a3b8; }
+.btn-add.btn-esgotado,
+.btn-add.btn-esgotado:hover { background: #fee2e2; color: #991b1b; cursor: not-allowed; }
+.cart-row.is-esgotado { background: #fef2f2; }
+.cart-row-esgotado { display: block; margin-top: 2px; color: #b91c1c; font-size: 11px; font-weight: 700; }
+.produto-card .btn-add.btn-esgotado { border-color: #fecaca !important; background: #fee2e2 !important; color: #991b1b !important; cursor: not-allowed; }

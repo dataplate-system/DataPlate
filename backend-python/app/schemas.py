@@ -165,6 +165,16 @@ class ProdutoResponse(BaseModel):
     tempoPreparo: int | None
     destaque: bool
     criadoEm: datetime | None
+    esgotado: bool = False
+    motivoEsgotado: str | None = None
+    esgotadoEm: datetime | None = None
+    # Nome de quem marcou: so vai para a equipe autenticada, nunca para o cliente.
+    esgotadoPorNome: str | None = None
+
+
+class ProdutoDisponibilidadeRequest(BaseModel):
+    esgotado: bool
+    motivo: str | None = Field(default=None, max_length=120)
 
 
 class ErrorResponse(BaseModel):

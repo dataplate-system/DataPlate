@@ -928,3 +928,204 @@ body .atendente-main .mesa-card.has-open-call {
   #mesaModal .at-pgto-opt { flex-wrap: wrap; }
   #mesaModal .at-pgto-confirmation { font-size: 11px; }
 }
+
+/* ── DISPONIBILIDADE DO CARDÁPIO (item esgotado) ───────────────── */
+.toast.warning { background: #b45309; }
+.toast.info { background: var(--color-secondary); }
+.page-tabs { max-width: 100%; overflow-x: auto; }
+.page-tabs .tab-btn { white-space: nowrap; }
+.page-tabs .tab-btn strong[hidden] { display: none; }
+
+.disp-section {
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-panel);
+}
+.disp-ajuda { margin: 4px 0 16px; color: var(--color-muted); font-size: 13px; line-height: 1.5; }
+.disp-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+#dispBusca {
+  flex: 1 1 220px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+}
+#dispBusca:focus { outline: 2px solid #fdba74; outline-offset: 1px; border-color: var(--color-primary); }
+.disp-filtros { display: flex; flex-wrap: wrap; gap: 6px; }
+.disp-filtro {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-panel);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.disp-filtro:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.disp-filtro.is-active { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
+
+/* Lista por categoria: linhas simples com interruptor. */
+.disp-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  align-items: start;
+  gap: 16px;
+}
+.disp-grupo { border: 1px solid var(--color-border); border-radius: 10px; background: #fff; overflow: hidden; }
+.disp-grupo h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.disp-grupo h3 span { color: var(--color-muted); font-size: 12px; font-weight: 700; letter-spacing: 0; text-transform: none; }
+.disp-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--color-border);
+}
+.disp-item:last-child { border-bottom: 0; }
+.disp-item-info { display: grid; flex: 1; gap: 2px; min-width: 0; }
+.disp-item-nome { color: var(--color-text); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.disp-item-detalhe { display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--color-muted); font-size: 12px; font-weight: 600; }
+.disp-item-detalhe > span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
+.disp-item-detalhe .disp-detalhe-motivo { color: #b91c1c; }
+.disp-item-detalhe svg { flex-shrink: 0; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.disp-item-preco { flex-shrink: 0; color: var(--color-muted); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.disp-item.is-esgotado .disp-item-nome,
+.disp-item.is-esgotado .disp-item-preco { color: #94a3b8; }
+
+/* Liga/desliga no padrao do sistema: cantos de 6px, marcador quadrado e plano. */
+.disp-section .disp-switch {
+  position: relative;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 42px !important;
+  min-width: 42px;
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background: #e2e8f0 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.disp-section .disp-switch[aria-checked="true"] {
+  border-color: var(--color-success) !important;
+  background: var(--color-success) !important;
+}
+.disp-section .disp-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 11px no-repeat;
+  transition: transform .15s;
+}
+.disp-section .disp-switch[aria-checked="false"]::after { background: #94a3b8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7 7 17'/%3E%3C/svg%3E") center / 10px no-repeat; }
+.disp-section .disp-switch[aria-checked="true"]::after { transform: translateX(18px); }
+.disp-section .disp-switch:hover:not(:disabled) { border-color: #64748b !important; }
+.disp-section .disp-switch[aria-checked="true"]:hover:not(:disabled) { border-color: #15803d !important; background: #15803d !important; }
+.disp-section .disp-switch:disabled { opacity: .5; cursor: wait; }
+.disp-section .disp-switch:focus-visible { outline: 2px solid #fdba74 !important; outline-offset: 2px; }
+
+/* Modal: marcar indisponível */
+#esgotadoModal .modal-box { width: min(480px, calc(100% - 32px)); border-radius: 16px; }
+.disp-modal-body { display: grid; gap: 10px; padding: 18px 20px 20px; }
+.disp-modal-produto { margin: 0; color: var(--color-text); font-size: 18px; font-weight: 900; overflow-wrap: anywhere; }
+.disp-modal-label { color: var(--color-muted); font-size: 13px; font-weight: 700; }
+.disp-motivos { display: flex; flex-wrap: wrap; gap: 6px; }
+.disp-motivos button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.disp-motivos button:hover { border-color: var(--color-danger); color: var(--color-danger); }
+.disp-motivos button.is-active { border-color: var(--color-danger); background: #fef2f2; color: #991b1b; }
+#esgotadoMotivo {
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+}
+#esgotadoMotivo:focus { outline: 2px solid #fdba74; outline-offset: 2px; }
+.disp-modal-hint { color: var(--color-muted); font-size: 12px; }
+.disp-modal-erro { margin: 0; color: var(--color-danger); font-size: 13px; font-weight: 700; }
+.disp-modal-erro:empty { display: none; }
+.disp-modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.disp-btn-secundario, .disp-btn-perigo {
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.disp-btn-secundario { border: 1px solid var(--color-border); background: #fff; color: var(--color-text); }
+.disp-btn-perigo { border: 1px solid var(--color-danger); background: var(--color-danger); color: #fff; }
+.disp-btn-perigo:disabled { opacity: .6; cursor: wait; }
+
+/* Novo pedido: item indisponível não pode ser adicionado */
+.np-produto-card.is-esgotado { cursor: not-allowed; background: #f8fafc; opacity: .7; }
+.np-produto-card.is-esgotado:hover { box-shadow: none; border-color: var(--color-border); }
+.np-produto-card.is-esgotado .np-produto-nome { text-decoration: line-through; }
+.np-produto-esgotado {
+  margin-top: 6px;
+  padding: 5px;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .disp-section { padding: 14px; }
+  .disp-modal-footer { flex-direction: column-reverse; }
+  .disp-btn-secundario, .disp-btn-perigo { width: 100%; }
+}
+
+/* O design-system forca botoes brancos com !important; as acoes de disponibilidade precisam de cor. */
+.disp-section .disp-filtro { border-radius: 999px !important; }
+.disp-section .disp-filtro.is-active { border-color: var(--color-primary) !important; background: var(--color-primary) !important; color: #fff !important; }
+#esgotadoModal .disp-motivos button { border-radius: 999px !important; }
+#esgotadoModal .disp-motivos button.is-active { border-color: var(--color-danger) !important; background: #fef2f2 !important; color: #991b1b !important; }
+#esgotadoModal .disp-btn-perigo { border-color: var(--color-danger) !important; background: var(--color-danger) !important; color: #fff !important; }

@@ -1,13 +1,15 @@
 from datetime import datetime
 from decimal import Decimal
 
+import anyio
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import Produto, Role, User
-from app.schemas import ProdutoRequest, ProdutoResponse
+from app.realtime import manager
+from app.schemas import ProdutoDisponibilidadeRequest, ProdutoRequest, ProdutoResponse
 from app.security import exigir_perfis, get_usuario_opcional
 
 
@@ -17,9 +19,13 @@ router = APIRouter(prefix="/api/produtos", tags=["produtos"])
 
 
 @router.get("", response_model=list[ProdutoResponse])
-def listar_produtos(db: Session = Depends(get_db)) -> list[ProdutoResponse]:
+def listar_produtos(
+    db: Session = Depends(get_db),
+    usuario: User | None = Depends(get_usuario_opcional),
+) -> list[ProdutoResponse]:
     produtos = db.scalars(select(Produto).where(Produto.ativo.is_(True)).limit(500)).all()
-    return [_to_response(produto) for produto in produtos]
+    nomes = _nomes_responsaveis(db, produtos) if usuario is not None else {}
+    return [_to_response(produto, nomes) for produto in produtos]
 
 
 @router.get("/{produto_id}", response_model=ProdutoResponse)
@@ -35,7 +41,46 @@ def obter_produto(
     if produto is None or (usuario is None and not produto.ativo):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto nao encontrado")
 
-    return _to_response(produto)
+    nomes = _nomes_responsaveis(db, [produto]) if usuario is not None else {}
+    return _to_response(produto, nomes)
+
+
+@router.put("/{produto_id}/disponibilidade", response_model=ProdutoResponse)
+def atualizar_disponibilidade(
+    produto_id: int,
+    request: ProdutoDisponibilidadeRequest,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(exigir_perfis(Role.FUNCIONARIO, Role.GERENTE)),
+) -> ProdutoResponse:
+    """Marca o item como esgotado (com motivo opcional) ou o libera de novo."""
+    if produto_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID invalido")
+
+    produto = db.scalar(select(Produto).where(Produto.id == produto_id).with_for_update())
+    if produto is None or not produto.ativo:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produto nao encontrado")
+
+    if request.esgotado:
+        motivo = (request.motivo or "").strip()
+        # Remarcar um item ja esgotado so troca o motivo: o "desde" continua o original.
+        if not produto.esgotado:
+            produto.esgotado_em = datetime.now()
+        produto.esgotado = True
+        produto.esgotado_motivo = motivo or None
+        produto.esgotado_por = usuario.id
+    else:
+        produto.esgotado = False
+        produto.esgotado_motivo = None
+        produto.esgotado_em = None
+        produto.esgotado_por = None
+
+    db.add(produto)
+    db.commit()
+    db.refresh(produto)
+
+    response = _to_response(produto, _nomes_responsaveis(db, [produto]))
+    _publicar_disponibilidade(response)
+    return response
 
 
 @router.post(
@@ -158,7 +203,21 @@ def _normalizar_codigo(codigo: str | None) -> str | None:
     return codigo.strip().upper()
 
 
-def _to_response(produto: Produto) -> ProdutoResponse:
+def _nomes_responsaveis(db: Session, produtos: list[Produto]) -> dict[int, str]:
+    ids = {produto.esgotado_por for produto in produtos if produto.esgotado and produto.esgotado_por is not None}
+    if not ids:
+        return {}
+    return dict(db.execute(select(User.id, User.nome).where(User.id.in_(ids))).tuples().all())
+
+
+def _publicar_disponibilidade(produto: ProdutoResponse) -> None:
+    # Sem chave "pedido": o ConnectionManager entrega somente as conexoes da equipe.
+    payload = {"type": "PRODUTO_DISPONIBILIDADE", "produto": produto.model_dump(mode="json")}
+    anyio.from_thread.run(manager.broadcast, payload)
+
+
+def _to_response(produto: Produto, nomes: dict[int, str] | None = None) -> ProdutoResponse:
+    esgotado = bool(produto.esgotado)
     return ProdutoResponse(
         id=produto.id,
         codigo=produto.codigo,
@@ -171,4 +230,8 @@ def _to_response(produto: Produto) -> ProdutoResponse:
         tempoPreparo=produto.tempo_preparo,
         destaque=produto.destaque,
         criadoEm=produto.criado_em,
+        esgotado=esgotado,
+        motivoEsgotado=produto.esgotado_motivo if esgotado else None,
+        esgotadoEm=produto.esgotado_em if esgotado else None,
+        esgotadoPorNome=(nomes or {}).get(produto.esgotado_por) if esgotado else None,
     )

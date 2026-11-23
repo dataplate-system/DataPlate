@@ -988,7 +988,9 @@ function getProdutosVisiveis() {
       && (!termoBusca || normalizarBusca(`${p.nome} ${p.codigo || ''}`).includes(normalizarBusca(termoBusca)));
   }).sort((a, b) => {
     const rank = id => { const index = categoriasCatalogo.findIndex(c => c.id === id); return index < 0 ? 9999 : index; };
-    return rank(a.idCategoria) - rank(b.idCategoria) || a.nome.localeCompare(b.nome, 'pt-BR');
+    return rank(a.idCategoria) - rank(b.idCategoria)
+      || Number(Boolean(a.esgotado)) - Number(Boolean(b.esgotado))
+      || a.nome.localeCompare(b.nome, 'pt-BR');
   });
 }
 
@@ -1018,17 +1020,24 @@ function renderProdutos() {
         + `<div class="produto-img-placeholder" style="display:none">${emoji}</div>`
       : `<div class="produto-img-placeholder">${emoji}</div>`;
 
+    if (p.esgotado) {
+      card.classList.add('is-esgotado');
+      card.title = p.motivoEsgotado ? `Indisponível: ${p.motivoEsgotado}` : 'Indisponível no momento';
+    }
     card.innerHTML = `
       ${imgHtml}
       <div class="produto-info">
         <span class="produto-categoria">${esc(categoriasCatalogo.find(c => c.id === p.idCategoria)?.nome || 'Outros')}</span>
         <span class="produto-nome">${esc(p.nome)}</span>
         <span class="produto-preco">${formatBRL(p.preco)}</span>
-        <button class="btn-add">+ Adicionar</button>
+        ${p.esgotado
+          ? `<button class="btn-add btn-esgotado" type="button" disabled>Indisponível</button>`
+          : '<button class="btn-add" type="button">+ Adicionar</button>'}
       </div>`;
 
     card.querySelector('.btn-add').addEventListener('click', e => {
       e.stopPropagation();
+      if (p.esgotado) return;
       if (modoAtual === 'mesa' && !mesaSelecionada) { showToast('Selecione uma mesa primeiro.', 'info'); return; }
       adicionarAoCarrinho(p.id, p.nome, Number(p.preco));
       if (tabAtual !== 'venda') mudarTab('venda');
@@ -1038,8 +1047,24 @@ function renderProdutos() {
   });
 }
 
+function aplicarDisponibilidadePdv(produto) {
+  const indice = todosOsProdutos.findIndex(p => p.id === produto.id);
+  if (indice < 0) return;
+  const antes = Boolean(todosOsProdutos[indice].esgotado);
+  todosOsProdutos[indice] = { ...todosOsProdutos[indice], ...produto };
+  renderProdutos();
+  renderCarrinho();
+  if (produto.esgotado && !antes && cart.some(i => i.produtoId === produto.id)) {
+    showToast(`${produto.nome} ficou indisponível. Remova do carrinho para finalizar.`, 'error');
+  }
+}
+
 // -- CARRINHO -----------------------------------------------------
 function adicionarAoCarrinho(produtoId, nome, preco) {
+  if (todosOsProdutos.some(p => p.id === produtoId && p.esgotado)) {
+    showToast(`${nome} está indisponível no momento.`, 'error');
+    return;
+  }
   mostrarVistaPdv('pdv');
   const item = cart.find(i => i.produtoId === produtoId);
   if (item) { item.quantidade++; } else { cart.push({ produtoId, nome, preco, quantidade: 1 }); }
@@ -1076,9 +1101,10 @@ function renderCarrinho() {
   } else {
     cart.forEach(item => {
       const row = document.createElement('div');
-      row.className = 'cart-row';
+      const esgotado = todosOsProdutos.some(p => p.id === item.produtoId && p.esgotado);
+      row.className = esgotado ? 'cart-row is-esgotado' : 'cart-row';
       row.innerHTML = `
-        <span class="cart-row-name">${esc(item.nome)}</span>
+        <span class="cart-row-name">${esc(item.nome)}${esgotado ? '<small class="cart-row-esgotado">Indisponível · remova para finalizar</small>' : ''}</span>
         <span class="cart-row-sub">${formatBRL(item.preco * item.quantidade)}</span>
         <div class="cart-row-controls">
           <button class="qty-btn" data-id="${item.produtoId}" data-d="-1">−</button>
@@ -1571,6 +1597,10 @@ function connectPdvWebSocket() {
     pdvSocket.addEventListener('message', (event) => {
       let payload = null;
       try { payload = JSON.parse(event.data); } catch (_) { return; }
+      if (payload?.type === 'PRODUTO_DISPONIBILIDADE' && payload.produto) {
+        aplicarDisponibilidadePdv(payload.produto);
+        return;
+      }
       if (!PDV_WS_EVENTOS.has(payload?.type)) return;
 
       window.clearTimeout(pdvWsReloadTimer);

@@ -87,6 +87,7 @@ Legenda: **C** criar, **L** ler, **A** alterar, **E** excluir, **I** inativar, *
 | **Cadastros do negócio** | | | | | | |
 | Categorias | L | C L A I (15) | L | L | L | L |
 | Produtos e preços | L | C L A I E | L | L | L (16) | L (4) |
+| Disponibilidade do item (esgotado) | — | L A | L A | L | L | L (23) |
 | Ficha técnica (produto x insumo) | — | C L A E | — | — | L | — |
 | Insumos e estoque | — | C L A E | — | — | L (5) | — |
 | Fornecedores | — | C L A E | — | — | — | — |
@@ -147,6 +148,7 @@ Notas:
 20. Inclui o KDS "Cozinha" dentro do `adm.html` (`adm.js:4226`), restrito ao Gerente.
 21. Hoje gravado apenas em `localStorage` (`adm.js:2293`, `cozinha.js`), sem API. A versão no backend é *(funcionalidade futura)*.
 22. Sujeito à segregação de funções (RN-AC48).
+23. Somente o selo "Esgotado" e o motivo. O nome de quem marcou aparece apenas para a equipe.
 
 # 4. Autenticação e sessão
 
@@ -377,7 +379,7 @@ Notas:
 ## RN-AC46 - Alterações de preço e cardápio
 - **Descrição:** Somente o Gerente cria, altera ou exclui produtos e categorias e define preços.
 - **Perfis:** Gerente.
-- **Condição/Exceção:** Um produto com vendas registradas é inativado, e não excluído. A alteração de categoria é *(funcionalidade futura)* (nota 15).
+- **Condição/Exceção:** Um produto com vendas registradas é inativado, e não excluído. A alteração de categoria é *(funcionalidade futura)* (nota 15). A disponibilidade do item (esgotado ou disponível) não altera o cadastro e também pode ser marcada pelo Atendente (RF14, `PUT /api/produtos/{id}/disponibilidade`).
 - **Comportamento do sistema:** HTTP 403 para os demais perfis. As alterações de preço são registradas conforme a RN-AC60.
 
 ## RN-AC47 - Ausência do Gerente

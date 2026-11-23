@@ -7,7 +7,8 @@ $frontendPort = 5500
 $frontendPath = Join-Path $PSScriptRoot "frontend"
 
 try {
-    $frontendPortInUse = Get-NetTCPConnection -LocalPort $frontendPort -ErrorAction SilentlyContinue
+    # So conta como "rodando" quem esta escutando; conexoes encerradas (TimeWait) nao contam.
+    $frontendPortInUse = Get-NetTCPConnection -LocalPort $frontendPort -State Listen -ErrorAction SilentlyContinue
 
     if ($frontendPortInUse) {
         Write-Host "Frontend ja esta rodando em http://localhost:$frontendPort/pages/adm-login.html"

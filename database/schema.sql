@@ -321,3 +321,9 @@ CREATE TABLE IF NOT EXISTS turno_caixa (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_turno_caixa_aberto ON turno_caixa ((fechado_em IS NULL)) WHERE fechado_em IS NULL;
 CREATE INDEX IF NOT EXISTS idx_turno_caixa_abertura ON turno_caixa (aberto_em DESC);
 CREATE INDEX IF NOT EXISTS idx_pedido_pago_em ON pedido (pago_em) WHERE pago_em IS NOT NULL;
+
+-- Item esgotado no cardapio (migracao 017): pausa temporaria marcada pelo atendente.
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_motivo VARCHAR(120);
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_em TIMESTAMP;
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_por BIGINT REFERENCES usuarios(id) ON DELETE SET NULL;
