@@ -24,6 +24,7 @@ from app.schemas import (
     PedidoAvaliacaoResponse,
     PedidoCreateRequest,
     PedidoEditRequest,
+    PedidoPainelResponse,
     PaginatedPedidoResponse,
     PedidoResponse,
     PedidoStatusUpdateRequest,
@@ -129,7 +130,7 @@ def criar_pedido(
         db.add(mesa)
     db.flush()
 
-    itens = [_criar_item(pedido, produtos[item.produtoId], item.quantidade) for item in request.itens]
+    itens = [_criar_item(pedido, produtos[item.produtoId], item.quantidade, item.observacao) for item in request.itens]
     todos_instantaneos = venda_caixa and all(item.produto.tempo_preparo is not None and item.produto.tempo_preparo == 0 for item in itens)
     pedido.id_status = STATUS_ENTREGUE_ID if todos_instantaneos else STATUS_RECEBIDO_ID
     pedido.valor_total = total_pedido
@@ -155,6 +156,19 @@ def criar_pedido(
     _publicar_estoque_baixo(criticos)
     # O token de acompanhamento so e devolvido a quem criou o pedido, nunca nos eventos.
     return response.model_copy(update={"tokenAcesso": str(pedido.token_acesso)})
+
+
+@router.get("/painel", response_model=list[PedidoPainelResponse])
+def listar_pedidos_painel(db: Session = Depends(get_db)) -> list[PedidoPainelResponse]:
+    pedidos = db.execute(
+        select(Pedido.id, Pedido.id_status)
+        .where(
+            Pedido.id_mesa.is_(None),
+            Pedido.id_status.in_((STATUS_RECEBIDO_ID, STATUS_EM_PREPARO_ID, STATUS_PRONTO_ID)),
+        )
+        .order_by(Pedido.data_hora.asc(), Pedido.id.asc())
+    )
+    return [PedidoPainelResponse(numeroPedido=numero, status=_to_status(situacao)) for numero, situacao in pedidos]
 
 
 @router.get("/ativos", response_model=list[PedidoResponse], dependencies=[Depends(exigir_operacao)])
@@ -324,21 +338,28 @@ def editar_pedido(
         raise HTTPException(status_code=409, detail="Somente pedidos na fila da cozinha podem ser alterados")
     if pedido.atualizado_em != request.atualizadoEm:
         raise HTTPException(status_code=409, detail="O pedido mudou. Reabra a edicao para carregar a versao atual.")
-    if len({item.produtoId for item in request.itens}) != len(request.itens):
-        raise HTTPException(status_code=422, detail="Agrupe as quantidades de cada produto em uma unica linha")
+    if len({(item.produtoId, _texto_ou_none(item.observacao)) for item in request.itens}) != len(request.itens):
+        raise HTTPException(status_code=422, detail="Agrupe os itens com o mesmo produto e observacao em uma unica linha")
     motivo = request.motivo.strip()
     if len(motivo) < 3:
         raise HTTPException(status_code=422, detail="Informe o motivo da alteracao")
-    anteriores = {item.id_produto: item for item in pedido.itens if not item.cancelado}
-    produtos = _resolver_produtos(db, request, {produto_id: item.quantidade for produto_id, item in anteriores.items()})
-    subtotal_anterior = sum((_subtotal_do_item(item) for item in anteriores.values()), Decimal("0"))
+    anteriores = [item for item in pedido.itens if not item.cancelado]
+    quantidades_atuais: dict[int, Decimal] = {}
+    precos_atuais: dict[int, Decimal] = {}
+    precos_por_linha: dict[tuple[int, str | None], Decimal] = {}
+    for item in anteriores:
+        quantidades_atuais[item.id_produto] = quantidades_atuais.get(item.id_produto, Decimal("0")) + item.quantidade
+        precos_atuais.setdefault(item.id_produto, item.preco_unitario)
+        precos_por_linha.setdefault((item.id_produto, item.observacao), item.preco_unitario)
+    produtos = _resolver_produtos(db, request, quantidades_atuais)
+    subtotal_anterior = sum((_subtotal_do_item(item) for item in anteriores), Decimal("0"))
     desconto = max(Decimal("0"), subtotal_anterior - pedido.valor_total)
-    resumo_anterior = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in anteriores.values())
+    resumo_anterior = ", ".join(f"{item.quantidade}x {item.produto.nome}" for item in anteriores)
     novas_linhas = []
     for item in request.itens:
-        linha = _criar_item(pedido, produtos[item.produtoId], item.quantidade)
-        if item.produtoId in anteriores:
-            linha.preco_unitario = anteriores[item.produtoId].preco_unitario
+        linha = _criar_item(pedido, produtos[item.produtoId], item.quantidade, item.observacao)
+        if item.produtoId in precos_atuais:
+            linha.preco_unitario = precos_por_linha.get((item.produtoId, linha.observacao), precos_atuais[item.produtoId])
         novas_linhas.append(linha)
     subtotal = sum((_subtotal_do_item(item) for item in novas_linhas), Decimal("0"))
     pedido.itens = novas_linhas
@@ -652,17 +673,18 @@ def _resolver_produtos(
     """
     produtos: dict[int, Produto] = {}
     esgotados: list[str] = []
+    quantidades: dict[int, int] = {}
     for item in request.itens:
-        if item.produtoId in produtos:
-            continue
-        produto = db.get(Produto, item.produtoId)
+        quantidades[item.produtoId] = quantidades.get(item.produtoId, 0) + item.quantidade
+    for produto_id, quantidade in quantidades.items():
+        produto = db.get(Produto, produto_id)
         if produto is None:
-            raise HTTPException(status_code=404, detail=f"Produto nao encontrado: {item.produtoId}")
+            raise HTTPException(status_code=404, detail=f"Produto nao encontrado: {produto_id}")
         if not produto.ativo:
             raise HTTPException(status_code=400, detail=f"Produto indisponivel: {produto.nome}")
-        produtos[item.produtoId] = produto
+        produtos[produto_id] = produto
         ja_pedido = (quantidades_atuais or {}).get(produto.id, Decimal("0"))
-        if produto.esgotado and Decimal(item.quantidade) > ja_pedido:
+        if produto.esgotado and quantidade > ja_pedido:
             esgotados.append(produto.nome)
     if esgotados:
         rotulo = "Item esgotado no momento" if len(esgotados) == 1 else "Itens esgotados no momento"
@@ -699,7 +721,7 @@ def _observacoes_visiveis(valor: str | None) -> str | None:
     return limpo or None
 
 
-def _criar_item(pedido: Pedido, produto: Produto, quantidade: int) -> PedidoItem:
+def _criar_item(pedido: Pedido, produto: Produto, quantidade: int, observacao: str | None = None) -> PedidoItem:
     quantidade_decimal = Decimal(quantidade)
     return PedidoItem(
         id_pedido=pedido.id,
@@ -707,6 +729,7 @@ def _criar_item(pedido: Pedido, produto: Produto, quantidade: int) -> PedidoItem
         id_produto=produto.id,
         quantidade=quantidade_decimal,
         preco_unitario=produto.preco,
+        observacao=_texto_ou_none(observacao),
         cancelado=False,
     )
 
@@ -805,6 +828,7 @@ def _to_response(pedido: Pedido, mesas: dict[int, int]) -> PedidoResponse:
             "precoUnitario": float(item.preco_unitario),
             "subtotal": float(_subtotal_do_item(item)),
             "tempoPreparo": item.produto.tempo_preparo,
+            "observacao": item.observacao,
 
         }
         for item in pedido.itens

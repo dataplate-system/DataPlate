@@ -392,6 +392,7 @@ class CepResponse(BaseModel):
 class PedidoItemRequest(BaseModel):
     produtoId: int = Field(ge=1)
     quantidade: int = Field(ge=1)
+    observacao: str | None = Field(default=None, max_length=140)
 
 
 class PagamentoDivididoRequest(BaseModel):
@@ -469,6 +470,12 @@ class PedidoItemResponse(BaseModel):
     precoUnitario: float
     subtotal: float
     tempoPreparo: int | None = None
+    observacao: str | None = None
+
+
+class PedidoPainelResponse(BaseModel):
+    numeroPedido: int
+    status: PedidoStatusNome
 
 class PedidoUrgenciaRequest(BaseModel):
     urgente: bool

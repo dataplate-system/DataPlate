@@ -1061,19 +1061,31 @@ window.npAddItem = function(id) {
     return;
   }
   const { nome, preco } = produto;
-  const item = npCart.find(i => i.id === id);
+  const item = npCart.find(i => i.id === id && !i.observacao?.trim());
   if (item) item.qty++;
   else npCart.push({ id, nome, preco: Number(preco), qty: 1 });
   renderNpCart();
 };
 
-function npChangeQty(id, delta) {
-  const idx = npCart.findIndex(i => i.id === id);
-  if (idx === -1) return;
+function npChangeQty(idx, delta) {
+  if (!npCart[idx]) return;
   npCart[idx].qty += delta;
   if (npCart[idx].qty <= 0) npCart.splice(idx, 1);
   renderNpCart();
 }
+
+function npSepararItem(idx) {
+  const item = npCart[idx];
+  if (!item || item.qty < 2) return;
+  item.qty--;
+  npCart.splice(idx + 1, 0, { ...item, qty: 1 });
+  renderNpCart();
+}
+
+document.getElementById('npCartItems')?.addEventListener('input', event => {
+  const indice = event.target.dataset.npObservacao;
+  if (indice !== undefined && npCart[indice]) npCart[indice].observacao = event.target.value;
+});
 
 function renderNpCart() {
   const container = document.getElementById('npCartItems');
@@ -1085,15 +1097,17 @@ function renderNpCart() {
     return;
   }
 
-  container.innerHTML = npCart.map(i => `
+  container.innerHTML = npCart.map((i, index) => `
     <div class="np-cart-row">
       <span class="np-cart-row-name">${esc(i.nome)}</span>
       <span class="np-cart-row-sub">${formatBRL(i.preco * i.qty)}</span>
       <div class="np-cart-controls">
-        <button class="np-qty-btn" onclick="npChangeQty(${i.id},-1)">-</button>
+        <button class="np-qty-btn" onclick="npChangeQty(${index},-1)">-</button>
         <span class="np-qty-num">${i.qty}</span>
-        <button class="np-qty-btn" onclick="npChangeQty(${i.id},1)">+</button>
+        <button class="np-qty-btn" onclick="npChangeQty(${index},1)">+</button>
       </div>
+      ${campoObservacaoItem(i.observacao, esc, `data-np-observacao="${index}"`, true)}
+      ${i.qty > 1 ? `<button type="button" class="dividir-item" onclick="npSepararItem(${index})">Separar uma unidade</button>` : ''}
     </div>`).join('');
 
   const total = npCart.reduce((s, i) => s + i.preco * i.qty, 0);
@@ -1113,7 +1127,7 @@ window.enviarNpPedido = async function() {
     await postJson('/pedidos', {
       vendaCaixa: false,
       numeroMesa: mesaNumero,
-      itens: npCart.map(i => ({ produtoId: i.id, quantidade: i.qty })),
+      itens: npCart.map(i => ({ produtoId: i.id, quantidade: i.qty, observacao: i.observacao?.trim() || null })),
       ...(obs && { observacoes: obs })
     });
     showToast(`Pedido enviado para a cozinha — Mesa ${mesaNumero}`, 'success');
@@ -1470,7 +1484,9 @@ function renderEditItems() {
   document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
     <div class="edit-item"><span>${esc(item.nomeProduto)}<small>${fmtMoney(item.precoUnitario)} / unidade</small></span>
     <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${esc(item.nomeProduto)}" /></label>
-    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${esc(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${esc(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button>
+    ${campoObservacaoItem(item.observacao, esc, `data-edit-observacao="${index}"`)}
+    </div>`).join('') || '<p>Adicione ao menos um produto.</p>';
   renderEditTotal();
 }
 
@@ -1493,7 +1509,7 @@ async function saveOrderEdit(event) {
   try {
     await putJson(`/pedidos/${editDraft.id}/itens`, {
       atualizadoEm: editDraft.atualizadoEm,
-      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      itens: agruparItensParaEdicao(editDraft.itens),
       observacoes: document.getElementById('editOrderNotes').value,
       motivo: document.getElementById('editOrderReason').value.trim()
     });
@@ -1514,7 +1530,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = Number(document.getElementById('editProductSelect').value);
     const product = editProducts.find(p => p.id === id);
     if (!product || product.esgotado) return;
-    const existing = editDraft.itens.find(i => i.produtoId === id);
+    const existing = editDraft.itens.find(i => i.produtoId === id && !i.observacao?.trim());
     if (existing) existing.quantidade++;
     else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
     renderEditItems();
@@ -1526,6 +1542,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderEditItems();
   });
   document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    const indice = event.target.dataset.editObservacao;
+    if (indice !== undefined) {
+      editDraft.itens[indice].observacao = event.target.value;
+      return;
+    }
     if (!event.target.matches('[data-edit-quantity]')) return;
     editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
     renderEditTotal();

@@ -462,6 +462,8 @@ function carregarCarrinho() {
             <span>${item.quantidade}</span>
             <button onclick="aumentar(${index})">+</button>
           </div>
+          ${campoObservacaoItem(item.observacao, escaparHtml, `data-observacao-carrinho="${index}"`, true)}
+          ${item.quantidade > 1 ? `<button type="button" class="dividir-item" onclick="separarItemCarrinho(${index})">Separar uma unidade</button>` : ''}
         </div>
         <div class="acoes">
           <span onclick="remover(${index})"><img src="../images/ui/lixeira.png" alt="Remover"></span>
@@ -472,6 +474,25 @@ function carregarCarrinho() {
 
   document.getElementById("total").innerText = "Total: R$ " + total.toFixed(2);
   atualizarBadge();
+}
+
+document.getElementById('listaCarrinho')?.addEventListener('input', event => {
+  const indice = event.target.dataset.observacaoCarrinho;
+  if (indice === undefined) return;
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  if (!carrinho[indice]) return;
+  carrinho[indice].observacao = event.target.value;
+  localStorage.setItem("carrinho", JSON.stringify(carrinho));
+});
+
+function separarItemCarrinho(i) {
+  const carrinho = JSON.parse(localStorage.getItem("carrinho")) || [];
+  const item = carrinho[i];
+  if (!item || item.quantidade < 2) return;
+  item.quantidade--;
+  carrinho.splice(i + 1, 0, { ...item, quantidade: 1 });
+  localStorage.setItem("carrinho", JSON.stringify(carrinho));
+  carregarCarrinho();
 }
 
 function aumentar(i) {
@@ -777,6 +798,12 @@ function atualizarResumoPagamento() {
 
   document.getElementById("totalPagamento").innerText =
     "R$ " + total.toFixed(2).replace(".", ",");
+  document.getElementById('resumoItensPagamento').replaceChildren(...carrinho.map(item => {
+    const linha = document.createElement('li');
+    const observacao = item.observacao?.trim();
+    linha.textContent = `${item.quantidade}× ${item.nome}${observacao ? ` · ${observacao}` : ''}`;
+    return linha;
+  }));
 }
 
 
@@ -804,7 +831,8 @@ async function pagamentoAprovado() {
     ...(obs && { observacoes: obs }),
     itens: carrinho.map(item => ({
       produtoId: item.produtoId,
-      quantidade: item.quantidade
+      quantidade: item.quantidade,
+      observacao: item.observacao?.trim() || null
     }))
   };
 
