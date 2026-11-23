@@ -380,6 +380,12 @@ class PedidoItemRequest(BaseModel):
     quantidade: int = Field(ge=1)
 
 
+class PagamentoDivididoRequest(BaseModel):
+    pessoa: str = Field(min_length=1, max_length=60)
+    formaPagamento: Literal["PIX", "DEBITO", "CREDITO", "DINHEIRO"]
+    valor: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+
+
 class PedidoCreateRequest(BaseModel):
     numeroMesa: int | None = Field(default=None, ge=1)
     mesaId: int | None = None
@@ -387,6 +393,7 @@ class PedidoCreateRequest(BaseModel):
     clienteId: int | None = Field(default=None, ge=1)
     vendaCaixa: bool | None = None
     formaPagamento: str | None = None
+    pagamentosDivididos: list[PagamentoDivididoRequest] | None = Field(default=None, min_length=2, max_length=12)
     desconto: Decimal | None = None
     observacoes: str | None = None
     itens: list[PedidoItemRequest] = Field(min_length=1)
