@@ -149,6 +149,19 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
 CREATE INDEX IF NOT EXISTS ix_password_reset_tokens_user_id
     ON password_reset_tokens (user_id);
 
+CREATE TABLE IF NOT EXISTS email_change_tokens (
+    id UUID PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    code_hash CHAR(64) NOT NULL,
+    attempts SMALLINT NOT NULL DEFAULT 0,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ix_email_change_tokens_user_id
+    ON email_change_tokens (user_id);
+
 -- O schema local deve ser idempotente para poder ser carregado pelo Docker
 -- sempre que o volume do PostgreSQL for criado pela primeira vez.
 
@@ -308,3 +321,9 @@ CREATE TABLE IF NOT EXISTS turno_caixa (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_turno_caixa_aberto ON turno_caixa ((fechado_em IS NULL)) WHERE fechado_em IS NULL;
 CREATE INDEX IF NOT EXISTS idx_turno_caixa_abertura ON turno_caixa (aberto_em DESC);
 CREATE INDEX IF NOT EXISTS idx_pedido_pago_em ON pedido (pago_em) WHERE pago_em IS NOT NULL;
+
+-- Item esgotado no cardapio (migracao 017): pausa temporaria marcada pelo atendente.
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_motivo VARCHAR(120);
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_em TIMESTAMP;
+ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_por BIGINT REFERENCES usuarios(id) ON DELETE SET NULL;

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#193b30" />
+  <title>DataPlate - Minha conta</title>
+  <link rel="icon" href="../images/brand/logo-dataplate.png" />
+  <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
+</head>
+<body class="account-page">
+  <header class="account-page-header">
+    <a class="account-page-brand" href="adm.html">DataPlate</a>
+    <a class="account-page-back" id="accountBackLink" href="adm.html">Voltar ao painel</a>
+  </header>
+
+  <main class="account-page-main">
+    <div class="account-page-heading">
+      <p>Dados pessoais e segurança</p>
+      <h1>Minha conta</h1>
+      <span>Gerencie seus dados de acesso. As alterações exigem a confirmação da sua senha atual.</span>
+    </div>
+
+    <div class="account-page-grid">
+      <section class="account-card account-card--summary" aria-labelledby="accountSummaryTitle">
+        <h2 id="accountSummaryTitle">Dados da conta</h2>
+        <div class="account-summary-grid">
+          <div class="account-summary-item">
+            <span>Nome</span>
+            <strong id="accountName">Carregando...</strong>
+          </div>
+          <div class="account-summary-item">
+            <span>CPF</span>
+            <strong id="accountCpf">—</strong>
+          </div>
+          <div class="account-summary-item">
+            <span>Perfil</span>
+            <strong id="accountRole">—</strong>
+          </div>
+          <div class="account-summary-item">
+            <span>E-mail de recuperação</span>
+            <strong id="accountEmail">Não informado</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="account-card" aria-labelledby="passwordChangeTitle">
+        <h2 id="passwordChangeTitle">Trocar senha</h2>
+        <form class="account-form" id="accountPasswordForm">
+          <div class="account-field">
+            <label for="currentPassword">Senha atual</label>
+            <input id="currentPassword" name="senhaAtual" type="password" autocomplete="current-password" required />
+          </div>
+          <div class="account-field">
+            <label for="newPassword">Nova senha</label>
+            <input id="newPassword" name="novaSenha" type="password" autocomplete="new-password" minlength="8" required aria-describedby="passwordStrengthHelp" />
+            <div class="password-strength" id="passwordStrength" data-strength="0">
+              <div class="password-strength-meter" role="meter" aria-label="Força da senha" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+                <span></span>
+              </div>
+              <span class="password-strength-label" id="passwordStrengthLabel">Digite uma nova senha</span>
+            </div>
+            <small class="account-help" id="passwordStrengthHelp">Use pelo menos 8 caracteres, com letras e números.</small>
+          </div>
+          <div class="account-field">
+            <label for="confirmPassword">Confirmar nova senha</label>
+            <input id="confirmPassword" name="confirmarSenha" type="password" autocomplete="new-password" minlength="8" required />
+          </div>
+          <p class="account-message" id="passwordMessage" role="alert" aria-live="polite"></p>
+          <button class="account-primary-button" type="submit">Salvar nova senha</button>
+        </form>
+      </section>
+
+      <section class="account-card" aria-labelledby="emailChangeTitle">
+        <h2 id="emailChangeTitle">Trocar e-mail de recuperação</h2>
+        <form class="account-form" id="accountEmailForm">
+          <div class="account-field">
+            <label for="newEmail">Novo e-mail</label>
+            <input id="newEmail" name="email" type="email" autocomplete="email" maxlength="255" required />
+            <small class="account-help">Enviaremos um código para confirmar o novo endereço. O e-mail atual continua ativo até a confirmação.</small>
+          </div>
+          <div class="account-field">
+            <label for="emailCurrentPassword">Senha atual</label>
+            <input id="emailCurrentPassword" name="senhaAtual" type="password" autocomplete="current-password" required />
+          </div>
+          <p class="account-message" id="emailMessage" role="alert" aria-live="polite"></p>
+          <button class="account-primary-button" type="submit">Enviar código de confirmação</button>
+        </form>
+
+        <div class="account-confirmation" id="emailConfirmation" hidden>
+          <p id="emailConfirmationText"></p>
+          <form class="account-form" id="emailConfirmationForm">
+            <div class="account-field">
+              <label for="emailConfirmationCode">Código de confirmação</label>
+              <input id="emailConfirmationCode" name="codigo" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required />
+            </div>
+            <p class="account-message" id="emailConfirmationMessage" role="alert" aria-live="polite"></p>
+            <button class="account-primary-button" type="submit">Confirmar novo e-mail</button>
+            <button class="account-secondary-button" type="button" id="changePendingEmail">Usar outro e-mail</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="../JavaScript/adm-auth.js?v=20261123-minha-conta"></script>
+  <script src="../JavaScript/minha-conta.js?v=20261123-conta" defer></script>
+</body>
+</html>

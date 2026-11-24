@@ -55,6 +55,44 @@ class AuthPasswordResetRequest(BaseModel):
         return valor
 
 
+class AuthOwnPasswordChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    senhaAtual: str = Field(min_length=1, max_length=72)
+    novaSenha: str = Field(min_length=8, max_length=72)
+
+    @field_validator("novaSenha")
+    @classmethod
+    def validar_nova_senha(cls, senha: str) -> str:
+        tem_letra = any(caractere in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" for caractere in senha)
+        tem_numero = any("0" <= caractere <= "9" for caractere in senha)
+        if not tem_letra or not tem_numero:
+            raise ValueError("A senha deve ter pelo menos 8 caracteres, com letras e números.")
+        if len(senha.encode("utf-8")) > 72:
+            raise ValueError("A senha deve ter no máximo 72 bytes.")
+        return senha
+
+
+class AuthOwnRecoveryEmailChangeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    senhaAtual: str = Field(min_length=1, max_length=72)
+    email: str = Field(min_length=5, max_length=255, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalizar_email(cls, email: str) -> str:
+        if not isinstance(email, str):
+            raise ValueError("E-mail inválido.")
+        return email.strip().lower()
+
+
+class AuthOwnRecoveryEmailConfirmRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    codigo: str = Field(pattern=r"^[0-9]{6}$")
+
+
 class AuthPasswordResetStartRequest(BaseModel):
     cpf: str = Field(min_length=1)
 
@@ -158,6 +196,16 @@ class ProdutoResponse(BaseModel):
     tempoPreparo: int | None
     destaque: bool
     criadoEm: datetime | None
+    esgotado: bool = False
+    motivoEsgotado: str | None = None
+    esgotadoEm: datetime | None = None
+    # Nome de quem marcou: so vai para a equipe autenticada, nunca para o cliente.
+    esgotadoPorNome: str | None = None
+
+
+class ProdutoDisponibilidadeRequest(BaseModel):
+    esgotado: bool
+    motivo: str | None = Field(default=None, max_length=120)
 
 
 class ErrorResponse(BaseModel):
@@ -180,6 +228,10 @@ class StatusMesaSchema(BaseModel):
 
 class MesaStatusRequest(BaseModel):
     status: str = Field(min_length=1)
+
+
+class MoverPedidosMesaRequest(BaseModel):
+    mesaDestinoId: int = Field(gt=0)
 
 
 class MesaReservaRequest(BaseModel):
@@ -371,6 +423,13 @@ class CepResponse(BaseModel):
 class PedidoItemRequest(BaseModel):
     produtoId: int = Field(ge=1)
     quantidade: int = Field(ge=1)
+    observacao: str | None = Field(default=None, max_length=140)
+
+
+class PagamentoDivididoRequest(BaseModel):
+    pessoa: str = Field(min_length=1, max_length=60)
+    formaPagamento: Literal["PIX", "DEBITO", "CREDITO", "DINHEIRO"]
+    valor: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
 
 
 class PedidoCreateRequest(BaseModel):
@@ -380,6 +439,7 @@ class PedidoCreateRequest(BaseModel):
     clienteId: int | None = Field(default=None, ge=1)
     vendaCaixa: bool | None = None
     formaPagamento: str | None = None
+    pagamentosDivididos: list[PagamentoDivididoRequest] | None = Field(default=None, min_length=2, max_length=12)
     desconto: Decimal | None = None
     observacoes: str | None = None
     itens: list[PedidoItemRequest] = Field(min_length=1)
@@ -441,6 +501,12 @@ class PedidoItemResponse(BaseModel):
     precoUnitario: float
     subtotal: float
     tempoPreparo: int | None = None
+    observacao: str | None = None
+
+
+class PedidoPainelResponse(BaseModel):
+    numeroPedido: int
+    status: PedidoStatusNome
 
 class PedidoUrgenciaRequest(BaseModel):
     urgente: bool

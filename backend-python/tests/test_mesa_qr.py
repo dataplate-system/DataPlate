@@ -62,12 +62,18 @@ class MesaQrTest(TesteComBanco):
         self.assertEqual(resposta.status_code, 201, resposta.text)
         self.assertEqual(self.pedidos_da_mesa(mesa), 1)
 
-    def test_mesa_fechada_volta_a_bloquear_depois_de_liberada(self):
+    def test_conta_fechada_bloqueia_e_mesa_liberada_reabre_no_proximo_pedido(self):
+        # Regra atual: aguardando pagamento recusa; depois de liberada, o proximo QR abre a mesa de novo.
         mesa = self.criar_mesa("ocupada")
         self.assertEqual(self.pedir(mesa).status_code, 201)
-        mesa.status = "livre"
+        mesa.status = "aguardando_pagamento"
         self.db.flush()
         self.assertEqual(self.pedir(mesa).status_code, 409)
+        mesa.status = "livre"
+        self.db.flush()
+        self.assertEqual(self.pedir(mesa).status_code, 201)
+        self.db.refresh(mesa)
+        self.assertEqual(mesa.status, "ocupada")
 
     def test_equipe_lanca_pedido_em_mesa_livre_e_abre_a_mesa(self):
         self.anonimo = False

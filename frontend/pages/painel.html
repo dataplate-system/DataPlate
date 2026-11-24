@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel de retirada | DataPlate</title>
+  <link rel="stylesheet" href="../Css/painel.css">
+  <script src="../JavaScript/mobile-runtime.js" defer></script>
+  <script src="../JavaScript/painel.js" defer></script>
+</head>
+<body>
+  <header>
+    <div>
+      <p>Painel de retirada</p>
+      <h1 id="restaurante">DataPlate Restaurante</h1>
+    </div>
+    <div class="controles">
+      <button type="button" id="som" aria-pressed="false">Ativar som</button>
+      <button type="button" id="telaCheia">Tela cheia</button>
+    </div>
+  </header>
+  <main>
+    <section aria-labelledby="tituloPreparo">
+      <h2 id="tituloPreparo">Em preparo</h2>
+      <ul id="preparo"></ul>
+    </section>
+    <section class="retirada" aria-labelledby="tituloRetirada">
+      <h2 id="tituloRetirada">Pronto para retirar</h2>
+      <ul id="retirada"></ul>
+    </section>
+  </main>
+  <p id="mensagemPainel" role="status"></p>
+</body>
+</html>

@@ -79,7 +79,7 @@ Legenda: **C** criar, **L** ler, **A** alterar, **E** excluir, **I** inativar, *
 |---|---|---|---|---|---|---|
 | **Sistema** | | | | | | |
 | Usuários e perfis | C L A I E | C L A I (1) | — | — | — | — |
-| Própria conta (senha, e-mail) *(funcionalidade futura)* | L A | L A | L A | L A | L A | — |
+| Própria conta (senha, e-mail) | L A | L A | L A | L A | L A | — |
 | Dados do restaurante | L A | L | — | — | — | L (2) |
 | Integrações e notificações (14) | C L A E | L | — | — | — | — |
 | Parâmetros técnicos *(funcionalidade futura)* | C L A E | — | — | — | — | — |
@@ -87,6 +87,7 @@ Legenda: **C** criar, **L** ler, **A** alterar, **E** excluir, **I** inativar, *
 | **Cadastros do negócio** | | | | | | |
 | Categorias | L | C L A I (15) | L | L | L | L |
 | Produtos e preços | L | C L A I E | L | L | L (16) | L (4) |
+| Disponibilidade do item (esgotado) | — | L A | L A | L | L | L (23) |
 | Ficha técnica (produto x insumo) | — | C L A E | — | — | L | — |
 | Insumos e estoque | — | C L A E | — | — | L (5) | — |
 | Fornecedores | — | C L A E | — | — | — | — |
@@ -147,6 +148,7 @@ Notas:
 20. Inclui o KDS "Cozinha" dentro do `adm.html` (`adm.js:4226`), restrito ao Gerente.
 21. Hoje gravado apenas em `localStorage` (`adm.js:2293`, `cozinha.js`), sem API. A versão no backend é *(funcionalidade futura)*.
 22. Sujeito à segregação de funções (RN-AC48).
+23. Somente o selo "Esgotado" e o motivo. O nome de quem marcou aparece apenas para a equipe.
 
 # 4. Autenticação e sessão
 
@@ -377,7 +379,7 @@ Notas:
 ## RN-AC46 - Alterações de preço e cardápio
 - **Descrição:** Somente o Gerente cria, altera ou exclui produtos e categorias e define preços.
 - **Perfis:** Gerente.
-- **Condição/Exceção:** Um produto com vendas registradas é inativado, e não excluído. A alteração de categoria é *(funcionalidade futura)* (nota 15).
+- **Condição/Exceção:** Um produto com vendas registradas é inativado, e não excluído. A alteração de categoria é *(funcionalidade futura)* (nota 15). A disponibilidade do item (esgotado ou disponível) não altera o cadastro e também pode ser marcada pelo Atendente (RF14, `PUT /api/produtos/{id}/disponibilidade`).
 - **Comportamento do sistema:** HTTP 403 para os demais perfis. As alterações de preço são registradas conforme a RN-AC60.
 
 ## RN-AC47 - Ausência do Gerente
@@ -463,7 +465,7 @@ Notas:
 | Não existe perfil Gerente. O seed cria o usuário "Gerente" como `ADMIN`, e a tela de usuários mapeia "Gerente" para `ADMIN` | `models.py:20-24`, `seed.py:37-42`, `adm.js:4874-4880` | Seção 1, RN-AC04 | Corrigido: `Role.GERENTE`, seed e migração `006_perfil_gerente.sql`; a UI mapeia Gerente para `GERENTE` |
 | Não é possível criar usuário `CAIXA` pela UI: o select de perfil só oferece Administrador, Operacional e Cozinha, e `USER_ROLE_LABEL`/`USER_ROLE_CLASS` não têm `CAIXA` | `adm.html:1904-1908`, `adm.js:4871-4872` | Seção 1, RN-AC04 | Corrigido: select com os 5 perfis (Gerente vê só os operacionais) |
 | Não há como ativar/inativar usuário pela API ou UI. `UserResponse` não expõe `ativo`, e a tabela exibe "Ativo" fixo | `routers/usuarios.py`, `schemas.py:67`, `adm.js:4889` | RN-AC21, RN-AC22, RN-AC25 | Corrigido: `ativo` em `UserResponse`/`UserUpdateRequest`; botão Ativar/Inativar na tabela |
-| Não existe troca da própria senha ou e-mail. O modal "Segurança" é apenas visual e não chama a API | `adm.js:2240-2252` | RN-AC23 | Pendente |
+| Não existe troca da própria senha ou e-mail. O modal "Segurança" é apenas visual e não chama a API | `routers/auth.py`, `services.py`, `minha-conta.html` | RN-AC23 | Corrigido: todas as funções autenticadas podem trocar a própria senha após informar a senha atual e alterar o e-mail após confirmação por código enviado ao novo endereço |
 | O frontend não renova o token: um 401 encerra a sessão direto | `adm.js:121` | RN-AC12 | Pendente: um 401 leva ao login, sem tentativa de refresh |
 | O frontend trata qualquer perfil desconhecido como "gerente" (administrador) | `adm-login.js:175-180` | RN-AC06 | Corrigido: perfil desconhecido não cria sessão ("Perfil sem acesso") |
 | O controle de perfil é apenas visual: `data-role`, `sessionStorage` editável, atalhos e hash abrem seções restritas, "Trocar usuário" não exige senha | `adm.js:47-58`, `adm.js:293-307`, `adm.js:2256` | RN-AC03, RN-AC11, RN-AC17 | Corrigido: `backendRole` decide o perfil, `data-roles` e `SECTION_ROLES` filtram menu, atalhos, busca e `navigateTo`; "Trocar usuário" encerra a sessão |

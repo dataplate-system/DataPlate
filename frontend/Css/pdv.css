@@ -690,6 +690,84 @@ input, select, textarea { font-size: 14px; }
   color: #fff;
 }
 
+.split-payment-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.split-payment-toggle input { accent-color: var(--primary); }
+.split-payment-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.split-payment-panel[hidden] { display: none; }
+.split-payment-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.split-payment-heading label { flex: 1 1 auto; font-size: 12px; font-weight: 700; }
+.split-payment-heading input,
+.split-payment-row input,
+.split-payment-row select {
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+}
+.split-payment-heading input { width: 58px; }
+.split-equal-btn {
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+.split-payment-rows { display: grid; gap: 7px; }
+.split-payment-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 1fr) minmax(82px, .9fr) minmax(88px, .9fr);
+  gap: 6px;
+}
+.split-payment-total {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.split-payment-total strong { font-size: 13px; }
+.split-payment-total small { grid-column: 1 / -1; color: var(--text-muted); }
+.split-payment-total small.is-valid { color: #15803d; }
+.split-payment-total small.is-invalid { color: #b91c1c; }
+@media (max-width: 480px) {
+  .split-payment-row { grid-template-columns: minmax(64px, .8fr) minmax(76px, .8fr) minmax(86px, 1fr); }
+  .split-payment-heading { gap: 6px; }
+}
+
 #pedidoObs {
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -1436,3 +1514,16 @@ body #produtoSearch {
 @media (max-width: 760px) {
   .pdv-caixa-status small { display: none; }
 }
+
+/* Item esgotado (#74): marcado pelo atendente, nao pode ser vendido. */
+.produto-card.is-esgotado { cursor: not-allowed; background: #f8fafc; }
+.produto-card.is-esgotado:hover { box-shadow: none; transform: none; }
+.produto-card.is-esgotado .produto-img,
+.produto-card.is-esgotado .produto-img-placeholder { filter: grayscale(1); opacity: .55; }
+.produto-card.is-esgotado .produto-nome,
+.produto-card.is-esgotado .produto-preco { color: #94a3b8; }
+.btn-add.btn-esgotado,
+.btn-add.btn-esgotado:hover { background: #fee2e2; color: #991b1b; cursor: not-allowed; }
+.cart-row.is-esgotado { background: #fef2f2; }
+.cart-row-esgotado { display: block; margin-top: 2px; color: #b91c1c; font-size: 11px; font-weight: 700; }
+.produto-card .btn-add.btn-esgotado { border-color: #fecaca !important; background: #fee2e2 !important; color: #991b1b !important; cursor: not-allowed; }

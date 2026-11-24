@@ -1,9 +1,12 @@
 """Caixa por turno: abertura com o valor inicial, fechamento com a conferencia da gaveta e historico."""
+import base64
+import json
+import re
 from datetime import datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
@@ -120,17 +123,36 @@ def _totais_do_turno(db: Session, turno: TurnoCaixa, fim: datetime | None = None
     filtros = [Pedido.pago_em >= turno.aberto_em, Pedido.id_status != STATUS_CANCELADO_ID]
     if fim is not None:
         filtros.append(Pedido.pago_em <= fim)
-    linhas = db.execute(
-        select(Pedido.forma_pagamento, func.coalesce(func.sum(Pedido.valor_total), 0), func.count(Pedido.id))
-        .where(*filtros)
-        .group_by(Pedido.forma_pagamento)
-    ).all()
+    linhas = db.execute(select(Pedido.forma_pagamento, Pedido.valor_total, Pedido.observacoes).where(*filtros)).all()
     totais = _totais_vazios()
-    for forma, valor, quantidade in linhas:
+    for forma, valor, observacoes in linhas:
         chave = (forma or "").strip().upper()
-        totais[chave if chave in FORMAS_PAGAMENTO else OUTROS] += Decimal(valor)
-        totais[QUANTIDADE] += quantidade
+        pagamentos = _pagamentos_divididos(observacoes) if chave == "MISTO" else []
+        if pagamentos:
+            for pagamento in pagamentos:
+                forma_parcela = str(pagamento.get("formaPagamento", "")).strip().upper()
+                try:
+                    valor_parcela = Decimal(str(pagamento.get("valor", "0")))
+                except Exception:
+                    continue
+                totais[forma_parcela if forma_parcela in FORMAS_PAGAMENTO else OUTROS] += valor_parcela
+        else:
+            totais[chave if chave in FORMAS_PAGAMENTO else OUTROS] += Decimal(valor)
+        totais[QUANTIDADE] += 1
     return totais
+
+
+def _pagamentos_divididos(observacoes: str | None) -> list[dict[str, str]]:
+    match = re.search(r"(?:^|\s)DIVISAO_PAGAMENTO=([A-Za-z0-9_-]+)", observacoes or "")
+    if not match:
+        return []
+    token = match.group(1)
+    try:
+        payload = base64.urlsafe_b64decode(token + "=" * (-len(token) % 4))
+        dados = json.loads(payload.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+        return []
+    return dados if isinstance(dados, list) else []
 
 
 def _totais_gravados(turno: TurnoCaixa) -> dict[str, Decimal | int]:

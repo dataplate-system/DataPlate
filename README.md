@@ -43,6 +43,7 @@ Login do banco no Adminer:
 - Cozinha: `http://localhost:5500/pages/cozinha.html`
 - Atendimento: `http://localhost:5500/pages/atendente.html`
 - PDV: `http://localhost:5500/pages/pdv.html`
+- Painel de retirada no balcão: `http://localhost:5500/pages/painel.html` (sem login). Use **Tela cheia** e **Ativar som** na TV.
 - Cardapio do cliente: `http://localhost:5500/pages/user.html`
 
 Usuario de teste ja criado no banco local:

@@ -47,6 +47,7 @@ const normalizarBusca = value => String(value || '').normalize('NFD').replace(/[
 // -- ESTADO -------------------------------------------------------
 let cart            = [];
 let pagamentoVenda  = '';
+let divisaoPagamentoAtiva = false;
 let pagamentoConta  = '';
 let categoriaAtual  = 'todos';
 let termoBusca      = '';
@@ -577,6 +578,96 @@ function moneyInputValue(id) {
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
+function totalPagarCentavos() {
+  return Math.round(calcularTotalPagar() * 100);
+}
+
+function valoresIguaisDivididos(pessoas) {
+  const total = totalPagarCentavos();
+  const base = Math.floor(total / pessoas);
+  let restante = total - base * pessoas;
+  return Array.from({ length: pessoas }, () => base + (restante-- > 0 ? 1 : 0));
+}
+
+function renderPagamentosDivididos(valores = null) {
+  const countInput = document.getElementById('splitPeopleCount');
+  const rows = document.getElementById('splitPaymentRows');
+  if (!countInput || !rows) return;
+  const pessoas = Math.max(2, Math.min(12, Number.parseInt(countInput.value, 10) || 2));
+  countInput.value = String(pessoas);
+  const cents = valores || valoresIguaisDivididos(pessoas);
+  const opcoes = [
+    ['PIX', 'PIX'], ['DEBITO', 'Débito'], ['CREDITO', 'Crédito'], ['DINHEIRO', 'Dinheiro']
+  ];
+  rows.innerHTML = Array.from({ length: pessoas }, (_, index) => `
+    <div class="split-payment-row">
+      <input class="split-person-name" type="text" maxlength="60" aria-label="Nome da pessoa ${index + 1}" value="Pessoa ${index + 1}">
+      <select class="split-person-method" aria-label="Forma de pagamento da pessoa ${index + 1}">
+        ${opcoes.map(([value, label]) => `<option value="${value}">${label}</option>`).join('')}
+      </select>
+      <input class="split-person-amount" type="number" min="0.01" step="0.01" inputmode="decimal" aria-label="Valor da pessoa ${index + 1}" value="${(cents[index] / 100).toFixed(2)}">
+    </div>`).join('');
+  rows.querySelectorAll('.split-person-amount, .split-person-name, .split-person-method').forEach(input => {
+    input.addEventListener('input', atualizarResumoDivisao);
+    input.addEventListener('change', atualizarResumoDivisao);
+  });
+  atualizarResumoDivisao();
+}
+
+function valoresPagamentosDivididos() {
+  return [...document.querySelectorAll('#splitPaymentRows .split-payment-row')].map((row, index) => {
+    const nome = row.querySelector('.split-person-name').value.trim() || `Pessoa ${index + 1}`;
+    const formaPagamento = row.querySelector('.split-person-method').value;
+    const valor = Number(String(row.querySelector('.split-person-amount').value || '').replace(',', '.'));
+    return { pessoa: nome, formaPagamento, valor, centavos: Number.isFinite(valor) ? Math.round(valor * 100) : 0 };
+  });
+}
+
+function divisaoPagamentoValida() {
+  if (!divisaoPagamentoAtiva) return true;
+  const parcelas = valoresPagamentosDivididos();
+  return parcelas.length >= 2
+    && parcelas.every(parcela => parcela.pessoa.length > 0 && parcela.centavos > 0)
+    && parcelas.reduce((soma, parcela) => soma + parcela.centavos, 0) === totalPagarCentavos();
+}
+
+function atualizarResumoDivisao() {
+  if (!divisaoPagamentoAtiva) return;
+  const parcelas = valoresPagamentosDivididos();
+  const soma = parcelas.reduce((total, parcela) => total + parcela.centavos, 0);
+  const total = totalPagarCentavos();
+  const summary = document.getElementById('splitPaymentSummary');
+  const feedback = document.getElementById('splitPaymentFeedback');
+  if (summary) summary.textContent = formatBRL(soma / 100);
+  if (feedback) {
+    const diferenca = total - soma;
+    feedback.classList.toggle('is-valid', diferenca === 0 && parcelas.length >= 2);
+    feedback.classList.toggle('is-invalid', diferenca !== 0 || parcelas.length < 2);
+    feedback.textContent = diferenca === 0 && parcelas.length >= 2
+      ? 'A divisão confere com o total.'
+      : diferenca > 0 ? `Faltam ${formatBRL(diferenca / 100)}.` : `Excede em ${formatBRL(-diferenca / 100)}.`;
+  }
+  atualizarBotaoFinalizar();
+}
+
+function definirDivisaoPagamento(ativar) {
+  divisaoPagamentoAtiva = ativar;
+  const panel = document.getElementById('splitPaymentPanel');
+  if (panel) panel.hidden = !ativar;
+  if (ativar) {
+    pagamentoVenda = 'MISTO';
+    document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(button => {
+      button.classList.remove('is-selected');
+      button.setAttribute('aria-pressed', 'false');
+    });
+    renderPagamentosDivididos();
+  } else {
+    pagamentoVenda = '';
+  }
+  atualizarResumoCaixa();
+  atualizarBotaoFinalizar();
+}
+
 function calcularDesconto() {
   return Math.min(moneyInputValue('descontoInput'), calcularTotalCarrinho());
 }
@@ -605,12 +696,13 @@ function atualizarResumoCaixa() {
 
   if (totalPagarEl) totalPagarEl.textContent = formatBRL(totalPagar);
   if (trocoEl) trocoEl.textContent = formatBRL(troco);
-  if (cashRow) cashRow.hidden = pagamentoVenda !== 'DINHEIRO';
+  if (cashRow) cashRow.hidden = divisaoPagamentoAtiva || pagamentoVenda !== 'DINHEIRO';
   if (avisoDesconto) {
     const excede = descontoExcedeLimite();
     avisoDesconto.hidden = !excede;
     avisoDesconto.textContent = excede ? MSG_DESCONTO_LIMITE : '';
   }
+  atualizarResumoDivisao();
 }
 
 function aplicarModoPDV(modo) {
@@ -621,6 +713,11 @@ function aplicarModoPDV(modo) {
   );
 
   const modoMesa = modoAtual === 'mesa';
+  if (modoMesa && divisaoPagamentoAtiva) {
+    const toggle = document.getElementById('splitPaymentToggle');
+    if (toggle) toggle.checked = false;
+    definirDivisaoPagamento(false);
+  }
   document.getElementById('mesaSelector').hidden = !modoMesa;
   document.getElementById('orderTabs').hidden = !modoMesa || !mesaSelecionada;
   document.getElementById('checkoutSummary').hidden = modoMesa;
@@ -891,7 +988,9 @@ function getProdutosVisiveis() {
       && (!termoBusca || normalizarBusca(`${p.nome} ${p.codigo || ''}`).includes(normalizarBusca(termoBusca)));
   }).sort((a, b) => {
     const rank = id => { const index = categoriasCatalogo.findIndex(c => c.id === id); return index < 0 ? 9999 : index; };
-    return rank(a.idCategoria) - rank(b.idCategoria) || a.nome.localeCompare(b.nome, 'pt-BR');
+    return rank(a.idCategoria) - rank(b.idCategoria)
+      || Number(Boolean(a.esgotado)) - Number(Boolean(b.esgotado))
+      || a.nome.localeCompare(b.nome, 'pt-BR');
   });
 }
 
@@ -921,17 +1020,24 @@ function renderProdutos() {
         + `<div class="produto-img-placeholder" style="display:none">${emoji}</div>`
       : `<div class="produto-img-placeholder">${emoji}</div>`;
 
+    if (p.esgotado) {
+      card.classList.add('is-esgotado');
+      card.title = p.motivoEsgotado ? `Indisponível: ${p.motivoEsgotado}` : 'Indisponível no momento';
+    }
     card.innerHTML = `
       ${imgHtml}
       <div class="produto-info">
         <span class="produto-categoria">${esc(categoriasCatalogo.find(c => c.id === p.idCategoria)?.nome || 'Outros')}</span>
         <span class="produto-nome">${esc(p.nome)}</span>
         <span class="produto-preco">${formatBRL(p.preco)}</span>
-        <button class="btn-add">+ Adicionar</button>
+        ${p.esgotado
+          ? `<button class="btn-add btn-esgotado" type="button" disabled>Indisponível</button>`
+          : '<button class="btn-add" type="button">+ Adicionar</button>'}
       </div>`;
 
     card.querySelector('.btn-add').addEventListener('click', e => {
       e.stopPropagation();
+      if (p.esgotado) return;
       if (modoAtual === 'mesa' && !mesaSelecionada) { showToast('Selecione uma mesa primeiro.', 'info'); return; }
       adicionarAoCarrinho(p.id, p.nome, Number(p.preco));
       if (tabAtual !== 'venda') mudarTab('venda');
@@ -941,8 +1047,24 @@ function renderProdutos() {
   });
 }
 
+function aplicarDisponibilidadePdv(produto) {
+  const indice = todosOsProdutos.findIndex(p => p.id === produto.id);
+  if (indice < 0) return;
+  const antes = Boolean(todosOsProdutos[indice].esgotado);
+  todosOsProdutos[indice] = { ...todosOsProdutos[indice], ...produto };
+  renderProdutos();
+  renderCarrinho();
+  if (produto.esgotado && !antes && cart.some(i => i.produtoId === produto.id)) {
+    showToast(`${produto.nome} ficou indisponível. Remova do carrinho para finalizar.`, 'error');
+  }
+}
+
 // -- CARRINHO -----------------------------------------------------
 function adicionarAoCarrinho(produtoId, nome, preco) {
+  if (todosOsProdutos.some(p => p.id === produtoId && p.esgotado)) {
+    showToast(`${nome} está indisponível no momento.`, 'error');
+    return;
+  }
   mostrarVistaPdv('pdv');
   const item = cart.find(i => i.produtoId === produtoId);
   if (item) { item.quantidade++; } else { cart.push({ produtoId, nome, preco, quantidade: 1 }); }
@@ -979,9 +1101,10 @@ function renderCarrinho() {
   } else {
     cart.forEach(item => {
       const row = document.createElement('div');
-      row.className = 'cart-row';
+      const esgotado = todosOsProdutos.some(p => p.id === item.produtoId && p.esgotado);
+      row.className = esgotado ? 'cart-row is-esgotado' : 'cart-row';
       row.innerHTML = `
-        <span class="cart-row-name">${esc(item.nome)}</span>
+        <span class="cart-row-name">${esc(item.nome)}${esgotado ? '<small class="cart-row-esgotado">Indisponível · remova para finalizar</small>' : ''}</span>
         <span class="cart-row-sub">${formatBRL(item.preco * item.quantidade)}</span>
         <div class="cart-row-controls">
           <button class="qty-btn" data-id="${item.produtoId}" data-d="-1">−</button>
@@ -1001,6 +1124,7 @@ function renderCarrinho() {
   }
 
   document.getElementById('cartTotal').textContent = formatBRL(calcularTotalCarrinho());
+  if (divisaoPagamentoAtiva) renderPagamentosDivididos();
   atualizarResumoCaixa();
   atualizarBotaoFinalizar();
 }
@@ -1008,6 +1132,11 @@ function renderCarrinho() {
 // -- PAGAMENTO ----------------------------------------------------
 function selecionarPagamento(tipo, grupo) {
   if (grupo === 'venda') {
+    if (divisaoPagamentoAtiva) {
+      const toggle = document.getElementById('splitPaymentToggle');
+      if (toggle) toggle.checked = false;
+      definirDivisaoPagamento(false);
+    }
     pagamentoVenda = tipo;
     document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b => {
       b.classList.toggle('is-selected', b.dataset.pgto === tipo);
@@ -1034,8 +1163,9 @@ function atualizarBotaoFinalizar() {
   }
 
   const totalPagar = calcularTotalPagar();
-  const dinheiroOk = pagamentoVenda !== 'DINHEIRO' || moneyInputValue('valorRecebidoInput') >= totalPagar;
-  btn.disabled = !(caixaAberto() && cart.length && pagamentoVenda && dinheiroOk && !descontoExcedeLimite());
+  const pagamentoOk = divisaoPagamentoAtiva ? divisaoPagamentoValida() : Boolean(pagamentoVenda);
+  const dinheiroOk = divisaoPagamentoAtiva || pagamentoVenda !== 'DINHEIRO' || moneyInputValue('valorRecebidoInput') >= totalPagar;
+  btn.disabled = !(caixaAberto() && cart.length && pagamentoOk && dinheiroOk && !descontoExcedeLimite());
 }
 
 function mesaSoParaLiberar() {
@@ -1057,7 +1187,11 @@ async function finalizarPedido() {
   if (!vendaCaixa && !mesaSelecionada) { showToast('Selecione uma mesa.', 'error'); return; }
   if (!cart.length)     { showToast('Adicione ao menos um produto.', 'error'); return; }
   if (vendaCaixa && !pagamentoVenda)  { showToast('Selecione a forma de pagamento.', 'error'); return; }
-  if (vendaCaixa && pagamentoVenda === 'DINHEIRO' && moneyInputValue('valorRecebidoInput') < calcularTotalPagar()) {
+  if (vendaCaixa && divisaoPagamentoAtiva && !divisaoPagamentoValida()) {
+    showToast('A soma das parcelas deve ser igual ao total da venda.', 'error');
+    return;
+  }
+  if (vendaCaixa && !divisaoPagamentoAtiva && pagamentoVenda === 'DINHEIRO' && moneyInputValue('valorRecebidoInput') < calcularTotalPagar()) {
     showToast('Valor recebido insuficiente.', 'error');
     return;
   }
@@ -1079,6 +1213,13 @@ async function finalizarPedido() {
 
   try {
     if (vendaCaixa) {
+      const pagamentosDivididos = divisaoPagamentoAtiva
+        ? valoresPagamentosDivididos().map(parcela => ({
+            pessoa: parcela.pessoa,
+            formaPagamento: parcela.formaPagamento,
+            valor: (parcela.centavos / 100).toFixed(2)
+          }))
+        : null;
       // Detecta se algum item precisa de preparo na cozinha
       const precisaPreparo = cart.some(i => {
         const p = todosOsProdutos.find(p => p.id === i.produtoId);
@@ -1087,7 +1228,8 @@ async function finalizarPedido() {
 
       const payload = {
         vendaCaixa: true,
-        formaPagamento: pagamentoVenda,
+        formaPagamento: divisaoPagamentoAtiva ? 'MISTO' : pagamentoVenda,
+        ...(pagamentosDivididos && { pagamentosDivididos }),
         ...(document.getElementById('clientePedidoSelect')?.value && {
           clienteId: Number(document.getElementById('clientePedidoSelect').value)
         }),
@@ -1107,9 +1249,14 @@ async function finalizarPedido() {
           subtotal: i.preco * i.quantidade
         })) }],
         total: totalPagar,
-        formaPagamento: pagamentoVenda,
+        formaPagamento: divisaoPagamentoAtiva ? 'MISTO' : pagamentoVenda,
+        pagamentosDivididos: pagamentosDivididos || [],
         desconto: calcularDesconto()
       };
+
+      const pagamentoResumo = pagamentosDivididos
+        ? pagamentosDivididos.map(parcela => `${esc(parcela.pessoa)}: ${pgtoLabel(parcela.formaPagamento)} ${formatBRL(parcela.valor)}`).join(' · ')
+        : pgtoLabel(pagamentoVenda);
 
       const mensagemCozinha = precisaPreparo
         ? `Pedido enviado a cozinha como <strong>Balcao #${pedido?.id || ''}</strong>.<br>Chamar cliente quando estiver pronto.`
@@ -1117,7 +1264,7 @@ async function finalizarPedido() {
 
       mostrarSucesso({
         titulo: precisaPreparo ? `Balcao #${pedido?.id || ''} — aguardando preparo` : 'Venda finalizada!',
-        mensagem: `${mensagemCozinha}<br>Total: <strong>${formatBRL(totalPagar)}</strong> · ${pgtoLabel(pagamentoVenda)}`,
+        mensagem: `${mensagemCozinha}<br>Total: <strong>${formatBRL(totalPagar)}</strong> · ${pagamentoResumo}`,
         temRecibo: true
       });
       cart = [];
@@ -1126,6 +1273,11 @@ async function finalizarPedido() {
       document.getElementById('clientePedidoSelect').value = '';
       document.getElementById('descontoInput').value = '';
       document.getElementById('valorRecebidoInput').value = '';
+      const splitToggle = document.getElementById('splitPaymentToggle');
+      if (splitToggle) splitToggle.checked = false;
+      divisaoPagamentoAtiva = false;
+      document.getElementById('splitPaymentPanel').hidden = true;
+      document.getElementById('splitPaymentRows').innerHTML = '';
       document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b => b.classList.remove('is-selected'));
       renderCarrinho();
       return;
@@ -1272,7 +1424,7 @@ async function fecharConta() {
 }
 
 function pgtoLabel(tipo) {
-  return { PIX: 'PIX', CREDITO: 'Crédito', DEBITO: 'Débito', DINHEIRO: 'Dinheiro' }[tipo] || tipo;
+  return { PIX: 'PIX', CREDITO: 'Crédito', DEBITO: 'Débito', DINHEIRO: 'Dinheiro', MISTO: 'Pagamento dividido' }[tipo] || tipo;
 }
 
 // -- RECIBO --------------------------------------------------------
@@ -1281,6 +1433,7 @@ let _reciboHistoricoAtual = null;
 
 function extrairPagamentoObs(observacoes) {
   const obs = (observacoes || '').toLowerCase();
+  if (obs.includes('pagamento: misto'))       return 'MISTO';
   if (obs.includes('pagamento: pix'))      return 'PIX';
   if (obs.includes('pagamento: credito'))  return 'CREDITO';
   if (obs.includes('pagamento: debito'))   return 'DEBITO';
@@ -1288,9 +1441,9 @@ function extrairPagamentoObs(observacoes) {
   return '';
 }
 
-const PGTO_LABELS = { PIX: 'PIX', CREDITO: 'Cartao Credito', DEBITO: 'Cartao Debito', DINHEIRO: 'Dinheiro' };
+const PGTO_LABELS = { PIX: 'PIX', CREDITO: 'Cartao Credito', DEBITO: 'Cartao Debito', DINHEIRO: 'Dinheiro', MISTO: 'Pagamento dividido' };
 
-function imprimirRecibo({ origem, pedidos, total, formaPagamento, desconto = 0, nomeCliente = '' }) {
+function imprimirRecibo({ origem, pedidos, total, formaPagamento, pagamentosDivididos = [], desconto = 0, nomeCliente = '' }) {
   const session  = readSession();
   const operador = session?.name || 'Caixa';
   const agora    = new Date();
@@ -1320,6 +1473,10 @@ function imprimirRecibo({ origem, pedidos, total, formaPagamento, desconto = 0, 
 
   const descontoRow = desconto > 0
     ? `<tr><td style="padding:2px 6px;text-align:left;color:#555">Desconto</td><td style="padding:2px 6px;text-align:right;color:#555">- ${formatBRL(desconto)}</td></tr>`
+    : '';
+
+  const pagamentosRows = pagamentosDivididos.length
+    ? pagamentosDivididos.map(item => `<tr><td style="padding:2px 6px;text-align:left">${esc(item.pessoa)} · ${esc(PGTO_LABELS[item.formaPagamento] || item.formaPagamento)}</td><td style="padding:2px 6px;text-align:right">${formatBRL(item.valor)}</td></tr>`).join('')
     : '';
 
   const logoPath = '../images/brand/logo-emp.png';
@@ -1367,6 +1524,7 @@ function imprimirRecibo({ origem, pedidos, total, formaPagamento, desconto = 0, 
   <hr class="sep">
   <table>
     ${descontoRow}
+    ${pagamentosRows}
     <tr class="total-row">
       <td>TOTAL</td>
       <td style="text-align:right">${formatBRL(total)}</td>
@@ -1439,6 +1597,10 @@ function connectPdvWebSocket() {
     pdvSocket.addEventListener('message', (event) => {
       let payload = null;
       try { payload = JSON.parse(event.data); } catch (_) { return; }
+      if (payload?.type === 'PRODUTO_DISPONIBILIDADE' && payload.produto) {
+        aplicarDisponibilidadePdv(payload.produto);
+        return;
+      }
       if (!PDV_WS_EVENTOS.has(payload?.type)) return;
 
       window.clearTimeout(pdvWsReloadTimer);
@@ -1823,6 +1985,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.pgto-btn:not(.pgto-conta)').forEach(b =>
     b.addEventListener('click', () => selecionarPagamento(b.dataset.pgto, 'venda'))
   );
+  document.getElementById('splitPaymentToggle').addEventListener('change', e => {
+    definirDivisaoPagamento(e.target.checked);
+  });
+  document.getElementById('splitPeopleCount').addEventListener('change', () => renderPagamentosDivididos());
+  document.getElementById('splitEqualButton').addEventListener('click', () => {
+    const pessoas = Math.max(2, Math.min(12, Number.parseInt(document.getElementById('splitPeopleCount').value, 10) || 2));
+    renderPagamentosDivididos(valoresIguaisDivididos(pessoas));
+  });
 
   // Pagamento - conta
   document.querySelectorAll('.pgto-btn.pgto-conta').forEach(b =>

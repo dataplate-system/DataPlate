@@ -2593,26 +2593,6 @@ document.getElementById('profileForm')?.addEventListener('submit', (e) => {
   showSuccessModal('Perfil atualizado!', 'Suas informações foram salvas com sucesso.');
 });
 
-document.getElementById('securityForm')?.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const newPassword = e.target.querySelector('[name="newPassword"]');
-  const confirmPassword = e.target.querySelector('[name="confirmPassword"]');
-
-  confirmPassword.setCustomValidity('');
-  if (!validateForm(e.target)) return;
-
-  if (newPassword.value !== confirmPassword.value) {
-    confirmPassword.setCustomValidity('As senhas nao conferem.');
-    confirmPassword.reportValidity();
-    return;
-  }
-
-  confirmPassword.setCustomValidity('');
-  closeModal('securityModal');
-  showSuccessModal('Segurança atualizada!', 'Suas configurações de acesso foram salvas.');
-  e.target.reset();
-});
-
 // Trocar usuario exige novo login (sem troca de perfil sem senha)
 document.getElementById('switchUserForm')?.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -4348,7 +4328,9 @@ function adicionarLinhaProduto(p) {
 function buildLinhaProduto(p) {
   return `<tr>
     <td><strong>${escapeHtml(displayCode(p, 'PRO'))}</strong></td>
-    <td><strong>${escapeHtml(p.nome)}</strong></td>
+    <td><strong${p.esgotado ? ' class="produto-esgotado-nome"' : ''}>${escapeHtml(p.nome)}</strong>${p.esgotado
+      ? `<small class="produto-esgotado-motivo">${escapeHtml(['Indisponível', p.motivoEsgotado].filter(Boolean).join(' · '))}</small>`
+      : ''}</td>
     <td>${escapeHtml(getCategoryLabel(p.idCategoria))}</td>
     <td>${formatCurrency(p.preco)}</td>
     <td>${p.tempoPreparo ? `${p.tempoPreparo} min` : '-'}</td>

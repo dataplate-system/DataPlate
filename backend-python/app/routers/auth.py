@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.limiter import (
+    alteracao_conta_por_origem,
+    alteracao_conta_por_usuario,
+    alteracao_email_por_origem,
+    alteracao_email_por_usuario,
     exigir_disponivel,
     login_por_cpf,
     login_por_origem,
@@ -11,7 +15,7 @@ from app.limiter import (
     recuperacao_por_origem,
     refresh_por_origem,
 )
-from app.security import exigir_admin, get_usuario_atual
+from app.security import exigir_admin, get_usuario_atual, verify_password
 from app.models import User
 from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthPasswordResetVerifyRequest, AuthRefreshRequest, AuthRegisterRequest, AuthResponse
 from app.services import login, logout, refresh, register, request_password_reset, reset_password, verify_password_reset_code
@@ -24,9 +28,76 @@ def _chave_cpf(http_request: Request, cpf: str) -> str:
     return f"{origem_da_requisicao(http_request)}:{''.join(c for c in cpf if c.isdigit())}"
 
 
+def _chave_usuario(http_request: Request, usuario: User) -> str:
+    return f"{origem_da_requisicao(http_request)}:{usuario.id}"
+
+
+def _confirmar_senha_atual(http_request: Request, usuario: User, senha_atual: str) -> None:
+    origem = origem_da_requisicao(http_request)
+    chave = _chave_usuario(http_request, usuario)
+    mensagem = "Muitas tentativas de confirmação de senha."
+    exigir_disponivel(alteracao_conta_por_usuario, chave, mensagem)
+    exigir_disponivel(alteracao_conta_por_origem, origem, mensagem)
+    if not verify_password(senha_atual, usuario.senha_hash):
+        alteracao_conta_por_usuario.registrar(chave)
+        alteracao_conta_por_origem.registrar(origem)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Senha atual incorreta.",
+        )
+    alteracao_conta_por_usuario.limpar(chave)
+
+
 @router.get("/me")
 def auth_me(usuario: User = Depends(get_usuario_atual)) -> dict:
-    return {"id": usuario.id, "nome": usuario.nome, "cpf": usuario.cpf, "role": usuario.role}
+    return {
+        "id": usuario.id,
+        "nome": usuario.nome,
+        "cpf": usuario.cpf,
+        "role": usuario.role,
+        "email": usuario.email,
+    }
+
+
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def auth_change_own_password(
+    request: AuthOwnPasswordChangeRequest,
+    http_request: Request,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(get_usuario_atual),
+) -> Response:
+    _confirmar_senha_atual(http_request, usuario, request.senhaAtual)
+    change_own_password(db, usuario, request.novaSenha)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/me/email-change", status_code=status.HTTP_202_ACCEPTED)
+def auth_request_own_recovery_email_change(
+    request: AuthOwnRecoveryEmailChangeRequest,
+    http_request: Request,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(get_usuario_atual),
+) -> Response:
+    _confirmar_senha_atual(http_request, usuario, request.senhaAtual)
+    origem = origem_da_requisicao(http_request)
+    chave = _chave_usuario(http_request, usuario)
+    mensagem = "Muitas solicitações de confirmação de e-mail."
+    exigir_disponivel(alteracao_email_por_usuario, chave, mensagem)
+    exigir_disponivel(alteracao_email_por_origem, origem, mensagem)
+    alteracao_email_por_usuario.registrar(chave)
+    alteracao_email_por_origem.registrar(origem)
+    request_own_recovery_email_change(db, usuario, request.email)
+    return Response(status_code=status.HTTP_202_ACCEPTED)
+
+
+@router.post("/me/email-change/confirm", status_code=status.HTTP_204_NO_CONTENT)
+def auth_confirm_own_recovery_email_change(
+    request: AuthOwnRecoveryEmailConfirmRequest,
+    db: Session = Depends(get_db),
+    usuario: User = Depends(get_usuario_atual),
+) -> Response:
+    confirm_own_recovery_email_change(db, usuario, request.codigo)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/login", response_model=AuthResponse)

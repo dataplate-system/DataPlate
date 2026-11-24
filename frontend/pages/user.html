@@ -1,17 +1,21 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-br">
 <head>
+  <link rel="stylesheet" href="../Css/observacao-item.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#111827">
   <title>DataPlate</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png">
-  <link rel="stylesheet" href="../Css/user.css?v=20261122-notificacao-texto-transparente">
+  <link rel="stylesheet" href="../Css/user.css?v=20261123-banner-sem-nome">
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified">
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1">
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand">
-  <link rel="stylesheet" href="../Css/user-menu.css?v=20261122-carrinho-barra-transparente">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+  <link rel="stylesheet" href="../Css/user-menu.css?v=20261123-carimbo-esgotado">
   <link rel="manifest" href="../manifest.webmanifest">
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
 </head>
@@ -23,33 +27,18 @@
   <span id="badgePedido" class="cart-badge" style="display:none"></span>
 </button>
 
-<!-- AVISO E OPÇÃO TEMPORÁRIA DE IDENTIFICAÇÃO DA MESA -->
 <div id="mesaSelectorOverlay" class="dp-mesa-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e,#16213e);align-items:center;justify-content:center;padding:24px">
-  <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:32px 24px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3)">
-    <div class="client-app-brand selector-brand">
-      <span>
-        <span class="dataplate-brand">
-          <strong class="dataplate-brand-name">DataPlate</strong>
-          <span class="dataplate-brand-mark" aria-hidden="true">
-            <img src="../images/brand/logo-dataplate.png" alt="">
-          </span>
-        </span>
-        <small>Cardapio Digital</small>
-      </span>
-    </div>
-    <img src="../images/brand/logo-emp.png" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:12px;margin-bottom:16px">
-    <h2 style="font-size:22px;font-weight:900;margin-bottom:4px;color:#111">Raizes do Sabor</h2>
-    <p style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">Leia o QR Code da mesa ou informe o número</p>
-    <p style="font-size:14px;color:#64748b;margin-bottom:16px">A opção de informar a mesa é temporária.</p>
+  <div class="dp-mesa-card" style="background:#fff;border-radius:20px;width:min(100%,360px);padding:28px 24px;text-align:center">
+    <img src="../images/brand/logo-dataplate.png" alt="DataPlate" style="width:80px;height:80px;object-fit:contain;margin-bottom:12px">
+    <h2 style="font-size:22px;font-weight:900;margin-bottom:8px;color:#111">DataPlate</h2>
+    <p style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">Leia o QR Code da mesa para fazer o pedido</p>
+    <p style="font-size:14px;color:#64748b;margin-bottom:16px">Ou use temporariamente o número da mesa.</p>
     <form id="mesaManualForm" style="display:grid;gap:10px;margin-bottom:12px;text-align:left">
       <label for="numeroMesaManual" style="font-size:14px;font-weight:700;color:#111">Número da mesa</label>
       <input id="numeroMesaManual" name="numeroMesa" type="number" min="1" step="1" inputmode="numeric" required placeholder="Ex.: 5" style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px">
       <button type="submit" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">Usar número da mesa</button>
     </form>
-    <p style="font-size:13px;color:#64748b;margin-bottom:14px">Ou consulte o cardápio sem informar a mesa.</p>
-    <button type="button" onclick="fecharAvisoMesa()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f85b15,#e04e10);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer">
-      Ver cardapio
-    </button>
+    <button type="button" onclick="fecharAvisoMesa()" style="width:100%;padding:12px;background:#fff;color:#9a3412;border:1px solid #fed7aa;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Consultar cardápio</button>
   </div>
 </div>
 
@@ -62,7 +51,7 @@
   <header class="topo">
     <button class="voltar" onclick="fecharTelaPagamento()">←</button>
 
-    <img src="../images/brand/logo-emp.png" class="logo-topo">
+    <img src="../images/brand/logo-dataplate.png" class="logo-topo">
 
     <div></div>
   </header>
@@ -130,6 +119,7 @@
 
   
 
+ <ul id="resumoItensPagamento" aria-label="Itens do pedido"></ul>
  <div class="resumo-pagamento total-unico">
 
   <span>Total do Pedido</span>
@@ -153,7 +143,7 @@
   <header class="topo">
     <button class="voltar" onclick="fecharTelaPagamento()">←</button>
 
-    <img src="../images/brand/logo-emp.png" class="logo-topo">
+    <img src="../images/brand/logo-dataplate.png" class="logo-topo">
 
     <div></div>
   </header>
@@ -238,8 +228,8 @@
 <div id="telaDinheiro" style="display:none; padding:20px;">
 
   <header class="topo">
-    <button onclick="fecharTelaPagamento()">←</button>
-    <h2>Pagamento em Dinheiro</h2>
+    <button class="voltar" type="button" aria-label="Voltar" onclick="fecharTelaPagamento()">←</button>
+    <img src="../images/brand/logo-dataplate.png" class="logo-topo" alt="Logo do restaurante">
   </header>
 
   <div class="card-status">
@@ -325,7 +315,7 @@
   <header class="topo">
     <button class="voltar" onclick="voltarCarrinho()">←</button>
     
-     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-dataplate.png" class="logo-topo">
 
       <div style="display:flex; gap:10px;">
       </div>
@@ -352,7 +342,7 @@
   <!-- MENU LATERAL -->
   <aside class="sidebar">
 
-    <img src="../images/brand/logo-emp.png" class="logo-sidebar" alt="Raízes do Sabor">
+    <img src="../images/brand/logo-dataplate.png" class="logo-sidebar" alt="DataPlate">
 
     <h2>MENU</h2>
 
@@ -406,7 +396,7 @@
 
     <!-- RODAPE -->
     <footer class="rodape-user">
-      <strong>Raízes do Sabor</strong>
+      <strong>DataPlate</strong>
       <span>Restaurante</span>
     </footer>
 
@@ -429,7 +419,7 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista()">←</button>
-   <img src="../images/brand/logo-emp.png" class="logo-topo">
+   <img src="../images/brand/logo-dataplate.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
@@ -486,7 +476,7 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista2()">←</button>
-   <img src="../images/brand/logo-emp.png" class="logo-topo">
+   <img src="../images/brand/logo-dataplate.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
@@ -540,7 +530,7 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista3()">←</button>
-     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-dataplate.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
   </header> 
 
@@ -590,7 +580,7 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista4()">←</button>
-     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-dataplate.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
@@ -641,7 +631,7 @@
 
    <header class="topo">
        <button class="voltar" onclick="voltarLista5()">←</button>
-       <img src="../images/brand/logo-emp.png" class="logo-topo">
+       <img src="../images/brand/logo-dataplate.png" class="logo-topo">
        <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
    </header> 
 
@@ -693,7 +683,7 @@
 
    <header class="topo">
      <button class="voltar" onclick="voltarLista6()">←</button>
-     <img src="../images/brand/logo-emp.png" class="logo-topo">
+     <img src="../images/brand/logo-dataplate.png" class="logo-topo">
      <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
   </header> 
 
@@ -746,7 +736,7 @@
 
    <header class="topo">
    <button class="voltar" onclick="voltarLista7()">←</button>
-   <img src="../images/brand/logo-emp.png" class="logo-topo">
+   <img src="../images/brand/logo-dataplate.png" class="logo-topo">
    <button class="carrinho" onclick="abrirCarrinho()">🛒</button>
 </header> 
 
@@ -810,6 +800,7 @@
   
 
 
-<script src="../JavaScript/user.js?v=20261122-mesa-manual-temporaria"></script>
+<script src="../JavaScript/observacao-item.js"></script>
+<script src="../JavaScript/user.js?v=20261123-observacoes-item"></script>
 </body>
 </html>

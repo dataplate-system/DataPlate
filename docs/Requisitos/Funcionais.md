@@ -36,3 +36,6 @@ O sistema deve mostrar ao gerente o perfil de cada cliente cadastrado com total 
 
 ## RF13 - Abertura e Fechamento de Caixa
 O sistema deve controlar o caixa por turno: o Caixa ou o Gerente abre o turno informando o valor inicial em dinheiro, o PDV só registra vendas com o turno aberto, e o fechamento mostra o total recebido por forma de pagamento, o dinheiro esperado na gaveta, o valor contado e a diferença. Só pode existir um turno aberto por vez e só o Gerente vê o histórico dos turnos.
+
+## RF14 - Item Esgotado no Cardápio
+O sistema deve permitir que o Atendente ou o Gerente marque um item do cardápio como indisponível, com um motivo opcional, e o libere de novo. Enquanto estiver indisponível, o item aparece com o selo "Esgotado" e o motivo no cardápio do cliente, no PDV e na tela do atendente, sem opção de adicionar, e a API recusa pedidos novos com o item. Um pedido que já tinha o item pode ser editado, mas a quantidade dele não pode aumentar.

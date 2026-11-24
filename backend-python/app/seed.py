@@ -79,6 +79,15 @@ SCHEMA_COLUNAS = (
     ("pedido", "urgente", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS urgente BOOLEAN NOT NULL DEFAULT FALSE"),
     ("pedido", "pago_em", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS pago_em TIMESTAMP"),
     ("pedido", "forma_pagamento", "ALTER TABLE pedido ADD COLUMN IF NOT EXISTS forma_pagamento VARCHAR(30)"),
+    # Migracao 017: item esgotado no cardapio.
+    ("produto", "esgotado", "ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado BOOLEAN NOT NULL DEFAULT FALSE"),
+    ("produto", "esgotado_motivo", "ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_motivo VARCHAR(120)"),
+    ("produto", "esgotado_em", "ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_em TIMESTAMP"),
+    (
+        "produto",
+        "esgotado_por",
+        "ALTER TABLE produto ADD COLUMN IF NOT EXISTS esgotado_por BIGINT REFERENCES usuarios(id) ON DELETE SET NULL",
+    ),
 )
 # Fora do Docker a migracao 010 pode nao ter rodado; esta e a tabela que os modelos exigem.
 SCHEMA_ESTOQUE_MOVIMENTO = """

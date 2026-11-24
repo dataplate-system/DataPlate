@@ -5,6 +5,7 @@ from unittest.mock import patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.services import _send_password_reset_email
 from app.routers.leads import router
 
 
@@ -55,8 +56,29 @@ class LeadContactEmailTest(unittest.TestCase):
         self.assertIn("Prefere contato por: E-mail", aviso.get_content())
         self.assertEqual(confirmacao["To"], "ana@example.com")
         self.assertEqual(confirmacao["From"], "noreply@example.com")
-        self.assertIn("Olá, Ana!", confirmacao.get_content())
+        self.assertIn("Olá, Ana!", confirmacao.get_body(preferencelist=("plain",)).get_content())
         self.assertIn("pedido de demonstração", confirmacao["Subject"])
+        corpo_html = confirmacao.get_body(preferencelist=("html",)).get_content()
+        self.assertIn("DEMONSTRAÇÃO SOLICITADA", corpo_html)
+        self.assertIn("mailto:contato@dataplate.com.br", corpo_html)
+        self.assertIn("Olá, Ana!", corpo_html)
+
+    def test_password_reset_email_includes_styled_html_and_text_fallback(self):
+        _send_password_reset_email("ana@example.com", "092503")
+
+        (mensagem,) = self._sent()
+        self.assertIn("092503", mensagem.get_body(preferencelist=("plain",)).get_content())
+        corpo_html = mensagem.get_body(preferencelist=("html",)).get_content()
+        self.assertIn("Recuperação de senha", corpo_html)
+        self.assertIn("092503", corpo_html)
+        self.assertIn("Expira em 10 minutos", corpo_html)
+
+    def test_demo_confirmation_escapes_name_in_html(self):
+        response = self._post(nome="<Ana>")
+
+        self.assertEqual(response.status_code, 204, response.text)
+        corpo_html = self._sent()[1].get_body(preferencelist=("html",)).get_content()
+        self.assertIn("Olá, &lt;Ana&gt;!", corpo_html)
 
     def test_phone_preference_only_notifies_team(self):
         response = self._post(preferencia="telefone")

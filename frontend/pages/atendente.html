@@ -1,20 +1,22 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link rel="stylesheet" href="../Css/observacao-item.css">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
   <title>DataPlate - Painel do Atendente</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/atendente.css?v=20261116-prioridade-selecao-3" />
+  <link rel="stylesheet" href="../Css/atendente.css?v=20261123-item-esgotado-7" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=3-atendente-mesas" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <link rel="stylesheet" href="../Css/operacao.css?v=20261116-prioridade-selecao-3" />
-  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
   <link rel="stylesheet" href="../Css/pedidos-ui.css?v=20261109-filtros" />
   <link rel="stylesheet" href="../Css/prioridade-pagamento.css?v=20261116-5" />
 </head>
@@ -48,13 +50,19 @@
       </form>
 
       <div class="header-actions">
-        <div class="session-summary">
-          <span class="user-avatar" id="sessionInitials">AT</span>
-          <span>
-            <strong id="sessionName">Atendente</strong>
-            <small id="sessionRole">Operacional</small>
-          </span>
-        </div>
+        <details class="account-menu">
+          <summary class="session-summary account-menu-trigger">
+            <span class="user-avatar" id="sessionInitials">AT</span>
+            <span>
+              <strong id="sessionName">Atendente</strong>
+              <small id="sessionRole">Operacional</small>
+            </span>
+            <span class="account-menu-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="account-menu-panel">
+            <a href="minha-conta.html">Minha conta</a>
+          </div>
+        </details>
         <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
       </div>
     </header>
@@ -113,6 +121,7 @@
         <button class="tab-btn" data-tab="board" type="button">Fila de Pedidos</button>
         <button class="tab-btn" data-tab="chamados" type="button">Chamados <strong id="countChamados">0</strong></button>
         <button class="tab-btn" data-tab="mesas" type="button">Mesas do Salão</button>
+        <button class="tab-btn" data-tab="cardapio" type="button">Cardápio <strong id="countEsgotados" hidden>0</strong></button>
       </nav>
 
       <!-- TAB: FILA DE PEDIDOS -->
@@ -187,6 +196,32 @@
         </section>
       </div>
 
+      <!-- TAB: CARDÁPIO (disponibilidade dos itens) -->
+      <div class="tab-panel" data-tab-panel="cardapio">
+        <section class="disp-section">
+          <div class="mesas-header">
+            <div>
+              <p class="mesas-eyebrow">Disponibilidade do cardápio</p>
+              <h2>Itens do cardápio</h2>
+            </div>
+            <span id="dispResumo" class="mesas-resumo">Carregando...</span>
+          </div>
+          <p class="disp-ajuda">Quando um item acabar, marque como indisponível. O cliente vê o aviso no cardápio do QR Code e ninguém consegue pedir o item até ele ser marcado como disponível de novo.</p>
+          <div class="disp-toolbar">
+            <label for="dispBusca" class="sr-only">Buscar item do cardápio</label>
+            <input id="dispBusca" type="search" placeholder="Buscar item..." autocomplete="off" />
+            <div class="disp-filtros" role="group" aria-label="Filtrar itens por disponibilidade">
+              <button type="button" class="disp-filtro is-active" data-disp-filtro="todos" aria-pressed="true">Todos</button>
+              <button type="button" class="disp-filtro" data-disp-filtro="disponiveis" aria-pressed="false">Disponíveis</button>
+              <button type="button" class="disp-filtro" data-disp-filtro="indisponiveis" aria-pressed="false">Indisponíveis</button>
+            </div>
+          </div>
+          <div class="disp-lista" id="dispLista" aria-live="polite">
+            <div class="empty-state">Carregando cardápio...</div>
+          </div>
+        </section>
+      </div>
+
     </main>
   </div>
 
@@ -200,6 +235,25 @@
         <button class="modal-close" onclick="fecharMesaModal()">&#x2715;</button>
       </div>
       <div id="mesaModalContent"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="transferMesaModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="transferMesaTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="transferMesaTitle">Transferir mesa</h3>
+        <button type="button" class="modal-close" onclick="fecharTransferenciaMesaAtendente()" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <div style="padding:18px 20px 20px;overflow-y:auto">
+        <p id="transferMesaDescricao" style="margin:0 0 14px;color:#64748b;font-size:13px"></p>
+        <label for="transferMesaDestino" style="display:block;margin-bottom:6px;font-size:12px;font-weight:800">Mesa disponível</label>
+        <select id="transferMesaDestino" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit"></select>
+        <p style="margin:10px 0 16px;color:#64748b;font-size:12px">Os clientes deverão ler o QR Code da mesa de destino para fazer novos pedidos.</p>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button type="button" class="secondary-button" onclick="fecharTransferenciaMesaAtendente()">Cancelar</button>
+          <button type="button" class="action-button" id="confirmarTransferMesaBtn" onclick="confirmarTransferenciaMesaAtendente()">Confirmar transferência</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -245,6 +299,34 @@
     </div>
   </div>
 
+  <!-- MODAL: MARCAR ITEM INDISPONÍVEL -->
+  <div class="modal-overlay" id="esgotadoModal" style="display:none">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="esgotadoTitulo">
+      <div class="modal-header">
+        <h3 id="esgotadoTitulo">Marcar como indisponível</h3>
+        <button type="button" class="modal-close" onclick="fecharEsgotadoModal()" aria-label="Fechar">&#x2715;</button>
+      </div>
+      <form class="disp-modal-body" id="esgotadoForm">
+        <p class="disp-modal-produto" id="esgotadoProdutoNome"></p>
+        <span class="disp-modal-label" id="esgotadoSugestoesLabel">Por que está indisponível? (opcional)</span>
+        <div class="disp-motivos" id="esgotadoSugestoes" role="group" aria-labelledby="esgotadoSugestoesLabel">
+          <button type="button" data-motivo="Acabou por hoje">Acabou por hoje</button>
+          <button type="button" data-motivo="Ingrediente em falta">Ingrediente em falta</button>
+          <button type="button" data-motivo="Volta em breve">Volta em breve</button>
+          <button type="button" data-motivo="Equipamento em manutenção">Equipamento em manutenção</button>
+        </div>
+        <label class="sr-only" for="esgotadoMotivo">Motivo da indisponibilidade</label>
+        <input id="esgotadoMotivo" maxlength="120" placeholder="Ou escreva o motivo. Ex.: acabou o salmão" autocomplete="off" />
+        <small class="disp-modal-hint">O motivo aparece para o cliente no cardápio.</small>
+        <p class="disp-modal-erro" id="esgotadoErro" role="alert"></p>
+        <div class="disp-modal-footer">
+          <button type="button" class="disp-btn-secundario" onclick="fecharEsgotadoModal()">Cancelar</button>
+          <button type="submit" class="disp-btn-perigo" id="esgotadoConfirmarBtn">Marcar indisponível</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: CANCELAR PEDIDO -->
   <div class="modal-overlay" id="cancelarModal" style="display:none">
     <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="cancelarTitle">
@@ -272,6 +354,7 @@
       <p id="editOrderError" role="alert"></p>
     </form>
   </dialog>
-  <script src="../JavaScript/atendente.js?v=20261118-integrado" defer></script>
+  <script src="../JavaScript/observacao-item.js" defer></script>
+  <script src="../JavaScript/atendente.js?v=20261123-observacoes-item" defer></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link rel="stylesheet" href="../Css/observacao-item.css">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
@@ -11,10 +12,11 @@
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <link rel="stylesheet" href="../Css/operacao.css?v=20261116-prioridade-selecao-3" />
-  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
   <link rel="stylesheet" href="../Css/pedidos-ui.css?v=20261109-filtros" />
   <link rel="stylesheet" href="../Css/prioridade-pagamento.css?v=20261116-5" />
 </head>
@@ -47,13 +49,19 @@
       </form>
 
       <div class="header-actions">
-        <div class="session-summary" aria-label="Usuário logado">
-          <span class="user-avatar" id="sessionInitials">CZ</span>
-          <span>
-            <strong id="sessionName">Cozinha</strong>
-            <small id="sessionRole">Pedidos e preparo</small>
-          </span>
-        </div>
+        <details class="account-menu">
+          <summary class="session-summary account-menu-trigger" aria-label="Menu do usuário">
+            <span class="user-avatar" id="sessionInitials">CZ</span>
+            <span>
+              <strong id="sessionName">Cozinha</strong>
+              <small id="sessionRole">Pedidos e preparo</small>
+            </span>
+            <span class="account-menu-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="account-menu-panel">
+            <a href="minha-conta.html">Minha conta</a>
+          </div>
+        </details>
         <button class="header-button logout-button" type="button" id="logoutButton">Sair</button>
       </div>
     </header>
@@ -233,6 +241,7 @@
   </dialog>
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <script src="../JavaScript/cozinha.js?v=20261116-icones-5" defer></script>
+  <script src="../JavaScript/observacao-item.js" defer></script>
+  <script src="../JavaScript/cozinha.js?v=20261123-observacoes-item" defer></script>
 </body>
 </html>

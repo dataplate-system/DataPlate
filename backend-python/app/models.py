@@ -137,6 +137,11 @@ class Produto(Base):
     tempo_preparo: Mapped[int | None] = mapped_column(Integer)
     destaque: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     criado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    # Indisponibilidade temporaria marcada pelo atendente (migracao 017).
+    esgotado: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+    esgotado_motivo: Mapped[str | None] = mapped_column(String(120))
+    esgotado_em: Mapped[datetime | None] = mapped_column(DateTime)
+    esgotado_por: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("usuarios.id", ondelete="SET NULL"))
 
 
 class Mesa(Base):

@@ -2915,3 +2915,7 @@ tr.skeleton-row td { padding-top: 14px; padding-bottom: 14px; }
 }
 
 .order-urgent-label { display: inline-block; padding: 4px 8px; border-radius: 6px; background: #fff1f2; color: #9f1239; font-weight: 800; }
+
+/* Item esgotado (#74) na lista do cardapio: nome apagado e motivo abaixo, sem selo. */
+.data-table .produto-esgotado-nome { color: #94a3b8; }
+.data-table .produto-esgotado-motivo { display: block; margin-top: 2px; color: #b91c1c; font-size: 12px; font-weight: 600; }

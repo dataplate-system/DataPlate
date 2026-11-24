@@ -598,7 +598,7 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
       fecharComanda = `
         <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:16px">
           <div style="font-size:13px;font-weight:800;margin-bottom:8px">Solicitar pagamento — ${formatBRL(totalAtivo)}</div>
-          <div style="font-size:12px;color:#64748b;margin-bottom:10px">O caixa sera notificado e processara o pagamento.</div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:10px">O caixa será notificado para processar os pedidos desta comanda.</div>
           <div class="at-pgto-lista">
             <label aria-pressed="false" class="at-pgto-opt" data-pgto="PIX"><input class="at-pgto-radio" type="radio" name="mesaPagamento" value="PIX" onchange="selecionarPgtoModal(this.value,this.closest('.at-pgto-opt'))">
               <img src="../images/menu/pix.png" class="at-pgto-icon" alt="PIX">
@@ -647,10 +647,10 @@ async function renderMesaModal(numeroMesa, mesaStatus) {
         <span>Em aberto: <strong style="color:#f85b15">${formatBRL(totalAtivo)}</strong></span>
         ${historico.length ? `<span style="color:#64748b">${historico.length} entregue(s)</span>` : ''}
       </div>
+      ${gestaoMesa}
       ${ativos.length ? ativos.map(renderPedido).join('') : '<div style="color:#94a3b8;font-size:13px;margin-bottom:8px">Nenhum pedido ativo.</div>'}
       ${btnNovoPedido}
-      ${fecharComanda}
-      ${gestaoMesa}`;
+      ${fecharComanda}`;
     const selecionado = content.querySelector(`[data-pgto="${_mesaModalPgto}"]`);
     if (selecionado) selecionarPgtoModal(_mesaModalPgto, selecionado);
   } catch (_) {
@@ -694,14 +694,73 @@ function renderGestaoMesa(mesa, temAtivos) {
       <button type="button" onclick="reservarMesaAtendente(${mesa.id})" style="${btnStyle};width:100%;background:#f59e0b;color:#fff;border:none">Reservar mesa</button>`;
   }
 
-  if (!botoesStatus.length && !reserva) return '';
+  const moverPedidos = ['ocupada', 'aguardando_pagamento'].includes(st) && temAtivos
+    ? `<div style="display:flex;gap:8px;margin-top:10px">
+        <button type="button" onclick="transferirPedidosMesaAtendente(${mesa.id})" style="${btnStyle};background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa">Transferir mesa</button>
+      </div>`
+    : '';
+
+  if (!botoesStatus.length && !reserva && !moverPedidos) return '';
   return `
     <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:14px">
       <div style="font-size:13px;font-weight:800;margin-bottom:8px">Gerenciar mesa</div>
       ${botoesStatus.length ? `<div style="display:flex;gap:8px;margin-bottom:10px">${botoesStatus.join('')}</div>` : ''}
       ${reserva}
+      ${moverPedidos}
     </div>`;
 }
+
+window.transferirPedidosMesaAtendente = async function(mesaId) {
+  const origem = allMesas.find((mesa) => Number(mesa.id) === Number(mesaId));
+  if (!origem) return showToast('Mesa não encontrada.', 'error');
+  const destinos = allMesas.filter((mesa) => Number(mesa.id) !== Number(mesaId)
+    && normalizarStatusMesa(mesa.status) === 'livre');
+  if (!destinos.length) {
+    return showToast('Não há mesa livre para receber a transferência.', 'error');
+  }
+  const modal = document.getElementById('transferMesaModal');
+  const descricao = document.getElementById('transferMesaDescricao');
+  const select = document.getElementById('transferMesaDestino');
+  const confirmar = document.getElementById('confirmarTransferMesaBtn');
+  if (!modal || !descricao || !select || !confirmar) return;
+  descricao.textContent = `Os pedidos em aberto da Mesa ${origem.numero} serão movidos para a mesa escolhida. A mesa de origem ficará livre.`;
+  select.innerHTML = destinos.map((mesa) => `<option value="${mesa.id}">Mesa ${esc(mesa.numero)} — ${esc(mesa.localizacao || 'Salão principal')}</option>`).join('');
+  modal.dataset.mesaOrigemId = String(origem.id);
+  confirmar.disabled = false;
+  modal.style.display = 'flex';
+  select.focus();
+};
+
+window.fecharTransferenciaMesaAtendente = function() {
+  const modal = document.getElementById('transferMesaModal');
+  if (modal) modal.style.display = 'none';
+};
+
+window.confirmarTransferenciaMesaAtendente = async function() {
+  const modal = document.getElementById('transferMesaModal');
+  const select = document.getElementById('transferMesaDestino');
+  const confirmar = document.getElementById('confirmarTransferMesaBtn');
+  const origemId = Number(modal?.dataset.mesaOrigemId);
+  const destinoId = Number(select?.value);
+  const origem = allMesas.find((mesa) => Number(mesa.id) === origemId);
+  const destino = allMesas.find((mesa) => Number(mesa.id) === destinoId);
+  if (!origem || !destino || normalizarStatusMesa(destino.status) !== 'livre') {
+    return showToast('Escolha uma mesa que ainda esteja disponível.', 'error');
+  }
+  if (confirmar) { confirmar.disabled = true; confirmar.textContent = 'Transferindo...'; }
+  try {
+    const resultado = await putJson(`/mesas/${origem.id}/transferir`, { mesaDestinoId: destino.id });
+    _mesaModalNumero = Number(resultado.mesaDestino);
+    showToast(`${resultado.pedidosMovidos} pedido(s) transferido(s) para a Mesa ${resultado.mesaDestino}.`, 'success');
+    window.fecharTransferenciaMesaAtendente();
+    await loadData({ silent: true });
+    await _refreshModalAtual();
+  } catch (error) {
+    showToast(error.message || 'Não foi possível mover os pedidos.', 'error');
+  } finally {
+    if (confirmar) { confirmar.disabled = false; confirmar.textContent = 'Confirmar transferência'; }
+  }
+};
 
 async function _aposAlterarMesa(msg) {
   showToast(msg, 'success');
@@ -797,6 +856,7 @@ window.fecharMesaModal = function() {
 
 // ── Carregar dados ────────────────────────────────────────────────
 async function loadData({ silent = false } = {}) {
+  carregarDisponibilidade();
   try {
     const [ordersRaw, mesasRaw, chamadosRaw] = await Promise.all([
       getJson('/pedidos/ativos'),
@@ -836,6 +896,8 @@ function connectWS() {
         if (['NOVO_PEDIDO','PEDIDO_ATUALIZADO','VENDA_CAIXA'].includes(p?.type)) {
           window.clearTimeout(wsLoadTimer);
           wsLoadTimer = window.setTimeout(() => loadData({ silent: true }), 300);
+        } else if (p?.type === 'PRODUTO_DISPONIBILIDADE' && p.produto) {
+          aplicarDisponibilidade(p.produto);
         } else if (['CHAMADO_MESA', 'CHAMADO_ATENDIDO'].includes(p?.type)) {
           if (p.type === 'CHAMADO_MESA' && p.chamado
             && !allChamados.some(chamado => chamado.id === p.chamado.id)) {
@@ -937,10 +999,14 @@ window.abrirNovoPedido = async function(numeroMesa) {
 
   if (!npProdutosTodos.length) {
     document.getElementById('npProdutos').innerHTML = '<div class="empty-state">Carregando...</div>';
-    try {
-      const data = await getJson('/produtos');
-      npProdutosTodos = (data || []).filter(p => p.ativo !== false);
-    } catch (_) {
+  } else {
+    renderNpProdutos();
+  }
+  try {
+    const data = await getJson('/produtos');
+    npProdutosTodos = (data || []).filter(p => p.ativo !== false);
+  } catch (_) {
+    if (!npProdutosTodos.length) {
       document.getElementById('npProdutos').innerHTML = '<div class="empty-state">Erro ao carregar cardapio.</div>';
       return;
     }
@@ -972,28 +1038,54 @@ function renderNpProdutos() {
   const grid = document.getElementById('npProdutos');
   if (!lista.length) { grid.innerHTML = '<div class="empty-state">Nenhum produto encontrado.</div>'; return; }
 
-  grid.innerHTML = lista.map(p => `
-    <div class="np-produto-card" onclick="npAddItem(${p.id},'${esc(p.nome)}',${p.preco})">
+  // Itens indisponiveis ficam no fim, sem acao de adicionar.
+  const ordenada = [...lista].sort((a, b) => Number(Boolean(a.esgotado)) - Number(Boolean(b.esgotado)));
+  grid.innerHTML = ordenada.map(p => p.esgotado ? `
+    <div class="np-produto-card is-esgotado" aria-disabled="true" title="${esc(p.motivoEsgotado || 'Indisponível no momento')}">
+      <div class="np-produto-nome">${esc(p.nome)}</div>
+      <div class="np-produto-preco">${formatBRL(p.preco)}</div>
+      <span class="np-produto-esgotado">Indisponível${p.motivoEsgotado ? ` · ${esc(p.motivoEsgotado)}` : ''}</span>
+    </div>` : `
+    <div class="np-produto-card" onclick="npAddItem(${Number(p.id)})">
       <div class="np-produto-nome">${esc(p.nome)}</div>
       <div class="np-produto-preco">${formatBRL(p.preco)}</div>
       <button class="np-produto-add" type="button">+ Adicionar</button>
     </div>`).join('');
 }
 
-window.npAddItem = function(id, nome, preco) {
-  const item = npCart.find(i => i.id === id);
+window.npAddItem = function(id) {
+  const produto = npProdutosTodos.find(p => p.id === id);
+  if (!produto) return;
+  if (produto.esgotado) {
+    showToast(`${produto.nome} está indisponível no momento.`, 'error');
+    return;
+  }
+  const { nome, preco } = produto;
+  const item = npCart.find(i => i.id === id && !i.observacao?.trim());
   if (item) item.qty++;
   else npCart.push({ id, nome, preco: Number(preco), qty: 1 });
   renderNpCart();
 };
 
-function npChangeQty(id, delta) {
-  const idx = npCart.findIndex(i => i.id === id);
-  if (idx === -1) return;
+function npChangeQty(idx, delta) {
+  if (!npCart[idx]) return;
   npCart[idx].qty += delta;
   if (npCart[idx].qty <= 0) npCart.splice(idx, 1);
   renderNpCart();
 }
+
+function npSepararItem(idx) {
+  const item = npCart[idx];
+  if (!item || item.qty < 2) return;
+  item.qty--;
+  npCart.splice(idx + 1, 0, { ...item, qty: 1 });
+  renderNpCart();
+}
+
+document.getElementById('npCartItems')?.addEventListener('input', event => {
+  const indice = event.target.dataset.npObservacao;
+  if (indice !== undefined && npCart[indice]) npCart[indice].observacao = event.target.value;
+});
 
 function renderNpCart() {
   const container = document.getElementById('npCartItems');
@@ -1005,15 +1097,17 @@ function renderNpCart() {
     return;
   }
 
-  container.innerHTML = npCart.map(i => `
+  container.innerHTML = npCart.map((i, index) => `
     <div class="np-cart-row">
       <span class="np-cart-row-name">${esc(i.nome)}</span>
       <span class="np-cart-row-sub">${formatBRL(i.preco * i.qty)}</span>
       <div class="np-cart-controls">
-        <button class="np-qty-btn" onclick="npChangeQty(${i.id},-1)">-</button>
+        <button class="np-qty-btn" onclick="npChangeQty(${index},-1)">-</button>
         <span class="np-qty-num">${i.qty}</span>
-        <button class="np-qty-btn" onclick="npChangeQty(${i.id},1)">+</button>
+        <button class="np-qty-btn" onclick="npChangeQty(${index},1)">+</button>
       </div>
+      ${campoObservacaoItem(i.observacao, esc, `data-np-observacao="${index}"`, true)}
+      ${i.qty > 1 ? `<button type="button" class="dividir-item" onclick="npSepararItem(${index})">Separar uma unidade</button>` : ''}
     </div>`).join('');
 
   const total = npCart.reduce((s, i) => s + i.preco * i.qty, 0);
@@ -1033,7 +1127,7 @@ window.enviarNpPedido = async function() {
     await postJson('/pedidos', {
       vendaCaixa: false,
       numeroMesa: mesaNumero,
-      itens: npCart.map(i => ({ produtoId: i.id, quantidade: i.qty })),
+      itens: npCart.map(i => ({ produtoId: i.id, quantidade: i.qty, observacao: i.observacao?.trim() || null })),
       ...(obs && { observacoes: obs })
     });
     showToast(`Pedido enviado para a cozinha — Mesa ${mesaNumero}`, 'success');
@@ -1046,6 +1140,257 @@ window.enviarNpPedido = async function() {
     btn.textContent = 'Enviar para a Cozinha';
   }
 };
+
+// ── Disponibilidade do cardápio (item esgotado) ───────────────────
+let dispProdutos = [];
+let dispCategorias = [];
+let dispCarregado = false;
+let dispFiltro = 'todos';
+let dispBusca = '';
+let dispProdutoAlvo = null;
+let dispCarregando = null;
+const dispSalvando = new Set();
+
+function normalizarBuscaDisp(valor) {
+  return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+// Hora curta: "19:04" hoje, "22/11 19:04" em outro dia.
+function formatarQuando(valor) {
+  if (!valor) return '';
+  const data = new Date(valor);
+  if (isNaN(data)) return '';
+  const hora = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  if (data.toDateString() === new Date().toDateString()) return hora;
+  return `${data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${hora}`;
+}
+
+const ICONES_DISP = {
+  motivo: '<circle cx="12" cy="12" r="9"/><path d="M5.7 5.7l12.6 12.6"/>',
+  hora: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pessoa: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+};
+
+function iconeDisp(nome) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONES_DISP[nome]}</svg>`;
+}
+
+async function carregarDisponibilidade() {
+  // Evita requisicoes sobrepostas quando o polling e o WebSocket coincidem.
+  if (dispCarregando) return dispCarregando;
+  dispCarregando = (async () => {
+    try {
+      const [produtos, categorias] = await Promise.all([
+        getJson('/produtos'),
+        dispCategorias.length ? dispCategorias : getJson('/categorias').catch(() => [])
+      ]);
+      dispProdutos = (produtos || []).filter(p => p.ativo !== false);
+      dispCategorias = Array.isArray(categorias) ? categorias : [];
+      dispCarregado = true;
+      sincronizarNovoPedido();
+      renderDisponibilidade();
+    } catch (error) {
+      console.error('[disponibilidade]', error);
+      if (!dispCarregado) {
+        const lista = document.getElementById('dispLista');
+        if (lista) lista.innerHTML = '<div class="empty-state">Não foi possível carregar o cardápio.</div>';
+        setText('dispResumo', 'Indisponível');
+      }
+    } finally {
+      dispCarregando = null;
+    }
+  })();
+  return dispCarregando;
+}
+
+function aplicarDisponibilidade(produto) {
+  const indice = dispProdutos.findIndex(p => p.id === produto.id);
+  if (indice >= 0) dispProdutos[indice] = { ...dispProdutos[indice], ...produto };
+  else if (dispCarregado && produto.ativo !== false) dispProdutos.push(produto);
+  sincronizarNovoPedido();
+  renderDisponibilidade();
+}
+
+// O modal de novo pedido usa os mesmos dados para nao oferecer item indisponivel.
+function sincronizarNovoPedido() {
+  if (!npProdutosTodos.length) return;
+  const porId = new Map(dispProdutos.map(p => [p.id, p]));
+  npProdutosTodos = npProdutosTodos.map(p => porId.has(p.id) ? { ...p, ...porId.get(p.id) } : p);
+  const modal = document.getElementById('novoPedidoModal');
+  if (modal && modal.style.display !== 'none') renderNpProdutos();
+}
+
+function nomeCategoriaDisp(idCategoria) {
+  return dispCategorias.find(c => c.id === idCategoria)?.nome || 'Outros';
+}
+
+function buildDispItem(p) {
+  const id = Number(p.id);
+  const disponivel = !p.esgotado;
+  // Simbolos no lugar de palavras: motivo, horario e quem marcou.
+  const quando = formatarQuando(p.esgotadoEm);
+  const detalhe = p.esgotado ? [
+    `<span class="disp-detalhe-motivo" title="Motivo">${iconeDisp('motivo')}${esc(p.motivoEsgotado || 'Indisponível')}</span>`,
+    quando && `<span title="Indisponível desde ${esc(quando)}">${iconeDisp('hora')}${esc(quando)}</span>`,
+    p.esgotadoPorNome && `<span title="Marcado por ${esc(p.esgotadoPorNome)}">${iconeDisp('pessoa')}${esc(p.esgotadoPorNome)}</span>`
+  ].filter(Boolean).join('') : '';
+  return `
+    <div class="disp-item${p.esgotado ? ' is-esgotado' : ''}">
+      <div class="disp-item-info">
+        <span class="disp-item-nome">${esc(p.nome)}</span>
+        ${detalhe ? `<span class="disp-item-detalhe">${detalhe}</span>` : ''}
+      </div>
+      <span class="disp-item-preco">${formatBRL(p.preco)}</span>
+      <button type="button" class="disp-switch" role="switch" aria-checked="${disponivel}"
+        aria-label="${esc(p.nome)} disponível" title="${disponivel ? 'Marcar como indisponível' : 'Marcar como disponível'}"
+        data-disp-acao="${disponivel ? 'indisponivel' : 'disponivel'}" data-produto-id="${id}"
+        ${dispSalvando.has(id) ? 'disabled' : ''}></button>
+    </div>`;
+}
+
+function renderDisponibilidade() {
+  const indisponiveis = dispProdutos.filter(p => p.esgotado).length;
+  const contador = document.getElementById('countEsgotados');
+  if (contador) {
+    contador.textContent = String(indisponiveis);
+    contador.hidden = indisponiveis === 0;
+  }
+  if (!dispCarregado) return;
+  setText('dispResumo', indisponiveis
+    ? `${indisponiveis} indisponível(is) · ${dispProdutos.length} itens`
+    : `Todos os ${dispProdutos.length} itens disponíveis`);
+
+  const lista = document.getElementById('dispLista');
+  if (!lista) return;
+  const termo = normalizarBuscaDisp(dispBusca);
+  const visiveis = dispProdutos.filter(p => (dispFiltro === 'todos'
+      || (dispFiltro === 'indisponiveis' ? p.esgotado : !p.esgotado))
+    && (!termo || normalizarBuscaDisp(`${p.nome} ${p.codigo || ''}`).includes(termo)));
+  if (!visiveis.length) {
+    lista.innerHTML = `<div class="empty-state">${dispFiltro === 'indisponiveis' && !termo
+      ? 'Nenhum item indisponível. Todo o cardápio pode ser pedido.'
+      : 'Nenhum item encontrado.'}</div>`;
+    return;
+  }
+
+  const ordemCategoria = id => {
+    const indice = dispCategorias.findIndex(c => c.id === id);
+    return indice < 0 ? 9999 : indice;
+  };
+  const grupos = new Map();
+  [...visiveis]
+    .sort((a, b) => ordemCategoria(a.idCategoria) - ordemCategoria(b.idCategoria) || a.nome.localeCompare(b.nome, 'pt-BR'))
+    .forEach(p => {
+      const nome = nomeCategoriaDisp(p.idCategoria);
+      if (!grupos.has(nome)) grupos.set(nome, []);
+      grupos.get(nome).push(p);
+    });
+  lista.innerHTML = [...grupos.entries()].map(([categoria, itens]) => `
+    <section class="disp-grupo" aria-label="${esc(categoria)}">
+      <h3>${esc(categoria)} <span>${itens.length} ${itens.length === 1 ? 'item' : 'itens'}</span></h3>
+      <div class="disp-grupo-itens">${itens.map(buildDispItem).join('')}</div>
+    </section>`).join('');
+}
+
+async function salvarDisponibilidade(produtoId, esgotado, motivo) {
+  dispSalvando.add(produtoId);
+  renderDisponibilidade();
+  try {
+    const produto = await putJson(`/produtos/${produtoId}/disponibilidade`,
+      esgotado && motivo ? { esgotado, motivo } : { esgotado });
+    if (produto) aplicarDisponibilidade(produto);
+    return produto;
+  } finally {
+    dispSalvando.delete(produtoId);
+    renderDisponibilidade();
+  }
+}
+
+window.abrirEsgotadoModal = function(produtoId) {
+  const produto = dispProdutos.find(p => p.id === produtoId);
+  if (!produto) return;
+  dispProdutoAlvo = produto;
+  document.getElementById('esgotadoProdutoNome').textContent = produto.nome;
+  document.getElementById('esgotadoMotivo').value = '';
+  document.getElementById('esgotadoErro').textContent = '';
+  document.querySelectorAll('#esgotadoSugestoes [data-motivo]').forEach(b => b.classList.remove('is-active'));
+  document.getElementById('esgotadoModal').style.display = 'flex';
+  document.getElementById('esgotadoMotivo').focus();
+};
+
+window.fecharEsgotadoModal = function() {
+  document.getElementById('esgotadoModal').style.display = 'none';
+  dispProdutoAlvo = null;
+};
+
+async function confirmarEsgotado(event) {
+  event.preventDefault();
+  const botao = document.getElementById('esgotadoConfirmarBtn');
+  if (!dispProdutoAlvo || botao.disabled) return;
+  const produto = dispProdutoAlvo;
+  const motivo = document.getElementById('esgotadoMotivo').value.trim();
+  botao.disabled = true;
+  botao.textContent = 'Salvando...';
+  try {
+    await salvarDisponibilidade(produto.id, true, motivo);
+    fecharEsgotadoModal();
+    showToast(`${produto.nome} indisponível. O cardápio do cliente já mostra o aviso.`, 'success');
+  } catch (error) {
+    document.getElementById('esgotadoErro').textContent = error.message || 'Não foi possível salvar.';
+  } finally {
+    botao.disabled = false;
+    botao.textContent = 'Marcar indisponível';
+  }
+}
+
+async function liberarProduto(produtoId) {
+  const produto = dispProdutos.find(p => p.id === produtoId);
+  if (!produto || dispSalvando.has(produtoId)) return;
+  try {
+    await salvarDisponibilidade(produtoId, false);
+    showToast(`${produto.nome} disponível de novo no cardápio.`, 'success');
+  } catch (error) {
+    showToast(error.message || 'Não foi possível liberar o item.', 'error');
+  }
+}
+
+function iniciarDisponibilidade() {
+  document.getElementById('dispLista')?.addEventListener('click', event => {
+    const botao = event.target.closest('[data-disp-acao]');
+    if (!botao || botao.disabled) return;
+    const produtoId = Number(botao.dataset.produtoId);
+    if (botao.dataset.dispAcao === 'indisponivel') abrirEsgotadoModal(produtoId);
+    else liberarProduto(produtoId);
+  });
+  document.getElementById('dispBusca')?.addEventListener('input', event => {
+    dispBusca = event.target.value;
+    renderDisponibilidade();
+  });
+  document.querySelector('.disp-filtros')?.addEventListener('click', event => {
+    const botao = event.target.closest('[data-disp-filtro]');
+    if (!botao) return;
+    dispFiltro = botao.dataset.dispFiltro;
+    document.querySelectorAll('.disp-filtro').forEach(b => {
+      const ativo = b === botao;
+      b.classList.toggle('is-active', ativo);
+      b.setAttribute('aria-pressed', String(ativo));
+    });
+    renderDisponibilidade();
+  });
+  document.getElementById('esgotadoSugestoes')?.addEventListener('click', event => {
+    const botao = event.target.closest('[data-motivo]');
+    if (!botao) return;
+    document.getElementById('esgotadoMotivo').value = botao.dataset.motivo;
+    document.querySelectorAll('#esgotadoSugestoes [data-motivo]').forEach(b => b.classList.toggle('is-active', b === botao));
+  });
+  document.getElementById('esgotadoMotivo')?.addEventListener('input', () => {
+    document.querySelectorAll('#esgotadoSugestoes [data-motivo]').forEach(b => b.classList.remove('is-active'));
+  });
+  document.getElementById('esgotadoForm')?.addEventListener('submit', confirmarEsgotado);
+  document.getElementById('esgotadoModal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) fecharEsgotadoModal();
+  });
+}
 
 // ── Init ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -1086,6 +1431,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('novoPedidoModal')?.addEventListener('click', e => {
     if (e.target === e.currentTarget) fecharNovoPedido();
   });
+  iniciarDisponibilidade();
 
   // Abas
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -1126,7 +1472,9 @@ async function openOrderEdit(id) {
     document.getElementById('editOrderNotes').value = order.observacoes || '';
     document.getElementById('editOrderReason').value = '';
     document.getElementById('editOrderError').textContent = '';
-    document.getElementById('editProductSelect').innerHTML = products.map(p => `<option value="${p.id}">${esc(p.nome)} · ${fmtMoney(p.preco)}</option>`).join('');
+    document.getElementById('editProductSelect').innerHTML = products.map(p => p.esgotado
+      ? `<option value="${p.id}" disabled>${esc(p.nome)} · indisponível</option>`
+      : `<option value="${p.id}">${esc(p.nome)} · ${fmtMoney(p.preco)}</option>`).join('');
     renderEditItems();
     document.getElementById('editOrderDialog').showModal();
   } catch (error) { showToast(error.message || 'Não foi possível abrir o pedido.', 'error'); }
@@ -1136,7 +1484,9 @@ function renderEditItems() {
   document.getElementById('editOrderItems').innerHTML = editDraft.itens.map((item, index) => `
     <div class="edit-item"><span>${esc(item.nomeProduto)}<small>${fmtMoney(item.precoUnitario)} / unidade</small></span>
     <label>Qtd.<input type="number" min="1" max="999" step="1" required value="${item.quantidade}" data-edit-quantity="${index}" aria-label="Quantidade de ${esc(item.nomeProduto)}" /></label>
-    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${esc(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button></div>`).join('') || '<p>Adicione ao menos um produto.</p>';
+    <button type="button" class="order-icon icon-remove" title="Remover item" data-remove-edit-item="${index}" aria-label="Remover ${esc(item.nomeProduto)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button>
+    ${campoObservacaoItem(item.observacao, esc, `data-edit-observacao="${index}"`)}
+    </div>`).join('') || '<p>Adicione ao menos um produto.</p>';
   renderEditTotal();
 }
 
@@ -1159,7 +1509,7 @@ async function saveOrderEdit(event) {
   try {
     await putJson(`/pedidos/${editDraft.id}/itens`, {
       atualizadoEm: editDraft.atualizadoEm,
-      itens: editDraft.itens.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade })),
+      itens: agruparItensParaEdicao(editDraft.itens),
       observacoes: document.getElementById('editOrderNotes').value,
       motivo: document.getElementById('editOrderReason').value.trim()
     });
@@ -1179,8 +1529,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById('addEditItem').addEventListener('click', () => {
     const id = Number(document.getElementById('editProductSelect').value);
     const product = editProducts.find(p => p.id === id);
-    if (!product) return;
-    const existing = editDraft.itens.find(i => i.produtoId === id);
+    if (!product || product.esgotado) return;
+    const existing = editDraft.itens.find(i => i.produtoId === id && !i.observacao?.trim());
     if (existing) existing.quantidade++;
     else editDraft.itens.push({ produtoId: id, nomeProduto: product.nome, quantidade: 1, precoUnitario: Number(product.preco) });
     renderEditItems();
@@ -1192,6 +1542,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderEditItems();
   });
   document.getElementById('editOrderItems').addEventListener('input', (event) => {
+    const indice = event.target.dataset.editObservacao;
+    if (indice !== undefined) {
+      editDraft.itens[indice].observacao = event.target.value;
+      return;
+    }
     if (!event.target.matches('[data-edit-quantity]')) return;
     editDraft.itens[Number(event.target.dataset.editQuantity)].quantidade = Number(event.target.value);
     renderEditTotal();

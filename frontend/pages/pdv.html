@@ -6,16 +6,17 @@
   <meta name="theme-color" content="#111827" />
   <title>DataPlate PDV</title>
   <link rel="icon" href="../images/brand/logo-dataplate.png" />
-  <link rel="stylesheet" href="../Css/pdv.css?v=20261116-caixa" />
+  <link rel="stylesheet" href="../Css/pdv.css?v=20261123-dividido-esgotado" />
   <link rel="stylesheet" href="../Css/design-system.css?v=20260910-unified" />
   <link rel="stylesheet" href="../Css/responsive.css?v=20261005-mobile-mesas" />
   <link rel="stylesheet" href="../Css/mobile.css?v=1" />
   <link rel="stylesheet" href="../Css/brand.css?v=20261005-orange-brand" />
+  <link rel="stylesheet" href="../Css/minha-conta.css?v=20261123-conta" />
   <link rel="manifest" href="../manifest.webmanifest" />
   <style>[data-roles][hidden] { display: none !important; }</style>
   <script src="../JavaScript/mobile-runtime.js?v=20261103-conexao"></script>
   <link rel="stylesheet" href="../Css/operacao.css?v=20261103-3" />
-  <script src="../JavaScript/session-guard.js?v=20261103-auth"></script>
+  <script src="../JavaScript/session-guard.js?v=20261123-minha-conta"></script>
   <link rel="stylesheet" href="../Css/pdv-operacao.css?v=20261103-1" />
 </head>
 <body>
@@ -56,13 +57,19 @@
         </span>
       </div>
       <button class="pdv-action-btn" id="pdvFecharCaixaBtn" type="button" hidden>Fechar caixa</button>
-      <div class="pdv-session-info" id="pdvSessionInfo">
-        <div class="pdv-avatar" id="pdvAvatar">AT</div>
-        <span>
-          <strong id="pdvUserName">Caixa</strong>
-          <small id="pdvUserRole">Operacional</small>
-        </span>
-      </div>
+      <details class="account-menu" id="pdvSessionInfo">
+        <summary class="pdv-session-info account-menu-trigger">
+          <span class="pdv-avatar" id="pdvAvatar">AT</span>
+          <span>
+            <strong id="pdvUserName">Caixa</strong>
+            <small id="pdvUserRole">Operacional</small>
+          </span>
+          <span class="account-menu-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="account-menu-panel">
+          <a href="minha-conta.html">Minha conta</a>
+        </div>
+      </details>
       <button class="pdv-logout-btn" id="pdvLogoutBtn" type="button">Sair</button>
     </div>
   </header>
@@ -272,6 +279,23 @@
                 <span>Dinheiro</span>
               </button>
             </div>
+            <label class="split-payment-toggle" for="splitPaymentToggle">
+              <input id="splitPaymentToggle" type="checkbox">
+              <span>Dividir entre pessoas e formas de pagamento</span>
+            </label>
+            <div id="splitPaymentPanel" class="split-payment-panel" hidden>
+              <div class="split-payment-heading">
+                <label for="splitPeopleCount">Quantidade de pessoas</label>
+                <input id="splitPeopleCount" type="number" min="2" max="12" step="1" value="2">
+                <button id="splitEqualButton" type="button" class="split-equal-btn">Dividir igualmente</button>
+              </div>
+              <div id="splitPaymentRows" class="split-payment-rows"></div>
+              <div class="split-payment-total">
+                <span>Total dividido</span>
+                <strong id="splitPaymentSummary">R$ 0,00</strong>
+                <small id="splitPaymentFeedback" role="status" aria-live="polite"></small>
+              </div>
+            </div>
           </div>
           <div class="section">
             <label class="section-label" for="pedidoObs">Observação</label>
@@ -454,6 +478,6 @@
   <div id="toastArea" aria-live="polite"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="../JavaScript/pdv.js?v=20261116-caixa"></script>
+  <script src="../JavaScript/pdv.js?v=20261123-dividido-esgotado"></script>
 </body>
 </html>
