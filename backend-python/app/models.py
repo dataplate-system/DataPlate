@@ -1,5 +1,5 @@
 from enum import StrEnum
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -65,17 +65,38 @@ class PasswordResetToken(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
 
-class EmailChangeToken(Base):
-    __tablename__ = "email_change_tokens"
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
 
-    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    jti_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), nullable=False, index=True)
-    email: Mapped[str] = mapped_column(String(255), nullable=False)
-    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    used_at: Mapped[datetime | None] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class IntegrationConfig(Base):
+    __tablename__ = "integration_config"
+
+    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, default=1)
+    ifood_token: Mapped[str | None] = mapped_column(Text)
+    ifood_restaurant_id: Mapped[str | None] = mapped_column(String(100))
+    pix_key: Mapped[str | None] = mapped_column(Text)
+    pagseguro_token: Mapped[str | None] = mapped_column(Text)
+    google_maps_api_key: Mapped[str | None] = mapped_column(Text)
+    marketing_email: Mapped[str | None] = mapped_column(String(254))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
+    updated_by: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+
+
+class IntegrationAudit(Base):
+    __tablename__ = "integration_audit"
+    __table_args__ = (Index("ix_integration_audit_provider_changed_at", "provider", "changed_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
+    provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    field: Mapped[str] = mapped_column(String(80), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
 
 
 class Restaurante(Base):

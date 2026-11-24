@@ -13,33 +13,12 @@ from app.limiter import (
     origem_da_requisicao,
     recuperacao_por_cpf,
     recuperacao_por_origem,
+    refresh_por_origem,
 )
 from app.security import exigir_admin, get_usuario_atual, verify_password
 from app.models import User
-from app.schemas import (
-    AuthLoginRequest,
-    AuthOwnPasswordChangeRequest,
-    AuthOwnRecoveryEmailChangeRequest,
-    AuthOwnRecoveryEmailConfirmRequest,
-    AuthPasswordResetRequest,
-    AuthPasswordResetStartRequest,
-    AuthPasswordResetStartResponse,
-    AuthPasswordResetVerifyRequest,
-    AuthRefreshRequest,
-    AuthRegisterRequest,
-    AuthResponse,
-)
-from app.services import (
-    change_own_password,
-    confirm_own_recovery_email_change,
-    login,
-    refresh,
-    register,
-    request_own_recovery_email_change,
-    request_password_reset,
-    reset_password,
-    verify_password_reset_code,
-)
+from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthPasswordResetVerifyRequest, AuthRefreshRequest, AuthRegisterRequest, AuthResponse
+from app.services import login, logout, refresh, register, request_password_reset, reset_password, verify_password_reset_code
 
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -140,8 +119,17 @@ def auth_login(request: AuthLoginRequest, http_request: Request, db: Session = D
 
 
 @router.post("/refresh", response_model=AuthResponse)
-def auth_refresh(request: AuthRefreshRequest, db: Session = Depends(get_db)) -> AuthResponse:
+def auth_refresh(request: AuthRefreshRequest, http_request: Request, db: Session = Depends(get_db)) -> AuthResponse:
+    origem = origem_da_requisicao(http_request)
+    exigir_disponivel(refresh_por_origem, origem, "Muitas tentativas de renovação.")
+    refresh_por_origem.registrar(origem)
     return refresh(db, request)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def auth_logout(request: AuthRefreshRequest, db: Session = Depends(get_db)) -> Response:
+    logout(db, request)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

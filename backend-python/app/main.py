@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.crypto import validar_chave
 from app.core.producao import validar_configuracao
 from app.db import SessionLocal, get_db
 from app.errors import (
@@ -38,6 +39,7 @@ from app.routers import (
     produtos,
     relatorios,
     restaurante,
+    integrations,
     usuarios,
 )
 from app.security import exigir_admin, usuario_por_access_token
@@ -50,6 +52,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     validar_configuracao(settings)
+    validar_chave()
     # Garante o administrador e, quando habilitados, os acessos de teste locais.
     ensure_default_users()
     yield
@@ -88,6 +91,7 @@ app.include_router(produto_insumos.router)
 app.include_router(produtos.router)
 app.include_router(relatorios.router)
 app.include_router(restaurante.router)
+app.include_router(integrations.router)
 app.include_router(usuarios.router)
 
 

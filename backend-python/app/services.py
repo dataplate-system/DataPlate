@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from email.message import EmailMessage
 from hashlib import sha256
 from html import escape as escape_html
@@ -9,36 +10,72 @@ from uuid import UUID, uuid4
 
 from fastapi import BackgroundTasks, HTTPException, status
 from jwt import InvalidTokenError
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.models import EmailChangeToken, PasswordResetToken, User
+from app.models import PasswordResetToken, RefreshToken, User
 from app.schemas import AuthLoginRequest, AuthPasswordResetRequest, AuthPasswordResetStartRequest, AuthPasswordResetStartResponse, AuthRefreshRequest, AuthRegisterRequest, AuthResponse, DemoContactEmailRequest
-from app.security import create_access_token, create_refresh_token, decode_refresh_token, hash_password, verify_password
+from app.security import create_access_token, create_refresh_token_with_jti, decode_refresh_token_data, hash_password, verify_password
 
 logger = logging.getLogger(__name__)
+_HASH_SENHA_FALSA = hash_password("senha-falsa-nao-utilizada")
 
 
 def login(db: Session, request: AuthLoginRequest) -> AuthResponse:
     user = _get_user_by_cpf(db, request.cpf)
-    if user is None or not user.ativo or not verify_password(request.senha, user.senha_hash):
+    hash_verificado = user.senha_hash if user is not None else _HASH_SENHA_FALSA
+    senha_correta = verify_password(request.senha, hash_verificado)
+    if user is None or not user.ativo or not senha_correta:
         raise _bad_credentials("CPF ou senha invalidos")
-    return _to_auth_response(user)
+    return _to_auth_response(user, db)
 
 
 def refresh(db: Session, request: AuthRefreshRequest) -> AuthResponse:
     try:
-        user_id = decode_refresh_token(request.refreshToken)
+        user_id, jti, expiracao = decode_refresh_token_data(request.refreshToken)
     except InvalidTokenError:
         raise _bad_credentials("Refresh token invalido") from None
+
+    hash_jti = sha256(jti.encode("utf-8")).hexdigest()
+    registro = db.scalar(select(RefreshToken).where(RefreshToken.jti_hash == hash_jti).with_for_update())
+    if registro is None or registro.user_id != user_id:
+        raise _bad_credentials("Refresh token invalido")
+    agora = datetime.now(UTC)
+    if registro.revoked_at is not None:
+        db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+            .values(revoked_at=agora)
+        )
+        db.commit()
+        raise _bad_credentials("Refresh token reutilizado; todas as sessões foram encerradas")
+    expiracao_registrada = registro.expires_at
+    if expiracao_registrada.tzinfo is None:
+        expiracao_registrada = expiracao_registrada.replace(tzinfo=UTC)
+    if expiracao <= agora or expiracao_registrada <= agora:
+        raise _bad_credentials("Refresh token invalido")
 
     user = db.get(User, user_id)
     if user is None or not user.ativo:
         raise _bad_credentials("Refresh token invalido")
 
-    return _to_auth_response(user)
+    registro.revoked_at = agora
+    return _to_auth_response(user, db)
+
+
+def logout(db: Session, request: AuthRefreshRequest) -> None:
+    try:
+        user_id, jti, _ = decode_refresh_token_data(request.refreshToken)
+    except InvalidTokenError:
+        raise _bad_credentials("Refresh token invalido") from None
+    hash_jti = sha256(jti.encode("utf-8")).hexdigest()
+    registro = db.scalar(select(RefreshToken).where(RefreshToken.jti_hash == hash_jti).with_for_update())
+    if registro is None or registro.user_id != user_id:
+        raise _bad_credentials("Refresh token invalido")
+    if registro.revoked_at is None:
+        registro.revoked_at = datetime.now(UTC)
+        db.commit()
 
 
 def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
@@ -56,7 +93,7 @@ def register(db: Session, request: AuthRegisterRequest) -> AuthResponse:
     db.add(user)
     db.commit()
     db.refresh(user)
-    return _to_auth_response(user)
+    return _to_auth_response(user, db)
 
 
 def request_password_reset(
@@ -446,10 +483,19 @@ def _get_user_by_cpf(db: Session, cpf: str) -> User | None:
     return db.scalar(select(User).where(User.cpf == _only_digits(cpf)))
 
 
-def _to_auth_response(user: User) -> AuthResponse:
+def _to_auth_response(user: User, db: Session) -> AuthResponse:
+    jti = uuid4().hex
+    refresh_token = create_refresh_token_with_jti(user, jti)
+    agora = datetime.now(UTC)
+    db.add(RefreshToken(
+        jti_hash=sha256(jti.encode("utf-8")).hexdigest(),
+        user_id=user.id,
+        expires_at=agora + timedelta(milliseconds=get_settings().jwt_refresh_expiration_ms),
+    ))
+    db.commit()
     return AuthResponse(
         token=create_access_token(user),
-        refreshToken=create_refresh_token(user),
+        refreshToken=refresh_token,
         id=user.id,
         nome=user.nome,
         cpf=user.cpf,

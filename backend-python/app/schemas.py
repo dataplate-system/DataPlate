@@ -1,17 +1,27 @@
 from datetime import date, datetime
 from typing import Literal
 from decimal import Decimal
+import re
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, TypeAdapter, field_validator, model_validator
 
 from app.models import PedidoStatusNome, Role
 
 
+_EMAIL_ADAPTER = TypeAdapter(EmailStr)
+
 
 class AuthLoginRequest(BaseModel):
     cpf: str = Field(min_length=1)
-    senha: str = Field(min_length=1)
+    senha: str
+
+    @field_validator("senha")
+    @classmethod
+    def validar_tamanho_senha(cls, valor: str) -> str:
+        if len(valor.encode("utf-8")) > 72:
+            raise ValueError("A senha deve ter no maximo 72 bytes")
+        return valor
 
 
 class AuthRefreshRequest(BaseModel):
@@ -24,11 +34,25 @@ class AuthRegisterRequest(BaseModel):
     senha: str = Field(min_length=1)
     role: Role
 
+    @field_validator("senha")
+    @classmethod
+    def validar_tamanho_senha(cls, valor: str) -> str:
+        if not 8 <= len(valor.encode("utf-8")) <= 72:
+            raise ValueError("A senha deve ter entre 8 e 72 bytes")
+        return valor
+
 
 class AuthPasswordResetRequest(BaseModel):
     resetToken: UUID
     codigo: str = Field(pattern=r"^\d{6}$")
-    novaSenha: str = Field(min_length=8, max_length=72)
+    novaSenha: str = Field(min_length=1)
+
+    @field_validator("novaSenha")
+    @classmethod
+    def validar_tamanho_senha(cls, valor: str) -> str:
+        if not 8 <= len(valor.encode("utf-8")) <= 72:
+            raise ValueError("A senha deve ter entre 8 e 72 bytes")
+        return valor
 
 
 class AuthOwnPasswordChangeRequest(BaseModel):
@@ -111,8 +135,15 @@ class UserUpdateRequest(BaseModel):
     role: Role
     email: str | None = Field(default=None, max_length=255)
     funcionarioId: int | None = Field(default=None, ge=1)
-    senha: str | None = Field(default=None, min_length=8, max_length=72)
+    senha: str | None = Field(default=None, min_length=1)
     ativo: bool | None = None
+
+    @field_validator("senha")
+    @classmethod
+    def validar_tamanho_senha(cls, valor: str | None) -> str | None:
+        if valor is not None and not 8 <= len(valor.encode("utf-8")) <= 72:
+            raise ValueError("A senha deve ter entre 8 e 72 bytes")
+        return valor
 
 
 class UserResponse(BaseModel):
@@ -703,7 +734,7 @@ def _validar_cpf(valor: str) -> str:
 class UserCreateRequest(BaseModel):
     nome: str = Field(min_length=2, max_length=120)
     cpf: str
-    senha: str = Field(min_length=8, max_length=72)  # limite do bcrypt
+    senha: str = Field(min_length=1)
     email: str = Field(min_length=5, max_length=255)
     role: Role
     funcionarioId: int | None = Field(default=None, ge=1)
@@ -712,6 +743,13 @@ class UserCreateRequest(BaseModel):
     @classmethod
     def cpf_valido(cls, v: str) -> str:
         return _validar_cpf(v)
+
+    @field_validator("senha")
+    @classmethod
+    def validar_tamanho_senha(cls, valor: str) -> str:
+        if not 8 <= len(valor.encode("utf-8")) <= 72:
+            raise ValueError("A senha deve ter entre 8 e 72 bytes")
+        return valor
 
 
 class TurnoCaixaAbrirRequest(BaseModel):
@@ -722,6 +760,90 @@ class TurnoCaixaAbrirRequest(BaseModel):
 class TurnoCaixaFecharRequest(BaseModel):
     valorContado: Decimal = Field(ge=Decimal("0"), le=Decimal("99999999.99"))
     observacao: str | None = Field(default=None, max_length=255)
+
+
+class IntegrationConfigUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ifood_token: str | None = Field(default=None, min_length=10, max_length=4096)
+    ifood_restaurant_id: str | None = Field(default=None, min_length=1, max_length=100)
+    pix_key: str | None = Field(default=None, min_length=1, max_length=254)
+    pagseguro_token: str | None = Field(default=None, min_length=10, max_length=4096)
+    google_maps_api_key: str | None = Field(default=None, min_length=20, max_length=512)
+    marketing_email: EmailStr | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def aceitar_nomes_da_tela(cls, dados):
+        if not isinstance(dados, dict):
+            return dados
+        aliases = {
+            "ifoodToken": "ifood_token",
+            "ifoodRestauranteId": "ifood_restaurant_id",
+            "chavePix": "pix_key",
+            "pagseguroToken": "pagseguro_token",
+            "googleMapsKey": "google_maps_api_key",
+            "emailMarketing": "marketing_email",
+        }
+        return {aliases.get(campo, campo): valor for campo, valor in dados.items()}
+
+    @field_validator(
+        "ifood_token", "ifood_restaurant_id", "pix_key", "pagseguro_token", "google_maps_api_key", "marketing_email",
+        mode="before",
+    )
+    @classmethod
+    def campo_vazio_nao_altera(cls, valor):
+        if isinstance(valor, str) and not valor.strip():
+            return None
+        return valor.strip() if isinstance(valor, str) else valor
+
+    @field_validator("pix_key")
+    @classmethod
+    def validar_chave_pix(cls, valor: str | None) -> str | None:
+        if valor is None:
+            return None
+        if _pix_cpf_valido(valor) or _pix_cnpj_valido(valor):
+            return valor
+        try:
+            _EMAIL_ADAPTER.validate_python(valor)
+            return valor
+        except (ValueError, TypeError):
+            pass
+        if re.fullmatch(r"\+55[1-9]\d9?\d{8}", valor):
+            return valor
+        try:
+            UUID(valor)
+            return valor
+        except ValueError:
+            raise ValueError("Chave PIX deve ser CPF/CNPJ válido, e-mail, telefone +55 ou UUID") from None
+
+
+def _pix_cpf_valido(valor: str) -> bool:
+    digitos = "".join(caractere for caractere in valor if caractere.isdigit())
+    if not re.fullmatch(r"(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})", valor) or len(digitos) != 11 or digitos == digitos[0] * 11:
+        return False
+    for tamanho in (9, 10):
+        soma = sum(int(digitos[posicao]) * (tamanho + 1 - posicao) for posicao in range(tamanho))
+        verificador = (soma * 10 % 11) % 10
+        if verificador != int(digitos[tamanho]):
+            return False
+    return True
+
+
+def _pix_cnpj_valido(valor: str) -> bool:
+    digitos = "".join(caractere for caractere in valor if caractere.isdigit())
+    if not re.fullmatch(r"(?:\d{14}|\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2})", valor) or len(digitos) != 14 or digitos == digitos[0] * 14:
+        return False
+    for indice, pesos in (
+        (12, (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)),
+        (13, (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)),
+    ):
+        soma = sum(int(digitos[posicao]) * pesos[posicao] for posicao in range(indice))
+        resto = soma % 11
+        verificador = 0 if resto < 2 else 11 - resto
+        if verificador != int(digitos[indice]):
+            return False
+    return True
 
 
 class TurnoCaixaTotaisResponse(BaseModel):
